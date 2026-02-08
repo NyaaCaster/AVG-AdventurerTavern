@@ -194,6 +194,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
         {/* Audio Element */}
         <audio 
             ref={audioRef}
+            autoPlay
             loop
             className="hidden"
         >

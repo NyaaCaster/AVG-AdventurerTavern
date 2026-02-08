@@ -245,32 +245,38 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             <div className="absolute inset-0 flex items-center justify-between px-6 md:px-10">
                 {/* 左侧：运行日志 */}
                 <div className="flex items-center">
-                    <button 
-                      onClick={onShowDebugLog}
-                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
-                    >
-                        <i className={`fa-solid fa-terminal group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">运行日志</span>
-                    </button>
+                    {onShowDebugLog && (
+                        <button 
+                          onClick={onShowDebugLog}
+                          className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
+                        >
+                            <i className={`fa-solid fa-terminal group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">运行日志</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* 右侧：隐藏UI 和 对话记录 */}
                 <div className="flex items-center gap-4 md:gap-6">
-                    <button 
-                      onClick={onHideUI}
-                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
-                    >
-                        <i className={`fa-solid fa-eye-slash group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">隐藏UI</span>
-                    </button>
+                    {onHideUI && (
+                        <button 
+                          onClick={onHideUI}
+                          className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
+                        >
+                            <i className={`fa-solid fa-eye-slash group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">隐藏UI</span>
+                        </button>
+                    )}
                     
-                    <button 
-                      onClick={onShowHistory}
-                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
-                    >
-                        <i className={`fa-solid fa-book group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">对话记录</span>
-                    </button>
+                    {onShowHistory && (
+                        <button 
+                          onClick={onShowHistory}
+                          className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
+                        >
+                            <i className={`fa-solid fa-book group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">对话记录</span>
+                        </button>
+                    )}
                 </div>
             </div>
          </div>
