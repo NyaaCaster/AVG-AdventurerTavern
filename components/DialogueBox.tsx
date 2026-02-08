@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 
 interface DialogueBoxProps {
@@ -10,6 +11,10 @@ interface DialogueBoxProps {
   transparency?: number;
   onHideUI?: () => void;
   onShowHistory?: () => void;
+  onShowDebugLog?: () => void; // 新增
+  onEndDialogue?: () => void;
+  level?: number;
+  affinity?: number;
 }
 
 const DialogueBox: React.FC<DialogueBoxProps> = ({ 
@@ -18,11 +23,16 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   isTyping, 
   onComplete,
   typingEnabled = true,
-  transparency = 20,
+  transparency = 40,
   onHideUI,
-  onShowHistory
+  onShowHistory,
+  onShowDebugLog,
+  onEndDialogue,
+  level = 1,
+  affinity = 0
 }) => {
   const [displayedText, setDisplayedText] = useState('');
+  const textContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isTyping || !typingEnabled) {
@@ -47,10 +57,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     return () => clearInterval(interval);
   }, [text, isTyping, onComplete, typingEnabled]);
 
-  const menuButtons = [
-    { label: '隐藏UI', icon: 'fa-eye-slash', action: onHideUI },
-    { label: '对话记录', icon: 'fa-book', action: onShowHistory }
-  ];
+  // 文本更新时自动滚动到底部
+  useEffect(() => {
+    if (textContentRef.current) {
+      textContentRef.current.scrollTop = textContentRef.current.scrollHeight;
+    }
+  }, [displayedText]);
 
   const alpha = transparency / 100;
 
@@ -66,8 +78,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
       // 2. 括号内容样式化 (暗金色 + 斜体)
       // 匹配中文括号（）或英文括号()，使用非贪婪匹配
-      // text-amber-700 约为 #b45309，接近暗金色
-      html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-amber-700/90 font-medium">$1</span>');
+      // 改用 text-amber-800 以加深颜色，提高在浅色背景上的可读性
+      // 添加 text-shadow-halo 类以增强在毛玻璃上的可读性
+      html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-amber-800 font-medium text-shadow-halo">$1</span>');
 
       // 3. Markdown 粗体 **text**
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -144,13 +157,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 <div className="flex items-center gap-3 text-sm font-bold pt-0.5">
                     {/* Level */}
                     <span className="text-[#d8b4fe] tracking-tight flex items-center gap-0.5 shadow-black text-shadow-sm">
-                        <span className="text-xs opacity-80">Lv.</span>1
+                        <span className="text-xs opacity-80">Lv.</span>{level}
                     </span>
                     
                     {/* Affinity */}
                     <div className="flex items-center gap-1 text-[#fcd34d] shadow-black text-shadow-sm">
                         <i className="fa-solid fa-heart text-xs text-red-500 animate-pulse"></i>
-                        <span>5</span>
+                        <span>{affinity}</span>
                     </div>
                 </div>
             </div>
@@ -171,10 +184,50 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       >
          {/* Decorative inner border */}
          <div className="absolute inset-2 border border-[#e8dfd1]/20 rounded-[inherit] pointer-events-none"></div>
+         
+         {/* 注入滚动条和文字阴影样式 */}
+         <style>{`
+            .dialogue-scrollbar::-webkit-scrollbar {
+                width: 6px;
+            }
+            .dialogue-scrollbar::-webkit-scrollbar-track {
+                background: rgba(0,0,0,0.02);
+            }
+            .dialogue-scrollbar::-webkit-scrollbar-thumb {
+                background: rgba(155, 122, 76, 0.2);
+                border-radius: 10px;
+            }
+            .dialogue-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(155, 122, 76, 0.5);
+            }
+            /* 暗色光晕/阴影效果，增强在浅色背景上的立体感 */
+            .text-shadow-halo {
+                text-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.2),
+                0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+         `}</style>
+
+         {/* End Dialogue Button (Top Right) */}
+         {/* 调整位置：从 top-4 提高到 top-1，并添加阴影 text-shadow-halo */}
+         {onEndDialogue && (
+             <button
+                onClick={onEndDialogue}
+                className="absolute top-1 right-4 z-50 text-[#9b7a4c] hover:text-red-500 transition-colors py-2 px-3 rounded-full hover:bg-red-500/10 group flex items-center gap-2 text-shadow-halo"
+                title="结束对话"
+             >
+                 <span className="hidden md:inline text-xs font-bold tracking-widest">结束对话</span>
+                 <i className="fa-solid fa-right-from-bracket text-lg group-hover:scale-110 transition-transform"></i>
+             </button>
+         )}
 
          {/* Text Content */}
-         <div className="relative pt-12 pb-14 px-8 md:px-16 min-h-[160px] md:min-h-[180px] flex flex-col justify-start z-10">
-             <div className="text-lg md:text-xl font-bold leading-relaxed text-[#1a1512] tracking-wide select-text cursor-default">
+         <div className="relative pt-10 pb-12 px-6 md:px-16 flex flex-col justify-start z-10">
+
+             <div 
+                 ref={textContentRef}
+                 className="text-base md:text-lg font-bold leading-relaxed text-[#1a1512] tracking-wide select-text cursor-default max-h-[8.5rem] overflow-y-auto pr-2 dialogue-scrollbar text-shadow-halo scroll-smooth"
+             >
                  {/* 使用 dangerouslySetInnerHTML 渲染格式化后的 HTML */}
                  <span dangerouslySetInnerHTML={{ __html: formatContent(displayedText) }} />
                  {isTyping && typingEnabled && (
@@ -185,17 +238,37 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
          {/* Bottom Menu Bar */}
          <div className="absolute bottom-0 left-0 w-full h-10 md:h-11 z-20">
-            <div className="absolute inset-0 flex items-center justify-end px-6 md:px-10 gap-4 md:gap-6">
-                {menuButtons.map(btn => (
+            {/* 调整布局为 justify-between 以便左右分布 */}
+            <div className="absolute inset-0 flex items-center justify-between px-6 md:px-10">
+                {/* 左侧：运行日志 */}
+                <div className="flex items-center">
                     <button 
-                      key={btn.label}
-                      onClick={() => btn.action && btn.action()}
-                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm"
+                      onClick={onShowDebugLog}
+                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
                     >
-                        <i className={`fa-solid ${btn.icon} group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">{btn.label}</span>
+                        <i className={`fa-solid fa-terminal group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">运行日志</span>
                     </button>
-                ))}
+                </div>
+
+                {/* 右侧：隐藏UI 和 对话记录 */}
+                <div className="flex items-center gap-4 md:gap-6">
+                    <button 
+                      onClick={onHideUI}
+                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
+                    >
+                        <i className={`fa-solid fa-eye-slash group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">隐藏UI</span>
+                    </button>
+                    
+                    <button 
+                      onClick={onShowHistory}
+                      className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
+                    >
+                        <i className={`fa-solid fa-book group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
+                        <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">对话记录</span>
+                    </button>
+                </div>
             </div>
          </div>
       </div>
