@@ -8,7 +8,7 @@ import DebugLogModal from './DebugLogModal'; // 新增
 import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
-import { CHAR_LILIA, generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
+import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry } from '../types';
 
 // Import Scenes
@@ -94,10 +94,6 @@ const calculateWorldState = (currentSceneName: string): WorldState => {
   };
 };
 
-const getInitialDialogueText = (): string => {
-   return "";
-};
-
 const getSceneDisplayName = (sceneId: SceneId, params?: any): string => {
     if (sceneId === 'scen_2') {
         if (params?.target === 'user') return '我的房间';
@@ -116,17 +112,17 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false); // 新增：是否处于对话结束确认阶段
-  const [activeCharacter, setActiveCharacter] = useState<Character>(CHAR_LILIA);
+  const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
   
   // Chat State
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
   const [currentDialogue, setCurrentDialogue] = useState<{ speaker: string; text: string }>({
-    speaker: CHAR_LILIA.name,
-    text: getInitialDialogueText()
+    speaker: '',
+    text: ''
   });
-  const [currentSprite, setCurrentSprite] = useState(CHAR_LILIA.spriteUrl);
+  const [currentSprite, setCurrentSprite] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<DialogueEntry[]>([]);
@@ -154,24 +150,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   // Background Image Logic
   const currentBgUrl = getSceneBackground(currentSceneId, worldState.period);
 
-  // Initialize Chat (Silent)
+  // Initialize Chat (Connection Status Only)
   useEffect(() => {
-    const initChatSystem = async () => {
-       if (!settings.apiConfig.apiKey) {
-         setConnectionStatus('disconnected');
-         return;
-       }
-       setConnectionStatus('connecting');
-       try {
-         // Default init with Lilia context
-         await initLLM(CHAR_LILIA);
-         setConnectionStatus('connected');
-       } catch (e) {
-         console.error(e);
-         setConnectionStatus('disconnected');
-       }
-    };
-    initChatSystem();
+     if (!settings.apiConfig.apiKey) {
+       setConnectionStatus('disconnected');
+     } else {
+       setConnectionStatus('connected');
+     }
   }, [settings.apiConfig]);
 
   const initLLM = async (char: Character) => {
@@ -190,6 +175,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setIsDialogueMode(false); // Reset dialogue mode on nav
     setIsDialogueEnding(false);
     setErrorMessage(null);
+    setActiveCharacter(null); // Clear character on nav
     
     // Update World State Scene Name
     const newSceneName = getSceneDisplayName(sceneId, params);
@@ -242,7 +228,14 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             setCurrentDialogue({ speaker: char.name, text: displayText });
             
             // 只将 AI 的回复添加到显示历史中
-            setHistory(prev => [...prev, { speaker: char.name, text: displayText, timestamp: Date.now(), type: 'npc', avatarUrl: char.avatarUrl }]);
+            setHistory(prev => [...prev, { 
+                speaker: char.name, 
+                text: displayText, 
+                timestamp: Date.now(), 
+                type: 'npc', 
+                avatarUrl: char.avatarUrl,
+                tokens: response.usage?.completion_tokens // 记录开场白消耗 (回复 Token)
+            }]);
 
             if (response.emotion && char.emotions && char.emotions[response.emotion]) {
                 setCurrentSprite(char.emotions[response.emotion]);
@@ -265,7 +258,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   // 生成告别语并进入结束状态
   const handleEndDialogueGeneration = async () => {
-    if (isLoading || isDialogueEnding) return;
+    if (isLoading || isDialogueEnding || !activeCharacter) return;
     
     const stats = CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 };
     setIsLoading(true);
@@ -279,9 +272,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 `;
         
         let displayText = '';
+        let tokensUsed = 0;
+
         if (connectionStatus === 'connected') {
             const response = await llmService.sendMessage(contextPrompt);
             displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            tokensUsed = response.usage?.completion_tokens || 0;
             
             if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
                 setCurrentSprite(activeCharacter.emotions[response.emotion]);
@@ -291,7 +287,14 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         }
 
         setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
-        setHistory(prev => [...prev, { speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), type: 'npc', avatarUrl: activeCharacter.avatarUrl }]);
+        setHistory(prev => [...prev, { 
+            speaker: activeCharacter.name, 
+            text: displayText, 
+            timestamp: Date.now(), 
+            type: 'npc', 
+            avatarUrl: activeCharacter.avatarUrl,
+            tokens: tokensUsed
+        }]);
         
         setIsTyping(true);
         setIsDialogueEnding(true); // 标记为正在结束，UI将锁定并等待点击退出
@@ -311,10 +314,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const handleFinalClose = () => {
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
+      setActiveCharacter(null);
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || isLoading) return;
+    if (!inputText.trim() || isLoading || !activeCharacter) return;
     if (connectionStatus === 'disconnected') {
         setErrorMessage("请配置 API Key。");
         return;
@@ -323,6 +327,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const userMessage = inputText;
     setInputText('');
     setIsLoading(true);
+    // 先添加用户消息到历史记录
     setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
 
     try {
@@ -333,7 +338,33 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
       
       setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
-      setHistory(prev => [...prev, { speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), type: 'npc', avatarUrl: activeCharacter.avatarUrl }]);
+      
+      setHistory(prev => {
+        const newHistory = [...prev];
+        
+        // 更新最近的一条用户消息的 Token 数 (prompt_tokens)
+        // 从后往前找最近的一条用户消息
+        for (let i = newHistory.length - 1; i >= 0; i--) {
+            if (newHistory[i].type === 'user' && !newHistory[i].tokens) {
+                 if (response.usage) {
+                     newHistory[i] = { ...newHistory[i], tokens: response.usage.prompt_tokens };
+                 }
+                 break; // 只更新最近的一条
+            }
+        }
+
+        // 添加 AI 回复 (completion_tokens)
+        newHistory.push({ 
+            speaker: activeCharacter.name, 
+            text: displayText, 
+            timestamp: Date.now(), 
+            type: 'npc', 
+            avatarUrl: activeCharacter.avatarUrl,
+            tokens: response.usage?.completion_tokens 
+        });
+
+        return newHistory;
+      });
 
       if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
         setCurrentSprite(activeCharacter.emotions[response.emotion]);
@@ -349,7 +380,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   };
   
   const handleRegenerate = async () => {
-     if(isLoading) return;
+     if(isLoading || !activeCharacter) return;
      setIsLoading(true);
      try {
          const response = await llmService.redoLastMessage();
@@ -357,6 +388,43 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
             setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
             setIsTyping(true);
+            
+            // 更新历史记录中的最后一条 AI 回复
+            setHistory(prev => {
+                const newHistory = [...prev];
+                // 移除旧的 AI 回复 (如果存在)
+                // 注意：llmService.redoLastMessage 已经在内部移除了历史，但前端 UI state 需要同步
+                // 在简单的实现中，我们假设最后一条是 AI 的旧回复，我们替换它或者添加新的
+                // 为了简化，我们直接追加新的回复，实际逻辑可能需要更严谨地清理旧 UI 节点
+                
+                // 但由于 redoLastMessage 的逻辑是基于后端历史栈的，
+                // 前端显示可能已经有了一条 AI 消息。
+                // 我们可以选择删除最后一条 NPC 消息然后添加新的。
+                if (newHistory.length > 0 && newHistory[newHistory.length - 1].type === 'npc') {
+                     newHistory.pop();
+                }
+                
+                // 同时更新用户消息的 tokens (因为重发了一次)
+                if (response.usage) {
+                    for (let i = newHistory.length - 1; i >= 0; i--) {
+                        if (newHistory[i].type === 'user') {
+                            newHistory[i] = { ...newHistory[i], tokens: response.usage.prompt_tokens };
+                            break;
+                        }
+                    }
+                }
+
+                newHistory.push({
+                    speaker: activeCharacter.name,
+                    text: displayText,
+                    timestamp: Date.now(),
+                    type: 'npc',
+                    avatarUrl: activeCharacter.avatarUrl,
+                    tokens: response.usage?.completion_tokens
+                });
+                return newHistory;
+            });
+
              if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
                 setCurrentSprite(activeCharacter.emotions[response.emotion]);
             }
@@ -394,7 +462,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     }
   };
 
-  const currentStats = CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 };
+  const currentStats = activeCharacter ? (CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
 
   return (
     <div 
@@ -409,7 +477,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
       {/* Character Sprite Layer - Only visible if Dialogue Mode or if logic dictates */}
       <div className={`absolute inset-0 z-10 flex items-end justify-center pointer-events-none transition-all duration-500 ${isDialogueMode ? '-translate-y-[2%] opacity-100' : 'translate-y-10 opacity-0'}`}>
-         {isDialogueMode && (
+         {isDialogueMode && currentSprite && (
             <img 
                 src={resolveImgPath(currentSprite)} 
                 alt="Sprite" 
@@ -445,7 +513,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           </div>
 
           {/* Chat Interface - Only Visible in Dialogue Mode */}
-          {isDialogueMode && (
+          {isDialogueMode && activeCharacter && (
               <ChatInterface 
                  currentDialogue={currentDialogue}
                  isTyping={isTyping}

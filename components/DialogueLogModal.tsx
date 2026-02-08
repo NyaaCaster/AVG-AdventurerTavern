@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { DialogueEntry } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
@@ -104,6 +105,12 @@ const DialogueLogModal: React.FC<DialogueLogModalProps> = ({ isOpen, onClose, hi
                     </span>
                     <span className="text-[10px] text-slate-500 font-mono">
                       {formatTime(entry.timestamp)}
+                      {/* Token Usage Display */}
+                      {entry.tokens !== undefined && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700/50 text-[9px] text-amber-500/80 tracking-wider">
+                          {entry.tokens}T
+                        </span>
+                      )}
                     </span>
                   </div>
                   

@@ -4,6 +4,11 @@ import { Character, ApiConfig, LogEntry } from "../types";
 export interface AIResponse {
   text: string;
   emotion: string;
+  usage?: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+  };
 }
 
 // 统一使用 OpenAI 标准格式
@@ -159,6 +164,15 @@ export class LlmService {
               .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
               .replace(/\*\*Thinking about your request\*\*/gi, '')
               .trim();
+      }
+
+      // 附加 Usage 信息
+      if (data.usage) {
+          jsonResponse.usage = {
+              prompt_tokens: data.usage.prompt_tokens,
+              completion_tokens: data.usage.completion_tokens,
+              total_tokens: data.usage.total_tokens
+          };
       }
 
       // 3. 添加助手消息 (OpenAI 标准格式)
