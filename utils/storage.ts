@@ -15,7 +15,7 @@ export const defaultSettings: GameSettings = {
     model: 'grok-3',
     autoConnect: false
   },
-  masterVolume: 30,
+  masterVolume: 15,
   isMuted: false
 };
 

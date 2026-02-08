@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
+import DialogueBox from './DialogueBox'; // Ensure explicit import
 import DialogueLogModal from './DialogueLogModal';
-import DebugLogModal from './DebugLogModal'; // 新增
+import DebugLogModal from './DebugLogModal';
 import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
@@ -43,6 +44,33 @@ const SCENE_NAMES: Record<SceneId, string> = {
   'scen_8': '按摩室',
   'scen_9': '库房',
   'scen_10': '道具店'
+};
+
+const SCENE_BGM: Record<SceneId, string> = {
+  'scen_1': 'audio/bgm/bgm_scen_1.ogg',
+  'scen_2': 'audio/bgm/bgm_scen_2.ogg',
+  'scen_3': 'audio/bgm/bgm_scen_3.ogg',
+  'scen_4': 'audio/bgm/bgm_scen_4.ogg',
+  'scen_5': 'audio/bgm/bgm_scen_5.ogg',
+  'scen_6': 'audio/bgm/bgm_scen_6.ogg',
+  'scen_7': 'audio/bgm/bgm_scen_7.ogg',
+  'scen_8': 'audio/bgm/bgm_scen_8.ogg',
+  'scen_9': 'audio/bgm/bgm_scen_9.ogg',
+  'scen_10': 'audio/bgm/bgm_scen_10.ogg'
+};
+
+// 模拟场景等级数据 (未来可移至全局状态管理)
+const SCENE_LEVELS: Record<string, number> = {
+  'scen_1': 1,
+  'scen_2': 1,
+  'scen_3': 1,
+  'scen_4': 1,
+  'scen_5': 1,
+  'scen_6': 1,
+  'scen_7': 1,
+  'scen_8': 1,
+  'scen_9': 1,
+  'scen_10': 1,
 };
 
 // 模拟角色状态数据 (未来可移至全局状态管理)
@@ -114,6 +142,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [isDialogueEnding, setIsDialogueEnding] = useState(false); // 新增：是否处于对话结束确认阶段
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
   
+  // Ambient Mode State
+  const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
+  const [ambientText, setAmbientText] = useState<string>('');
+  const [isAmbientLoading, setIsAmbientLoading] = useState(false);
+  const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); // 是否处于睡眠状态
+
   // Chat State
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -131,6 +165,14 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [debugLogs, setDebugLogs] = useState<LogEntry[]>([]); // 新增：调试日志数据
   const [isUIHidden, setIsUIHidden] = useState(false);
 
+  // Transition State
+  const [transitionOpacity, setTransitionOpacity] = useState(0); // 0: Transparent, 1: Black
+  const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
+
+  // Audio Refs
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Time Loop
   useEffect(() => {
     const timer = setInterval(() => {
@@ -147,8 +189,205 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     return () => unsubscribe();
   }, []);
 
+  // Check for Ambient Character on Scene/Time Change
+  useEffect(() => {
+    // Reset Ambient State
+    setAmbientCharacter(null);
+    setAmbientText('');
+    setIsAmbientSleeping(false);
+    
+    // 如果正在正式对话或转场中，不触发环境逻辑
+    if (isDialogueMode || isSceneTransitioning) return;
+
+    const findCharacterForScene = () => {
+        // Special logic for Guest Rooms (scen_2)
+        if (currentSceneId === 'scen_2' && sceneParams?.target && sceneParams.target !== 'user') {
+            return CHARACTERS[sceneParams.target];
+        }
+
+        // Check schedules for other characters
+        const chars = Object.values(CHARACTERS);
+        const period = worldState.period; // day, evening, night
+        
+        // Find characters who are scheduled to be here
+        const presentChars = chars.filter(char => {
+            const schedule = char.schedule;
+            return schedule && schedule[period]?.includes(currentSceneId);
+        });
+
+        // Simple logic: pick the first one found. 
+        // Future: could implement randomness or priority if multiple chars present.
+        return presentChars.length > 0 ? presentChars[0] : null;
+    };
+
+    const char = findCharacterForScene();
+    
+    if (char) {
+        setAmbientCharacter(char);
+        
+        // 睡眠状态判定：客房 + 夜晚
+        const isSleeping = currentSceneId === 'scen_2' && worldState.period === 'night';
+        setIsAmbientSleeping(isSleeping);
+
+        if (isSleeping) {
+            setAmbientText("zzz……ZZZ……");
+            setCurrentSprite(''); // 隐藏立绘
+        } else {
+            // 设置立绘
+            setCurrentSprite(char.spriteUrl);
+            // 生成环境台词
+            generateAmbientLine(char);
+        }
+    }
+
+  }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams]);
+
+  const generateAmbientLine = async (char: Character) => {
+      if (!settings.apiConfig.apiKey) {
+          setAmbientText("......");
+          return;
+      }
+
+      setIsAmbientLoading(true);
+      try {
+          // 初始化 LLM (重置上下文)
+          await initLLM(char);
+          
+          const stats = CHARACTER_STATS[char.id] || { level: 1, affinity: 0 };
+          let prompt = "";
+
+          // 特殊场景判定：温泉
+          if (currentSceneId === 'scen_7') {
+              prompt = `
+[系统指令: 此消息仅生成环境氛围台词]
+你现在正在温泉里泡澡，非常放松。
+你没有注意到玩家(${settings.userName})的到来，正在自言自语。
+请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。
+不要与玩家对话，不要使用第二人称。
+`;
+          } else {
+              prompt = `
+[系统指令: 此消息仅生成环境氛围台词]
+你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。
+玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。
+当前你对玩家的好感度为: ${stats.affinity}。
+请根据你的性格、当前时间、地点和心情，生成一句简短的“闲聊”或“自言自语”。
+或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。
+`;
+          }
+
+          const response = await llmService.sendMessage(prompt);
+          let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+          setAmbientText(text);
+          
+          // 如果生成了表情，更新立绘
+          if (response.emotion && char.emotions && char.emotions[response.emotion]) {
+              setCurrentSprite(char.emotions[response.emotion]);
+          }
+
+      } catch (e) {
+          console.error("Ambient Gen Error", e);
+          setAmbientText("......");
+      } finally {
+          setIsAmbientLoading(false);
+      }
+  };
+
+  // Audio Control - Volume (Normal update)
+  useEffect(() => {
+    // Only update volume directly if NOT fading. If fading, the fade loop handles the target.
+    if (audioRef.current && !fadeIntervalRef.current) {
+        audioRef.current.volume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
+    }
+  }, [settings.masterVolume, settings.isMuted]);
+
+  // Audio Control - Scene BGM with Crossfade
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const bgmFile = SCENE_BGM[currentSceneId];
+    const targetSrc = bgmFile ? resolveImgPath(bgmFile) : "";
+    const maxVolume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
+
+    // Clear any ongoing fade operation
+    if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+    }
+
+    // Check if we are already playing the target track
+    if (audio.src === targetSrc) {
+        // If volume is low (e.g. interrupted fade out), fade back up
+        if (!audio.paused && audio.volume < maxVolume) {
+             const stepTime = 50;
+             const stepVol = maxVolume / 10; // ~0.5s restore
+             fadeIntervalRef.current = setInterval(() => {
+                 if (audio.volume >= maxVolume - 0.01) {
+                     audio.volume = maxVolume;
+                     if(fadeIntervalRef.current) { clearInterval(fadeIntervalRef.current); fadeIntervalRef.current = null; }
+                 } else {
+                     audio.volume = Math.min(maxVolume, audio.volume + stepVol);
+                 }
+             }, stepTime);
+        } else if (!audio.paused) {
+            audio.volume = maxVolume;
+        }
+        return;
+    }
+
+    // Fade Configuration
+    const FADE_OUT_DURATION = 800;
+    const FADE_IN_DURATION = 1500;
+    const STEP_INTERVAL = 50;
+
+    const startFadeIn = () => {
+        if (!targetSrc) {
+            audio.pause();
+            audio.src = "";
+            return;
+        }
+        
+        audio.src = targetSrc;
+        audio.volume = 0;
+        audio.play().catch(err => console.warn("BGM Playback Error:", err));
+
+        const steps = FADE_IN_DURATION / STEP_INTERVAL;
+        const volStep = maxVolume / steps;
+
+        fadeIntervalRef.current = setInterval(() => {
+            if (audio.volume >= maxVolume - 0.01) {
+                audio.volume = maxVolume;
+                if(fadeIntervalRef.current) { clearInterval(fadeIntervalRef.current); fadeIntervalRef.current = null; }
+            } else {
+                audio.volume = Math.min(maxVolume, audio.volume + volStep);
+            }
+        }, STEP_INTERVAL);
+    };
+
+    // Logic: If playing, fade out first, then switch. If stopped, fade in directly.
+    if (!audio.paused && audio.src && audio.volume > 0) {
+        const steps = FADE_OUT_DURATION / STEP_INTERVAL;
+        const volStep = audio.volume / steps;
+
+        fadeIntervalRef.current = setInterval(() => {
+            if (audio.volume <= 0.01) {
+                audio.volume = 0;
+                if(fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+                startFadeIn();
+            } else {
+                audio.volume = Math.max(0, audio.volume - volStep);
+            }
+        }, STEP_INTERVAL);
+    } else {
+        startFadeIn();
+    }
+
+  }, [currentSceneId]);
+
   // Background Image Logic
-  const currentBgUrl = getSceneBackground(currentSceneId, worldState.period);
+  const currentSceneLevel = SCENE_LEVELS[currentSceneId] || 1;
+  const currentBgUrl = getSceneBackground(currentSceneId, worldState.period, currentSceneLevel);
 
   // Initialize Chat (Connection Status Only)
   useEffect(() => {
@@ -170,16 +409,42 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   // --- Handlers ---
 
   const handleNavigate = (sceneId: SceneId, params?: any) => {
-    setCurrentSceneId(sceneId);
-    setSceneParams(params || {});
-    setIsDialogueMode(false); // Reset dialogue mode on nav
-    setIsDialogueEnding(false);
-    setErrorMessage(null);
-    setActiveCharacter(null); // Clear character on nav
-    
-    // Update World State Scene Name
-    const newSceneName = getSceneDisplayName(sceneId, params);
-    setWorldState(prev => ({ ...prev, sceneName: newSceneName }));
+    if (isSceneTransitioning) return;
+    if (sceneId === currentSceneId && JSON.stringify(params) === JSON.stringify(sceneParams)) return;
+
+    // Start Transition
+    setIsSceneTransitioning(true);
+    setTransitionOpacity(1); // Fade out to black
+
+    // Wait for fade out animation (500ms match with CSS)
+    setTimeout(() => {
+        // Perform State Updates while hidden
+        setCurrentSceneId(sceneId);
+        setSceneParams(params || {});
+        setIsDialogueMode(false); // Reset dialogue mode on nav
+        setIsDialogueEnding(false);
+        setErrorMessage(null);
+        setActiveCharacter(null); // Clear character on nav
+        
+        // Clear ambient state on manual navigation (will rely on effect to repopulate)
+        setAmbientCharacter(null);
+        setAmbientText('');
+        setIsAmbientSleeping(false);
+        
+        // Update World State Scene Name
+        const newSceneName = getSceneDisplayName(sceneId, params);
+        setWorldState(prev => ({ ...prev, sceneName: newSceneName }));
+
+        // Wait a short moment then Fade In
+        setTimeout(() => {
+            setTransitionOpacity(0); // Fade in from black
+            
+            // Allow input after fade in complete
+            setTimeout(() => {
+                setIsSceneTransitioning(false);
+            }, 500);
+        }, 100);
+    }, 500);
   };
 
   const handleAction = (action: string, param?: any) => {
@@ -315,6 +580,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
       setActiveCharacter(null);
+      // Exit calls ambient effect to re-evaluate, handled by useEffect dependency on isDialogueMode
   };
 
   const handleSend = async () => {
@@ -463,19 +729,34 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   };
 
   const currentStats = activeCharacter ? (CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
+  const ambientStats = ambientCharacter ? (CHARACTER_STATS[ambientCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
 
   return (
     <div 
         className="relative w-full h-full bg-black overflow-hidden" 
         onClick={() => { if (isUIHidden) setIsUIHidden(false); }}
     >
+      {/* Background Music */}
+      <audio ref={audioRef} loop className="hidden" />
+
+      {/* Visual Transition Overlay */}
+      <div 
+        className="absolute inset-0 bg-black z-[80] pointer-events-none transition-opacity ease-in-out duration-500"
+        style={{ opacity: transitionOpacity }}
+      />
+
       {/* Background Layer */}
       <div className="absolute inset-0 z-0">
         <img src={resolveImgPath(currentBgUrl)} alt="BG" className="w-full h-full object-cover transition-all duration-700" />
-        <div className="absolute inset-0 bg-black/10" />
+        
+        {/* Cinematic Overlay - Corner Vignette Style */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
       </div>
 
-      {/* Character Sprite Layer - Only visible if Dialogue Mode or if logic dictates */}
+      {/* --- Sprite Layers --- */}
+
+      {/* 1. Active Dialogue Sprite (Center) */}
       <div className={`absolute inset-0 z-10 flex items-end justify-center pointer-events-none transition-all duration-500 ${isDialogueMode ? '-translate-y-[2%] opacity-100' : 'translate-y-10 opacity-0'}`}>
          {isDialogueMode && currentSprite && (
             <img 
@@ -483,6 +764,20 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                 alt="Sprite" 
                 className="h-[100%] md:h-[95%] object-contain drop-shadow-2xl" 
             />
+         )}
+      </div>
+
+      {/* 2. Ambient Sprite (Left Side) - Only if NOT in dialogue mode and awake */}
+      {/* Moved from 25% to 30% as requested */}
+      <div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!isDialogueMode && ambientCharacter && !isAmbientSleeping) ? 'opacity-100' : 'opacity-0'}`}>
+         {ambientCharacter && !isAmbientSleeping && currentSprite && (
+            <div className="relative h-[95%] w-full">
+                <img 
+                    src={resolveImgPath(currentSprite)} 
+                    alt="Ambient Sprite" 
+                    className="absolute bottom-0 left-[30%] transform -translate-x-1/2 h-full object-contain drop-shadow-xl filter brightness-95" 
+                />
+            </div>
          )}
       </div>
 
@@ -512,7 +807,30 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
              {renderScene()}
           </div>
 
-          {/* Chat Interface - Only Visible in Dialogue Mode */}
+          {/* --- Ambient Dialogue Box (Bottom) --- */}
+          {/* Renders when in ambient mode (character present, not in active chat) */}
+          {!isDialogueMode && ambientCharacter && ambientText && (
+              <div className="absolute bottom-4 w-full flex flex-col items-center pointer-events-auto z-40 animate-fadeIn">
+                  <div className="relative w-full px-0 md:px-4 mb-2">
+                      <DialogueBox 
+                          speaker={ambientCharacter.name}
+                          text={ambientText}
+                          isTyping={true} // Re-animate on text change
+                          typingEnabled={settings.enableTypewriter}
+                          transparency={settings.dialogueTransparency}
+                          // Hide interactive controls except HideUI
+                          onHideUI={() => setIsUIHidden(true)}
+                          onShowHistory={undefined}
+                          onShowDebugLog={undefined}
+                          onEndDialogue={undefined} 
+                          level={ambientStats.level}
+                          affinity={ambientStats.affinity}
+                      />
+                  </div>
+              </div>
+          )}
+
+          {/* --- Active Chat Interface --- */}
           {isDialogueMode && activeCharacter && (
               <ChatInterface 
                  currentDialogue={currentDialogue}
