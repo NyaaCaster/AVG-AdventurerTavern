@@ -1,0 +1,5 @@
+{
+  "name": "AdventurerTavern",
+  "description": "A high-fidelity Visual Novel framework designed for dynamic LLM-driven roleplay experiences. Features a cinematic UI, character sprites, and seamless chat integration via OpenAI-compatible APIs.",
+  "requestFramePermissions": []
+}
