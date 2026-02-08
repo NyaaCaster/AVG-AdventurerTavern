@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings, ApiProvider, ConnectionStatus, ApiConfig, ConfigTab } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
@@ -154,20 +155,6 @@ const TypewriterPreview: React.FC<{
     </div>
   );
 };
-
-const PlaceholderState: React.FC<{
-  icon: string;
-  title: string;
-  desc: string;
-}> = ({ icon, title, desc }) => (
-  <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-60">
-    <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-      <i className={`fa-solid ${icon} text-3xl`}></i>
-    </div>
-    <h3 className="text-xl font-bold text-slate-400">{title}</h3>
-    <p className="mt-2 text-sm max-w-xs text-center">{desc}</p>
-  </div>
-);
 
 // -----------------------------------------------------------------------------
 // Main Component
@@ -338,7 +325,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">
             <TabButton active={activeTab === 'dialogue'} onClick={() => setActiveTab('dialogue')} icon="fa-comment-dots" label="对话设置" />
             <TabButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon="fa-plug" label="API 设置" />
-            <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="声音设置" />
+            <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="音频设置" />
           </nav>
 
           <div className="p-4 border-t border-slate-800">
@@ -637,7 +624,39 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           )}
 
           {activeTab === 'sound' && (
-             <PlaceholderState icon="fa-volume-high" title="声音设置" desc="在此调整背景音乐、音效与语音音量。" />
+            <div className="space-y-8 animate-fadeIn">
+              <SectionHeader title="音频设置" subtitle="调整游戏音量与音效" />
+              
+              <div className="p-6 bg-slate-800/40 rounded-lg border border-slate-700/30 space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h4 className="text-lg font-medium text-slate-200">主音量</h4>
+                        <p className="text-sm text-slate-400 mt-1">控制所有背景音乐与音效的音量</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <span className="text-amber-500 font-mono font-bold w-8 text-right">{settings.masterVolume}%</span>
+                        <ToggleSwitch checked={settings.isMuted} onChange={(v) => onUpdateSettings({...settings, isMuted: v})} />
+                        <span className="text-sm text-slate-400 font-medium">{settings.isMuted ? '静音' : '开启'}</span>
+                    </div>
+                </div>
+
+                <div className={`transition-opacity duration-300 ${settings.isMuted ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value={settings.masterVolume} 
+                        onChange={(e) => onUpdateSettings({...settings, masterVolume: Number(e.target.value)})}
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                    <div className="flex justify-between mt-2 text-xs text-slate-500 font-mono">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+              </div>
+            </div>
           )}
 
         </div>

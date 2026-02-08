@@ -14,7 +14,9 @@ export const defaultSettings: GameSettings = {
     apiKey: '',
     model: 'grok-3',
     autoConnect: false
-  }
+  },
+  masterVolume: 30,
+  isMuted: false
 };
 
 export const loadSettings = (): GameSettings => {

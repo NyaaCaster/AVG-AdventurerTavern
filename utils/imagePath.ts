@@ -8,7 +8,7 @@ const PROJECT_BASE_URL = "https://h.hony-wen.com:5100/files/AVG-AdventurerTavern
 
 /**
  * 将项目内部的逻辑路径解析为远程真实 URL
- * @param path 逻辑路径，例如 "img/bg/_Title.png"
+ * @param path 逻辑路径，例如 "img/bg/_Title.png" 或 "audio/bgm/track1.mp3"
  * @returns 完整的远程 URL
  */
 export const resolveImgPath = (path: string): string => {
@@ -22,8 +22,8 @@ export const resolveImgPath = (path: string): string => {
       return normalizedPath;
   }
 
-  // 如果路径以 img/ 开头，则拼接项目根目录 (变为 .../AVG-AdventurerTavern/img/...)
-  if (normalizedPath.startsWith("img/")) {
+  // 如果路径以 img/ 或 audio/ 开头，则拼接项目根目录
+  if (normalizedPath.startsWith("img/") || normalizedPath.startsWith("audio/")) {
     return PROJECT_BASE_URL + normalizedPath;
   }
   

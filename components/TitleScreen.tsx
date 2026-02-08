@@ -7,9 +7,12 @@ interface TitleScreenProps {
   onStartGame: () => void;
   onLoadGame: () => void;
   onOpenConfig: () => void;
+  volume: number;
+  isMuted: boolean;
 }
 
 const TITLE_VIDEO = "img/bg/Title/Title_01.webm";
+const TITLE_BGM = "audio/bgm/_title.ogg";
 
 const TITLE_BG_IMAGES = [
   "img/bg/Title/Title_02.png",
@@ -20,11 +23,34 @@ const TITLE_BG_IMAGES = [
   "img/bg/Title/Title_07.png",
 ];
 
-const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOpenConfig }) => {
+const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOpenConfig, volume, isMuted }) => {
   const [showVideo, setShowVideo] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // --- Audio Control Logic ---
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+    }
+  }, [volume, isMuted]);
+
+  const toggleMusic = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(e => {
+        console.warn("Audio playback failed:", e);
+      });
+      setIsPlaying(true);
+    }
+  };
 
   // --- Background Slideshow Logic ---
   useEffect(() => {
@@ -162,13 +188,28 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 w-full h-full bg-black overflow-hidden">
+    <div 
+        className="absolute inset-0 z-0 w-full h-full bg-black overflow-hidden"
+    >
+        {/* Audio Element */}
+        <audio 
+            ref={audioRef}
+            loop
+            className="hidden"
+        >
+            <source src={resolveImgPath(TITLE_BGM)} type="audio/ogg" />
+        </audio>
+
         {/* CSS Animation Keyframes for Ken Burns Effect */}
         <style>{`
             @keyframes kenburns {
                 0% { transform: scale(1) translate(0, 0); transform-origin: 50% 50%; }
                 50% { transform: scale(1.08) translate(-1%, 1%); transform-origin: 40% 60%; }
                 100% { transform: scale(1.15) translate(1%, -1%); transform-origin: 60% 40%; }
+            }
+            @keyframes music-rotate {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
             }
         `}</style>
 
@@ -228,9 +269,33 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
         </div>
 
         {/* Main Content */}
-        <div className="relative z-30 w-full h-full">
+        <div className="relative z-30 w-full h-full pointer-events-none">
+            
+            {/* Music Toggle Button (Top Right) */}
+            <div className="absolute top-6 right-6 pointer-events-auto z-[100]">
+              <button 
+                onClick={toggleMusic}
+                className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-500 backdrop-blur-md ${
+                  isPlaying 
+                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' 
+                  : 'bg-black/40 border-white/20 text-white/40 hover:text-white hover:border-white/40'
+                }`}
+                title={isPlaying ? "暂停 BGM" : "播放 BGM"}
+              >
+                <i 
+                  className={`fa-solid fa-music text-xl ${isPlaying ? 'animate-pulse' : ''}`}
+                  style={isPlaying ? { animation: 'music-rotate 4s linear infinite' } : {}}
+                ></i>
+                
+                {/* Visual indicator of playing state */}
+                {isPlaying && (
+                  <span className="absolute inset-0 rounded-full animate-ping bg-amber-500/10 pointer-events-none"></span>
+                )}
+              </button>
+            </div>
+
             {/* Top Left Title Area */}
-            <div className="absolute top-12 left-12 md:top-20 md:left-24 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]">
+            <div className="absolute top-12 left-12 md:top-20 md:left-24 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] pointer-events-auto">
                 <div className="flex items-end gap-3 mb-2">
                     <div className="w-20 h-20 opacity-90 animate-pulse">
                         <img 
@@ -256,7 +321,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
             </div>
 
             {/* Right Side Menu Buttons */}
-            <div className="absolute bottom-20 right-0 flex flex-col items-end gap-1 w-[400px] md:w-[500px]">
+            <div className="absolute bottom-20 right-0 flex flex-col items-end gap-1 w-[400px] md:w-[500px] pointer-events-auto">
                 <MenuButton 
                 label="开始游戏" 
                 subLabel="New Game" 
@@ -278,8 +343,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
             </div>
 
             {/* Bottom Footer */}
-            <div className="absolute bottom-4 left-6 text-white/30 text-[10px] tracking-widest uppercase select-none">
-                Powered by <a href="https://github.com/NyaaCaster/AVG-AdventurerTavern" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500/30 transition-colors"><span className="text-amber-500/30">🐈︎</span>Nyaa</a> with Google AI Studio IN 2026
+            <div className="absolute bottom-4 left-6 text-white/30 text-[10px] tracking-widest uppercase select-none pointer-events-auto">
+                Powered by <a href="https://github.com/NyaaCaster/AVG-AdventurerTavern" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500/50 transition-colors"><span className="text-amber-500/50">🐈︎</span>Nyaa</a> with Google AI Studio IN 2026
             </div>
         </div>
     </div>
