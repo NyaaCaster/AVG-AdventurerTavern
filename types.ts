@@ -33,6 +33,32 @@ export interface GameSettings {
   apiConfig: ApiConfig;
 }
 
+// 新增：场景ID定义
+export type SceneId = 
+  | 'scen_1'  // 宿屋
+  | 'scen_2'  // 客房
+  | 'scen_3'  // 酒场
+  | 'scen_4'  // 训练场
+  | 'scen_5'  // 武器店
+  | 'scen_6'  // 防具店
+  | 'scen_7'  // 温泉
+  | 'scen_8'  // 按摩室
+  | 'scen_9'  // 库房
+  | 'scen_10'; // 道具店
+
+// 新增：角色日程表定义
+export interface CharacterSchedule {
+  day?: SceneId[];
+  evening?: SceneId[];
+  night?: SceneId[];
+}
+
+// 新增：角色出现条件定义
+export interface AppearanceCondition {
+  sceneId: SceneId;
+  minLevel: number;
+}
+
 export interface Character {
   id: string; // 角色唯一标识 (如 char_101)
   name: string;
@@ -43,6 +69,9 @@ export interface Character {
   avatarUrl: string;
   spriteUrl: string; // 默认立绘
   emotions: Record<string, string>; // 情绪 -> 图片路径 映射
+  // 系统规则数据
+  schedule?: CharacterSchedule;
+  appearanceConditions?: AppearanceCondition[];
 }
 
 export interface DialogueEntry {
@@ -51,6 +80,7 @@ export interface DialogueEntry {
   timestamp: number;
   type: 'npc' | 'user';
   avatarUrl?: string; // 用于历史记录显示
+  tokens?: number; // 新增：记录该条消息消耗的 Token 数 (用户为 prompt_tokens, NPC 为 completion_tokens)
 }
 
 export interface LogEntry {
@@ -69,7 +99,7 @@ export interface SceneConfig {
 // 新增：世界环境状态，用于同步 UI 和 LLM 上下文
 export interface WorldState {
   dateStr: string;      // 例如 "10月24日"
-  weekDay: string;      // 例如 "周五"
+  weekDay: string;      // 例如 "周日"
   timeStr: string;      // 例如 "22:30"
   period: 'day' | 'evening' | 'night'; // 时段代码
   periodLabel: string;  // 时段显示名，例如 "深夜"
@@ -77,19 +107,6 @@ export interface WorldState {
   weatherCode: string;  // 天气图标代码
   sceneName: string;    // 新增：场景名称
 }
-
-// 新增：场景ID定义
-export type SceneId = 
-  | 'scen_1'  // 宿屋
-  | 'scen_2'  // 客房
-  | 'scen_3'  // 酒场
-  | 'scen_4'  // 训练场
-  | 'scen_5'  // 武器店
-  | 'scen_6'  // 防具店
-  | 'scen_7'  // 温泉
-  | 'scen_8'  // 按摩室
-  | 'scen_9'  // 库房
-  | 'scen_10'; // 道具店
 
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;

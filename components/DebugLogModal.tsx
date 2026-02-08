@@ -46,7 +46,7 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
                 ) : (
                     logs.map((log) => (
                         <div key={log.id} className="mb-6 border-b border-slate-800/50 pb-4 last:border-0 group">
-                            <div className="flex items-center gap-3 mb-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-3 mb-2 opacity-70 group-hover:opacity-100 transition-opacity flex-wrap">
                                 <span className="text-slate-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                                 <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] uppercase ${
                                     log.type === 'request' ? 'bg-blue-900/30 text-blue-400' :
@@ -56,7 +56,24 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
                                 }`}>
                                     {log.type}
                                 </span>
-                                <span className="text-slate-600 text-[10px] tracking-widest">{log.id}</span>
+                                <span className="text-slate-600 text-[10px] tracking-widest mr-auto">{log.id}</span>
+
+                                {/* Token Usage Display for Responses */}
+                                {log.content?.usage && (
+                                    <div className="flex items-center gap-3 text-[10px] bg-slate-900/80 border border-slate-800 px-2 py-0.5 rounded select-none shadow-sm">
+                                        <div className="flex items-center gap-1 text-slate-400" title="Prompt Tokens (Input)">
+                                            <i className="fa-solid fa-arrow-up text-[8px]"></i>
+                                            <span>{log.content.usage.prompt_tokens}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-emerald-400" title="Completion Tokens (Output)">
+                                            <i className="fa-solid fa-arrow-down text-[8px]"></i>
+                                            <span>{log.content.usage.completion_tokens}</span>
+                                        </div>
+                                        <div className="border-l border-slate-700 pl-2 ml-1 text-amber-500 font-bold" title="Total Tokens">
+                                            {log.content.usage.total_tokens} T
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             
                             <div className={`pl-4 border-l-2 ${

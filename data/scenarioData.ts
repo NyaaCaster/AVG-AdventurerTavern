@@ -26,20 +26,6 @@ export const USER_INFO_TEMPLATE = `
 - 基本上是个认真稳重、性格温柔的人。
 - 但同时也是个相当闷骚的人，经常用带有性意味的目光打量前来住宿的女冒险者。
 - 由于容貌十分端正，在住宿的女性客人中评价很高。虽然因其性格带有受虐倾向属实，但实际上也兼具施虐的一面。
-
-## {{user}}-角色图片资源
-- 角色头像：img/face/1.png
-- 角色表情列表：
-  - 普通：img/char/char_1/1_1_1.png
-  - 高兴：img/char/char_1/1_1_2.png
-  - 生气：img/char/char_1/1_1_3.png
-  - 苦恼：img/char/char_1/1_1_5.png
-  - 害羞：img/char/char_1/1_1_6.png
-
-## 角色扮演规则
-- {{user}}识别编号：\`char_1\`
-- {{user}}指用户扮演的角色的名字。默认为\`罗安\`，用户在设置中更改名字后，{{user}}使用用户自定义的名字。
-- AI不能扮演{{user}}的行为和对话。
 `;
 
 export const generateSystemPrompt = (character: Character, userInfo: string, innName: string): string => {
@@ -69,6 +55,3 @@ export const CHARACTERS: Record<string, Character> = {
   'char_110': char_110,
   'char_111': char_111,
 };
-
-// 默认角色导出 (指向莉莉娅)
-export const CHAR_LILIA = char_101;

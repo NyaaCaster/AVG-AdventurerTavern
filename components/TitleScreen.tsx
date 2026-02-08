@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
+import { GAME_VERSION } from '../version';
 
 interface TitleScreenProps {
   onStartGame: () => void;
@@ -228,9 +230,18 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
         {/* Main Content */}
         <div className="relative z-30 w-full h-full">
             {/* Top Left Title Area */}
-            <div className="absolute top-12 left-12 md:top-20 md:left-24 drop-shadow-2xl">
-                <div className="text-amber-500 text-6xl mb-2 opacity-90 animate-pulse">
-                    <i className="fa-solid fa-dragon"></i>
+            <div className="absolute top-12 left-12 md:top-20 md:left-24 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]">
+                <div className="flex items-end gap-3 mb-2">
+                    <div className="w-20 h-20 opacity-90 animate-pulse">
+                        <img 
+                        src={resolveImgPath("img/svg/unicorn.svg")} 
+                        alt="Title Logo" 
+                        className="w-full h-full object-contain" 
+                        />
+                    </div>
+                    <span className="text-amber-500/50 font-sans text-sm text-shadow select-none">
+                        {GAME_VERSION}
+                    </span>
                 </div>
                 <h1 className="vn-title text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400 tracking-tighter filter drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] border-white">
                 Adventurer<br/>
@@ -267,8 +278,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, onLoadGame, onOp
             </div>
 
             {/* Bottom Footer */}
-            <div className="absolute bottom-4 left-6 text-white/30 text-[10px] tracking-widest uppercase">
-                Powered by NyaaCater with Google AI Studio IN 2026
+            <div className="absolute bottom-4 left-6 text-white/30 text-[10px] tracking-widest uppercase select-none">
+                Powered by <a href="https://github.com/NyaaCaster/AVG-AdventurerTavern" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500/30 transition-colors"><span className="text-amber-500/30">🐈︎</span>Nyaa</a> with Google AI Studio IN 2026
             </div>
         </div>
     </div>

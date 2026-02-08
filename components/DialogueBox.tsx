@@ -76,11 +76,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-      // 2. 括号内容样式化 (暗金色 + 斜体)
+      // 2. 括号内容样式化
       // 匹配中文括号（）或英文括号()，使用非贪婪匹配
-      // 改用 text-amber-800 以加深颜色，提高在浅色背景上的可读性
-      // 添加 text-shadow-halo 类以增强在毛玻璃上的可读性
-      html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-amber-800 font-medium text-shadow-halo">$1</span>');
+      // 以前是暗金色文字，现在改为：黑色字体 + 暗金色阴影 + 斜体
+      html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-black font-medium text-shadow-gold">$1</span>');
 
       // 3. Markdown 粗体 **text**
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -205,6 +204,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 text-shadow: 
                 0 2px 4px rgba(0, 0, 0, 0.2),
                 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            /* 括号文本专用：暗金色阴影 */
+            .text-shadow-gold {
+                text-shadow: 0 0 5px rgba(180, 83, 9, 0.5), 0 0 1px rgba(146, 64, 14, 0.3);
             }
          `}</style>
 
