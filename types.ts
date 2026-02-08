@@ -31,6 +31,8 @@ export interface GameSettings {
   enableTypewriter: boolean;
   dialogueTransparency: number; // 0-100
   apiConfig: ApiConfig;
+  masterVolume: number; // 0-100
+  isMuted: boolean;
 }
 
 // 新增：场景ID定义

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GameState, GameSettings, ConfigTab } from './types';
 import GameScene from './components/GameScene';
@@ -94,7 +95,9 @@ const App: React.FC = () => {
         <TitleScreen 
             onStartGame={() => handleSwitchScene(GameState.PLAYING, 1000, 2000)}
             onLoadGame={() => {}}
-            onOpenConfig={() => handleOpenConfig(GameState.MENU)}
+            onOpenConfig={() => handleOpenConfig(GameState.MENU, 'api')}
+            volume={gameSettings.masterVolume}
+            isMuted={gameSettings.isMuted}
         />
       )}
 
