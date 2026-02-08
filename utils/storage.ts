@@ -7,7 +7,7 @@ export const defaultSettings: GameSettings = {
   userName: '罗安',
   innName: '夜莺亭',
   enableTypewriter: true,
-  dialogueTransparency: 20,
+  dialogueTransparency: 40,
   apiConfig: {
     provider: 'openai_compatible',
     baseUrl: 'https://love.qinyan.icu/v1',

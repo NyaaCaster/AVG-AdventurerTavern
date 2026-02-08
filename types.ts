@@ -53,6 +53,13 @@ export interface DialogueEntry {
   avatarUrl?: string; // 用于历史记录显示
 }
 
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  type: 'request' | 'response' | 'error' | 'info';
+  content: any;
+}
+
 export interface SceneConfig {
   backgroundUrl: string;
   character: Character;
@@ -68,4 +75,28 @@ export interface WorldState {
   periodLabel: string;  // 时段显示名，例如 "深夜"
   weather: string;      // 天气描述
   weatherCode: string;  // 天气图标代码
+  sceneName: string;    // 新增：场景名称
+}
+
+// 新增：场景ID定义
+export type SceneId = 
+  | 'scen_1'  // 宿屋
+  | 'scen_2'  // 客房
+  | 'scen_3'  // 酒场
+  | 'scen_4'  // 训练场
+  | 'scen_5'  // 武器店
+  | 'scen_6'  // 防具店
+  | 'scen_7'  // 温泉
+  | 'scen_8'  // 按摩室
+  | 'scen_9'  // 库房
+  | 'scen_10'; // 道具店
+
+export interface SceneProps {
+  onNavigate: (sceneId: SceneId, params?: any) => void;
+  onAction: (action: string, param?: any) => void;
+  onEnterDialogue: (characterId: string, actionType?: string) => void;
+  isMenuVisible: boolean;
+  worldState?: WorldState;
+  // 用于客房等需要特定角色的场景
+  targetCharacterId?: string;
 }

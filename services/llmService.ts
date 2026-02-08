@@ -1,4 +1,5 @@
-import { Character, ApiConfig } from "../types";
+
+import { Character, ApiConfig, LogEntry } from "../types";
 
 export interface AIResponse {
   text: string;
@@ -15,6 +16,10 @@ export class LlmService {
   private history: ChatMessage[] = [];
   private systemInstruction: string = "";
   private config: ApiConfig | null = null;
+  
+  // 日志相关
+  private logs: LogEntry[] = [];
+  private logSubscribers: ((logs: LogEntry[]) => void)[] = [];
 
   constructor() {}
 
@@ -22,15 +27,55 @@ export class LlmService {
     this.config = config;
     this.history = [];
     this.systemInstruction = systemPrompt;
+    
+    // 创建用于日志的配置副本，隐藏敏感信息
+    const safeConfig = { ...config };
+    if (safeConfig.apiKey) {
+        // 保留前缀 sk- (如果存在)，隐藏后续部分
+        safeConfig.apiKey = safeConfig.apiKey.startsWith('sk-') 
+            ? 'sk-********************' 
+            : '********************';
+    }
+
+    this.addLog('info', { message: `Initialized chat for ${character.name}`, config: safeConfig });
+  }
+
+  // 订阅日志更新
+  public subscribeLogs(callback: (logs: LogEntry[]) => void) {
+    this.logSubscribers.push(callback);
+    callback(this.logs);
+    return () => {
+      this.logSubscribers = this.logSubscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  private addLog(type: LogEntry['type'], content: any) {
+    const entry: LogEntry = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now(),
+      type,
+      content
+    };
+    // 保留最近 100 条日志
+    this.logs = [entry, ...this.logs].slice(0, 100);
+    this.notifySubscribers();
+  }
+
+  private notifySubscribers() {
+    this.logSubscribers.forEach(cb => cb(this.logs));
   }
 
   async sendMessage(message: string): Promise<AIResponse> {
     if (!this.config || !this.config.apiKey) {
-        throw new Error("API Config or API Key missing.");
+        const err = new Error("API Config or API Key missing.");
+        this.addLog('error', { message: err.message });
+        throw err;
     }
     
     if (!this.config.model) {
-        throw new Error("Model not configured.");
+        const err = new Error("Model not configured.");
+        this.addLog('error', { message: err.message });
+        throw err;
     }
 
     // 1. 添加用户消息 (OpenAI 标准格式)
@@ -56,12 +101,11 @@ export class LlmService {
       };
 
       // 仅对原生 OpenAI 或 Google 等明确支持 json_object 的厂商启用 response_format
-      // openai_compatible 可能是旧版 vLLM/Ollama/OneAPI 等，对 response_format 支持不统一，故默认禁用以提高兼容性
-      // DeepSeek 文档支持 json_object 但为了最大兼容性，若非必要也可不加，或者视情况而定。
-      // 这里为了修复用户遇到的 400 错误，排除了 openai_compatible。
       if (this.config.provider === 'openai' || this.config.provider === 'google') {
           requestPayload.response_format = { type: "json_object" };
       }
+
+      this.addLog('request', requestPayload);
 
       // 获取标准化端点
       const { endpoint, headers } = this.getProviderDetails();
@@ -74,10 +118,13 @@ export class LlmService {
 
       if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`API Error (${this.config.provider}): ${response.status} - ${errorText}`);
+          const errorMsg = `API Error (${this.config.provider}): ${response.status} - ${errorText}`;
+          this.addLog('error', { status: response.status, body: errorText });
+          throw new Error(errorMsg);
       }
 
       const data = await response.json();
+      this.addLog('response', data);
       
       // 统一解析 OpenAI 格式响应
       responseText = data.choices?.[0]?.message?.content || "{}";
@@ -101,6 +148,7 @@ export class LlmService {
       } catch (parseError) {
         console.warn("Failed to parse JSON response:", responseText);
         jsonResponse = { text: responseText, emotion: "normal" };
+        this.addLog('info', { message: "JSON Parse failed, using raw text", raw: responseText });
       }
 
       // --- 核心过滤：移除思考内容 ---
@@ -125,6 +173,7 @@ export class LlmService {
     } catch (error) {
       console.error("LLM Service Error:", error);
       this.history.pop();
+      this.addLog('error', { message: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
