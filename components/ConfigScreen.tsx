@@ -49,14 +49,20 @@ const TabButton: React.FC<{
 }> = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-      active
-        ? 'bg-gradient-to-r from-cyan-900/40 to-transparent border-l-4 border-cyan-500 text-white shadow-lg'
-        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-    }`}
+    className={`
+      flex-1 md:flex-none w-auto md:w-full
+      flex items-center justify-center md:justify-start 
+      gap-2 md:gap-3 px-3 md:px-4 py-3 
+      rounded-lg
+      transition-all duration-200
+      whitespace-nowrap
+      ${active
+        ? 'bg-gradient-to-t md:bg-gradient-to-r from-cyan-900/40 to-transparent border-b-2 md:border-b-0 md:border-l-4 border-cyan-500 text-white shadow-lg'
+        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}
+    `}
   >
     <i className={`fa-solid ${icon} w-5 text-center ${active ? 'text-cyan-400' : 'opacity-70'}`}></i>
-    <span className="font-medium tracking-wide">{label}</span>
+    <span className="font-medium tracking-wide text-sm md:text-base">{label}</span>
   </button>
 );
 
@@ -99,11 +105,12 @@ const InputGroup: React.FC<{
 const ToggleSwitch: React.FC<{
   checked: boolean;
   onChange: (checked: boolean) => void;
-}> = ({ checked, onChange }) => (
+  color?: string;
+}> = ({ checked, onChange, color = 'bg-cyan-600' }) => (
   <button
     onClick={() => onChange(!checked)}
     className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none ${
-      checked ? 'bg-cyan-600' : 'bg-slate-700'
+      checked ? color : 'bg-slate-700'
     }`}
   >
     <div
@@ -315,20 +322,33 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
       {/* 模态框主体 */}
       <div className="w-full max-w-5xl h-[90%] bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-xl relative z-10">
         
-        <div className="w-full md:w-64 bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-700/50 flex flex-col">
-          <div className="p-6 border-b border-slate-800">
-            <h2 className="text-2xl font-bold text-amber-500 tracking-wider">
-              <i className="fa-solid fa-gear mr-3"></i>系统设置
+        {/* Navigation Sidebar (Vertical on Desktop, Horizontal Top on Mobile) */}
+        <div className="w-full md:w-64 bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-700/50 flex flex-col flex-shrink-0">
+          {/* Header Area */}
+          <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center">
+            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider">
+              <i className="fa-solid fa-gear mr-2 md:mr-3"></i>
+              <span className="md:inline">系统设置</span>
             </h2>
+            {/* Mobile Close Button */}
+            <button 
+                onClick={onBack} 
+                className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                title="关闭"
+            >
+                <i className="fa-solid fa-xmark"></i>
+            </button>
           </div>
           
-          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          {/* Tabs Container */}
+          <nav className="flex-none md:flex-1 overflow-x-auto md:overflow-y-auto p-2 md:p-4 flex flex-row md:flex-col gap-2 md:space-y-2 no-scrollbar">
             <TabButton active={activeTab === 'dialogue'} onClick={() => setActiveTab('dialogue')} icon="fa-comment-dots" label="对话设置" />
             <TabButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon="fa-plug" label="API 设置" />
             <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="音频设置" />
           </nav>
 
-          <div className="p-4 border-t border-slate-800">
+          {/* Desktop Back Button (Bottom) */}
+          <div className="hidden md:block p-4 border-t border-slate-800">
             <button onClick={onBack} className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium">
               <i className="fa-solid fa-arrow-left"></i>
               返回
@@ -336,6 +356,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           </div>
         </div>
 
+        {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 relative">
           
           {activeTab === 'dialogue' && (
@@ -386,12 +407,26 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                       <TypewriterPreview enabled={settings.enableTypewriter} transparency={settings.dialogueTransparency} />
                   </div>
                 </div>
+
+                {/* NSFW 设置 */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-red-900/50">
+                  <div>
+                    <h4 className="text-lg font-medium text-slate-200">NSFW</h4>
+                    <p className="text-sm text-slate-400 mt-1">开启后对话消耗的Token会大幅增加。</p>
+                  </div>
+                  <ToggleSwitch 
+                    checked={settings.enableNSFW} 
+                    onChange={(checked) => onUpdateSettings({...settings, enableNSFW: checked})} 
+                    color="bg-red-600"
+                  />
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'api' && (
             <div className="space-y-8 animate-fadeIn">
+              {/* ... (API settings content unchanged) ... */}
               <SectionHeader title="连接设置" subtitle="配置 LLM 后端服务供应商" />
 
               <div className="space-y-6">

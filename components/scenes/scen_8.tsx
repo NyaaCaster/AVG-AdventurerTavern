@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction }) => {
+const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings }) => {
   if (!isMenuVisible) return null;
 
   const currentGuest = CHARACTERS['char_101']; // 莉莉娅
@@ -17,8 +17,12 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
 
       {currentGuest && (
         <>
-            <SceneActionBtn label={`为${currentGuest.name}按摩`} icon="fa-hands" onClick={() => onEnterDialogue(currentGuest.id, 'massage_give')} />
-            <SceneActionBtn label={`请${currentGuest.name}按摩`} icon="fa-hand-sparkles" onClick={() => onEnterDialogue(currentGuest.id, 'massage_receive')} disabled />
+            {settings.enableNSFW && (
+                <>
+                    <SceneActionBtn label={`为${currentGuest.name}按摩`} icon="fa-hands" onClick={() => onEnterDialogue(currentGuest.id, 'massage_give')} />
+                    <SceneActionBtn label={`请${currentGuest.name}按摩`} icon="fa-hand-sparkles" onClick={() => onEnterDialogue(currentGuest.id, 'massage_receive')} disabled />
+                </>
+            )}
             <SceneActionBtn 
                 label={`与${currentGuest.name}对话`} 
                 icon="fa-comments" 

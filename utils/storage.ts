@@ -16,7 +16,8 @@ export const defaultSettings: GameSettings = {
     autoConnect: false
   },
   masterVolume: 15,
-  isMuted: false
+  isMuted: false,
+  enableNSFW: false
 };
 
 export const loadSettings = (): GameSettings => {
@@ -24,7 +25,11 @@ export const loadSettings = (): GameSettings => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultSettings;
     const parsed = JSON.parse(stored);
-    return { ...defaultSettings, ...parsed, apiConfig: { ...defaultSettings.apiConfig, ...parsed.apiConfig } };
+    // Ensure all fields are present by merging with defaultSettings
+    const mergedSettings = { ...defaultSettings, ...parsed };
+    // Deep merge apiConfig
+    mergedSettings.apiConfig = { ...defaultSettings.apiConfig, ...parsed.apiConfig };
+    return mergedSettings;
   } catch (e) {
     console.error("Failed to load settings", e);
     return defaultSettings;

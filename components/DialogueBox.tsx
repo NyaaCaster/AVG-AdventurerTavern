@@ -225,11 +225,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
          )}
 
          {/* Text Content */}
-         <div className="relative pt-10 pb-12 px-6 md:px-16 flex flex-col justify-start z-10">
+         {/* Reduced vertical padding on mobile: pt-8 pb-10 (mobile) vs pt-10 pb-12 (desktop) */}
+         <div className="relative pt-8 pb-10 md:pt-10 md:pb-12 px-6 md:px-16 flex flex-col justify-start z-10">
 
              <div 
                  ref={textContentRef}
-                 className="text-base md:text-lg font-bold leading-relaxed text-[#1a1512] tracking-wide select-text cursor-default max-h-[8.5rem] overflow-y-auto pr-2 dialogue-scrollbar text-shadow-halo scroll-smooth"
+                 /* Reduced max-height on mobile: max-h-[6rem] (mobile) vs max-h-[8.5rem] (desktop) */
+                 className="text-base md:text-lg font-bold leading-relaxed text-[#1a1512] tracking-wide select-text cursor-default max-h-[6rem] md:max-h-[8.5rem] overflow-y-auto pr-2 dialogue-scrollbar text-shadow-halo scroll-smooth"
              >
                  {/* 使用 dangerouslySetInnerHTML 渲染格式化后的 HTML */}
                  <span dangerouslySetInnerHTML={{ __html: formatContent(displayedText) }} />

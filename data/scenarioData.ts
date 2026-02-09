@@ -15,6 +15,19 @@ import { char_109 } from './characters/char_109';
 import { char_110 } from './characters/char_110';
 import { char_111 } from './characters/char_111';
 
+// Import NSFW prompts to enrich characters dynamically
+import * as p101 from './prompts/char_101';
+import * as p102 from './prompts/char_102';
+import * as p103 from './prompts/char_103';
+import * as p104 from './prompts/char_104';
+import * as p105 from './prompts/char_105';
+import * as p106 from './prompts/char_106';
+import * as p107 from './prompts/char_107';
+import * as p108 from './prompts/char_108';
+import * as p109 from './prompts/char_109';
+import * as p110 from './prompts/char_110';
+import * as p111 from './prompts/char_111';
+
 export const USER_INFO_TEMPLATE = `
 ## {{user}}-角色信息
 - 角色名：{{user}}
@@ -28,13 +41,41 @@ export const USER_INFO_TEMPLATE = `
 - 由于容貌十分端正，在住宿的女性客人中评价很高。虽然因其性格带有受虐倾向属实，但实际上也兼具施虐的一面。
 `;
 
-export const generateSystemPrompt = (character: Character, userInfo: string, innName: string): string => {
+// Helper to attach NSFW data
+const enrich = (char: Character, prompts: any) => {
+  if (prompts.PERSONA_NSFW) char.persona_nsfw = prompts.PERSONA_NSFW;
+  if (prompts.DIALOGUE_NSFW) char.dialogueExamples_nsfw = prompts.DIALOGUE_NSFW;
+  return char;
+};
+
+// Enrich characters
+enrich(char_101, p101);
+enrich(char_102, p102);
+enrich(char_103, p103);
+enrich(char_104, p104);
+enrich(char_105, p105);
+enrich(char_106, p106);
+enrich(char_107, p107);
+enrich(char_108, p108);
+enrich(char_109, p109);
+enrich(char_110, p110);
+enrich(char_111, p111);
+
+export const generateSystemPrompt = (character: Character, userInfo: string, innName: string, enableNSFW: boolean = false): string => {
+  let persona = character.persona;
+  let dialogue = character.dialogueExamples;
+
+  if (enableNSFW) {
+      if (character.persona_nsfw) persona += `\n${character.persona_nsfw}`;
+      if (character.dialogueExamples_nsfw) dialogue += `\n${character.dialogueExamples_nsfw}`;
+  }
+
   return `
 ${GLOBAL_AI_RULES}
 
-${character.persona}
+${persona}
 
-${character.dialogueExamples}
+${dialogue}
 
 [当前情境]
 你正在"${innName}"旅店中。

@@ -92,7 +92,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
       )}
 
-      <div className="absolute bottom-0 w-full z-40 pb-4 flex flex-col items-center pointer-events-auto">
+      {/* 
+         Bottom Container:
+         - fixed bottom-0: 确保定位在视口底部
+         - padding-bottom: 适配 iPhone 等设备的底部安全区域
+      */}
+      <div 
+        className="absolute bottom-0 w-full z-40 flex flex-col items-center pointer-events-auto transition-all duration-300"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         
         {/* 对话框位于上方 */}
         <div className="relative w-full px-0 md:px-4 mb-2">
