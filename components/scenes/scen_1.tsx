@@ -4,10 +4,15 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible }) => {
+const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings }) => {
   const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'rooms'>('main');
 
   if (!isMenuVisible) return null;
+
+  // Prop shop visibility logic:
+  // Visible if: NSFW is ON OR it is NOT night
+  // Hidden if: NSFW is OFF AND it IS night
+  const showPropShop = settings.enableNSFW || (worldState?.period !== 'night');
 
   return (
     <div className="absolute top-48 right-8 flex flex-col items-end animate-fadeIn z-30">
@@ -42,7 +47,9 @@ const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
            <SceneActionBtn label="温泉" icon="fa-hot-tub-person" onClick={() => onNavigate('scen_7')} />
            <SceneActionBtn label="按摩室" icon="fa-spa" onClick={() => onNavigate('scen_8')} />
            <SceneActionBtn label="库房" icon="fa-boxes-stacked" onClick={() => onNavigate('scen_9')} />
-           <SceneActionBtn label="道具店" icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
+           {showPropShop && (
+             <SceneActionBtn label="道具店" icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
+           )}
         </>
       )}
 

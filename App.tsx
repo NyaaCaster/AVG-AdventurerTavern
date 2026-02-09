@@ -78,7 +78,10 @@ const App: React.FC = () => {
   const showGame = gameState === GameState.PLAYING || (gameState === GameState.CONFIG && previousGameState === GameState.PLAYING);
 
   return (
-    <div className="relative h-screen w-full bg-slate-950 overflow-hidden font-sans selection:bg-cyan-500/30">
+    <div 
+        className="relative w-full bg-slate-950 overflow-hidden font-sans selection:bg-cyan-500/30"
+        style={{ height: '100dvh' }} // 使用 100dvh 适配移动端动态视口
+    >
       
       {/* 全局转场遮罩层 */}
       <div 

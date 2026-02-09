@@ -33,6 +33,7 @@ export interface GameSettings {
   apiConfig: ApiConfig;
   masterVolume: number; // 0-100
   isMuted: boolean;
+  enableNSFW: boolean;
 }
 
 // 新增：场景ID定义
@@ -68,6 +69,8 @@ export interface Character {
   description: string; // UI显示的简短描述
   persona: string; // 传给 LLM 的详细人设与规则
   dialogueExamples: string; // 传给 LLM 的对话示例
+  persona_nsfw?: string; // NSFW 模式追加人设
+  dialogueExamples_nsfw?: string; // NSFW 模式追加对话
   avatarUrl: string;
   spriteUrl: string; // 默认立绘
   emotions: Record<string, string>; // 情绪 -> 图片路径 映射
@@ -118,4 +121,5 @@ export interface SceneProps {
   worldState?: WorldState;
   // 用于客房等需要特定角色的场景
   targetCharacterId?: string;
+  settings: GameSettings;
 }

@@ -3,7 +3,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AdventurerTavern</title>
     <link rel="icon" href="https://h.hony-wen.com:5100/files/cat.svg" type="image/svg+xml">
     <link rel="mask-icon" href="https://h.hony-wen.com:5100/files/cat.svg" color="#f59e0b">
@@ -16,6 +16,7 @@
             background-color: #0f172a;
             color: #f8fafc;
             overflow: hidden;
+            overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
         }
         .vn-title {
             font-family: 'Playfair Display', serif;

@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction }) => {
+const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings }) => {
   if (!isMenuVisible) return null;
 
   // 假设随机出现一个角色
@@ -21,14 +21,20 @@ const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
 
       {randomChar && (
         <>
-            <SceneActionBtn label={`偷窥${randomChar.name}`} icon="fa-eye" onClick={() => onEnterDialogue(randomChar.id, 'peep')} variant="special" />
+            {settings.enableNSFW && (
+                <SceneActionBtn label={`偷窥${randomChar.name}`} icon="fa-eye" onClick={() => onEnterDialogue(randomChar.id, 'peep')} variant="special" />
+            )}
+            
             <SceneActionBtn 
                 label={`与${randomChar.name}对话`} 
                 icon="fa-comments" 
                 variant="primary"
                 onClick={() => onEnterDialogue(randomChar.id, 'bath_chat')} 
             />
-            <SceneActionBtn label="共浴" icon="fa-heart" onClick={() => onEnterDialogue(randomChar.id, 'bath_together')} disabled subLabel="(好感度不足)" />
+            
+            {settings.enableNSFW && (
+                <SceneActionBtn label="共浴" icon="fa-heart" onClick={() => onEnterDialogue(randomChar.id, 'bath_together')} disabled subLabel="(好感度不足)" />
+            )}
         </>
       )}
     </div>

@@ -400,7 +400,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   const initLLM = async (char: Character) => {
     const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
-    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName);
+    // Pass enableNSFW to generateSystemPrompt
+    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
     await llmService.initChat(char, fullPrompt, settings.apiConfig);
@@ -710,7 +711,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         onEnterDialogue: handleEnterDialogue,
         isMenuVisible: !isDialogueMode,
         worldState,
-        targetCharacterId: sceneParams.target 
+        targetCharacterId: sceneParams.target,
+        settings // Pass settings to all scenes
     };
 
     switch(currentSceneId) {
