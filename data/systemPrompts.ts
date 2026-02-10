@@ -54,6 +54,12 @@ const PROMPT_FORMATTING = `
 ## 隐藏AI思维内容
 - 对话内容只显示对话和行动正文，不显示系统类消息
 - 不显示AI的思考内容
+
+## 状态变更指令 (Clothing)
+- 如果剧情发展导致角色脱去衣服、变得赤裸，请在 JSON 响应中添加 'clothing': 'nude' 字段。
+- 如果角色穿回衣服，请添加 'clothing': 'default'。
+- 如果角色被束缚，请添加 'clothing': 'bondage'。
+- 仅当状态发生实际改变时才包含此字段。
 `;
 
 /**

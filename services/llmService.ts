@@ -4,6 +4,7 @@ import { Character, ApiConfig, LogEntry } from "../types";
 export interface AIResponse {
   text: string;
   emotion: string;
+  clothing?: string; // 新增：支持 AI 返回衣着状态变更建议
   usage?: {
       prompt_tokens: number;
       completion_tokens: number;
@@ -93,12 +94,13 @@ export class LlmService {
 
     try {
       // 2. 统一构建请求，不区分厂商，全部走 OpenAI 兼容协议
+      // 更新 System Prompt 后缀，明确 JSON 结构包含 clothing 字段
       const requestPayload: any = {
           model: this.config.model,
           messages: [
               { 
                   role: 'system', 
-                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text' and 'emotion'. Do not use Markdown code blocks." 
+                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion', and optionally 'clothing' (values: 'default'|'nude'|'bondage'). Do not use Markdown code blocks." 
               },
               ...this.history
           ],

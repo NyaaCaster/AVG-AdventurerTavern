@@ -7,15 +7,6 @@ export const char_105: Character = {
   name: "莲华",
   role: "拳术修行者 / A级冒险者",
   description: "自我肯定感极低的拳术修行者，虽然拥有A级冒险者的强大实力，但总认为自己很弱小。不善沟通，逃避与人接触，但一旦敞开心扉就会深度依赖。",
-  avatarUrl: "img/face/105.png",
-  spriteUrl: "img/char/char_105/105_1_1.png",
-  emotions: {
-    normal: "img/char/char_105/105_1_1.png",
-    happy: "img/char/char_105/105_1_2.png",
-    angry: "img/char/char_105/105_1_3.png",
-    sad: "img/char/char_105/105_1_5.png",
-    shy: "img/char/char_105/105_1_6.png"
-  },
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [

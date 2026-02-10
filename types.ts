@@ -62,6 +62,25 @@ export interface AppearanceCondition {
   minLevel: number;
 }
 
+// 新增：衣着状态定义
+export type ClothingState = 'default' | 'nude' | 'bondage' | string;
+
+// 新增：情绪图片配置结构
+export interface EmotionImageConfig {
+  spriteUrl: string; // 该状态下的默认立绘
+  emotions: Record<string, string[]>; // 情绪名 -> 图片路径列表
+}
+
+// 新增：角色图片总配置
+export interface CharacterImageConfig {
+  Character: string;
+  avatarUrl: string; // 头像路径 (集中管理)
+  default: EmotionImageConfig;
+  nude?: EmotionImageConfig;
+  bondage?: EmotionImageConfig;
+  [key: string]: any;
+}
+
 export interface Character {
   id: string; // 角色唯一标识 (如 char_101)
   name: string;
@@ -71,9 +90,10 @@ export interface Character {
   dialogueExamples: string; // 传给 LLM 的对话示例
   persona_nsfw?: string; // NSFW 模式追加人设
   dialogueExamples_nsfw?: string; // NSFW 模式追加对话
-  avatarUrl: string;
-  spriteUrl: string; // 默认立绘
-  emotions: Record<string, string>; // 情绪 -> 图片路径 映射
+  avatarUrl?: string; // 运行时注入，源文件可选
+  spriteUrl?: string; // 默认立绘 (已废弃，兼容旧逻辑)
+  emotions?: Record<string, string>; // 情绪映射 (已废弃，兼容旧逻辑)
+  // imageConfig 已移除，改用 centralized config management
   // 系统规则数据
   schedule?: CharacterSchedule;
   appearanceConditions?: AppearanceCondition[];
