@@ -3,8 +3,6 @@
 
 **AdventurerTavern** 是一款高保真的视觉小说（Visual Novel）风格的角色扮演游戏框架。它结合了现代 LLM（大语言模型）技术，为玩家提供沉浸式的、动态的异世界酒馆经营与恋爱模拟体验。
 
-![Title Screen](img/bg/_Title.png)
-
 ## 📖 游戏内容与玩法
 
 你将扮演传说中的退隐勇者，与姐姐**莉莉娅**共同经营位于边境的“夜莺亭”旅店。在这里，你将邂逅性格迥异的女性角色——从傲娇的皇女、社恐的拳师，到慵懒的前魔王。
@@ -125,6 +123,10 @@ Docker 部署默认映射端口为 `3098`。请访问：
 
 本项目采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 进行许可。
 
+**⚠️ 重要提示：AGPL-3.0 是一份强 Copyleft 许可证。**
+
+如果您修改了本项目的代码，并通过网络提供服务（例如部署在服务器上供他人访问），根据 AGPL-3.0 协议规定，您**必须**向所有用户公开您的完整源代码。
+
 ### 许可摘要
 
 #### ✅ Permissions (权限)
@@ -139,8 +141,8 @@ Docker 部署默认映射端口为 `3098`。请访问：
 *   **Warranty**: 不提供担保。
 
 #### ℹ️ Conditions (条件)
-*   **License and copyright notice**: 必须保留许可和版权声明。
-*   **State changes**: 修改后的文件必须声明变更。
-*   **Disclose source**: 分发软件（包括通过网络提供服务）时必须公开源代码。
+*   **Disclose source (强制开源)**: 分发软件或通过网络与用户交互时，必须公开源代码。
 *   **Network use is distribution**: 通过网络与用户交互也被视为分发，需遵守开源义务。
 *   **Same license**: 修改后的版本必须使用相同的许可证发布 (AGPL-3.0)。
+*   **License and copyright notice**: 必须保留许可和版权声明。
+*   **State changes**: 修改后的文件必须声明变更。
