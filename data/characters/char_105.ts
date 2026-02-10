@@ -12,9 +12,5 @@ export const char_105: Character = {
   appearanceConditions: [
     { sceneId: 'scen_4', minLevel: 2 },
     { sceneId: 'scen_2', minLevel: 2 }
-  ],
-  schedule: {
-    day: ['scen_4'],
-    night: ['scen_4', 'scen_7', 'scen_2']
-  }
+  ]
 };

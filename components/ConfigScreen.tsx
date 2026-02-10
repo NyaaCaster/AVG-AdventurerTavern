@@ -408,6 +408,19 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                   </div>
                 </div>
 
+                {/* Debug Mode Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-yellow-600/50">
+                  <div>
+                    <h4 className="text-lg font-medium text-slate-200">Debug 模式</h4>
+                    <p className="text-sm text-slate-400 mt-1">开启后显示开发者调试工具。</p>
+                  </div>
+                  <ToggleSwitch 
+                    checked={settings.enableDebug} 
+                    onChange={(checked) => onUpdateSettings({...settings, enableDebug: checked})} 
+                    color="bg-yellow-600"
+                  />
+                </div>
+
                 {/* NSFW 设置 */}
                 <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-red-900/50">
                   <div>

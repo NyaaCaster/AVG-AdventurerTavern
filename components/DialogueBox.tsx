@@ -12,7 +12,8 @@ interface DialogueBoxProps {
   onHideUI?: () => void;
   onShowHistory?: () => void;
   onShowDebugLog?: () => void; // 新增
-  onEndDialogue?: () => void;
+  onEndDialogue?: () => void; // 用于 Chat 模式：结束对话（触发告别）
+  onClose?: () => void;       // 用于 Ambient 模式：单纯关闭对话框
   level?: number;
   affinity?: number;
 }
@@ -28,6 +29,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   onShowHistory,
   onShowDebugLog,
   onEndDialogue,
+  onClose,
   level = 1,
   affinity = 0
 }) => {
@@ -211,8 +213,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             }
          `}</style>
 
-         {/* End Dialogue Button (Top Right) */}
-         {/* 调整位置：从 top-4 提高到 top-1，并添加阴影 text-shadow-halo */}
+         {/* Chat Mode: End Dialogue Button (Top Right) */}
          {onEndDialogue && (
              <button
                 onClick={onEndDialogue}
@@ -221,6 +222,17 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
              >
                  <span className="hidden md:inline text-xs font-bold tracking-widest">结束对话</span>
                  <i className="fa-solid fa-right-from-bracket text-lg group-hover:scale-110 transition-transform"></i>
+             </button>
+         )}
+
+         {/* Ambient Mode: Simple Close Button (Top Right) */}
+         {onClose && !onEndDialogue && (
+             <button
+                onClick={onClose}
+                className="absolute top-1 right-4 z-50 text-slate-400 hover:text-slate-600 transition-colors py-2 px-3 rounded-full hover:bg-slate-500/10 group flex items-center gap-2 text-shadow-halo"
+                title="关闭对话框"
+             >
+                 <i className="fa-solid fa-xmark text-lg group-hover:scale-110 transition-transform"></i>
              </button>
          )}
 

@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings }) => {
+const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters }) => {
   const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'rooms'>('main');
 
   if (!isMenuVisible) return null;
@@ -26,13 +26,16 @@ const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
           
           <div className="h-px w-32 bg-white/10 my-2"></div>
           
-          <SceneActionBtn 
-            label="与莉莉娅对话" 
-            icon="fa-comments" 
-            variant="primary"
-            onClick={() => onEnterDialogue('char_101', 'reception_chat')} 
-            subLabel="Talk to Lilia"
-          />
+          {presentCharacters.map(char => (
+              <SceneActionBtn 
+                key={char.id}
+                label={`与${char.name}对话`} 
+                icon="fa-comments" 
+                variant="primary"
+                onClick={() => onEnterDialogue(char.id, 'reception_chat')} 
+                subLabel={`Talk to ${char.name}`}
+              />
+          ))}
         </>
       )}
 

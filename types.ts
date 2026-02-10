@@ -34,6 +34,7 @@ export interface GameSettings {
   masterVolume: number; // 0-100
   isMuted: boolean;
   enableNSFW: boolean;
+  enableDebug: boolean; // 新增：Debug模式开关
 }
 
 // 新增：场景ID定义
@@ -142,4 +143,5 @@ export interface SceneProps {
   // 用于客房等需要特定角色的场景
   targetCharacterId?: string;
   settings: GameSettings;
+  presentCharacters: Character[]; // 新增：当前场景存在的角色列表
 }
