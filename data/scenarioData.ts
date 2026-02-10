@@ -2,6 +2,7 @@
 import { Character, CharacterImageConfig } from '../types';
 import { GLOBAL_AI_RULES } from './systemPrompts';
 import { CHARACTER_IMAGES } from './resources/characterImageResources';
+import { CHARACTER_SCHEDULES } from './schedules';
 
 // Import individual characters
 import { char_101 } from './characters/char_101';
@@ -42,7 +43,7 @@ export const USER_INFO_TEMPLATE = `
 - 由于容貌十分端正，在住宿的女性客人中评价很高。虽然因其性格带有受虐倾向属实，但实际上也兼具施虐的一面。
 `;
 
-// Helper to attach NSFW data and image resources
+// Helper to attach NSFW data, image resources, and schedules
 const enrich = (char: Character, prompts: any) => {
   // Attach Prompts
   if (prompts.PERSONA_NSFW) char.persona_nsfw = prompts.PERSONA_NSFW;
@@ -52,6 +53,11 @@ const enrich = (char: Character, prompts: any) => {
   // This ensures the rest of the app which expects character.avatarUrl continues to work
   if (CHARACTER_IMAGES[char.id] && CHARACTER_IMAGES[char.id].avatarUrl) {
       char.avatarUrl = CHARACTER_IMAGES[char.id].avatarUrl;
+  }
+
+  // Attach Schedule from centralized config
+  if (CHARACTER_SCHEDULES[char.id]) {
+      char.schedule = CHARACTER_SCHEDULES[char.id];
   }
   
   return char;

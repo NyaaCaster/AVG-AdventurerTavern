@@ -11,10 +11,5 @@ export const char_109: Character = {
   dialogueExamples: DIALOGUE,
   appearanceConditions: [
     { sceneId: 'scen_1', minLevel: 2 }
-  ],
-  schedule: {
-    day: ['scen_1', 'scen_3', 'scen_4'],
-    evening: ['scen_1', 'scen_3', 'scen_4'],
-    night: ['scen_2', 'scen_7']
-  }
+  ]
 };

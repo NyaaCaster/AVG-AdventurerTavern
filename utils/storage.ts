@@ -17,7 +17,8 @@ export const defaultSettings: GameSettings = {
   },
   masterVolume: 15,
   isMuted: false,
-  enableNSFW: false // 默认关闭 NSFW
+  enableNSFW: false, // 默认关闭 NSFW
+  enableDebug: false // 默认关闭 Debug
 };
 
 export const loadSettings = (): GameSettings => {
@@ -35,6 +36,9 @@ export const loadSettings = (): GameSettings => {
     // Explicitly ensure boolean type for safety (handles cases where storage might be corrupted or undefined)
     if (typeof parsed.enableNSFW !== 'boolean') {
         mergedSettings.enableNSFW = defaultSettings.enableNSFW;
+    }
+    if (typeof parsed.enableDebug !== 'boolean') {
+        mergedSettings.enableDebug = defaultSettings.enableDebug;
     }
     
     return mergedSettings;

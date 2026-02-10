@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
@@ -159,6 +159,110 @@ const getCharacterSprite = (character: Character, state: ClothingState, emotion:
     return config.spriteUrl || character.spriteUrl || '';
 };
 
+// --- Character Distribution Logic ---
+
+// Seeded random helper for deterministic distribution per hour
+const seededRandom = (seed: number) => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+};
+
+const shuffleArray = <T,>(array: T[], seed: number): T[] => {
+    const m = array.length;
+    const shuffled = [...array];
+    for (let i = 0; i < m; i++) {
+        const r = Math.floor(seededRandom(seed + i) * (m - i)) + i;
+        [shuffled[i], shuffled[r]] = [shuffled[r], shuffled[i]];
+    }
+    return shuffled;
+};
+
+// Calculate where each character is currently located
+// Rules:
+// 1. Single scene per character.
+// 2. Single char per scene (except Tavern/scen_3 and Room/scen_2).
+// 3. Tavern max 5 (excluding Mina).
+// 4. Default to Room (scen_2).
+const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: string, timeStr: string): Record<string, string> => {
+    const mapping: Record<string, string> = {};
+    const sceneOccupancy: Record<string, number> = {};
+    
+    // Seed based on date + hour to keep locations stable within the hour
+    const seedString = dateStr + timeStr.split(':')[0]; 
+    let seed = 0;
+    for(let i=0; i<seedString.length; i++) seed += seedString.charCodeAt(i);
+
+    // Get all chars
+    const allCharIds = Object.keys(CHARACTERS);
+    
+    // Shuffle to ensure fair distribution of scarce slots
+    const shuffledIds = shuffleArray(allCharIds, seed);
+
+    // Prioritize Mina (char_102) processing first to ensure she gets her specific spots easily
+    const sortedIds = [
+        'char_102', 
+        ...shuffledIds.filter(id => id !== 'char_102')
+    ];
+
+    sortedIds.forEach(charId => {
+        const char = CHARACTERS[charId];
+        const schedule = char.schedule;
+        const possibleScenes = schedule?.[period] || [];
+
+        // Fallback is always scen_2
+        let selectedScene = 'scen_2';
+
+        if (possibleScenes.length > 0) {
+            // Find valid scenes based on capacity rules
+            const validScenes = possibleScenes.filter(sid => {
+                // Rule: Default to room is always valid (capacity unlimited for separate rooms)
+                if (sid === 'scen_2') return true;
+                
+                if (sid === 'scen_3') {
+                    // Rule: Tavern max 5 characters other than Mina
+                    if (charId === 'char_102') return true; // Mina always fits
+                    return (sceneOccupancy['scen_3'] || 0) < 5;
+                }
+                
+                // Rule: Other scenes have max 1 character
+                return (sceneOccupancy[sid] || 0) === 0;
+            });
+
+            // Rule: Check Appearance Conditions (Levels)
+            const qualifiedScenes = validScenes.filter(sid => {
+                if (char.appearanceConditions) {
+                    for (const cond of char.appearanceConditions) {
+                        if (cond.sceneId === sid) {
+                            const sceneLevel = SCENE_LEVELS[sid] || 1;
+                            if (sceneLevel < cond.minLevel) return false;
+                        }
+                    }
+                }
+                return true;
+            });
+
+            if (qualifiedScenes.length > 0) {
+                // Pick one deterministically from valid options
+                const index = Math.floor(seededRandom(seed + charId.charCodeAt(0)) * qualifiedScenes.length);
+                selectedScene = qualifiedScenes[index];
+            }
+        }
+
+        mapping[charId] = selectedScene;
+        
+        // Update occupancy
+        // Only count towards capacity limits for non-Mina characters in Tavern
+        if (selectedScene === 'scen_3' && charId === 'char_102') {
+             // Mina doesn't consume the "guest" slots in tavern
+        } else {
+             sceneOccupancy[selectedScene] = (sceneOccupancy[selectedScene] || 0) + 1;
+        }
+    });
+
+    return mapping;
+};
+
+
 const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onLoadGame, settings }) => {
   // State
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
@@ -166,17 +270,37 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
   
+  // Dynamic Character Locations
+  const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
+  
+  // Derived state: present characters in CURRENT scene
+  // Use useMemo to prevent referential changes on every render which causes infinite useEffect loops
+  const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
+      // For Guest Rooms (scen_2), if params.target is set, we check that specific character
+      if (currentSceneId === 'scen_2') {
+          if (sceneParams?.target === 'user') return false; // User room has no NPC
+          if (sceneParams?.target) return char.id === sceneParams.target && characterLocations[char.id] === 'scen_2';
+          return false; // General hallway has no one usually? Or we list everyone in their rooms? Scen2 menu handles list.
+      }
+      return characterLocations[char.id] === currentSceneId;
+  }), [currentSceneId, sceneParams, characterLocations]);
+
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false); // 新增：是否处于对话结束确认阶段
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
   const [clothingState, setClothingState] = useState<ClothingState>('default'); // 新增：衣着状态
   
+  // Debug State
+  const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
+  const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
+
   // Ambient Mode State
   const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
   const [ambientText, setAmbientText] = useState<string>('');
   const [isAmbientLoading, setIsAmbientLoading] = useState(false);
   const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); // 是否处于睡眠状态
   const [isAmbientBathing, setIsAmbientBathing] = useState(false); // 是否处于沐浴状态 (温泉场景)
+  const [showAmbientDialogue, setShowAmbientDialogue] = useState(true); // 控制环境对话框的显示
 
   // Chat State
   const [inputText, setInputText] = useState('');
@@ -203,13 +327,34 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Time Loop
+  // Time Loop & Location Update
   useEffect(() => {
+    // 初始计算一次
+    const update = () => {
+        const newState = calculateWorldState(getSceneDisplayName(currentSceneId, sceneParams));
+        setWorldState(newState);
+        // Update character locations based on new time
+        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+        setCharacterLocations(locs);
+    };
+
+    update();
+
     const timer = setInterval(() => {
-        setWorldState(prev => calculateWorldState(prev.sceneName));
+        setWorldState(prev => {
+             const newState = calculateWorldState(prev.sceneName);
+             
+             // Only recalculate locations if time string changed (minutely) or significant change
+             if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
+                 const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+                 setCharacterLocations(locs);
+             }
+             
+             return newState;
+        });
     }, 1000 * 30);
     return () => clearInterval(timer);
-  }, []);
+  }, [currentSceneId, sceneParams]); // 依赖场景ID，切换场景时也会重新计算
 
   // Subscribe to LLM Logs
   useEffect(() => {
@@ -226,6 +371,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setAmbientText('');
     setIsAmbientSleeping(false);
     setIsAmbientBathing(false);
+    setShowAmbientDialogue(true);
     
     // 如果正在正式对话或转场中，不触发环境逻辑
     if (isDialogueMode || isSceneTransitioning) return;
@@ -233,22 +379,28 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const findCharacterForScene = () => {
         // Special logic for Guest Rooms (scen_2)
         if (currentSceneId === 'scen_2' && sceneParams?.target && sceneParams.target !== 'user') {
-            return CHARACTERS[sceneParams.target];
+            const target = CHARACTERS[sceneParams.target];
+            // Check if target is actually in the room based on dynamic location
+            if (characterLocations[target.id] === 'scen_2') {
+                return target;
+            }
+            return null;
         }
 
-        // Check schedules for other characters
-        const chars = Object.values(CHARACTERS);
-        const period = worldState.period; // day, evening, night
-        
-        // Find characters who are scheduled to be here
-        const presentChars = chars.filter(char => {
-            const schedule = char.schedule;
-            return schedule && schedule[period]?.includes(currentSceneId);
-        });
+        // For public scenes, pick a character from presentCharacters
+        if (presentCharacters.length > 0) {
+            // Tavern Rule (scen_3): Prioritize Mina if present
+            if (currentSceneId === 'scen_3') {
+                const mina = presentCharacters.find(c => c.id === 'char_102');
+                if (mina) return mina;
+            }
 
-        // Simple logic: pick the first one found. 
-        // Future: could implement randomness or priority if multiple chars present.
-        return presentChars.length > 0 ? presentChars[0] : null;
+            // Simple logic: pick random or first
+            const randomIndex = Math.floor(Math.random() * presentCharacters.length);
+            return presentCharacters[randomIndex];
+        }
+
+        return null;
     };
 
     const char = findCharacterForScene();
@@ -274,12 +426,17 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             const sprite = getCharacterSprite(char, ambientState, 'normal');
             setCurrentSprite(sprite);
             
-            // 生成环境台词 (包含温泉特殊逻辑)
-            generateAmbientLine(char, ambientState);
+            // Tavern Rule (scen_3): Only Mina speaks. If not Mina, suppress text.
+            if (currentSceneId === 'scen_3' && char.id !== 'char_102') {
+                setAmbientText('');
+            } else {
+                // 生成环境台词 (包含温泉特殊逻辑)
+                generateAmbientLine(char, ambientState);
+            }
         }
     }
 
-  }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams]);
+  }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams, presentCharacters]);
 
   const generateAmbientLine = async (char: Character, state: ClothingState) => {
       if (!settings.apiConfig.apiKey) {
@@ -476,7 +633,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         
         // Update World State Scene Name
         const newSceneName = getSceneDisplayName(sceneId, params);
-        setWorldState(prev => ({ ...prev, sceneName: newSceneName }));
+        // Force calculation of present characters for the new scene instantly (avoiding 1-frame lag)
+        const newState = calculateWorldState(newSceneName);
+        setWorldState(newState);
+        
+        // Recalculate locations on scene change just in case time jumped or to ensure consistency
+        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+        setCharacterLocations(locs);
 
         // Wait a short moment then Fade In
         setTimeout(() => {
@@ -786,6 +949,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
      }
   };
 
+  // Debug Handlers
+  const handleOpenDebug = () => {
+      setIsDebugMenuOpen(!isDebugMenuOpen);
+      setIsScheduleViewerOpen(false); // Reset viewer when toggling menu
+  };
+
   // --- Render Scene Component ---
   const renderScene = () => {
     const commonProps = {
@@ -795,7 +964,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         isMenuVisible: !isDialogueMode,
         worldState,
         targetCharacterId: sceneParams.target,
-        settings // Pass settings to all scenes
+        settings, // Pass settings to all scenes
+        presentCharacters // Pass dynamic presence data
     };
 
     switch(currentSceneId) {
@@ -884,7 +1054,72 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             onLoadGame={onLoadGame} 
             onOpenSettings={onOpenSettings} 
             onBackToMenu={onBackToMenu} 
+            onDebug={handleOpenDebug}
+            showDebug={settings.enableDebug}
           />
+
+          {/* Debug Menu Dropdown */}
+          {isDebugMenuOpen && (
+              <div className="absolute top-16 right-4 z-[60] flex flex-col gap-2 bg-black/80 backdrop-blur p-2 rounded border border-yellow-500/30 shadow-lg pointer-events-auto animate-fadeIn">
+                  <button 
+                    onClick={() => { setIsScheduleViewerOpen(true); setIsDebugMenuOpen(false); }}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-yellow-500 text-sm font-mono border border-slate-600 rounded transition-colors text-left flex items-center gap-2"
+                  >
+                      <i className="fa-solid fa-calendar-days"></i>
+                      Schedules
+                  </button>
+              </div>
+          )}
+
+          {/* Schedule Viewer Modal */}
+          {isScheduleViewerOpen && (
+              <div 
+                className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" 
+                onClick={() => setIsScheduleViewerOpen(false)}
+              >
+                  <div 
+                    className="bg-slate-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col shadow-2xl" 
+                    onClick={e => e.stopPropagation()}
+                  >
+                      <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/50 rounded-t-lg">
+                          <h3 className="text-lg font-bold text-yellow-500 flex items-center gap-2">
+                              <i className="fa-solid fa-clock"></i>
+                              Current Location Distribution ({worldState.periodLabel})
+                          </h3>
+                          <button onClick={() => setIsScheduleViewerOpen(false)} className="text-slate-400 hover:text-white">
+                              <i className="fa-solid fa-xmark"></i>
+                          </button>
+                      </div>
+                      
+                      <div className="p-4 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {Object.keys(SCENE_NAMES).map(key => {
+                              const sid = key as SceneId;
+                              // Filter dynamically calculated locations
+                              const chars = Object.values(CHARACTERS).filter(c => characterLocations[c.id] === sid);
+                              return (
+                                  <div key={sid} className="bg-slate-800/50 border border-slate-700 p-3 rounded">
+                                      <div className="font-bold text-slate-300 text-sm mb-1 flex justify-between">
+                                          <span>{SCENE_NAMES[sid]}</span>
+                                          <span className="text-slate-600 font-mono text-xs">{sid}</span>
+                                      </div>
+                                      <div className="min-h-[20px] flex flex-wrap gap-1">
+                                          {chars.length > 0 ? (
+                                              chars.map(c => (
+                                                  <span key={c.id} className="px-1.5 py-0.5 bg-indigo-900/50 text-indigo-200 text-xs rounded border border-indigo-500/20">
+                                                      {c.name}
+                                                  </span>
+                                              ))
+                                          ) : (
+                                              <span className="text-slate-600 text-xs italic">Empty</span>
+                                          )}
+                                      </div>
+                                  </div>
+                              )
+                          })}
+                      </div>
+                  </div>
+              </div>
+          )}
 
           {/* Render Current Scene Menu Actions */}
           {/* Note: renderScene returns components with pointer-events-auto internally where needed */}
@@ -894,7 +1129,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
           {/* --- Ambient Dialogue Box (Bottom) --- */}
           {/* Renders when in ambient mode (character present, not in active chat) */}
-          {!isDialogueMode && ambientCharacter && ambientText && (
+          {!isDialogueMode && ambientCharacter && ambientText && showAmbientDialogue && (
               <div className="absolute bottom-4 w-full flex flex-col items-center pointer-events-auto z-40 animate-fadeIn">
                   <div className="relative w-full px-0 md:px-4 mb-2">
                       <DialogueBox 
@@ -907,7 +1142,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                           onHideUI={() => setIsUIHidden(true)}
                           onShowHistory={undefined}
                           onShowDebugLog={undefined}
-                          onEndDialogue={undefined} 
+                          onClose={() => setShowAmbientDialogue(false)} 
                           level={ambientStats.level}
                           affinity={ambientStats.affinity}
                       />
