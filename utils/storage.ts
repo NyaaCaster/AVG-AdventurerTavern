@@ -17,7 +17,7 @@ export const defaultSettings: GameSettings = {
   },
   masterVolume: 15,
   isMuted: false,
-  enableNSFW: false
+  enableNSFW: false // 默认关闭 NSFW
 };
 
 export const loadSettings = (): GameSettings => {
@@ -25,10 +25,18 @@ export const loadSettings = (): GameSettings => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultSettings;
     const parsed = JSON.parse(stored);
+    
     // Ensure all fields are present by merging with defaultSettings
     const mergedSettings = { ...defaultSettings, ...parsed };
-    // Deep merge apiConfig
+    
+    // Deep merge apiConfig to prevent missing fields there as well
     mergedSettings.apiConfig = { ...defaultSettings.apiConfig, ...parsed.apiConfig };
+    
+    // Explicitly ensure boolean type for safety (handles cases where storage might be corrupted or undefined)
+    if (typeof parsed.enableNSFW !== 'boolean') {
+        mergedSettings.enableNSFW = defaultSettings.enableNSFW;
+    }
+    
     return mergedSettings;
   } catch (e) {
     console.error("Failed to load settings", e);

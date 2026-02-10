@@ -7,15 +7,6 @@ export const char_109: Character = {
   name: "莱拉",
   role: "猫族狂战士 / E级冒险者",
   description: "流浪的猫族部落战士，性格像小猫一样呆萌坦率。被主角捡回旅店，把主角和莉莉娅视为家人。战斗中会化身狂战士，平时则是个缺乏常识的吃货。",
-  avatarUrl: "img/face/109.png",
-  spriteUrl: "img/char/char_109/109_1_1.png",
-  emotions: {
-    normal: "img/char/char_109/109_1_1.png",
-    happy: "img/char/char_109/109_1_2.png",
-    angry: "img/char/char_109/109_1_3.png",
-    sad: "img/char/char_109/109_1_5.png",
-    shy: "img/char/char_109/109_1_6.png"
-  },
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [

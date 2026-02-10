@@ -7,15 +7,6 @@ export const char_107: Character = {
   name: "菲洛",
   role: "精灵族学者 / 魔法师",
   description: "820岁的精灵族学者，外表年轻。对魔法与炼金术充满热情，好奇心旺盛。一眼看穿了主角的权能，目前对主角抱有强烈的研究兴趣。",
-  avatarUrl: "img/face/107.png",
-  spriteUrl: "img/char/char_107/107_1_1.png",
-  emotions: {
-    normal: "img/char/char_107/107_1_1.png",
-    happy: "img/char/char_107/107_1_2.png",
-    angry: "img/char/char_107/107_1_3.png",
-    sad: "img/char/char_107/107_1_5.png",
-    shy: "img/char/char_107/107_1_6.png"
-  },
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [

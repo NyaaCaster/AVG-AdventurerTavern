@@ -1,6 +1,7 @@
 
-import { Character } from '../types';
+import { Character, CharacterImageConfig } from '../types';
 import { GLOBAL_AI_RULES } from './systemPrompts';
+import { CHARACTER_IMAGES } from './resources/characterImageResources';
 
 // Import individual characters
 import { char_101 } from './characters/char_101';
@@ -41,10 +42,18 @@ export const USER_INFO_TEMPLATE = `
 - 由于容貌十分端正，在住宿的女性客人中评价很高。虽然因其性格带有受虐倾向属实，但实际上也兼具施虐的一面。
 `;
 
-// Helper to attach NSFW data
+// Helper to attach NSFW data and image resources
 const enrich = (char: Character, prompts: any) => {
+  // Attach Prompts
   if (prompts.PERSONA_NSFW) char.persona_nsfw = prompts.PERSONA_NSFW;
   if (prompts.DIALOGUE_NSFW) char.dialogueExamples_nsfw = prompts.DIALOGUE_NSFW;
+  
+  // Attach Image Resources (avatarUrl)
+  // This ensures the rest of the app which expects character.avatarUrl continues to work
+  if (CHARACTER_IMAGES[char.id] && CHARACTER_IMAGES[char.id].avatarUrl) {
+      char.avatarUrl = CHARACTER_IMAGES[char.id].avatarUrl;
+  }
+  
   return char;
 };
 

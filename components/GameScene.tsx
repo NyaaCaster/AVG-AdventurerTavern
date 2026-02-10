@@ -10,7 +10,9 @@ import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
-import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry } from '../types';
+import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState } from '../types';
+import { SCENE_BGM } from '../data/resources/audioResources';
+import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 
 // Import Scenes
 import Scen1 from './scenes/scen_1';
@@ -44,19 +46,6 @@ const SCENE_NAMES: Record<SceneId, string> = {
   'scen_8': '按摩室',
   'scen_9': '库房',
   'scen_10': '道具店'
-};
-
-const SCENE_BGM: Record<SceneId, string> = {
-  'scen_1': 'audio/bgm/bgm_scen_1.ogg',
-  'scen_2': 'audio/bgm/bgm_scen_2.ogg',
-  'scen_3': 'audio/bgm/bgm_scen_3.ogg',
-  'scen_4': 'audio/bgm/bgm_scen_4.ogg',
-  'scen_5': 'audio/bgm/bgm_scen_5.ogg',
-  'scen_6': 'audio/bgm/bgm_scen_6.ogg',
-  'scen_7': 'audio/bgm/bgm_scen_7.ogg',
-  'scen_8': 'audio/bgm/bgm_scen_8.ogg',
-  'scen_9': 'audio/bgm/bgm_scen_9.ogg',
-  'scen_10': 'audio/bgm/bgm_scen_10.ogg'
 };
 
 // 模拟场景等级数据 (未来可移至全局状态管理)
@@ -131,6 +120,45 @@ const getSceneDisplayName = (sceneId: SceneId, params?: any): string => {
     return SCENE_NAMES[sceneId] || '未知区域';
 };
 
+// 辅助函数：根据状态和情绪获取随机立绘
+const getCharacterSprite = (character: Character, state: ClothingState, emotion: string): string => {
+    // 获取全局配置中的角色图片配置
+    const imageConfig = CHARACTER_IMAGES[character.id];
+    
+    if (!imageConfig) {
+        // 回退到旧逻辑 (兼容 Character 接口中的旧字段)
+        return character.emotions?.[emotion] || character.spriteUrl || '';
+    }
+
+    // 获取对应衣着状态配置，若不存在则回退到 default
+    const config = imageConfig[state] || imageConfig['default'];
+    
+    if (!config) return character.spriteUrl || '';
+
+    // 获取情绪对应的图片列表
+    // 如果该状态下没有该情绪，回退到 normal (或者列表的第一个key，这里简化为normal)
+    let imgList = config.emotions[emotion];
+    
+    // 兼容逻辑：如果新状态下没有 'normal'，尝试回退到 default 状态的同名情绪
+    if (!imgList) {
+        if (state !== 'default' && imageConfig['default']) {
+             imgList = imageConfig['default'].emotions[emotion];
+        }
+        // 如果还找不到，尝试当前状态的 'normal'
+        if (!imgList) {
+            imgList = config.emotions['normal'];
+        }
+    }
+
+    if (imgList && imgList.length > 0) {
+        // 随机选择一张
+        const randIndex = Math.floor(Math.random() * imgList.length);
+        return imgList[randIndex];
+    }
+
+    return config.spriteUrl || character.spriteUrl || '';
+};
+
 const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onLoadGame, settings }) => {
   // State
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
@@ -141,12 +169,14 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false); // 新增：是否处于对话结束确认阶段
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
+  const [clothingState, setClothingState] = useState<ClothingState>('default'); // 新增：衣着状态
   
   // Ambient Mode State
   const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
   const [ambientText, setAmbientText] = useState<string>('');
   const [isAmbientLoading, setIsAmbientLoading] = useState(false);
   const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); // 是否处于睡眠状态
+  const [isAmbientBathing, setIsAmbientBathing] = useState(false); // 是否处于沐浴状态 (温泉场景)
 
   // Chat State
   const [inputText, setInputText] = useState('');
@@ -195,6 +225,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setAmbientCharacter(null);
     setAmbientText('');
     setIsAmbientSleeping(false);
+    setIsAmbientBathing(false);
     
     // 如果正在正式对话或转场中，不触发环境逻辑
     if (isDialogueMode || isSceneTransitioning) return;
@@ -227,22 +258,30 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         
         // 睡眠状态判定：客房 + 夜晚
         const isSleeping = currentSceneId === 'scen_2' && worldState.period === 'night';
+        // 沐浴状态判定：温泉
+        const isBathing = currentSceneId === 'scen_7';
+
         setIsAmbientSleeping(isSleeping);
+        setIsAmbientBathing(isBathing);
 
         if (isSleeping) {
             setAmbientText("zzz……ZZZ……");
             setCurrentSprite(''); // 隐藏立绘
         } else {
             // 设置立绘
-            setCurrentSprite(char.spriteUrl);
-            // 生成环境台词
-            generateAmbientLine(char);
+            // 环境模式下，温泉使用 nude 状态，其他默认
+            const ambientState = isBathing ? 'nude' : 'default';
+            const sprite = getCharacterSprite(char, ambientState, 'normal');
+            setCurrentSprite(sprite);
+            
+            // 生成环境台词 (包含温泉特殊逻辑)
+            generateAmbientLine(char, ambientState);
         }
     }
 
   }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams]);
 
-  const generateAmbientLine = async (char: Character) => {
+  const generateAmbientLine = async (char: Character, state: ClothingState) => {
       if (!settings.apiConfig.apiKey) {
           setAmbientText("......");
           return;
@@ -281,8 +320,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           setAmbientText(text);
           
           // 如果生成了表情，更新立绘
-          if (response.emotion && char.emotions && char.emotions[response.emotion]) {
-              setCurrentSprite(char.emotions[response.emotion]);
+          if (response.emotion) {
+              const sprite = getCharacterSprite(char, state, response.emotion);
+              setCurrentSprite(sprite);
           }
 
       } catch (e) {
@@ -426,11 +466,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         setIsDialogueEnding(false);
         setErrorMessage(null);
         setActiveCharacter(null); // Clear character on nav
+        setClothingState('default'); // Reset clothing
         
         // Clear ambient state on manual navigation (will rely on effect to repopulate)
         setAmbientCharacter(null);
         setAmbientText('');
         setIsAmbientSleeping(false);
+        setIsAmbientBathing(false);
         
         // Update World State Scene Name
         const newSceneName = getSceneDisplayName(sceneId, params);
@@ -460,8 +502,21 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const char = CHARACTERS[characterId];
     if (!char) return;
 
+    // 判定衣着状态
+    let nextClothingState: ClothingState = 'default';
+    if (
+        (actionType === 'peep' || actionType === 'bath_together') || // scen_7
+        (actionType === 'massage_give' || actionType === 'massage_receive') // scen_8
+    ) {
+        nextClothingState = 'nude';
+    }
+    
+    setClothingState(nextClothingState);
     setActiveCharacter(char);
-    setCurrentSprite(char.spriteUrl);
+    
+    // 初始立绘
+    const sprite = getCharacterSprite(char, nextClothingState, 'normal');
+    setCurrentSprite(sprite);
     
     // 重置对话内容，防止显示上一次对话或默认文本
     setCurrentDialogue({ speaker: char.name, text: "..." });
@@ -484,6 +539,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 玩家(${settings.userName})在【${worldState.periodLabel}】的【${worldState.sceneName}】找到了你。
 玩家当前的行动意图是:【${actionType}】。
 当前你对玩家的好感度为: ${stats.affinity} (0-100)。
+你的衣着状态是: ${nextClothingState === 'nude' ? '裸体/未穿衣' : '日常装束'}。
 请根据你的性格、当前时间、地点、好感度以及玩家的行为，生成一句符合情境的开场白或反应。
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;
@@ -503,8 +559,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                 tokens: response.usage?.completion_tokens // 记录开场白消耗 (回复 Token)
             }]);
 
-            if (response.emotion && char.emotions && char.emotions[response.emotion]) {
-                setCurrentSprite(char.emotions[response.emotion]);
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(char, nextClothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
             }
             
             setIsTyping(true);
@@ -545,8 +602,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
             tokensUsed = response.usage?.completion_tokens || 0;
             
-            if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
-                setCurrentSprite(activeCharacter.emotions[response.emotion]);
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
             }
         } else {
              displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 下次见。`;
@@ -581,6 +639,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
       setActiveCharacter(null);
+      setClothingState('default');
       // Exit calls ambient effect to re-evaluate, handled by useEffect dependency on isDialogueMode
   };
 
@@ -598,7 +657,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
 
     try {
-      const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n`;
+      const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;
       const enrichedMessage = `${contextBlock}\n用户发言: "${userMessage}"`;
       
       const response = await llmService.sendMessage(enrichedMessage);
@@ -606,6 +665,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       
       setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
       
+      // NSFW Mode: Check for clothing state changes from AI
+      if (settings.enableNSFW && response.clothing) {
+          // Normalize and check valid states
+          const newClothing = response.clothing.toLowerCase();
+          if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
+              setClothingState(newClothing as ClothingState);
+          }
+      }
+
       setHistory(prev => {
         const newHistory = [...prev];
         
@@ -633,10 +701,19 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         return newHistory;
       });
 
-      if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
-        setCurrentSprite(activeCharacter.emotions[response.emotion]);
+      // Update sprite based on potentially new clothing state and emotion
+      // Note: We use the *new* clothing state if it changed above, but React state update is async.
+      // So we calculate the effective state for this render cycle.
+      const effectiveClothingState = (settings.enableNSFW && response.clothing && ['default', 'nude', 'bondage'].includes(response.clothing)) 
+                                     ? response.clothing 
+                                     : clothingState;
+
+      if (response.emotion) {
+        const sprite = getCharacterSprite(activeCharacter, effectiveClothingState, response.emotion);
+        setCurrentSprite(sprite);
       } else {
-        setCurrentSprite(activeCharacter.spriteUrl);
+        const sprite = getCharacterSprite(activeCharacter, effectiveClothingState, 'normal');
+        setCurrentSprite(sprite);
       }
       setIsTyping(true);
     } catch (error) {
@@ -656,17 +733,18 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
             setIsTyping(true);
             
+            // NSFW Mode: Check for clothing state changes from AI on regenerate
+            if (settings.enableNSFW && response.clothing) {
+                const newClothing = response.clothing.toLowerCase();
+                if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
+                    setClothingState(newClothing as ClothingState);
+                }
+            }
+
             // 更新历史记录中的最后一条 AI 回复
             setHistory(prev => {
                 const newHistory = [...prev];
                 // 移除旧的 AI 回复 (如果存在)
-                // 注意：llmService.redoLastMessage 已经在内部移除了历史，但前端 UI state 需要同步
-                // 在简单的实现中，我们假设最后一条是 AI 的旧回复，我们替换它或者添加新的
-                // 为了简化，我们直接追加新的回复，实际逻辑可能需要更严谨地清理旧 UI 节点
-                
-                // 但由于 redoLastMessage 的逻辑是基于后端历史栈的，
-                // 前端显示可能已经有了一条 AI 消息。
-                // 我们可以选择删除最后一条 NPC 消息然后添加新的。
                 if (newHistory.length > 0 && newHistory[newHistory.length - 1].type === 'npc') {
                      newHistory.pop();
                 }
@@ -692,8 +770,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                 return newHistory;
             });
 
-             if (response.emotion && activeCharacter.emotions && activeCharacter.emotions[response.emotion]) {
-                setCurrentSprite(activeCharacter.emotions[response.emotion]);
+             const effectiveClothingState = (settings.enableNSFW && response.clothing && ['default', 'nude', 'bondage'].includes(response.clothing)) 
+                                     ? response.clothing 
+                                     : clothingState;
+
+             if (response.emotion) {
+                const sprite = getCharacterSprite(activeCharacter, effectiveClothingState, response.emotion);
+                setCurrentSprite(sprite);
             }
          }
      } catch (e) {
@@ -771,7 +854,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
       {/* 2. Ambient Sprite (Left Side) - Only if NOT in dialogue mode and awake */}
       {/* Moved from 25% to 30% as requested */}
-      <div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!isDialogueMode && ambientCharacter && !isAmbientSleeping) ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!isDialogueMode && ambientCharacter && !isAmbientSleeping && !isAmbientBathing) ? 'opacity-100' : 'opacity-0'}`}>
          {ambientCharacter && !isAmbientSleeping && currentSprite && (
             <div className="relative h-[95%] w-full">
                 <img 

@@ -1,0 +1,58 @@
+{
+  "Character": "char_109",
+  "avatarUrl": "img/face/109.png",
+  "default": {
+    "spriteUrl": "img/char/char_109/1_1/1_1_00.png",
+    "emotions": {
+      "normal": [
+        "img/char/char_109/1_1/1_1_00.png"
+      ],
+      "happy": [
+        "img/char/char_109/1_2/1_2_00.png"
+      ],
+      "angry": [
+        "img/char/char_109/1_3/1_3_00.png"
+      ],
+      "sad": [
+        "img/char/char_109/1_4/1_4_00.png"
+      ],
+      "shy": [
+        "img/char/char_109/1_5/1_5_00.png"
+      ]
+    }
+  },
+  "nude": {
+    "spriteUrl": "img/char/char_109/2_1/2_1_00.png",
+    "emotions": {
+      "normal": [
+        "img/char/char_109/2_1/2_1_00.png"
+      ],
+      "happy": [
+        "img/char/char_109/2_2/2_2_00.png"
+      ],
+      "angry": [
+        "img/char/char_109/2_3/2_3_00.png"
+      ],
+      "sad": [
+        "img/char/char_109/2_4/2_4_00.png"
+      ],
+      "shy": [
+        "img/char/char_109/2_5/2_5_00.png"
+      ]
+    }
+  },
+  "bondage": {
+    "spriteUrl": "img/char/char_109/3_1/3_1_00.png",
+    "emotions": {
+      "fear": [
+        "img/char/char_109/3_1/3_1_00.png"
+      ],
+      "compliance": [
+        "img/char/char_109/3_2/3_2_00.png"
+      ],
+      "pain": [
+        "img/char/char_109/3_3/3_3_00.png"
+      ]
+    }
+  }
+}
