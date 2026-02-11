@@ -9,6 +9,8 @@ import DebugLogModal from './DebugLogModal';
 import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
+import InventoryModal from './InventoryModal';
+import ItemToast from './ItemToast'; // 新增导入
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState } from '../types';
 import { SCENE_BGM } from '../data/resources/audioResources';
@@ -75,6 +77,20 @@ const CHARACTER_STATS: Record<string, { level: number; affinity: number }> = {
   'char_109': { level: 8, affinity: 90 }, // Laila
   'char_110': { level: 15, affinity: 50 }, // Ryuka
   'char_111': { level: 10, affinity: 40 }, // Gina
+};
+
+// 模拟初始库存数据
+const INITIAL_INVENTORY: Record<string, number> = {
+    'res-0001': 15, // 灵木
+    'res-0003': 2,  // 魔晶石
+    'res-0101': 5,  // 狂暴兔肉
+    'res-0701': 20, // 啤酒
+    'itm-01': 5,    // 治疗药小
+    'itm-07': 1,    // 精灵粉尘
+    'wpn-102': 1,   // 铁剑
+    'arm-201': 1,   // 皮甲
+    'spc-00': 1,    // 莫比乌斯
+    'spc-05': 2,    // 棉绳
 };
 
 const calculateWorldState = (currentSceneName: string): WorldState => {
@@ -178,11 +194,6 @@ const shuffleArray = <T,>(array: T[], seed: number): T[] => {
 };
 
 // Calculate where each character is currently located
-// Rules:
-// 1. Single scene per character.
-// 2. Single char per scene (except Tavern/scen_3 and Room/scen_2).
-// 3. Tavern max 5 (excluding Mina).
-// 4. Default to Room (scen_2).
 const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: string, timeStr: string): Record<string, string> => {
     const mapping: Record<string, string> = {};
     const sceneOccupancy: Record<string, number> = {};
@@ -273,8 +284,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   // Dynamic Character Locations
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
   
+  // Inventory State
+  const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
+  // Item Toast Notifications Queue
+  const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
+
   // Derived state: present characters in CURRENT scene
-  // Use useMemo to prevent referential changes on every render which causes infinite useEffect loops
   const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
       // For Guest Rooms (scen_2), if params.target is set, we check that specific character
       if (currentSceneId === 'scen_2') {
@@ -806,6 +821,31 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       // Exit calls ambient effect to re-evaluate, handled by useEffect dependency on isDialogueMode
   };
 
+  // 处理道具获得
+  const handleItemsGained = (items: { id: string; count: number }[]) => {
+      if (!items || items.length === 0) return;
+
+      const newNotifications: typeof itemNotifications = [];
+      const newInventory = { ...inventory };
+
+      items.forEach(item => {
+          if (item.id && item.count > 0) {
+              // Update Inventory
+              newInventory[item.id] = (newInventory[item.id] || 0) + item.count;
+              
+              // Add Notification
+              newNotifications.push({
+                  id: Date.now() + Math.random().toString(),
+                  itemId: item.id,
+                  count: item.count
+              });
+          }
+      });
+
+      setInventory(newInventory);
+      setItemNotifications(prev => [...prev, ...newNotifications]);
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || isLoading || !activeCharacter) return;
     if (connectionStatus === 'disconnected') {
@@ -828,6 +868,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       
       setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
       
+      // Handle Item Gain
+      if (response.items && response.items.length > 0) {
+          handleItemsGained(response.items);
+      }
+
       // NSFW Mode: Check for clothing state changes from AI
       if (settings.enableNSFW && response.clothing) {
           // Normalize and check valid states
@@ -896,6 +941,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
             setIsTyping(true);
             
+            // Handle Item Gain on Regenerate
+            if (response.items && response.items.length > 0) {
+                handleItemsGained(response.items);
+            }
+
             // NSFW Mode: Check for clothing state changes from AI on regenerate
             if (settings.enableNSFW && response.clothing) {
                 const newClothing = response.clothing.toLowerCase();
@@ -965,7 +1015,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         worldState,
         targetCharacterId: sceneParams.target,
         settings, // Pass settings to all scenes
-        presentCharacters // Pass dynamic presence data
+        presentCharacters, // Pass dynamic presence data
+        inventory // Pass inventory data
     };
 
     switch(currentSceneId) {
@@ -1040,6 +1091,18 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
           
           <GameEnvironmentWidget worldState={worldState} />
+
+          {/* Item Notification Area */}
+          <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
+              {itemNotifications.map(notification => (
+                  <ItemToast 
+                      key={notification.id}
+                      itemId={notification.itemId}
+                      count={notification.count}
+                      onComplete={() => setItemNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
+              ))}
+          </div>
 
           {errorMessage && (
             <div 
@@ -1179,7 +1242,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       
       {/* 新增：调试日志模态框 */}
       <DebugLogModal isOpen={showDebugLog} onClose={() => setShowDebugLog(false)} logs={debugLogs} />
-    </div>
+    </>
   );
 };
 

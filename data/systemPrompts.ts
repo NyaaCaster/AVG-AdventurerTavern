@@ -55,11 +55,21 @@ const PROMPT_FORMATTING = `
 - 对话内容只显示对话和行动正文，不显示系统类消息
 - 不显示AI的思考内容
 
+## JSON 输出指令
+请严格以 JSON 格式输出，包含以下字段：
+- text: 对话正文
+- emotion: 表情代码 (如 normal, happy, angry 等)
+- clothing: (可选) 衣着状态变更 (default/nude/bondage)
+- gain_items: (可选) 获得的道具列表，格式为 [{id: 'item-id', count: 1}]
+
 ## 状态变更指令 (Clothing)
-- 如果剧情发展导致角色脱去衣服、变得赤裸，请在 JSON 响应中添加 'clothing': 'nude' 字段。
-- 如果角色穿回衣服，请添加 'clothing': 'default'。
-- 如果角色被束缚，请添加 'clothing': 'bondage'。
+- 如果剧情发展导致角色脱去衣服、变得赤裸，请在 JSON 响应的 'clothing' 字段返回 'nude'。
+- 如果角色穿回衣服，请返回 'default'。
 - 仅当状态发生实际改变时才包含此字段。
+
+## 道具获取指令 (Items)
+- 如果剧情逻辑判断玩家应该获得某个道具（如角色赠送礼物、探索发现等）：
+  - 必须在 JSON 的 'gain_items' 字段中返回。
 `;
 
 /**
