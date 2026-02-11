@@ -164,29 +164,136 @@ export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
     "default": {
       "spriteUrl": "img/char/char_102/1_1/1_1_00.png",
       "emotions": {
-        "normal": ["img/char/char_102/1_1/1_1_00.png", "img/char/char_102/1_1/1_1_01.png"],
-        "happy": ["img/char/char_102/1_2/1_2_00.png", "img/char/char_102/1_2/1_2_01.png"],
-        "angry": ["img/char/char_102/1_3/1_3_00.png", "img/char/char_102/1_3/1_3_01.png"],
-        "sad": ["img/char/char_102/1_4/1_4_00.png", "img/char/char_102/1_4/1_4_01.png"],
-        "shy": ["img/char/char_102/1_5/1_5_00.png", "img/char/char_102/1_5/1_5_01.png"]
+        "normal": [
+          "img/char/char_102/1_1/1_1_00.png",
+          "img/char/char_102/1_1/1_1_01.png",
+          "img/char/char_102/1_1/1_1_02.png",
+          "img/char/char_102/1_1/1_1_03.png",
+          "img/char/char_102/1_1/1_1_04.png",
+          "img/char/char_102/1_1/1_1_05.png",
+          "img/char/char_102/1_1/1_1_06.png",
+          "img/char/char_102/1_1/1_1_07.png",
+          "img/char/char_102/1_1/1_1_08.png",
+          "img/char/char_102/1_1/1_1_09.png"
+        ],
+        "happy": [
+          "img/char/char_102/1_2/1_2_00.png",
+          "img/char/char_102/1_2/1_2_01.png",
+          "img/char/char_102/1_2/1_2_02.png",
+          "img/char/char_102/1_2/1_2_03.png",
+          "img/char/char_102/1_2/1_2_04.png",
+          "img/char/char_102/1_2/1_2_05.png",
+          "img/char/char_102/1_2/1_2_06.png",
+          "img/char/char_102/1_2/1_2_07.png",
+          "img/char/char_102/1_2/1_2_08.png",
+          "img/char/char_102/1_2/1_2_09.png"
+        ],
+        "angry": [
+          "img/char/char_102/1_3/1_3_00.png",
+          "img/char/char_102/1_3/1_3_01.png",
+          "img/char/char_102/1_3/1_3_02.png",
+          "img/char/char_102/1_3/1_3_03.png",
+          "img/char/char_102/1_3/1_3_04.png",
+          "img/char/char_102/1_3/1_3_05.png",
+          "img/char/char_102/1_3/1_3_06.png",
+          "img/char/char_102/1_3/1_3_07.png",
+          "img/char/char_102/1_3/1_3_08.png",
+          "img/char/char_102/1_3/1_3_09.png"
+        ],
+        "sad": [
+          "img/char/char_102/1_4/1_4_00.png",
+          "img/char/char_102/1_4/1_4_01.png",
+          "img/char/char_102/1_4/1_4_02.png",
+          "img/char/char_102/1_4/1_4_03.png",
+          "img/char/char_102/1_4/1_4_04.png",
+          "img/char/char_102/1_4/1_4_05.png",
+          "img/char/char_102/1_4/1_4_06.png",
+          "img/char/char_102/1_4/1_4_07.png",
+          "img/char/char_102/1_4/1_4_08.png",
+          "img/char/char_102/1_4/1_4_09.png"
+        ],
+        "shy": [
+          "img/char/char_102/1_5/1_5_00.png",
+          "img/char/char_102/1_5/1_5_01.png",
+          "img/char/char_102/1_5/1_5_02.png",
+          "img/char/char_102/1_5/1_5_03.png",
+          "img/char/char_102/1_5/1_5_04.png",
+          "img/char/char_102/1_5/1_5_05.png",
+          "img/char/char_102/1_5/1_5_06.png",
+          "img/char/char_102/1_5/1_5_07.png",
+          "img/char/char_102/1_5/1_5_08.png",
+          "img/char/char_102/1_5/1_5_09.png"
+        ]
       }
     },
     "nude": {
       "spriteUrl": "img/char/char_102/2_1/2_1_00.png",
       "emotions": {
-        "normal": ["img/char/char_102/2_1/2_1_00.png"],
-        "happy": ["img/char/char_102/2_2/2_2_00.png"],
-        "angry": ["img/char/char_102/2_3/2_3_00.png"],
-        "sad": ["img/char/char_102/2_4/2_4_00.png"],
-        "shy": ["img/char/char_102/2_5/2_5_00.png"]
+        "normal": [
+          "img/char/char_102/2_1/2_1_00.png",
+          "img/char/char_102/2_1/2_1_01.png",
+          "img/char/char_102/2_1/2_1_02.png",
+          "img/char/char_102/2_1/2_1_03.png",
+          "img/char/char_102/2_1/2_1_04.png"
+        ],
+        "happy": [
+          "img/char/char_102/2_2/2_2_00.png",
+          "img/char/char_102/2_2/2_2_01.png",
+          "img/char/char_102/2_2/2_2_02.png",
+          "img/char/char_102/2_2/2_2_03.png",
+          "img/char/char_102/2_2/2_2_04.png"
+        ],
+        "angry": [
+          "img/char/char_102/2_3/2_3_00.png",
+          "img/char/char_102/2_3/2_3_01.png",
+          "img/char/char_102/2_3/2_3_02.png",
+          "img/char/char_102/2_3/2_3_03.png",
+          "img/char/char_102/2_3/2_3_04.png",
+          "img/char/char_102/2_3/2_3_05.png"
+        ],
+        "sad": [
+          "img/char/char_102/2_4/2_4_00.png",
+          "img/char/char_102/2_4/2_4_01.png",
+          "img/char/char_102/2_4/2_4_02.png",
+          "img/char/char_102/2_4/2_4_03.png",
+          "img/char/char_102/2_4/2_4_04.png",
+          "img/char/char_102/2_4/2_4_05.png"
+        ],
+        "shy": [
+          "img/char/char_102/2_5/2_5_00.png",
+          "img/char/char_102/2_5/2_5_01.png",
+          "img/char/char_102/2_5/2_5_02.png",
+          "img/char/char_102/2_5/2_5_03.png",
+          "img/char/char_102/2_5/2_5_04.png"
+        ]
       }
     },
     "bondage": {
       "spriteUrl": "img/char/char_102/3_1/3_1_00.png",
       "emotions": {
-        "fear": ["img/char/char_102/3_1/3_1_00.png"],
-        "compliance": ["img/char/char_102/3_2/3_2_00.png"],
-        "pain": ["img/char/char_102/3_3/3_3_00.png"]
+        "fear": [
+          "img/char/char_102/3_1/3_1_00.png",
+          "img/char/char_102/3_1/3_1_01.png",
+          "img/char/char_102/3_1/3_1_02.png",
+          "img/char/char_102/3_1/3_1_03.png",
+          "img/char/char_102/3_1/3_1_04.png"
+        ],
+        "compliance": [
+          "img/char/char_102/3_2/3_2_00.png",
+          "img/char/char_102/3_2/3_2_01.png",
+          "img/char/char_102/3_2/3_2_02.png",
+          "img/char/char_102/3_2/3_2_03.png",
+          "img/char/char_102/3_2/3_2_04.png",
+          "img/char/char_102/3_2/3_2_05.png"
+        ],
+        "pain": [
+          "img/char/char_102/3_3/3_3_00.png",
+          "img/char/char_102/3_3/3_3_01.png",
+          "img/char/char_102/3_3/3_3_02.png",
+          "img/char/char_102/3_3/3_3_03.png",
+          "img/char/char_102/3_3/3_3_04.png",
+          "img/char/char_102/3_3/3_3_05.png"
+        ]
       }
     }
   },

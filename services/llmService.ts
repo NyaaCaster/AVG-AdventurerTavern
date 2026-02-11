@@ -5,6 +5,7 @@ export interface AIResponse {
   text: string;
   emotion: string;
   clothing?: string; // 新增：支持 AI 返回衣着状态变更建议
+  items?: { id: string; count: number }[]; // 新增：支持 AI 返回获得的道具
   usage?: {
       prompt_tokens: number;
       completion_tokens: number;
@@ -100,7 +101,7 @@ export class LlmService {
           messages: [
               { 
                   role: 'system', 
-                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion', and optionally 'clothing' (values: 'default'|'nude'|'bondage'). Do not use Markdown code blocks." 
+                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion', 'clothing' (optional, 'default'|'nude'|'bondage'), and 'gain_items' (optional, list of {id, count}). Do not use Markdown code blocks." 
               },
               ...this.history
           ],
@@ -159,13 +160,21 @@ export class LlmService {
       }
 
       // --- 核心过滤：移除思考内容 ---
-      // 移除 <think>...</think>, <thinking>...</thinking>, **Thinking about...**
       if (jsonResponse.text) {
           jsonResponse.text = jsonResponse.text
               .replace(/<think>[\s\S]*?<\/think>/gi, '')
               .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
               .replace(/\*\*Thinking about your request\*\*/gi, '')
               .trim();
+      }
+
+      // --- 道具获取解析逻辑 ---
+      // 检查 JSON 中是否直接包含 gain_items
+      const rawItems = (jsonResponse as any).gain_items;
+      if (Array.isArray(rawItems)) {
+          jsonResponse.items = rawItems;
+      } else {
+          jsonResponse.items = [];
       }
 
       // 附加 Usage 信息

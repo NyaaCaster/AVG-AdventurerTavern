@@ -144,4 +144,48 @@ export interface SceneProps {
   targetCharacterId?: string;
   settings: GameSettings;
   presentCharacters: Character[]; // 新增：当前场景存在的角色列表
+  inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
+}
+
+// --- 道具系统类型定义 ---
+
+export type ItemCategory = 'res' | 'itm' | 'spc' | 'wpn' | 'arm' | 'acs';
+
+export type ItemTag =
+  // 食材标签
+  | 'non' | 'meat' | 'vegetable' | 'mushroom' | 'cereal' | 'egg' | 'milk' | 'wine' | 'jelly' | 'spice'
+  // 装备类别标签
+  | 'sword' | 'book' | 'gun' | 'glove' | 'lance' | 'axe' | 'bow'
+  | 'L-Arm' | 'M-Arm' | 'H-Arm';
+
+export type ItemQuality = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface ItemStats {
+  ATK?: number;
+  DEF?: number;
+  AGI?: number;
+  INT?: number;
+}
+
+export interface ItemData {
+  id: string;
+  name: string;
+  category: ItemCategory;
+  tag?: ItemTag;
+  quality: ItemQuality;
+  maxStack: number;
+  description: string;
+  stats?: ItemStats;
+  price?: number; // 预留价格字段
+}
+
+export interface ItemCategoryInfo {
+  id: ItemCategory;
+  name: string;
+}
+
+export interface ItemTagInfo {
+  id: ItemTag;
+  name: string;
+  icon?: string; // 标签图标 (emoji)
 }
