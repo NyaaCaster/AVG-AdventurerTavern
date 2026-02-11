@@ -66,13 +66,13 @@ const TabButton: React.FC<{
   </button>
 );
 
-const SectionHeader: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => (
-  <div className="mb-6">
-    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+const SectionHeader: React.FC<{ title: string; subtitle: string; onClick?: () => void; className?: string }> = ({ title, subtitle, onClick, className = "" }) => (
+  <div className={`mb-6 ${className}`} onClick={onClick}>
+    <h3 className="text-xl font-bold text-white flex items-center gap-2 select-none">
       <span className="w-1 h-6 bg-amber-500 rounded-full inline-block"></span>
       {title}
     </h3>
-    <p className="text-sm text-slate-400 mt-1 ml-3">{subtitle}</p>
+    <p className="text-sm text-slate-400 mt-1 ml-3 select-none">{subtitle}</p>
   </div>
 );
 
@@ -188,6 +188,44 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   
   const modelListRef = useRef<HTMLDivElement>(null);
   const providerListRef = useRef<HTMLDivElement>(null);
+
+  // 隐藏内容的状态
+  const [isNSFWRevealed, setIsNSFWRevealed] = useState(false);
+  const [isDebugRevealed, setIsDebugRevealed] = useState(false);
+
+  // 点击计数器 Refs
+  const headerClickRef = useRef({ count: 0, startTime: 0 });
+  const visualClickRef = useRef({ count: 0, startTime: 0 });
+
+  // 头部标题点击处理：10秒内5次点击显示 NSFW 模式
+  const handleHeaderClick = () => {
+    const now = Date.now();
+    if (headerClickRef.current.count === 0 || now - headerClickRef.current.startTime > 10000) {
+        headerClickRef.current.count = 1;
+        headerClickRef.current.startTime = now;
+    } else {
+        headerClickRef.current.count++;
+    }
+
+    if (headerClickRef.current.count >= 5) {
+        setIsNSFWRevealed(true);
+    }
+  };
+
+  // 视觉效果标题点击处理：10秒内5次点击显示 Debug 模式
+  const handleVisualTitleClick = () => {
+    const now = Date.now();
+    if (visualClickRef.current.count === 0 || now - visualClickRef.current.startTime > 10000) {
+        visualClickRef.current.count = 1;
+        visualClickRef.current.startTime = now;
+    } else {
+        visualClickRef.current.count++;
+    }
+
+    if (visualClickRef.current.count >= 5) {
+        setIsDebugRevealed(true);
+    }
+  };
 
   // 初始化自动连接
   useEffect(() => {
@@ -324,15 +362,18 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
         
         {/* Navigation Sidebar (Vertical on Desktop, Horizontal Top on Mobile) */}
         <div className="w-full md:w-64 bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-700/50 flex flex-col flex-shrink-0">
-          {/* Header Area */}
-          <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center">
-            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider">
+          {/* Header Area - Click trigger for NSFW Mode */}
+          <div 
+            className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center select-none"
+            onClick={handleHeaderClick}
+          >
+            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider cursor-default">
               <i className="fa-solid fa-gear mr-2 md:mr-3"></i>
               <span className="md:inline">系统设置</span>
             </h2>
             {/* Mobile Close Button */}
             <button 
-                onClick={onBack} 
+                onClick={(e) => { e.stopPropagation(); onBack(); }} 
                 className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
                 title="关闭"
             >
@@ -373,7 +414,15 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                 />
               </div>
               <div className="w-full h-px bg-slate-800 my-4" />
-              <SectionHeader title="视觉效果" subtitle="调整文本显示的呈现方式" />
+              
+              {/* 视觉效果 - Click trigger for Debug Mode */}
+              <SectionHeader 
+                title="视觉效果" 
+                subtitle="调整文本显示的呈现方式" 
+                onClick={handleVisualTitleClick}
+                className="cursor-default"
+              />
+              
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30">
                   <div>
@@ -408,31 +457,35 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                   </div>
                 </div>
 
-                {/* Debug Mode Toggle */}
-                <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-yellow-600/50">
-                  <div>
-                    <h4 className="text-lg font-medium text-slate-200">Debug 模式</h4>
-                    <p className="text-sm text-slate-400 mt-1">开启后显示开发者调试工具。</p>
-                  </div>
-                  <ToggleSwitch 
-                    checked={settings.enableDebug} 
-                    onChange={(checked) => onUpdateSettings({...settings, enableDebug: checked})} 
-                    color="bg-yellow-600"
-                  />
-                </div>
+                {/* Debug Mode Toggle - Hidden by default */}
+                {isDebugRevealed && (
+                    <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-yellow-600/50 animate-fadeIn">
+                      <div>
+                        <h4 className="text-lg font-medium text-slate-200">Debug 模式</h4>
+                        <p className="text-sm text-slate-400 mt-1">开启后显示开发者调试工具。</p>
+                      </div>
+                      <ToggleSwitch 
+                        checked={settings.enableDebug} 
+                        onChange={(checked) => onUpdateSettings({...settings, enableDebug: checked})} 
+                        color="bg-yellow-600"
+                      />
+                    </div>
+                )}
 
-                {/* NSFW 设置 */}
-                <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-red-900/50">
-                  <div>
-                    <h4 className="text-lg font-medium text-slate-200">NSFW</h4>
-                    <p className="text-sm text-slate-400 mt-1">开启后对话消耗的Token会大幅增加。</p>
-                  </div>
-                  <ToggleSwitch 
-                    checked={settings.enableNSFW} 
-                    onChange={(checked) => onUpdateSettings({...settings, enableNSFW: checked})} 
-                    color="bg-red-600"
-                  />
-                </div>
+                {/* NSFW 设置 - Hidden by default */}
+                {isNSFWRevealed && (
+                    <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-red-900/50 animate-fadeIn">
+                      <div>
+                        <h4 className="text-lg font-medium text-slate-200">NSFW</h4>
+                        <p className="text-sm text-slate-400 mt-1">开启后对话消耗的Token会大幅增加。</p>
+                      </div>
+                      <ToggleSwitch 
+                        checked={settings.enableNSFW} 
+                        onChange={(checked) => onUpdateSettings({...settings, enableNSFW: checked})} 
+                        color="bg-red-600"
+                      />
+                    </div>
+                )}
               </div>
             </div>
           )}
