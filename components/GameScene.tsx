@@ -3,20 +3,19 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
-import DialogueBox from './DialogueBox'; // Ensure explicit import
+import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
 import DebugLogModal from './DebugLogModal';
 import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
-import ItemToast from './ItemToast'; // 新增导入
+import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState } from '../types';
 import { SCENE_BGM } from '../data/resources/audioResources';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 
-// Import Scenes
 import Scen1 from './scenes/scen_1';
 import Scen2 from './scenes/scen_2';
 import Scen3 from './scenes/scen_3';
@@ -50,7 +49,6 @@ const SCENE_NAMES: Record<SceneId, string> = {
   'scen_10': '道具店'
 };
 
-// 模拟场景等级数据 (未来可移至全局状态管理)
 const SCENE_LEVELS: Record<string, number> = {
   'scen_1': 1,
   'scen_2': 1,
@@ -64,33 +62,31 @@ const SCENE_LEVELS: Record<string, number> = {
   'scen_10': 1,
 };
 
-// 模拟角色状态数据 (未来可移至全局状态管理)
 const CHARACTER_STATS: Record<string, { level: number; affinity: number }> = {
-  'char_101': { level: 5, affinity: 85 }, // Lilia
-  'char_102': { level: 99, affinity: 45 }, // Mina
-  'char_103': { level: 1, affinity: 20 }, // Aurora
-  'char_104': { level: 12, affinity: 35 }, // Judith
-  'char_105': { level: 20, affinity: 15 }, // Renka
-  'char_106': { level: 30, affinity: 5 }, // Erin
-  'char_107': { level: 50, affinity: 60 }, // Philo
-  'char_108': { level: 40, affinity: 70 }, // Catalina
-  'char_109': { level: 8, affinity: 90 }, // Laila
-  'char_110': { level: 15, affinity: 50 }, // Ryuka
-  'char_111': { level: 10, affinity: 40 }, // Gina
+  'char_101': { level: 5, affinity: 85 },
+  'char_102': { level: 99, affinity: 45 },
+  'char_103': { level: 1, affinity: 20 },
+  'char_104': { level: 12, affinity: 35 },
+  'char_105': { level: 20, affinity: 15 },
+  'char_106': { level: 30, affinity: 5 },
+  'char_107': { level: 50, affinity: 60 },
+  'char_108': { level: 40, affinity: 70 },
+  'char_109': { level: 8, affinity: 90 },
+  'char_110': { level: 15, affinity: 50 },
+  'char_111': { level: 10, affinity: 40 },
 };
 
-// 模拟初始库存数据
 const INITIAL_INVENTORY: Record<string, number> = {
-    'res-0001': 15, // 灵木
-    'res-0003': 2,  // 魔晶石
-    'res-0101': 5,  // 狂暴兔肉
-    'res-0701': 20, // 啤酒
-    'itm-01': 5,    // 治疗药小
-    'itm-07': 1,    // 精灵粉尘
-    'wpn-102': 1,   // 铁剑
-    'arm-201': 1,   // 皮甲
-    'spc-00': 1,    // 莫比乌斯
-    'spc-05': 2,    // 棉绳
+    'res-0001': 15, 
+    'res-0003': 2,  
+    'res-0101': 5,  
+    'res-0701': 20, 
+    'itm-01': 5,    
+    'itm-07': 1,    
+    'wpn-102': 1,   
+    'arm-201': 1,   
+    'spc-00': 1,    
+    'spc-05': 2,    
 };
 
 const calculateWorldState = (currentSceneName: string): WorldState => {
@@ -136,38 +132,29 @@ const getSceneDisplayName = (sceneId: SceneId, params?: any): string => {
     return SCENE_NAMES[sceneId] || '未知区域';
 };
 
-// 辅助函数：根据状态和情绪获取随机立绘
 const getCharacterSprite = (character: Character, state: ClothingState, emotion: string): string => {
-    // 获取全局配置中的角色图片配置
     const imageConfig = CHARACTER_IMAGES[character.id];
     
     if (!imageConfig) {
-        // 回退到旧逻辑 (兼容 Character 接口中的旧字段)
         return character.emotions?.[emotion] || character.spriteUrl || '';
     }
 
-    // 获取对应衣着状态配置，若不存在则回退到 default
     const config = imageConfig[state] || imageConfig['default'];
     
     if (!config) return character.spriteUrl || '';
 
-    // 获取情绪对应的图片列表
-    // 如果该状态下没有该情绪，回退到 normal (或者列表的第一个key，这里简化为normal)
     let imgList = config.emotions[emotion];
     
-    // 兼容逻辑：如果新状态下没有 'normal'，尝试回退到 default 状态的同名情绪
     if (!imgList) {
         if (state !== 'default' && imageConfig['default']) {
              imgList = imageConfig['default'].emotions[emotion];
         }
-        // 如果还找不到，尝试当前状态的 'normal'
         if (!imgList) {
             imgList = config.emotions['normal'];
         }
     }
 
     if (imgList && imgList.length > 0) {
-        // 随机选择一张
         const randIndex = Math.floor(Math.random() * imgList.length);
         return imgList[randIndex];
     }
@@ -177,7 +164,6 @@ const getCharacterSprite = (character: Character, state: ClothingState, emotion:
 
 // --- Character Distribution Logic ---
 
-// Seeded random helper for deterministic distribution per hour
 const seededRandom = (seed: number) => {
     const x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
@@ -193,23 +179,17 @@ const shuffleArray = <T,>(array: T[], seed: number): T[] => {
     return shuffled;
 };
 
-// Calculate where each character is currently located
 const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: string, timeStr: string): Record<string, string> => {
     const mapping: Record<string, string> = {};
     const sceneOccupancy: Record<string, number> = {};
     
-    // Seed based on date + hour to keep locations stable within the hour
     const seedString = dateStr + timeStr.split(':')[0]; 
     let seed = 0;
     for(let i=0; i<seedString.length; i++) seed += seedString.charCodeAt(i);
 
-    // Get all chars
     const allCharIds = Object.keys(CHARACTERS);
-    
-    // Shuffle to ensure fair distribution of scarce slots
     const shuffledIds = shuffleArray(allCharIds, seed);
 
-    // Prioritize Mina (char_102) processing first to ensure she gets her specific spots easily
     const sortedIds = [
         'char_102', 
         ...shuffledIds.filter(id => id !== 'char_102')
@@ -220,26 +200,20 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
         const schedule = char.schedule;
         const possibleScenes = schedule?.[period] || [];
 
-        // Fallback is always scen_2
         let selectedScene = 'scen_2';
 
         if (possibleScenes.length > 0) {
-            // Find valid scenes based on capacity rules
             const validScenes = possibleScenes.filter(sid => {
-                // Rule: Default to room is always valid (capacity unlimited for separate rooms)
                 if (sid === 'scen_2') return true;
                 
                 if (sid === 'scen_3') {
-                    // Rule: Tavern max 5 characters other than Mina
-                    if (charId === 'char_102') return true; // Mina always fits
+                    if (charId === 'char_102') return true; 
                     return (sceneOccupancy['scen_3'] || 0) < 5;
                 }
                 
-                // Rule: Other scenes have max 1 character
                 return (sceneOccupancy[sid] || 0) === 0;
             });
 
-            // Rule: Check Appearance Conditions (Levels)
             const qualifiedScenes = validScenes.filter(sid => {
                 if (char.appearanceConditions) {
                     for (const cond of char.appearanceConditions) {
@@ -253,7 +227,6 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
             });
 
             if (qualifiedScenes.length > 0) {
-                // Pick one deterministically from valid options
                 const index = Math.floor(seededRandom(seed + charId.charCodeAt(0)) * qualifiedScenes.length);
                 selectedScene = qualifiedScenes[index];
             }
@@ -261,10 +234,7 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
 
         mapping[charId] = selectedScene;
         
-        // Update occupancy
-        // Only count towards capacity limits for non-Mina characters in Tavern
         if (selectedScene === 'scen_3' && charId === 'char_102') {
-             // Mina doesn't consume the "guest" slots in tavern
         } else {
              sceneOccupancy[selectedScene] = (sceneOccupancy[selectedScene] || 0) + 1;
         }
@@ -275,49 +245,40 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
 
 
 const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onLoadGame, settings }) => {
-  // State
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
   const [sceneParams, setSceneParams] = useState<any>({});
   
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
   
-  // Dynamic Character Locations
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
   
-  // Inventory State
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
-  // Item Toast Notifications Queue
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
 
-  // Derived state: present characters in CURRENT scene
   const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
-      // For Guest Rooms (scen_2), if params.target is set, we check that specific character
       if (currentSceneId === 'scen_2') {
-          if (sceneParams?.target === 'user') return false; // User room has no NPC
+          if (sceneParams?.target === 'user') return false; 
           if (sceneParams?.target) return char.id === sceneParams.target && characterLocations[char.id] === 'scen_2';
-          return false; // General hallway has no one usually? Or we list everyone in their rooms? Scen2 menu handles list.
+          return false; 
       }
       return characterLocations[char.id] === currentSceneId;
   }), [currentSceneId, sceneParams, characterLocations]);
 
   const [isDialogueMode, setIsDialogueMode] = useState(false);
-  const [isDialogueEnding, setIsDialogueEnding] = useState(false); // 新增：是否处于对话结束确认阶段
+  const [isDialogueEnding, setIsDialogueEnding] = useState(false); 
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
-  const [clothingState, setClothingState] = useState<ClothingState>('default'); // 新增：衣着状态
+  const [clothingState, setClothingState] = useState<ClothingState>('default'); 
   
-  // Debug State
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
   const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
 
-  // Ambient Mode State
   const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
   const [ambientText, setAmbientText] = useState<string>('');
   const [isAmbientLoading, setIsAmbientLoading] = useState(false);
-  const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); // 是否处于睡眠状态
-  const [isAmbientBathing, setIsAmbientBathing] = useState(false); // 是否处于沐浴状态 (温泉场景)
-  const [showAmbientDialogue, setShowAmbientDialogue] = useState(true); // 控制环境对话框的显示
+  const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); 
+  const [isAmbientBathing, setIsAmbientBathing] = useState(false); 
+  const [showAmbientDialogue, setShowAmbientDialogue] = useState(true); 
 
-  // Chat State
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
@@ -330,25 +291,29 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<DialogueEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [showDebugLog, setShowDebugLog] = useState(false); // 新增：控制调试日志显示
-  const [debugLogs, setDebugLogs] = useState<LogEntry[]>([]); // 新增：调试日志数据
+  const [showDebugLog, setShowDebugLog] = useState(false); 
+  const [debugLogs, setDebugLogs] = useState<LogEntry[]>([]); 
   const [isUIHidden, setIsUIHidden] = useState(false);
 
-  // Transition State
-  const [transitionOpacity, setTransitionOpacity] = useState(0); // 0: Transparent, 1: Black
+  const [transitionOpacity, setTransitionOpacity] = useState(0); 
   const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
 
-  // Audio Refs
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Time Loop & Location Update
+  // Helper to check for environment key
+  const hasEnvKey = useMemo(() => {
+      try {
+          return !!(typeof process !== 'undefined' && process.env && process.env.API_KEY);
+      } catch(e) {
+          return false;
+      }
+  }, []);
+
   useEffect(() => {
-    // 初始计算一次
     const update = () => {
         const newState = calculateWorldState(getSceneDisplayName(currentSceneId, sceneParams));
         setWorldState(newState);
-        // Update character locations based on new time
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
         setCharacterLocations(locs);
     };
@@ -358,59 +323,46 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const timer = setInterval(() => {
         setWorldState(prev => {
              const newState = calculateWorldState(prev.sceneName);
-             
-             // Only recalculate locations if time string changed (minutely) or significant change
              if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
                  const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
                  setCharacterLocations(locs);
              }
-             
              return newState;
         });
     }, 1000 * 30);
     return () => clearInterval(timer);
-  }, [currentSceneId, sceneParams]); // 依赖场景ID，切换场景时也会重新计算
+  }, [currentSceneId, sceneParams]); 
 
-  // Subscribe to LLM Logs
   useEffect(() => {
     const unsubscribe = llmService.subscribeLogs((logs) => {
-        setDebugLogs([...logs]); // 创建副本以触发更新
+        setDebugLogs([...logs]); 
     });
     return () => unsubscribe();
   }, []);
 
-  // Check for Ambient Character on Scene/Time Change
   useEffect(() => {
-    // Reset Ambient State
     setAmbientCharacter(null);
     setAmbientText('');
     setIsAmbientSleeping(false);
     setIsAmbientBathing(false);
     setShowAmbientDialogue(true);
     
-    // 如果正在正式对话或转场中，不触发环境逻辑
     if (isDialogueMode || isSceneTransitioning) return;
 
     const findCharacterForScene = () => {
-        // Special logic for Guest Rooms (scen_2)
         if (currentSceneId === 'scen_2' && sceneParams?.target && sceneParams.target !== 'user') {
             const target = CHARACTERS[sceneParams.target];
-            // Check if target is actually in the room based on dynamic location
             if (characterLocations[target.id] === 'scen_2') {
                 return target;
             }
             return null;
         }
 
-        // For public scenes, pick a character from presentCharacters
         if (presentCharacters.length > 0) {
-            // Tavern Rule (scen_3): Prioritize Mina if present
             if (currentSceneId === 'scen_3') {
                 const mina = presentCharacters.find(c => c.id === 'char_102');
                 if (mina) return mina;
             }
-
-            // Simple logic: pick random or first
             const randomIndex = Math.floor(Math.random() * presentCharacters.length);
             return presentCharacters[randomIndex];
         }
@@ -422,10 +374,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     
     if (char) {
         setAmbientCharacter(char);
-        
-        // 睡眠状态判定：客房 + 夜晚
         const isSleeping = currentSceneId === 'scen_2' && worldState.period === 'night';
-        // 沐浴状态判定：温泉
         const isBathing = currentSceneId === 'scen_7';
 
         setIsAmbientSleeping(isSleeping);
@@ -433,19 +382,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
         if (isSleeping) {
             setAmbientText("zzz……ZZZ……");
-            setCurrentSprite(''); // 隐藏立绘
+            setCurrentSprite(''); 
         } else {
-            // 设置立绘
-            // 环境模式下，温泉使用 nude 状态，其他默认
             const ambientState = isBathing ? 'nude' : 'default';
             const sprite = getCharacterSprite(char, ambientState, 'normal');
             setCurrentSprite(sprite);
             
-            // Tavern Rule (scen_3): Only Mina speaks. If not Mina, suppress text.
             if (currentSceneId === 'scen_3' && char.id !== 'char_102') {
                 setAmbientText('');
             } else {
-                // 生成环境台词 (包含温泉特殊逻辑)
                 generateAmbientLine(char, ambientState);
             }
         }
@@ -454,20 +399,19 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams, presentCharacters]);
 
   const generateAmbientLine = async (char: Character, state: ClothingState) => {
-      if (!settings.apiConfig.apiKey) {
+      // Allow if settings key is present OR if env key is present
+      if (!settings.apiConfig.apiKey && !hasEnvKey) {
           setAmbientText("......");
           return;
       }
 
       setIsAmbientLoading(true);
       try {
-          // 初始化 LLM (重置上下文)
           await initLLM(char);
           
           const stats = CHARACTER_STATS[char.id] || { level: 1, affinity: 0 };
           let prompt = "";
 
-          // 特殊场景判定：温泉
           if (currentSceneId === 'scen_7') {
               prompt = `
 [系统指令: 此消息仅生成环境氛围台词]
@@ -491,7 +435,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
           setAmbientText(text);
           
-          // 如果生成了表情，更新立绘
           if (response.emotion) {
               const sprite = getCharacterSprite(char, state, response.emotion);
               setCurrentSprite(sprite);
@@ -505,15 +448,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       }
   };
 
-  // Audio Control - Volume (Normal update)
   useEffect(() => {
-    // Only update volume directly if NOT fading. If fading, the fade loop handles the target.
     if (audioRef.current && !fadeIntervalRef.current) {
         audioRef.current.volume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
     }
   }, [settings.masterVolume, settings.isMuted]);
 
-  // Audio Control - Scene BGM with Crossfade
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -522,18 +462,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const targetSrc = bgmFile ? resolveImgPath(bgmFile) : "";
     const maxVolume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
 
-    // Clear any ongoing fade operation
     if (fadeIntervalRef.current) {
         clearInterval(fadeIntervalRef.current);
         fadeIntervalRef.current = null;
     }
 
-    // Check if we are already playing the target track
     if (audio.src === targetSrc) {
-        // If volume is low (e.g. interrupted fade out), fade back up
         if (!audio.paused && audio.volume < maxVolume) {
              const stepTime = 50;
-             const stepVol = maxVolume / 10; // ~0.5s restore
+             const stepVol = maxVolume / 10; 
              fadeIntervalRef.current = setInterval(() => {
                  if (audio.volume >= maxVolume - 0.01) {
                      audio.volume = maxVolume;
@@ -548,7 +485,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         return;
     }
 
-    // Fade Configuration
     const FADE_OUT_DURATION = 800;
     const FADE_IN_DURATION = 1500;
     const STEP_INTERVAL = 50;
@@ -577,7 +513,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         }, STEP_INTERVAL);
     };
 
-    // Logic: If playing, fade out first, then switch. If stopped, fade in directly.
     if (!audio.paused && audio.src && audio.volume > 0) {
         const steps = FADE_OUT_DURATION / STEP_INTERVAL;
         const volStep = audio.volume / steps;
@@ -597,70 +532,70 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   }, [currentSceneId]);
 
-  // Background Image Logic
   const currentSceneLevel = SCENE_LEVELS[currentSceneId] || 1;
   const currentBgUrl = getSceneBackground(currentSceneId, worldState.period, currentSceneLevel);
 
-  // Initialize Chat (Connection Status Only)
   useEffect(() => {
-     if (!settings.apiConfig.apiKey) {
+     if (!settings.apiConfig.apiKey && !hasEnvKey) {
        setConnectionStatus('disconnected');
      } else {
        setConnectionStatus('connected');
      }
-  }, [settings.apiConfig]);
+  }, [settings.apiConfig, hasEnvKey]);
 
   const initLLM = async (char: Character) => {
     const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
-    // Pass enableNSFW to generateSystemPrompt
     let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
-    await llmService.initChat(char, fullPrompt, settings.apiConfig);
-  };
+    
+    // Inject Env Key if needed
+    const config = { ...settings.apiConfig };
+    if (!config.apiKey && hasEnvKey) {
+        try {
+            config.apiKey = process.env.API_KEY || '';
+            // Default to Gemini model if env key is used and model is not set or default
+            if (!config.model || config.model === 'grok-3') {
+                config.model = 'gemini-3-flash-preview';
+                config.provider = 'google';
+            }
+        } catch (e) {}
+    }
 
-  // --- Handlers ---
+    await llmService.initChat(char, fullPrompt, config);
+  };
 
   const handleNavigate = (sceneId: SceneId, params?: any) => {
     if (isSceneTransitioning) return;
     if (sceneId === currentSceneId && JSON.stringify(params) === JSON.stringify(sceneParams)) return;
 
-    // Start Transition
     setIsSceneTransitioning(true);
-    setTransitionOpacity(1); // Fade out to black
+    setTransitionOpacity(1); 
 
-    // Wait for fade out animation (500ms match with CSS)
     setTimeout(() => {
-        // Perform State Updates while hidden
         setCurrentSceneId(sceneId);
         setSceneParams(params || {});
-        setIsDialogueMode(false); // Reset dialogue mode on nav
+        setIsDialogueMode(false); 
         setIsDialogueEnding(false);
         setErrorMessage(null);
-        setActiveCharacter(null); // Clear character on nav
-        setClothingState('default'); // Reset clothing
+        setActiveCharacter(null); 
+        setClothingState('default'); 
         
-        // Clear ambient state on manual navigation (will rely on effect to repopulate)
         setAmbientCharacter(null);
         setAmbientText('');
         setIsAmbientSleeping(false);
         setIsAmbientBathing(false);
         
-        // Update World State Scene Name
         const newSceneName = getSceneDisplayName(sceneId, params);
-        // Force calculation of present characters for the new scene instantly (avoiding 1-frame lag)
         const newState = calculateWorldState(newSceneName);
         setWorldState(newState);
         
-        // Recalculate locations on scene change just in case time jumped or to ensure consistency
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
         setCharacterLocations(locs);
 
-        // Wait a short moment then Fade In
         setTimeout(() => {
-            setTransitionOpacity(0); // Fade in from black
+            setTransitionOpacity(0); 
             
-            // Allow input after fade in complete
             setTimeout(() => {
                 setIsSceneTransitioning(false);
             }, 500);
@@ -670,9 +605,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   const handleAction = (action: string, param?: any) => {
     console.log(`Action triggered: ${action}`, param);
-    // Placeholder logic for actions
     if (action === 'rest') {
-       // Logic to advance time...
     }
   };
 
@@ -680,11 +613,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const char = CHARACTERS[characterId];
     if (!char) return;
 
-    // 判定衣着状态
     let nextClothingState: ClothingState = 'default';
     if (
-        (actionType === 'peep' || actionType === 'bath_together') || // scen_7
-        (actionType === 'massage_give' || actionType === 'massage_receive') // scen_8
+        (actionType === 'peep' || actionType === 'bath_together') || 
+        (actionType === 'massage_give' || actionType === 'massage_receive') 
     ) {
         nextClothingState = 'nude';
     }
@@ -692,26 +624,21 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setClothingState(nextClothingState);
     setActiveCharacter(char);
     
-    // 初始立绘
     const sprite = getCharacterSprite(char, nextClothingState, 'normal');
     setCurrentSprite(sprite);
     
-    // 重置对话内容，防止显示上一次对话或默认文本
     setCurrentDialogue({ speaker: char.name, text: "..." });
     
     setIsDialogueMode(true);
     setIsDialogueEnding(false);
     
-    // Get stats
     const stats = CHARACTER_STATS[characterId] || { level: 1, affinity: 0 };
     
-    // Switch LLM Context & Generate Context-Aware Opening
     if (connectionStatus === 'connected') {
         setIsLoading(true);
         try {
             await initLLM(char);
             
-            // 构建隐式上下文提示词，要求 AI 生成开场白
             const contextPrompt = `
 [系统指令: 此消息不显示给玩家，仅作为剧情生成指令]
 玩家(${settings.userName})在【${worldState.periodLabel}】的【${worldState.sceneName}】找到了你。
@@ -727,14 +654,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
             setCurrentDialogue({ speaker: char.name, text: displayText });
             
-            // 只将 AI 的回复添加到显示历史中
             setHistory(prev => [...prev, { 
                 speaker: char.name, 
                 text: displayText, 
                 timestamp: Date.now(), 
                 type: 'npc', 
                 avatarUrl: char.avatarUrl,
-                tokens: response.usage?.completion_tokens // 记录开场白消耗 (回复 Token)
+                tokens: response.usage?.completion_tokens 
             }]);
 
             if (response.emotion) {
@@ -746,18 +672,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         } catch(e) {
             console.error(e);
             setErrorMessage("角色初始化失败");
-            // Fallback greeting if AI fails
             setCurrentDialogue({ speaker: char.name, text: `*(${char.name}看着你)* ...有什么事吗？` });
         } finally {
             setIsLoading(false);
         }
     } else {
-        // Offline fallback
         setCurrentDialogue({ speaker: char.name, text: `*(${char.name}似乎正在发呆)* ...` });
     }
   };
 
-  // 生成告别语并进入结束状态
   const handleEndDialogueGeneration = async () => {
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
@@ -799,11 +722,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         }]);
         
         setIsTyping(true);
-        setIsDialogueEnding(true); // 标记为正在结束，UI将锁定并等待点击退出
+        setIsDialogueEnding(true); 
 
     } catch(e) {
         console.error(e);
-        // Fallback
         setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 回见。` });
         setIsTyping(true);
         setIsDialogueEnding(true);
@@ -812,16 +734,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     }
   };
 
-  // 最终退出对话模式
   const handleFinalClose = () => {
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
       setActiveCharacter(null);
       setClothingState('default');
-      // Exit calls ambient effect to re-evaluate, handled by useEffect dependency on isDialogueMode
   };
 
-  // 处理道具获得
   const handleItemsGained = (items: { id: string; count: number }[]) => {
       if (!items || items.length === 0) return;
 
@@ -830,10 +749,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
       items.forEach(item => {
           if (item.id && item.count > 0) {
-              // Update Inventory
               newInventory[item.id] = (newInventory[item.id] || 0) + item.count;
               
-              // Add Notification
               newNotifications.push({
                   id: Date.now() + Math.random().toString(),
                   itemId: item.id,
@@ -856,7 +773,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const userMessage = inputText;
     setInputText('');
     setIsLoading(true);
-    // 先添加用户消息到历史记录
     setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
 
     try {
@@ -868,14 +784,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       
       setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
       
-      // Handle Item Gain
       if (response.items && response.items.length > 0) {
           handleItemsGained(response.items);
       }
 
-      // NSFW Mode: Check for clothing state changes from AI
       if (settings.enableNSFW && response.clothing) {
-          // Normalize and check valid states
           const newClothing = response.clothing.toLowerCase();
           if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
               setClothingState(newClothing as ClothingState);
@@ -885,18 +798,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       setHistory(prev => {
         const newHistory = [...prev];
         
-        // 更新最近的一条用户消息的 Token 数 (prompt_tokens)
-        // 从后往前找最近的一条用户消息
         for (let i = newHistory.length - 1; i >= 0; i--) {
             if (newHistory[i].type === 'user' && !newHistory[i].tokens) {
                  if (response.usage) {
                      newHistory[i] = { ...newHistory[i], tokens: response.usage.prompt_tokens };
                  }
-                 break; // 只更新最近的一条
+                 break; 
             }
         }
 
-        // 添加 AI 回复 (completion_tokens)
         newHistory.push({ 
             speaker: activeCharacter.name, 
             text: displayText, 
@@ -909,9 +819,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         return newHistory;
       });
 
-      // Update sprite based on potentially new clothing state and emotion
-      // Note: We use the *new* clothing state if it changed above, but React state update is async.
-      // So we calculate the effective state for this render cycle.
       const effectiveClothingState = (settings.enableNSFW && response.clothing && ['default', 'nude', 'bondage'].includes(response.clothing)) 
                                      ? response.clothing 
                                      : clothingState;
@@ -941,12 +848,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
             setIsTyping(true);
             
-            // Handle Item Gain on Regenerate
             if (response.items && response.items.length > 0) {
                 handleItemsGained(response.items);
             }
 
-            // NSFW Mode: Check for clothing state changes from AI on regenerate
             if (settings.enableNSFW && response.clothing) {
                 const newClothing = response.clothing.toLowerCase();
                 if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
@@ -954,15 +859,12 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                 }
             }
 
-            // 更新历史记录中的最后一条 AI 回复
             setHistory(prev => {
                 const newHistory = [...prev];
-                // 移除旧的 AI 回复 (如果存在)
                 if (newHistory.length > 0 && newHistory[newHistory.length - 1].type === 'npc') {
                      newHistory.pop();
                 }
                 
-                // 同时更新用户消息的 tokens (因为重发了一次)
                 if (response.usage) {
                     for (let i = newHistory.length - 1; i >= 0; i--) {
                         if (newHistory[i].type === 'user') {
@@ -999,13 +901,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
      }
   };
 
-  // Debug Handlers
   const handleOpenDebug = () => {
       setIsDebugMenuOpen(!isDebugMenuOpen);
-      setIsScheduleViewerOpen(false); // Reset viewer when toggling menu
+      setIsScheduleViewerOpen(false); 
   };
 
-  // --- Render Scene Component ---
   const renderScene = () => {
     const commonProps = {
         onNavigate: handleNavigate,
@@ -1014,9 +914,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         isMenuVisible: !isDialogueMode,
         worldState,
         targetCharacterId: sceneParams.target,
-        settings, // Pass settings to all scenes
-        presentCharacters, // Pass dynamic presence data
-        inventory // Pass inventory data
+        settings, 
+        presentCharacters, 
+        inventory 
     };
 
     switch(currentSceneId) {
@@ -1042,27 +942,20 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         className="relative w-full h-full bg-black overflow-hidden" 
         onClick={() => { if (isUIHidden) setIsUIHidden(false); }}
     >
-      {/* Background Music */}
       <audio ref={audioRef} loop className="hidden" />
 
-      {/* Visual Transition Overlay */}
       <div 
         className="absolute inset-0 bg-black z-[80] pointer-events-none transition-opacity ease-in-out duration-500"
         style={{ opacity: transitionOpacity }}
       />
 
-      {/* Background Layer */}
       <div className="absolute inset-0 z-0">
         <img src={resolveImgPath(currentBgUrl)} alt="BG" className="w-full h-full object-cover transition-all duration-700" />
         
-        {/* Cinematic Overlay - Corner Vignette Style */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
       </div>
 
-      {/* --- Sprite Layers --- */}
-
-      {/* 1. Active Dialogue Sprite (Center) */}
       <div className={`absolute inset-0 z-10 flex items-end justify-center pointer-events-none transition-all duration-500 ${isDialogueMode ? '-translate-y-[2%] opacity-100' : 'translate-y-10 opacity-0'}`}>
          {isDialogueMode && currentSprite && (
             <img 
@@ -1073,8 +966,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
          )}
       </div>
 
-      {/* 2. Ambient Sprite (Left Side) - Only if NOT in dialogue mode and awake */}
-      {/* Moved from 25% to 30% as requested */}
       <div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!isDialogueMode && ambientCharacter && !isAmbientSleeping && !isAmbientBathing) ? 'opacity-100' : 'opacity-0'}`}>
          {ambientCharacter && !isAmbientSleeping && currentSprite && (
             <div className="relative h-[95%] w-full">
@@ -1087,12 +978,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
          )}
       </div>
 
-      {/* Global UI Wrapper */}
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
           
           <GameEnvironmentWidget worldState={worldState} />
 
-          {/* Item Notification Area */}
           <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
               {itemNotifications.map(notification => (
                   <ItemToast 
@@ -1121,7 +1010,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
             showDebug={settings.enableDebug}
           />
 
-          {/* Debug Menu Dropdown */}
           {isDebugMenuOpen && (
               <div className="absolute top-16 right-4 z-[60] flex flex-col gap-2 bg-black/80 backdrop-blur p-2 rounded border border-yellow-500/30 shadow-lg pointer-events-auto animate-fadeIn">
                   <button 
@@ -1134,7 +1022,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
               </div>
           )}
 
-          {/* Schedule Viewer Modal */}
           {isScheduleViewerOpen && (
               <div 
                 className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" 
@@ -1157,7 +1044,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                       <div className="p-4 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {Object.keys(SCENE_NAMES).map(key => {
                               const sid = key as SceneId;
-                              // Filter dynamically calculated locations
                               const chars = Object.values(CHARACTERS).filter(c => characterLocations[c.id] === sid);
                               return (
                                   <div key={sid} className="bg-slate-800/50 border border-slate-700 p-3 rounded">
@@ -1184,24 +1070,19 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
               </div>
           )}
 
-          {/* Render Current Scene Menu Actions */}
-          {/* Note: renderScene returns components with pointer-events-auto internally where needed */}
           <div className="pointer-events-auto">
              {renderScene()}
           </div>
 
-          {/* --- Ambient Dialogue Box (Bottom) --- */}
-          {/* Renders when in ambient mode (character present, not in active chat) */}
           {!isDialogueMode && ambientCharacter && ambientText && showAmbientDialogue && (
               <div className="absolute bottom-4 w-full flex flex-col items-center pointer-events-auto z-40 animate-fadeIn">
                   <div className="relative w-full px-0 md:px-4 mb-2">
                       <DialogueBox 
                           speaker={ambientCharacter.name}
                           text={ambientText}
-                          isTyping={true} // Re-animate on text change
+                          isTyping={true} 
                           typingEnabled={settings.enableTypewriter}
                           transparency={settings.dialogueTransparency}
-                          // Hide interactive controls except HideUI
                           onHideUI={() => setIsUIHidden(true)}
                           onShowHistory={undefined}
                           onShowDebugLog={undefined}
@@ -1213,7 +1094,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
               </div>
           )}
 
-          {/* --- Active Chat Interface --- */}
           {isDialogueMode && activeCharacter && (
               <ChatInterface 
                  currentDialogue={currentDialogue}
@@ -1222,7 +1102,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                  settings={settings}
                  onHideUI={() => setIsUIHidden(true)}
                  onShowHistory={() => setShowHistory(true)}
-                 onShowDebugLog={() => setShowDebugLog(true)} // 新增
+                 onShowDebugLog={() => setShowDebugLog(true)} 
                  inputText={inputText}
                  setInputText={setInputText}
                  handleSend={handleSend}
@@ -1240,9 +1120,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
       <DialogueLogModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={history} />
       
-      {/* 新增：调试日志模态框 */}
       <DebugLogModal isOpen={showDebugLog} onClose={() => setShowDebugLog(false)} logs={debugLogs} />
-    </>
+    </div>
   );
 };
 

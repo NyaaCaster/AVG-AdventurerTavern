@@ -47,6 +47,7 @@ const Scen9: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
             isOpen={showInventory} 
             onClose={() => setShowInventory(false)} 
             inventory={inventory}
+            userName={settings.userName}
         />
     </>
   );
