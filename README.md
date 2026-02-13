@@ -1,7 +1,22 @@
 
 # 🏰 AdventurerTavern (冒险者酒馆)
 
+[![Docker Image](https://img.shields.io/docker/v/honywen/adv-tavern?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/honywen/adv-tavern)
+[![Docker Image Size](https://img.shields.io/docker/image-size/honywen/adv-tavern/latest)](https://hub.docker.com/r/honywen/adv-tavern)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/NyaaCaster/AVG-AdventurerTavern/docker-publish.yml?label=Build&logo=github)](https://github.com/NyaaCaster/AVG-AdventurerTavern/actions)
+[![License](https://img.shields.io/github/license/NyaaCaster/AVG-AdventurerTavern)](./LICENSE)
+
 **AdventurerTavern** 是一款高保真的视觉小说（Visual Novel）风格的角色扮演游戏框架。它结合了现代 LLM（大语言模型）技术，为玩家提供沉浸式的、动态的异世界酒馆经营与恋爱模拟体验。
+
+## 🚀 快速开始
+
+```bash
+# 使用 Docker（推荐）
+docker run -d -p 3098:80 honywen/adv-tavern:latest
+
+# 访问游戏
+http://localhost:3098
+```
 
 ## 📖 游戏内容与玩法
 
@@ -60,46 +75,71 @@ npm start
 
 ---
 
-## 🐳 部署方案 B：基于 Docker (推荐/稳定部署)
+## 🐳 部署方案 B：基于 Docker (推荐/生产环境)
 
-如果你希望在服务器上部署，或者想要一个隔离的运行环境，推荐使用 Docker。
+推荐使用 Docker 进行部署，我们提供了预构建的 Docker 镜像，无需本地编译。
 
-### 1. 环境准备
-*   安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) 或 Docker Engine (Linux)。
-*   安装 Git。
+### 方式 1：使用 Docker Hub 镜像（推荐）
 
-### 2. 获取代码
+#### 1. 环境准备
+*   安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) 或 Docker Engine (Linux)
 
-```bash
-git clone https://github.com/NyaaCaster/AVG-AdventurerTavern.git
-cd AVG-AdventurerTavern
-```
-
-### 3. 构建并启动容器
-我们提供了 `docker-compose.yml` 配置，一键启动：
+#### 2. 快速启动
 
 ```bash
-# 构建镜像并后台运行
-docker-compose up -d --build
+# 下载配置文件
+wget https://raw.githubusercontent.com/NyaaCaster/AVG-AdventurerTavern/main/docker-compose.yml
+
+# 或使用 curl
+curl -O https://raw.githubusercontent.com/NyaaCaster/AVG-AdventurerTavern/main/docker-compose.yml
+
+# 启动服务（自动从 Docker Hub 拉取镜像）
+docker-compose up -d
 ```
 
-### 4. 访问游戏
+#### 3. 访问游戏
 Docker 部署默认映射端口为 `3098`。请访问：
 👉 **http://localhost:3098**
 
-### 5. 服务管理
+#### 4. 更新到最新版本
 
-*   **停止服务** (保留容器状态):
+```bash
+# 拉取最新镜像并重启
+docker-compose pull
+docker-compose up -d
+```
+
+### 方式 2：从源码构建（开发者）
+
+如果你需要修改代码或本地开发：
+
+```bash
+# 克隆代码
+git clone https://github.com/NyaaCaster/AVG-AdventurerTavern.git
+cd AVG-AdventurerTavern
+
+# 使用本地构建配置
+docker-compose -f docker-compose.local.yml up -d --build
+```
+
+### 服务管理命令
+
+*   **停止服务**:
     ```bash
     docker-compose stop
     ```
 
-*   **启动服务** (启动已存在的容器):
+*   **启动服务**:
     ```bash
     docker-compose start
     ```
 
-*   **停止并移除容器** (彻底关闭):
+*   **重启服务**:
+    ```bash
+    docker-compose restart
+    ```
+
+*   **停止并移除容器**:
     ```bash
     docker-compose down
     ```
@@ -109,6 +149,49 @@ Docker 部署默认映射端口为 `3098`。请访问：
     docker-compose logs -f
     ```
 
+*   **查看容器状态**:
+    ```bash
+    docker-compose ps
+    ```
+
+---
+
+## 🐋 Docker Hub
+
+本项目的 Docker 镜像托管在 Docker Hub 上，通过 GitHub Actions 自动构建和发布。
+
+*   **镜像地址**: [honywen/adv-tavern](https://hub.docker.com/r/honywen/adv-tavern)
+*   **可用标签**:
+    *   `latest` - 主分支最新稳定版本
+    *   `dev` - 开发版本
+    *   `vX.X.X` - 特定版本号
+
+### 直接使用 Docker 运行
+
+```bash
+# 拉取镜像
+docker pull honywen/adv-tavern:latest
+
+# 运行容器
+docker run -d \
+  --name adventurertavern \
+  -p 3098:80 \
+  --restart unless-stopped \
+  honywen/adv-tavern:latest
+```
+
+### CI/CD 自动化
+
+本项目使用 GitHub Actions 实现自动化构建和部署：
+
+1. 推送代码到 `main` 分支
+2. GitHub Actions 自动触发构建
+3. 构建 Docker 镜像
+4. 推送到 Docker Hub
+5. 自动打上 `latest` 和 `dev` 标签
+
+查看构建状态：[GitHub Actions](https://github.com/NyaaCaster/AVG-AdventurerTavern/actions)
+
 ---
 
 ## 📂 项目结构简介
@@ -117,7 +200,49 @@ Docker 部署默认映射端口为 `3098`。请访问：
 *   `data/`: 游戏数据 (角色人设 `characters/`、提示词 `prompts/`、日程表 `schedules.ts`)
 *   `services/`: LLM 通信服务逻辑
 *   `types/`: TypeScript 类型定义
-*   `img/` & `audio/`: 静态资源占位 (实际逻辑中通过 `utils/imagePath.ts` 解析)
+*   `utils/`: 工具函数 (图片路径解析、场景工具等)
+*   `.github/workflows/`: GitHub Actions CI/CD 配置
+*   `Dockerfile`: Docker 镜像构建配置
+*   `docker-compose.yml`: Docker Compose 部署配置
+
+## 🔧 技术栈
+
+*   **前端框架**: React 19 + TypeScript
+*   **构建工具**: Vite 6
+*   **容器化**: Docker + Nginx
+*   **CI/CD**: GitHub Actions
+*   **镜像托管**: Docker Hub
+*   **AI 集成**: OpenAI 兼容 API (GPT-4, Claude, DeepSeek 等)
+
+## 📚 相关文档
+
+*   [Docker 部署指南](./DOCKER-DEPLOY.md) - 详细的 Docker 部署和管理文档
+*   [GitHub Actions 工作流](./.github/workflows/docker-publish.yml) - CI/CD 配置
+*   [Dockerfile](./Dockerfile) - Docker 镜像构建配置
+
+## 🤝 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📊 项目状态
+
+*   **开发状态**: 活跃开发中
+*   **Docker 镜像**: 自动构建和发布
+*   **镜像大小**: ~62MB (优化后)
+*   **部署方式**: Docker / Node.js
+
+## 🔗 相关链接
+
+*   **GitHub 仓库**: https://github.com/NyaaCaster/AVG-AdventurerTavern
+*   **Docker Hub**: https://hub.docker.com/r/honywen/adv-tavern
+*   **GitHub Actions**: https://github.com/NyaaCaster/AVG-AdventurerTavern/actions
+*   **问题反馈**: https://github.com/NyaaCaster/AVG-AdventurerTavern/issues
 
 ## 📜 开源许可 (License)
 
