@@ -86,7 +86,18 @@ const INITIAL_INVENTORY: Record<string, number> = {
     'wpn-102': 1,   
     'arm-201': 1,   
     'spc-00': 1,    
-    'spc-05': 2,    
+    'spc-05': 2, 
+    'res-1011': 2,
+    'res-1025': 5,
+    'res-1032': 2,
+    'res-1047': 10,
+    'res-1055': 1,
+    'res-1065': 2,
+    'res-1079': 6,
+    'res-1086': 5,
+    'res-1095': 1,
+    'res-1108': 3,
+    'res-1113': 1,
 };
 
 const calculateWorldState = (currentSceneName: string): WorldState => {
@@ -251,9 +262,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
   
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
+  // Forced overrides for characters moved via dialogue
+  const [forcedLocations, setForcedLocations] = useState<Record<string, string>>({});
   
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
+  const [moveNotification, setMoveNotification] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{charId: string, targetId: string} | null>(null);
 
   const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
       if (currentSceneId === 'scen_2') {
@@ -315,7 +330,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         const newState = calculateWorldState(getSceneDisplayName(currentSceneId, sceneParams));
         setWorldState(newState);
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
-        setCharacterLocations(locs);
+        // Apply forced locations overlay
+        const finalLocs = { ...locs, ...forcedLocations };
+        setCharacterLocations(finalLocs);
     };
 
     update();
@@ -325,13 +342,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
              const newState = calculateWorldState(prev.sceneName);
              if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
                  const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
-                 setCharacterLocations(locs);
+                 // Apply forced locations overlay
+                 const finalLocs = { ...locs, ...forcedLocations };
+                 setCharacterLocations(finalLocs);
              }
              return newState;
         });
     }, 1000 * 30);
     return () => clearInterval(timer);
-  }, [currentSceneId, sceneParams]); 
+  }, [currentSceneId, sceneParams, forcedLocations]); 
 
   useEffect(() => {
     const unsubscribe = llmService.subscribeLogs((logs) => {
@@ -591,7 +610,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         setWorldState(newState);
         
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
-        setCharacterLocations(locs);
+        // Apply forced locations overlay
+        const finalLocs = { ...locs, ...forcedLocations };
+        setCharacterLocations(finalLocs);
 
         setTimeout(() => {
             setTransitionOpacity(0); 
@@ -737,6 +758,16 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const handleFinalClose = () => {
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
+      
+      // Apply pending move logic if character decided to move
+      if (pendingMove) {
+          setForcedLocations(prev => ({
+              ...prev,
+              [pendingMove.charId]: pendingMove.targetId
+          }));
+          setPendingMove(null);
+      }
+
       setActiveCharacter(null);
       setClothingState('default');
   };
@@ -793,6 +824,16 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
               setClothingState(newClothing as ClothingState);
           }
+      }
+
+      // Handle Character Movement Instruction
+      if (response.move_to && SCENE_NAMES[response.move_to as SceneId]) {
+          const targetName = SCENE_NAMES[response.move_to as SceneId];
+          setMoveNotification(`${activeCharacter.name} 将前往 ${targetName}`);
+          setPendingMove({ charId: activeCharacter.id, targetId: response.move_to });
+          
+          // Clear notification after 4 seconds
+          setTimeout(() => setMoveNotification(null), 4000);
       }
 
       setHistory(prev => {
@@ -857,6 +898,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                 if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
                     setClothingState(newClothing as ClothingState);
                 }
+            }
+
+            if (response.move_to && SCENE_NAMES[response.move_to as SceneId]) {
+                const targetName = SCENE_NAMES[response.move_to as SceneId];
+                setMoveNotification(`${activeCharacter.name} 将前往 ${targetName}`);
+                setPendingMove({ charId: activeCharacter.id, targetId: response.move_to });
+                setTimeout(() => setMoveNotification(null), 4000);
             }
 
             setHistory(prev => {
@@ -982,6 +1030,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           
           <GameEnvironmentWidget worldState={worldState} />
 
+          {/* Item Gain Notifications */}
           <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
               {itemNotifications.map(notification => (
                   <ItemToast 
@@ -992,6 +1041,16 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                   />
               ))}
           </div>
+
+          {/* Movement Notification */}
+          {moveNotification && (
+              <div className="absolute bottom-[300px] left-4 z-[70] animate-fadeIn pointer-events-none">
+                  <div className="bg-indigo-900/90 border-l-4 border-indigo-400 text-indigo-100 px-6 py-3 rounded-r shadow-2xl flex items-center gap-3 backdrop-blur-md">
+                      <i className="fa-solid fa-shoe-prints text-indigo-300"></i>
+                      <span className="font-bold tracking-wider text-sm">{moveNotification}</span>
+                  </div>
+              </div>
+          )}
 
           {errorMessage && (
             <div 

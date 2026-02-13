@@ -61,6 +61,7 @@ const PROMPT_FORMATTING = `
 - emotion: 表情代码 (如 normal, happy, angry 等)
 - clothing: (可选) 衣着状态变更 (default/nude/bondage)
 - gain_items: (可选) 获得的道具列表，格式为 [{id: 'item-id', count: 1}]
+- move_to: (可选) 角色同意前往的场景ID (scen_X)
 
 ## 状态变更指令 (Clothing)
 - 如果剧情发展导致角色脱去衣服、变得赤裸，请在 JSON 响应的 'clothing' 字段返回 'nude'。
@@ -72,6 +73,27 @@ const PROMPT_FORMATTING = `
   - 必须在 JSON 的 'gain_items' 字段中返回。
 `;
 
+// 6. 角色移动指令
+const PROMPT_MOVEMENT = `
+## 角色移动指令 (Move)
+- 场景ID列表：
+  - scen_1: 宿屋 (大厅/柜台)
+  - scen_2: 客房 (角色自己的房间)
+  - scen_3: 酒场
+  - scen_4: 训练场
+  - scen_5: 武器店
+  - scen_6: 防具店
+  - scen_7: 温泉
+  - scen_8: 按摩室
+  - scen_9: 库房
+  - scen_10: 道具店
+
+- 触发条件：当{{user}}建议或命令角色前往上述某个场景，并且角色**明确同意**时。
+- 输出格式：在JSON中包含 "move_to": "场景ID" 字段。
+- 特殊规则：如果{{user}}说“回房间”、“回去休息”等指代回到角色自己房间的指令，目标场景ID为 "scen_2"。
+- 仅当角色真正决定移动时才输出此指令。
+`;
+
 /**
  * 组合所有提示词模块
  * 提示：未来如果需要根据设置关闭 NSFW，可以在这里进行条件判断
@@ -81,5 +103,6 @@ export const GLOBAL_AI_RULES = [
     PROMPT_NSFW,
     PROMPT_CHARACTER_DEPTH,
     PROMPT_LOGIC_SAFETY,
-    PROMPT_FORMATTING
+    PROMPT_FORMATTING,
+    PROMPT_MOVEMENT
 ].join('\n\n');

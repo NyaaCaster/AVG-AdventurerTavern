@@ -17,7 +17,7 @@ export const ITEM_TAGS: ItemTagInfo[] = [
   { id: 'non', name: '非食用', icon: '' },
   { id: 'meat', name: '肉类', icon: '🥩' },
   { id: 'vegetable', name: '果蔬', icon: '🥬' },
-  { id: 'mushroom', name: '菌类', icon: '🍄‍🟫' },
+  { id: 'mushroom', name: '菌类', icon: '🍄' },
   { id: 'cereal', name: '谷物', icon: '🍞' },
   { id: 'egg', name: '蛋类', icon: '🥚' },
   { id: 'milk', name: '奶类', icon: '🍼' },
@@ -54,7 +54,7 @@ export const ITEMS: Record<string, ItemData> = {
   'res-0901': { id: 'res-0901', name: '木灵的胡椒', category: 'res', tag: 'spice', quality: 'D', maxStack: 99, description: "魔物`姆尔姆尔灌木`的胡椒。可于烹饪。" },
   // 角色专属素材
   'res-1011': { id: 'res-1011', name: '莉莉娅的乳肉', category: 'res', tag: 'meat', quality: 'S', maxStack: 99, description: "割取自`莉莉娅`乳房的肉，柔软滑腻，奶香多汁。可于烹饪。" },
-  'res-1025': { id: 'res-1025', name: '米娜的蛋', category: 'res', tag: 'egg', quality: 'S', maxStack: 99, description: "`米娜`每个月剩下的蛋，有芒果大小，浓香四溢。可于烹饪。" },
+  'res-1025': { id: 'res-1025', name: '米娜的蛋', category: 'res', tag: 'egg', quality: 'S', maxStack: 99, description: "`米娜`每个月生下的蛋，有芒果大小，浓香四溢。可于烹饪。" },
   'res-1032': { id: 'res-1032', name: '欧若拉的胡萝卜', category: 'res', tag: 'vegetable', quality: 'S', maxStack: 99, description: "被`欧若拉`用作肛塞的胡萝卜，「皇室风味」。可于烹饪。" },
   'res-1047': { id: 'res-1047', name: '朱迪斯的「圣水」', category: 'res', tag: 'wine', quality: 'S', maxStack: 99, description: "`朱迪斯`的尿液，酒精含量很高，相当于酿造的美酒。可于烹饪。" },
   'res-1055': { id: 'res-1055', name: '莲华的腿肉', category: 'res', tag: 'meat', quality: 'S', maxStack: 99, description: "割取自`莲华`大腿的肌肉，韧劲十足，口感弹滑。可于烹饪。" },

@@ -5,6 +5,7 @@ export interface AIResponse {
   text: string;
   emotion: string;
   clothing?: string;
+  move_to?: string; // 角色移动指令
   items?: { id: string; count: number }[];
   usage?: {
       prompt_tokens: number;
@@ -125,7 +126,7 @@ export class LlmService {
           messages: [
               { 
                   role: 'system', 
-                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion', 'clothing' (optional, 'default'|'nude'|'bondage'), and 'gain_items' (optional, list of {id, count}). Do not use Markdown code blocks." 
+                  content: this.systemInstruction + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion', 'clothing' (optional, 'default'|'nude'|'bondage'), 'move_to' (optional, scene_id), and 'gain_items' (optional, list of {id, count}). Do not use Markdown code blocks." 
               },
               ...this.history
           ],
