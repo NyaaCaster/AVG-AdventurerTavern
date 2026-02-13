@@ -2,13 +2,9 @@ version: '3.8'
 
 services:
   adventurertavern:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - NODE_ENV=production
-        - NPM_CONFIG_LOGLEVEL=warn
+    image: honywen/adv-tavern:latest
     container_name: adventurertavern
+    pull_policy: always
     ports:
       - "3098:80"
     restart: unless-stopped
