@@ -1,0 +1,132 @@
+# Docker忽略文件 - 优化构建速度和镜像大小
+
+# 版本控制
+.git
+.gitignore
+.gitattributes
+.github
+
+# 依赖目录
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# 构建输出
+dist
+build
+.out
+.next
+.nuxt
+
+# 测试相关
+coverage
+.nyc_output
+*.lcov
+
+# 环境文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日志文件
+*.log
+logs
+
+# 运行时文件
+.DS_Store
+Thumbs.db
+
+# 编辑器文件
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.dockerignore
+.docker
+.dockerenv
+
+# 文档
+README.md
+CHANGELOG.md
+LICENSE
+*.pdf
+*.doc
+*.docx
+
+# 配置文件 (除了必要的)
+*.config.js
+*.config.ts
+webpack.config.js
+rollup.config.js
+# vite.config.ts  # 注意：这个文件需要保留，因为构建需要
+
+# 源代码 (在构建阶段需要，但生产阶段不需要)
+# src
+# components
+# services
+# utils
+# types
+# data
+# System_Prompt
+# WorldInfo
+# Char-Img
+
+# TypeScript文件
+# *.ts
+# *.tsx
+# tsconfig.json
+# tsconfig.*.json
+
+# 测试文件
+__tests__
+__mocks__
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# 图片和媒体文件 (在构建时会被处理，原始文件不需要)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+*.mp3
+*.wav
+
+# 字体文件
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# 其他构建工具
+.eslintrc.js
+.prettierrc
+.babelrc
+.postcssrc.js
+
+# Docker相关
+# Dockerfile
+# docker-compose.yml
+.docker-compose.override.yml
+
+# 临时文件
+tmp
+temp
+
+# 特定项目文件
+Dialogue_style.md
+Item-info.md
+metadata.json
+qweather-icons.json
+# version.ts
