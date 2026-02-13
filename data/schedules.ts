@@ -13,7 +13,7 @@ export const CHARACTER_SCHEDULES: Record<string, CharacterSchedule> = {
     night: ['scen_3']
   },
   'char_103': { // 欧若拉
-    day: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6'],
+    day: ['scen_2', 'scen_4', 'scen_5','scen_6'],
     evening: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_2']
   },

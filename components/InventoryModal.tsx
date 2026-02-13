@@ -46,8 +46,25 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
   };
 
   const formatText = (text: string) => {
-      if (!text) return "";
-      return text.replace(/{{user}}/g, userName);
+      if (!text) return null;
+      const replaced = text.replace(/{{user}}/g, userName);
+      
+      const parts = replaced.split(/`([^`]+)`/);
+      
+      return (
+        <>
+            {parts.map((part, index) => {
+                if (index % 2 === 1) {
+                    return (
+                        <span key={index} className="font-bold text-[#b45309] mx-0.5">
+                            {part}
+                        </span>
+                    );
+                }
+                return part;
+            })}
+        </>
+      );
   };
 
   return (
@@ -148,9 +165,9 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                             </span>
                                         </div>
                                         
-                                        <p className="text-[10px] md:text-xs text-[#6e5d52] line-clamp-2 leading-tight min-h-[2.5em]">
+                                        <div className="text-[10px] md:text-xs text-[#6e5d52] line-clamp-2 leading-tight min-h-[2.5em]">
                                             {formatText(item.description)}
-                                        </p>
+                                        </div>
 
                                         <div className="flex justify-between items-end mt-1">
                                             {/* Attributes/Tags Display - Mini */}
@@ -244,9 +261,9 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
 
                         {/* Description */}
                         <div className="bg-[#f5f0e6] border border-[#d6cbb8] p-4 rounded-lg shadow-inner mb-4">
-                            <p className="text-sm md:text-base leading-relaxed font-medium text-[#4a3b32] whitespace-pre-wrap">
+                            <div className="text-sm md:text-base leading-relaxed font-medium text-[#4a3b32] whitespace-pre-wrap">
                                 {formatText(selectedItem.description)}
-                            </p>
+                            </div>
                         </div>
 
                         {/* Footer Info */}
