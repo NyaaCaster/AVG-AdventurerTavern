@@ -35,6 +35,7 @@ export interface GameSettings {
   isMuted: boolean;
   enableNSFW: boolean;
   enableDebug: boolean; // 新增：Debug模式开关
+  enableHD: boolean; // 新增：高清图片模式
 }
 
 // 新增：场景ID定义

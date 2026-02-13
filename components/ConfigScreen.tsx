@@ -457,6 +457,18 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                   </div>
                 </div>
 
+                {/* 高清图片模式 */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                  <div>
+                    <h4 className="text-lg font-medium text-slate-200">高清图片模式</h4>
+                    <p className="text-sm text-slate-400 mt-1">改为高分辨率大尺寸图片，注意流量消耗。</p>
+                  </div>
+                  <ToggleSwitch 
+                    checked={settings.enableHD} 
+                    onChange={(checked) => onUpdateSettings({...settings, enableHD: checked})} 
+                  />
+                </div>
+
                 {/* Debug Mode Toggle - Hidden by default */}
                 {isDebugRevealed && (
                     <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-yellow-600/50 animate-fadeIn">
