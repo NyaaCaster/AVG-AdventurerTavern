@@ -5,6 +5,7 @@ import GameScene from './components/GameScene';
 import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
+import { setHDMode } from './utils/imagePath';
 
 const App: React.FC = () => {
   // 设置初始游戏状态
@@ -14,8 +15,12 @@ const App: React.FC = () => {
   // 记录设置界面初始化时应选中的标签页
   const [configInitialTab, setConfigInitialTab] = useState<ConfigTab>('dialogue');
 
-  // 游戏设置状态，初始化时从本地存储加载
-  const [gameSettings, setGameSettings] = useState<GameSettings>(loadSettings);
+  // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
+  const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
+      const settings = loadSettings();
+      setHDMode(settings.enableHD);
+      return settings;
+  });
 
   // --- 转场动画状态管理 ---
   const [overlayOpacity, setOverlayOpacity] = useState(0); // 0: 透明, 1: 全黑
@@ -51,10 +56,11 @@ const App: React.FC = () => {
     }, fadeOutMs);
   };
 
-  // 当设置变更时，保存到本地
+  // 当设置变更时，保存到本地并应用副作用
   const handleUpdateSettings = (newSettings: GameSettings) => {
     setGameSettings(newSettings);
     saveSettings(newSettings);
+    setHDMode(newSettings.enableHD); // 更新图片解析模式
   };
 
   // 进入设置界面的处理函数

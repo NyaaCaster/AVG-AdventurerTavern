@@ -18,7 +18,8 @@ export const defaultSettings: GameSettings = {
   masterVolume: 15,
   isMuted: false,
   enableNSFW: false, // 默认关闭 NSFW
-  enableDebug: false // 默认关闭 Debug
+  enableDebug: false, // 默认关闭 Debug
+  enableHD: false // 默认关闭 HD 模式
 };
 
 export const loadSettings = (): GameSettings => {
@@ -39,6 +40,9 @@ export const loadSettings = (): GameSettings => {
     }
     if (typeof parsed.enableDebug !== 'boolean') {
         mergedSettings.enableDebug = defaultSettings.enableDebug;
+    }
+    if (typeof parsed.enableHD !== 'boolean') {
+        mergedSettings.enableHD = defaultSettings.enableHD;
     }
     
     return mergedSettings;
