@@ -33,8 +33,8 @@ services:
         tag: "adventurertavern"
     networks:
       - app-network
-    security_opt:
-      - no-new-privileges:true
+        # security_opt:
+    #   - no-new-privileges:true
     # 使用特权模式以便非root用户可以绑定端口80
     # user: "1001:1001"  # 使用nginxuser的UID:GID
     tmpfs:
