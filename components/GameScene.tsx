@@ -12,6 +12,7 @@ import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
+import ExpansionModal from './ExpansionModal'; // New Component
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
@@ -51,15 +52,15 @@ const SCENE_NAMES: Record<SceneId, string> = {
   'scen_10': '道具店'
 };
 
-const SCENE_LEVELS: Record<string, number> = {
+const INITIAL_SCENE_LEVELS: Record<string, number> = {
   'scen_1': 1,
   'scen_2': 1,
   'scen_3': 1,
   'scen_4': 1,
-  'scen_5': 1,
-  'scen_6': 1,
-  'scen_7': 1,
-  'scen_8': 1,
+  'scen_5': 0, // Initial 0
+  'scen_6': 0, // Initial 0
+  'scen_7': 0, // Initial 0
+  'scen_8': 0, // Initial 0
   'scen_9': 1,
   'scen_10': 1,
 };
@@ -202,7 +203,7 @@ const shuffleArray = <T,>(array: T[], seed: number): T[] => {
     return shuffled;
 };
 
-const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: string, timeStr: string): Record<string, string> => {
+const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: string, timeStr: string, sceneLevels: Record<string, number>): Record<string, string> => {
     const mapping: Record<string, string> = {};
     const sceneOccupancy: Record<string, number> = {};
     
@@ -241,7 +242,8 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
                 if (char.appearanceConditions) {
                     for (const cond of char.appearanceConditions) {
                         if (cond.sceneId === sid) {
-                            const sceneLevel = SCENE_LEVELS[sid] || 1;
+                            const sceneLevel = sceneLevels[sid] || 0; // Use dynamic level
+                            // If level is 0 (not built), character cannot appear there unless condition minLevel is 0 (unlikely)
                             if (sceneLevel < cond.minLevel) return false;
                         }
                     }
@@ -280,12 +282,14 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [forcedLocations, setForcedLocations] = useState<Record<string, string>>({});
   
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
-  const [gold, setGold] = useState<number>(5000); // 初始金币
+  const [gold, setGold] = useState<number>(3000); // 初始金币
+  const [sceneLevels, setSceneLevels] = useState<Record<string, number>>(INITIAL_SCENE_LEVELS);
 
   // --- Management System State ---
   const [managementStats, setManagementStats] = useState<ManagementStats>(INITIAL_STATS);
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [isExpansionOpen, setIsExpansionOpen] = useState(false); // New state for Expansion Modal
   const lastSettlementHourRef = useRef<number | null>(null);
 
   // Initialize some dummy revenue logs for "history"
@@ -347,6 +351,47 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           if (changes.reputation !== undefined) newStats.reputation = Math.max(0, Math.min(100, prev.reputation + changes.reputation));
           return newStats;
       });
+  };
+
+  // Facility Expansion Handler
+  const handleUpgradeFacility = (facilityId: SceneId, costGold: number, costMatIds: string[], costMatCount: number) => {
+      // Check Resources again (Backend validation style)
+      if (gold < costGold) return;
+      for (const matId of costMatIds) {
+          if ((inventory[matId] || 0) < costMatCount) return;
+      }
+
+      // Deduct Resources
+      setGold(prev => prev - costGold);
+      setInventory(prev => {
+          const newInv = { ...prev };
+          for (const matId of costMatIds) {
+              newInv[matId] = (newInv[matId] || 0) - costMatCount;
+          }
+          return newInv;
+      });
+
+      // Increase Level
+      setSceneLevels(prev => {
+          const newLevels = { ...prev };
+          newLevels[facilityId] = (newLevels[facilityId] || 0) + 1;
+          return newLevels;
+      });
+
+      // Update Management Stats based on upgrades (Optional integration)
+      if (facilityId === 'scen_1') {
+          // Increase Room Price
+          setManagementStats(prev => ({
+              ...prev,
+              roomPrice: 50 + ((sceneLevels['scen_1'] || 1) + 1 - 1) * 10 // Calculate for NEW level
+          }));
+      } else if (facilityId === 'scen_2') {
+          // Increase Max Occupancy
+          setManagementStats(prev => ({
+              ...prev,
+              maxOccupancy: 20 + ((sceneLevels['scen_2'] || 1) + 1 - 1) * 5
+          }));
+      }
   };
 
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
@@ -451,7 +496,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         }
 
         setWorldState(newState);
-        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
         // Apply forced locations overlay
         const finalLocs = { ...locs, ...forcedLocations };
         setCharacterLocations(finalLocs);
@@ -523,7 +568,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
              // ---------------------------------
 
              if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
-                 const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+                 const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
                  // Apply forced locations overlay
                  const finalLocs = { ...locs, ...forcedLocations };
                  setCharacterLocations(finalLocs);
@@ -532,7 +577,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         });
     }, 1000 * 30);
     return () => clearInterval(timer);
-  }, [currentSceneId, sceneParams, forcedLocations, managementStats]); 
+  }, [currentSceneId, sceneParams, forcedLocations, managementStats, sceneLevels]); 
 
   // ... (rest of the file remains unchanged) ...
   useEffect(() => {
@@ -734,7 +779,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   }, [currentSceneId]);
 
-  const currentSceneLevel = SCENE_LEVELS[currentSceneId] || 1;
+  const currentSceneLevel = sceneLevels[currentSceneId] || (currentSceneId === 'scen_5' || currentSceneId === 'scen_6' || currentSceneId === 'scen_7' || currentSceneId === 'scen_8' ? 0 : 1);
   const currentBgUrl = getSceneBackground(currentSceneId, worldState.period, currentSceneLevel);
 
   useEffect(() => {
@@ -799,7 +844,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
         setWorldState(newState);
         
-        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
+        const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
         // Apply forced locations overlay
         const finalLocs = { ...locs, ...forcedLocations };
         setCharacterLocations(finalLocs);
@@ -1158,7 +1203,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     };
 
     switch(currentSceneId) {
-        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} />;
+        case 'scen_1': return (
+            <Scen1 
+                {...commonProps} 
+                onOpenManagement={() => setIsManagementOpen(true)} 
+                onOpenExpansion={() => setIsExpansionOpen(true)}
+            />
+        );
         case 'scen_2': return <Scen2 {...commonProps} />;
         case 'scen_3': return <Scen3 {...commonProps} />;
         case 'scen_4': return <Scen4 {...commonProps} />;
@@ -1378,6 +1429,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           logs={revenueLogs}
           onAction={handleManagementAction}
           currentGold={gold}
+      />
+
+      <ExpansionModal 
+          isOpen={isExpansionOpen}
+          onClose={() => setIsExpansionOpen(false)}
+          currentLevels={sceneLevels}
+          inventory={inventory}
+          gold={gold}
+          onUpgrade={handleUpgradeFacility}
       />
     </div>
   );
