@@ -40,7 +40,7 @@ export interface GameSettings {
 
 // 新增：场景ID定义
 export type SceneId = 
-  | 'scen_1'  // 宿屋
+  | 'scen_1'  // 柜台
   | 'scen_2'  // 客房
   | 'scen_3'  // 酒场
   | 'scen_4'  // 训练场
@@ -147,6 +147,7 @@ export interface SceneProps {
   presentCharacters: Character[]; // 新增：当前场景存在的角色列表
   inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
   onOpenManagement?: () => void; // 新增：打开管理界面回调
+  sceneLevels: Record<string, number>; // 新增：场景等级信息
 }
 
 // --- 道具系统类型定义 ---

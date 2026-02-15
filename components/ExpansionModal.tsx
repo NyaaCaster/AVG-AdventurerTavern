@@ -260,7 +260,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                                 {upgradeInfo.isCapReached ? (
                                     <div className="bg-slate-200 border-2 border-slate-300 rounded-lg p-3 md:p-4 text-center text-slate-500 font-bold flex items-center justify-center gap-2 text-sm md:text-base">
                                         <i className="fa-solid fa-lock"></i>
-                                        <span>等级上限受限：需提升宿屋等级</span>
+                                        <span>等级上限受限：需提升柜台等级</span>
                                     </div>
                                 ) : (
                                     <button

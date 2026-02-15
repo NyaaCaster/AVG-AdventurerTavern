@@ -18,7 +18,7 @@ export const getSceneBackground = (sceneId: SceneId, period: WorldState['period'
   const clampLevel = (lvl: number, max: number) => Math.min(Math.max(lvl, 1), max);
 
   switch (sceneId) {
-    case 'scen_1': // 宿屋: LV1-LV5
+    case 'scen_1': // 柜台: LV1-LV5
       return `${basePath}/scen_1/bg_scen_1_lv${clampLevel(level, 5)}_${p}.png`;
 
     case 'scen_2': // 客房: LV1-LV3

@@ -10,8 +10,8 @@ export interface FacilityConfig {
   baseCostMat: number; // 灵木、幻皮、魔晶石
   
   // 依赖限制
-  unlockInnLevel: number; // 出现该设施建设选项所需的宿屋等级
-  dependencyFactor?: number; // 最大等级 = 宿屋等级 / factor (或者 * factor)
+  unlockInnLevel: number; // 出现该设施建设选项所需的柜台等级
+  dependencyFactor?: number; // 最大等级 = 柜台等级 / factor (或者 * factor)
   dependencyType: 'multiply' | 'divide'; // 依赖计算方式
   
   // 描述生成函数
@@ -73,7 +73,7 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     baseCostGold: 5000,
     baseCostMat: 30,
     unlockInnLevel: 10,
-    dependencyFactor: 10, // MaxLv = InnLv / 10 (即每10级宿屋升1级)
+    dependencyFactor: 10, // MaxLv = InnLv / 10 (即每10级柜台升1级)
     dependencyType: 'divide',
     getEffectDescription: (level) => {
         if (level === 0) return "未建设";
