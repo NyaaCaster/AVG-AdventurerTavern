@@ -10,9 +10,10 @@ import GameEnvironmentWidget from './GameEnvironmentWidget';
 import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
+import ManagementModal from './ManagementModal';
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
-import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState } from '../types';
+import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
 import { SCENE_BGM } from '../data/resources/audioResources';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 
@@ -98,6 +99,16 @@ const INITIAL_INVENTORY: Record<string, number> = {
     'res-1095': 1,
     'res-1108': 3,
     'res-1113': 1,
+};
+
+// Initial Management Stats
+const INITIAL_STATS: ManagementStats = {
+    occupancy: 12,
+    maxOccupancy: 20,
+    roomPrice: 500,
+    satisfaction: 85,
+    attraction: 78,
+    reputation: 92
 };
 
 const calculateWorldState = (currentSceneName: string): WorldState => {
@@ -266,6 +277,75 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [forcedLocations, setForcedLocations] = useState<Record<string, string>>({});
   
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
+  const [gold, setGold] = useState<number>(5000); // 初始金币
+
+  // --- Management System State ---
+  const [managementStats, setManagementStats] = useState<ManagementStats>(INITIAL_STATS);
+  const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const lastSettlementHourRef = useRef<number | null>(null);
+
+  // Initialize some dummy revenue logs for "history"
+  useEffect(() => {
+      const initialLogs: RevenueLog[] = [];
+      const now = new Date();
+      // Generate logs for the last 3 days
+      for (let i = 2; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
+          
+          // Times: 06:00 (Tavern), 08:00 (Acc), 12:00 (Acc), 20:00 (Acc)
+          const events = [
+              { hour: 6, type: 'tavern' as const },
+              { hour: 8, type: 'accommodation' as const },
+              { hour: 12, type: 'accommodation' as const },
+              { hour: 20, type: 'accommodation' as const }
+          ];
+
+          events.forEach(event => {
+              // Skip future events today
+              if (i === 0 && event.hour > now.getHours()) return;
+
+              let amount = 0;
+              if (event.type === 'accommodation') {
+                  // Rule: Occupancy * Price * Satisfaction * Reputation
+                  // Add some randomness
+                  const occ = Math.floor(INITIAL_STATS.occupancy * (0.8 + Math.random() * 0.4)); // 80%-120% variation
+                  amount = Math.floor(occ * INITIAL_STATS.roomPrice * (INITIAL_STATS.satisfaction / 100) * (INITIAL_STATS.reputation / 100));
+              } else {
+                  // Tavern: Simplified calculation
+                  amount = Math.floor(1000 * (INITIAL_STATS.attraction / 100) * (0.8 + Math.random() * 0.5));
+              }
+
+              initialLogs.push({
+                  id: `log-${date.getTime()}-${event.hour}`,
+                  timestamp: date.setHours(event.hour, 0, 0, 0),
+                  dateStr,
+                  timeStr: `${event.hour.toString().padStart(2, '0')}:00`,
+                  type: event.type,
+                  amount
+              });
+          });
+      }
+      setRevenueLogs(initialLogs.reverse()); // Newest first
+  }, []);
+
+  // Management Action Handler
+  const handleManagementAction = (cost: number, changes: Partial<ManagementStats>) => {
+      if (gold < cost) return;
+
+      setGold(prev => prev - cost);
+      
+      setManagementStats(prev => {
+          let newStats = { ...prev };
+          if (changes.satisfaction !== undefined) newStats.satisfaction = Math.max(0, Math.min(100, prev.satisfaction + changes.satisfaction));
+          if (changes.attraction !== undefined) newStats.attraction = Math.max(0, Math.min(100, prev.attraction + changes.attraction));
+          if (changes.reputation !== undefined) newStats.reputation = Math.max(0, Math.min(100, prev.reputation + changes.reputation));
+          return newStats;
+      });
+  };
+
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<{charId: string, targetId: string} | null>(null);
@@ -340,6 +420,59 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const timer = setInterval(() => {
         setWorldState(prev => {
              const newState = calculateWorldState(prev.sceneName);
+             const currentHour = parseInt(newState.timeStr.split(':')[0]);
+
+             // --- Revenue & Stats Calculation Logic ---
+             if (lastSettlementHourRef.current !== currentHour) {
+                 
+                 // 1. Refresh Occupancy every hour (on the hour)
+                 // Formula: maxOccupancy * (attraction/100) * (satisfaction/100)
+                 const calculatedOccupancy = Math.floor(
+                     managementStats.maxOccupancy * 
+                     (managementStats.attraction / 100) * 
+                     (managementStats.satisfaction / 100)
+                 );
+                 const newOccupancy = Math.max(0, Math.min(managementStats.maxOccupancy, calculatedOccupancy));
+
+                 setManagementStats(prevStats => ({
+                     ...prevStats,
+                     occupancy: newOccupancy
+                 }));
+
+                 // 2. Perform Settlement if at specific hours
+                 const settlementHours = [6, 8, 12, 20];
+                 if (settlementHours.includes(currentHour)) {
+                     let revType: RevenueType = 'accommodation';
+                     let amount = 0;
+
+                     if (currentHour === 6) {
+                         // Tavern Settlement (06:00)
+                         revType = 'tavern';
+                         amount = Math.floor(1000 * (managementStats.attraction / 100) * (0.8 + Math.random() * 0.5));
+                     } else {
+                         // Accommodation Settlement (08:00, 12:00, 20:00)
+                         revType = 'accommodation';
+                         // Use newOccupancy calculated above
+                         amount = Math.floor(newOccupancy * managementStats.roomPrice * (managementStats.satisfaction / 100) * (managementStats.reputation / 100));
+                     }
+
+                     if (amount > 0) {
+                         setGold(g => g + amount);
+                         const newLog: RevenueLog = {
+                             id: `log-${Date.now()}`,
+                             timestamp: Date.now(),
+                             dateStr: newState.dateStr,
+                             timeStr: `${currentHour.toString().padStart(2, '0')}:00`,
+                             type: revType,
+                             amount
+                         };
+                         setRevenueLogs(prev => [newLog, ...prev].slice(0, 100));
+                     }
+                 }
+                 lastSettlementHourRef.current = currentHour;
+             }
+             // ---------------------------------
+
              if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
                  const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
                  // Apply forced locations overlay
@@ -350,7 +483,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         });
     }, 1000 * 30);
     return () => clearInterval(timer);
-  }, [currentSceneId, sceneParams, forcedLocations]); 
+  }, [currentSceneId, sceneParams, forcedLocations, managementStats]); 
 
   useEffect(() => {
     const unsubscribe = llmService.subscribeLogs((logs) => {
@@ -968,7 +1101,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     };
 
     switch(currentSceneId) {
-        case 'scen_1': return <Scen1 {...commonProps} />;
+        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} />;
         case 'scen_2': return <Scen2 {...commonProps} />;
         case 'scen_3': return <Scen3 {...commonProps} />;
         case 'scen_4': return <Scen4 {...commonProps} />;
@@ -978,7 +1111,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         case 'scen_8': return <Scen8 {...commonProps} />;
         case 'scen_9': return <Scen9 {...commonProps} />;
         case 'scen_10': return <Scen10 {...commonProps} />;
-        default: return <Scen1 {...commonProps} />;
+        default: return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} />;
     }
   };
 
@@ -1028,7 +1161,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
           
-          <GameEnvironmentWidget worldState={worldState} />
+          <GameEnvironmentWidget worldState={worldState} gold={gold} />
 
           {/* Item Gain Notifications */}
           <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
@@ -1180,6 +1313,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       <DialogueLogModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={history} />
       
       <DebugLogModal isOpen={showDebugLog} onClose={() => setShowDebugLog(false)} logs={debugLogs} />
+
+      <ManagementModal 
+          isOpen={isManagementOpen} 
+          onClose={() => setIsManagementOpen(false)} 
+          stats={managementStats}
+          logs={revenueLogs}
+          onAction={handleManagementAction}
+          currentGold={gold}
+      />
     </div>
   );
 };

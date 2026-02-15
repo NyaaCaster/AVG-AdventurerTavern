@@ -146,6 +146,7 @@ export interface SceneProps {
   settings: GameSettings;
   presentCharacters: Character[]; // 新增：当前场景存在的角色列表
   inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
+  onOpenManagement?: () => void; // 新增：打开管理界面回调
 }
 
 // --- 道具系统类型定义 ---
@@ -189,4 +190,26 @@ export interface ItemTagInfo {
   id: ItemTag;
   name: string;
   icon?: string; // 标签图标 (emoji)
+}
+
+// --- 旅店管理系统 ---
+
+export interface ManagementStats {
+  occupancy: number; // 当前住宿人数
+  maxOccupancy: number; // 上限数
+  roomPrice: number; // 客房单价 (G)
+  satisfaction: number; // 满足度 (0-100)
+  attraction: number; // 集客力 (0-100)
+  reputation: number; // 好评度 (0-100)
+}
+
+export type RevenueType = 'accommodation' | 'tavern';
+
+export interface RevenueLog {
+  id: string;
+  timestamp: number; // 用于排序和生成显示时间
+  dateStr: string;   // 显示日期 (如 10月24日)
+  timeStr: string;   // 显示时间 (如 08:00)
+  type: RevenueType;
+  amount: number;
 }
