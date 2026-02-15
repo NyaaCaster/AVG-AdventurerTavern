@@ -174,7 +174,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                             <div className="flex gap-1 overflow-hidden h-4">
                                                 {item.stats && Object.entries(item.stats).slice(0, 2).map(([stat, val]) => (
                                                     <span key={stat} className="text-[9px] px-1 bg-[#d6cbb8] text-[#4a3b32] rounded font-bold whitespace-nowrap">
-                                                        {stat}{val > 0 ? `+${val}` : val}
+                                                        {stat}{(val as number) > 0 ? `+${val}` : val}
                                                     </span>
                                                 ))}
                                             </div>
@@ -251,8 +251,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                 {Object.entries(selectedItem.stats).map(([stat, val]) => (
                                     <div key={stat} className="bg-[#d6cbb8] border border-[#c7bca8] px-3 py-1.5 rounded flex items-center gap-2 shadow-sm">
                                         <span className="text-[10px] font-bold text-[#6e5d52] uppercase">{stat}</span>
-                                        <span className={`font-mono font-bold ${val > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                                            {val > 0 ? `+${val}` : val}
+                                        <span className={`font-mono font-bold ${(val as number) > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                                            {(val as number) > 0 ? `+${val}` : val}
                                         </span>
                                     </div>
                                 ))}

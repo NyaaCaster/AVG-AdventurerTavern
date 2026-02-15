@@ -4,8 +4,8 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters }) => {
-  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'rooms'>('main');
+const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement }) => {
+  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'rooms' | 'management'>('main');
 
   if (!isMenuVisible) return null;
 
@@ -19,7 +19,12 @@ const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
       
       {menuLayer === 'main' && (
         <>
-          <SceneActionBtn label="旅店管理" icon="fa-list-check" onClick={() => {}} subLabel="Management" />
+          <SceneActionBtn 
+            label="旅店管理" 
+            icon="fa-list-check" 
+            onClick={() => setMenuLayer('management')} 
+            subLabel="Management" 
+          />
           <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setMenuLayer('move')} subLabel="Move" />
           <SceneActionBtn label="前往客房" icon="fa-door-closed" onClick={() => setMenuLayer('rooms')} subLabel="Guest Rooms" />
           <SceneActionBtn label="队伍管理" icon="fa-users" onClick={() => {}} subLabel="Party" />
@@ -71,6 +76,26 @@ const Scen1: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
              />
            ))}
         </div>
+      )}
+
+      {menuLayer === 'management' && (
+        <>
+           <SceneActionBtn label="返回上级" icon="fa-arrow-turn-up" onClick={() => setMenuLayer('main')} variant="special" />
+           <div className="h-2"></div>
+           <SceneActionBtn 
+             label="旅店账本" 
+             icon="fa-book-open" 
+             onClick={() => onOpenManagement && onOpenManagement()} 
+             subLabel="Ledger" 
+           />
+           <SceneActionBtn 
+             label="旅店扩建" 
+             icon="fa-hammer" 
+             onClick={() => {}} 
+             disabled 
+             subLabel="Construction" 
+           />
+        </>
       )}
 
     </div>
