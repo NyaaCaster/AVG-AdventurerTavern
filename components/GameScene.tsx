@@ -13,6 +13,7 @@ import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; // New Component
+import ResourceDebugModal from './ResourceDebugModal'; // New Component
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
@@ -40,7 +41,7 @@ interface GameSceneProps {
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 const SCENE_NAMES: Record<SceneId, string> = {
-  'scen_1': '宿屋',
+  'scen_1': '柜台',
   'scen_2': '客房',
   'scen_3': '酒场',
   'scen_4': '训练场',
@@ -394,6 +395,17 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       }
   };
 
+  // Debug - Resource Modification Handlers
+  const handleUpdateGold = (newGold: number) => {
+      setGold(newGold);
+  };
+  const handleUpdateInventory = (itemId: string, newCount: number) => {
+      setInventory(prev => ({
+          ...prev,
+          [itemId]: newCount
+      }));
+  };
+
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<{charId: string, targetId: string} | null>(null);
@@ -414,6 +426,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
   const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
+  const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false); // New state
 
   const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
   const [ambientText, setAmbientText] = useState<string>('');
@@ -1187,6 +1200,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const handleOpenDebug = () => {
       setIsDebugMenuOpen(!isDebugMenuOpen);
       setIsScheduleViewerOpen(false); 
+      setIsResourceDebugOpen(false);
   };
 
   const renderScene = () => {
@@ -1199,7 +1213,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         targetCharacterId: sceneParams.target,
         settings, 
         presentCharacters, 
-        inventory 
+        inventory,
+        sceneLevels 
     };
 
     switch(currentSceneId) {
@@ -1318,6 +1333,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                   >
                       <i className="fa-solid fa-calendar-days"></i>
                       Schedules
+                  </button>
+                  <button 
+                    onClick={() => { setIsResourceDebugOpen(true); setIsDebugMenuOpen(false); }}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-yellow-500 text-sm font-mono border border-slate-600 rounded transition-colors text-left flex items-center gap-2"
+                  >
+                      <i className="fa-solid fa-screwdriver-wrench"></i>
+                      资源调整
                   </button>
               </div>
           )}
@@ -1438,6 +1460,15 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           inventory={inventory}
           gold={gold}
           onUpgrade={handleUpgradeFacility}
+      />
+
+      <ResourceDebugModal 
+          isOpen={isResourceDebugOpen}
+          onClose={() => setIsResourceDebugOpen(false)}
+          gold={gold}
+          inventory={inventory}
+          onUpdateGold={handleUpdateGold}
+          onUpdateInventory={handleUpdateInventory}
       />
     </div>
   );

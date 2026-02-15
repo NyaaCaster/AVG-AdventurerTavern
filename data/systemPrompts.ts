@@ -77,7 +77,7 @@ const PROMPT_FORMATTING = `
 const PROMPT_MOVEMENT = `
 ## 角色移动指令 (Move)
 - 场景ID列表：
-  - scen_1: 宿屋 (大厅/柜台)
+  - scen_1: 柜台
   - scen_2: 客房 (角色自己的房间)
   - scen_3: 酒场
   - scen_4: 训练场
