@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
+import { fetchWeatherData } from '../services/weatherService'; // Import Weather Service
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
 import DebugLogModal from './DebugLogModal';
@@ -271,6 +272,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const [sceneParams, setSceneParams] = useState<any>({});
   
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
+  // Ref to hold real weather data to persist across simulated time updates
+  const realWeatherDataRef = useRef<{text: string, code: string, temp?: string} | null>(null);
   
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
   // Forced overrides for characters moved via dialogue
@@ -405,9 +408,48 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       }
   }, []);
 
+  // --- Real Weather Fetch Logic ---
+  const updateRealWeather = async () => {
+      const data = await fetchWeatherData();
+      if (data) {
+          realWeatherDataRef.current = data;
+          // Trigger a world state update to apply the new weather immediately
+          setWorldState(prev => {
+              return {
+                  ...prev,
+                  weather: data.text,
+                  weatherCode: data.code
+              };
+          });
+      }
+  };
+
+  useEffect(() => {
+      // 1. Fetch immediately on mount
+      updateRealWeather();
+
+      // 2. Set interval to check for the top of the hour every minute
+      const checkInterval = setInterval(() => {
+          const m = new Date().getMinutes();
+          if (m === 0) {
+              updateRealWeather();
+          }
+      }, 60000); // Check every minute
+
+      return () => clearInterval(checkInterval);
+  }, []);
+  // --------------------------------
+
   useEffect(() => {
     const update = () => {
         const newState = calculateWorldState(getSceneDisplayName(currentSceneId, sceneParams));
+        
+        // Apply real weather override if available
+        if (realWeatherDataRef.current) {
+            newState.weather = realWeatherDataRef.current.text;
+            newState.weatherCode = realWeatherDataRef.current.code;
+        }
+
         setWorldState(newState);
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
         // Apply forced locations overlay
@@ -420,6 +462,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     const timer = setInterval(() => {
         setWorldState(prev => {
              const newState = calculateWorldState(prev.sceneName);
+             
+             // Apply real weather override if available
+             if (realWeatherDataRef.current) {
+                 newState.weather = realWeatherDataRef.current.text;
+                 newState.weatherCode = realWeatherDataRef.current.code;
+             }
+
              const currentHour = parseInt(newState.timeStr.split(':')[0]);
 
              // --- Revenue & Stats Calculation Logic ---
@@ -485,6 +534,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     return () => clearInterval(timer);
   }, [currentSceneId, sceneParams, forcedLocations, managementStats]); 
 
+  // ... (rest of the file remains unchanged) ...
   useEffect(() => {
     const unsubscribe = llmService.subscribeLogs((logs) => {
         setDebugLogs([...logs]); 
@@ -740,6 +790,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         
         const newSceneName = getSceneDisplayName(sceneId, params);
         const newState = calculateWorldState(newSceneName);
+        
+        // Apply real weather override if available
+        if (realWeatherDataRef.current) {
+            newState.weather = realWeatherDataRef.current.text;
+            newState.weatherCode = realWeatherDataRef.current.code;
+        }
+
         setWorldState(newState);
         
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr);
