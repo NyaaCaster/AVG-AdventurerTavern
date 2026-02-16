@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ITEMS } from '../data/items';
+import { ITEMS, ITEM_TAGS } from '../data/items';
 
 interface ItemToastProps {
   itemId: string;
@@ -28,6 +28,25 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
 
   if (!item) return null;
 
+  // Helper to get icon
+  const getIcon = () => {
+      // Try to find icon in ITEM_TAGS first
+      if (item.tag) {
+          const tagInfo = ITEM_TAGS.find(t => t.id === item.tag);
+          if (tagInfo && tagInfo.icon) return tagInfo.icon;
+      }
+      
+      // Fallback based on category
+      switch (item.category) {
+          case 'wpn': return '⚔️';
+          case 'arm': return '🛡️';
+          case 'itm': return '🧪';
+          case 'acs': return '💍';
+          case 'res': return '📦';
+          default: return '🎁';
+      }
+  };
+
   return (
     <div 
         className={`
@@ -39,12 +58,7 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
     >
       {/* Icon Box */}
       <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] text-xl shadow-inner">
-          {item.tag === 'meat' ? '🥩' : 
-           item.tag === 'vegetable' ? '🥬' : 
-           item.tag === 'wine' ? '🍺' : 
-           item.category === 'wpn' ? '⚔️' :
-           item.category === 'arm' ? '🛡️' :
-           '🎁'}
+          {getIcon()}
       </div>
 
       {/* Text Info */}

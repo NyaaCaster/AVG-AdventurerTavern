@@ -156,7 +156,10 @@ export type ItemCategory = 'res' | 'itm' | 'spc' | 'wpn' | 'arm' | 'acs';
 
 export type ItemTag =
   // 食材标签
-  | 'non' | 'meat' | 'vegetable' | 'mushroom' | 'cereal' | 'egg' | 'milk' | 'wine' | 'jelly' | 'spice'
+  | 'non' | 'meat' | 'poultry' | 'fish' | 'crab' | 'mussel'
+  | 'rhizome' | 'vegetable' | 'melons' | 'fruit' | 'tomatoes'
+  | 'mushroom' | 'flour' | 'bread' | 'rice' | 'bean'
+  | 'egg' | 'milk' | 'dairy' | 'wine' | 'jelly' | 'spice'
   // 装备类别标签
   | 'sword' | 'book' | 'gun' | 'glove' | 'lance' | 'axe' | 'bow'
   | 'L-Arm' | 'M-Arm' | 'H-Arm';

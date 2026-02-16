@@ -14,16 +14,28 @@ export const ITEM_CATEGORIES: ItemCategoryInfo[] = [
 // 道具标签定义
 export const ITEM_TAGS: ItemTagInfo[] = [
   // 食材
-  { id: 'non', name: '非食用', icon: '' },
-  { id: 'meat', name: '肉类', icon: '🥩' },
-  { id: 'vegetable', name: '果蔬', icon: '🥬' },
-  { id: 'mushroom', name: '菌类', icon: '🍄' },
-  { id: 'cereal', name: '谷物', icon: '🍞' },
-  { id: 'egg', name: '蛋类', icon: '🥚' },
-  { id: 'milk', name: '奶类', icon: '🍼' },
-  { id: 'wine', name: '酒水', icon: '🍺' },
-  { id: 'jelly', name: '凝胶', icon: '🍮' },
-  { id: 'spice', name: '香料', icon: '🧂' },
+  { id: 'non', name: '非食用', icon: '' },  // 0
+  { id: 'meat', name: '兽肉', icon: '🥩' },  // 1
+  { id: 'poultry', name: '禽肉', icon: '🍗' },  // 10
+  { id: 'fish', name: '鱼类', icon: '🐟️' },  // 11
+  { id: 'crab', name: '虾蟹', icon: '🦀' },  // 12
+  { id: 'mussel', name: '贝类', icon: '🐚' },  // 13
+  { id: 'rhizome', name: '根茎', icon: '🥕' },  // 2
+  { id: 'vegetable', name: '叶菜', icon: '🥬' },  // 17
+  { id: 'melons', name: '瓜类', icon: '🍈' },  // 18
+  { id: 'fruit', name: '水果', icon: '🍎' },  // 19
+  { id: 'tomatoes', name: '茄类', icon: '🍆' },  // 20
+  { id: 'mushroom', name: '菌类', icon: '🍄' },  // 3
+  { id: 'flour', name: '面粉', icon: '🌾' },  // 4
+  { id: 'bread', name: '面包', icon: '🍞' },  // 14
+  { id: 'rice', name: '米', icon: '🍚' },  // 15
+  { id: 'bean', name: '豆类', icon: '🫘' },  // 16
+  { id: 'egg', name: '蛋类', icon: '🥚' },  // 5
+  { id: 'milk', name: '奶', icon: '🍼' },  // 6
+  { id: 'dairy', name: '乳制品', icon: '🧀' },  // 21
+  { id: 'wine', name: '酒水', icon: '🍺' },  // 7
+  { id: 'jelly', name: '凝胶', icon: '🍮' },  // 8
+  { id: 'spice', name: '香料', icon: '🧂' },  // 9
   // 装备
   { id: 'sword', name: '剑', icon: '🗡' },
   { id: 'book', name: '魔导书', icon: '📘' },
@@ -46,17 +58,17 @@ export const ITEMS: Record<string, ItemData> = {
   'res-0101': { id: 'res-0101', name: '狂暴兔肉', category: 'res', tag: 'meat', quality: 'D', maxStack: 99, description: "魔物`狂暴绒毛怪`的肉。可于烹饪。" },
   'res-0201': { id: 'res-0201', name: '青菜', category: 'res', tag: 'vegetable', quality: 'E', maxStack: 99, description: "世面常见的蔬菜。可于烹饪。" },
   'res-0301': { id: 'res-0301', name: '发光菌伞', category: 'res', tag: 'mushroom', quality: 'D', maxStack: 99, description: "魔物`光孢怪`的菌伞。可于烹饪。" },
-  'res-0401': { id: 'res-0401', name: '面粉', category: 'res', tag: 'cereal', quality: 'E', maxStack: 99, description: "世面常见的面粉。可于烹饪。" },
+  'res-0401': { id: 'res-0401', name: '面粉', category: 'res', tag: 'flour', quality: 'E', maxStack: 99, description: "世面常见的面粉。可于烹饪。" },
   'res-0501': { id: 'res-0501', name: '渡鸦蛋', category: 'res', tag: 'egg', quality: 'D', maxStack: 99, description: "魔物`死灵渡鸦`的蛋。可于烹饪。" },
   'res-0601': { id: 'res-0601', name: '牛奶', category: 'res', tag: 'milk', quality: 'E', maxStack: 99, description: "世面常见的牛奶。可于烹饪。" },
-  'res-0701': { id: 'res-0701', name: '啤酒', category: 'res', tag: 'wine', quality: 'E', maxStack: 99, description: "世面常见的啤酒。可于烹饪。" },
+  'res-0701': { id: 'res-0701', name: '啤酒', category: 'res', tag: 'wine', quality: 'E', maxStack: 99, description: "世面常见的啤酒。可在酒场销售。" },
   'res-0801': { id: 'res-0801', name: '史莱姆凝胶', category: 'res', tag: 'jelly', quality: 'D', maxStack: 99, description: "魔物`史莱姆`的黏液。可于烹饪。" },
   'res-0901': { id: 'res-0901', name: '木灵的胡椒', category: 'res', tag: 'spice', quality: 'D', maxStack: 99, description: "魔物`姆尔姆尔灌木`的胡椒。可于烹饪。" },
   // 角色专属素材
   'res-1011': { id: 'res-1011', name: '莉莉娅的乳肉', category: 'res', tag: 'meat', quality: 'S', maxStack: 99, description: "割取自`莉莉娅`乳房的肉，柔软滑腻，奶香多汁。可于烹饪。" },
   'res-1025': { id: 'res-1025', name: '米娜的蛋', category: 'res', tag: 'egg', quality: 'S', maxStack: 99, description: "`米娜`每个月生下的蛋，有芒果大小，浓香四溢。可于烹饪。" },
-  'res-1032': { id: 'res-1032', name: '欧若拉的胡萝卜', category: 'res', tag: 'vegetable', quality: 'S', maxStack: 99, description: "被`欧若拉`用作肛塞的胡萝卜，「皇室风味」。可于烹饪。" },
-  'res-1047': { id: 'res-1047', name: '朱迪斯的「圣水」', category: 'res', tag: 'wine', quality: 'S', maxStack: 99, description: "`朱迪斯`的尿液，酒精含量很高，相当于酿造的美酒。可于烹饪。" },
+  'res-1032': { id: 'res-1032', name: '欧若拉的胡萝卜', category: 'res', tag: 'rhizome', quality: 'S', maxStack: 99, description: "被`欧若拉`用作肛塞的胡萝卜，「皇室风味」。可于烹饪。" },
+  'res-1047': { id: 'res-1047', name: '朱迪斯的「圣水」', category: 'res', tag: 'wine', quality: 'S', maxStack: 99, description: "`朱迪斯`的尿液，酒精含量很高，相当于酿造的美酒。可在酒场销售。" },
   'res-1055': { id: 'res-1055', name: '莲华的腿肉', category: 'res', tag: 'meat', quality: 'S', maxStack: 99, description: "割取自`莲华`大腿的肌肉，韧劲十足，口感弹滑。可于烹饪。" },
   'res-1065': { id: 'res-1065', name: '艾琳的卤蛋', category: 'res', tag: 'egg', quality: 'S', maxStack: 99, description: "填充在`艾琳`阴道内的水煮蛋，腌制得咸香可口，晶莹剔透。可于烹饪。" },
   'res-1079': { id: 'res-1079', name: '菲洛的蜜汁', category: 'res', tag: 'spice', quality: 'S', maxStack: 99, description: "`菲洛`的爱液，有着神秘的幽香，只需少许就能提升菜品的风味。可于烹饪。" },
