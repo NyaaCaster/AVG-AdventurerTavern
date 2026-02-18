@@ -156,10 +156,10 @@ export type ItemCategory = 'res' | 'itm' | 'spc' | 'wpn' | 'arm' | 'acs';
 
 export type ItemTag =
   // 食材标签
-  | 'non' | 'meat' | 'poultry' | 'fish' | 'crab' | 'mussel'
-  | 'rhizome' | 'vegetable' | 'melons' | 'fruit' | 'tomatoes'
+  | 'non' | 'meat' | 'poultry' | 'fish' | 'shrimp' | 'mussel'
+  | 'carrot' | 'potato' | 'vegetable' | 'melons' | 'fruit' | 'tomatoes'
   | 'mushroom' | 'flour' | 'bread' | 'rice' | 'bean'
-  | 'egg' | 'milk' | 'dairy' | 'wine' | 'jelly' | 'spice'
+  | 'egg' | 'milk' | 'dairy' | 'drinks' | 'jelly' | 'spice' | 'foods'
   // 装备类别标签
   | 'sword' | 'book' | 'gun' | 'glove' | 'lance' | 'axe' | 'bow'
   | 'L-Arm' | 'M-Arm' | 'H-Arm';
@@ -183,6 +183,7 @@ export interface ItemData {
   description: string;
   stats?: ItemStats;
   price?: number; // 预留价格字段
+  imagePath?: string; // 新增：特定图片路径（如料理图片）
 }
 
 export interface ItemCategoryInfo {

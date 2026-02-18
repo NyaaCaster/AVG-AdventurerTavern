@@ -3,7 +3,9 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
-import { fetchWeatherData } from '../services/weatherService'; // Import Weather Service
+import { fetchWeatherData } from '../services/weatherService'; 
+import { db, saveGame, loadGame } from '../services/db'; // Import DB services
+
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
 import DebugLogModal from './DebugLogModal';
@@ -12,8 +14,9 @@ import SystemMenu from './SystemMenu';
 import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
-import ExpansionModal from './ExpansionModal'; // New Component
-import ResourceDebugModal from './ResourceDebugModal'; // New Component
+import ExpansionModal from './ExpansionModal'; 
+import ResourceDebugModal from './ResourceDebugModal'; 
+import SaveLoadModal from './SaveLoadModal'; // New Import
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
@@ -32,10 +35,12 @@ import Scen9 from './scenes/scen_9';
 import Scen10 from './scenes/scen_10';
 
 interface GameSceneProps {
+  userId: number; // New Prop
   onBackToMenu: () => void;
   onOpenSettings: (tab?: ConfigTab) => void;
   settings: GameSettings;
   onLoadGame?: () => void;
+  initialSaveData?: any; // New prop to receive loaded data from Title Screen
 }
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
@@ -58,15 +63,15 @@ const INITIAL_SCENE_LEVELS: Record<string, number> = {
   'scen_2': 1,
   'scen_3': 1,
   'scen_4': 1,
-  'scen_5': 0, // Initial 0
-  'scen_6': 0, // Initial 0
-  'scen_7': 0, // Initial 0
-  'scen_8': 0, // Initial 0
+  'scen_5': 0, 
+  'scen_6': 0, 
+  'scen_7': 0, 
+  'scen_8': 0, 
   'scen_9': 1,
   'scen_10': 1,
 };
 
-const CHARACTER_STATS: Record<string, { level: number; affinity: number }> = {
+const INITIAL_CHARACTER_STATS: Record<string, { level: number; affinity: number }> = {
   'char_101': { level: 5, affinity: 85 },
   'char_102': { level: 99, affinity: 45 },
   'char_103': { level: 1, affinity: 20 },
@@ -243,8 +248,7 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
                 if (char.appearanceConditions) {
                     for (const cond of char.appearanceConditions) {
                         if (cond.sceneId === sid) {
-                            const sceneLevel = sceneLevels[sid] || 0; // Use dynamic level
-                            // If level is 0 (not built), character cannot appear there unless condition minLevel is 0 (unlikely)
+                            const sceneLevel = sceneLevels[sid] || 0; 
                             if (sceneLevel < cond.minLevel) return false;
                         }
                     }
@@ -270,31 +274,102 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
 };
 
 
-const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onLoadGame, settings }) => {
+const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSettings, settings, initialSaveData }) => {
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
   const [sceneParams, setSceneParams] = useState<any>({});
   
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
-  // Ref to hold real weather data to persist across simulated time updates
   const realWeatherDataRef = useRef<{text: string, code: string, temp?: string} | null>(null);
   
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
-  // Forced overrides for characters moved via dialogue
   const [forcedLocations, setForcedLocations] = useState<Record<string, string>>({});
   
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
-  const [gold, setGold] = useState<number>(3000); // 初始金币
+  const [gold, setGold] = useState<number>(3000); 
   const [sceneLevels, setSceneLevels] = useState<Record<string, number>>(INITIAL_SCENE_LEVELS);
+  
+  // Converted CHARACTER_STATS to state to allow saving/loading
+  const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
 
-  // --- Management System State ---
   const [managementStats, setManagementStats] = useState<ManagementStats>(INITIAL_STATS);
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
-  const [isExpansionOpen, setIsExpansionOpen] = useState(false); // New state for Expansion Modal
+  const [isExpansionOpen, setIsExpansionOpen] = useState(false); 
   const lastSettlementHourRef = useRef<number | null>(null);
 
-  // Initialize some dummy revenue logs for "history"
+  // Save/Load Modal State
+  const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
+  const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
+
+  // Load initial data if provided (from Title Screen load)
   useEffect(() => {
+      if (initialSaveData) {
+          applyLoadedData(initialSaveData);
+      }
+  }, [initialSaveData]);
+
+  // Apply loaded data to state
+  const applyLoadedData = (data: any) => {
+      if (!data) return;
+      setGold(data.gold);
+      setCurrentSceneId(data.currentSceneId);
+      setWorldState(data.worldState);
+      setManagementStats(data.managementStats);
+      setInventory(data.inventory);
+      setCharacterStats(data.characterStats);
+      setSceneLevels(data.sceneLevels);
+      setRevenueLogs(data.revenueLogs);
+      
+      // Reset some UI states
+      setForcedLocations({});
+      setIsDialogueMode(false);
+      setHistory([]);
+  };
+
+  // Save Game Handler
+  const handleSaveGame = async (slotId: number) => {
+      const label = `${worldState.dateStr} ${worldState.timeStr} - ${worldState.sceneName}`;
+      await saveGame(userId, slotId, label, {
+          gold,
+          currentSceneId,
+          worldState,
+          managementStats,
+          inventory,
+          characterStats,
+          sceneLevels,
+          revenueLogs
+      });
+  };
+
+  // Load Game Handler (In-game)
+  const handleLoadGame = async (slotId: number) => {
+      const data = await loadGame(userId, slotId);
+      if (data) {
+          applyLoadedData(data);
+      }
+  };
+
+  // Delete Game Handler
+  const handleDeleteSave = async (slotId: number) => {
+      // Find the save first to get its ID for cascade delete
+      const save = await db.saves.where({ userId, slotId }).first();
+      
+      if (save && save.id) {
+          // Pass tables as an array to transaction to avoid "Expected 3-6 arguments, but got 7" error
+          await db.transaction('rw', [db.saves, db.savedInventory, db.savedCharacters, db.savedFacilities, db.savedRevenueLogs], async () => {
+             await db.savedInventory.where({ saveId: save.id! }).delete();
+             await db.savedCharacters.where({ saveId: save.id! }).delete();
+             await db.savedFacilities.where({ saveId: save.id! }).delete();
+             await db.savedRevenueLogs.where({ saveId: save.id! }).delete();
+             await db.saves.delete(save.id!);
+          });
+      }
+  };
+
+  // Initialize some dummy revenue logs for "history" (Only if not loaded from save)
+  useEffect(() => {
+      if (initialSaveData) return; // Skip if loaded data exists
+
       const initialLogs: RevenueLog[] = [];
       const now = new Date();
       // Generate logs for the last 3 days
@@ -303,7 +378,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           date.setDate(date.getDate() - i);
           const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
           
-          // Times: 06:00 (Tavern), 08:00 (Acc), 12:00 (Acc), 20:00 (Acc)
           const events = [
               { hour: 6, type: 'tavern' as const },
               { hour: 8, type: 'accommodation' as const },
@@ -312,17 +386,13 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           ];
 
           events.forEach(event => {
-              // Skip future events today
               if (i === 0 && event.hour > now.getHours()) return;
 
               let amount = 0;
               if (event.type === 'accommodation') {
-                  // Rule: Occupancy * Price * Satisfaction * Reputation
-                  // Add some randomness
-                  const occ = Math.floor(INITIAL_STATS.occupancy * (0.8 + Math.random() * 0.4)); // 80%-120% variation
+                  const occ = Math.floor(INITIAL_STATS.occupancy * (0.8 + Math.random() * 0.4)); 
                   amount = Math.floor(occ * INITIAL_STATS.roomPrice * (INITIAL_STATS.satisfaction / 100) * (INITIAL_STATS.reputation / 100));
               } else {
-                  // Tavern: Simplified calculation
                   amount = Math.floor(1000 * (INITIAL_STATS.attraction / 100) * (0.8 + Math.random() * 0.5));
               }
 
@@ -336,8 +406,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
               });
           });
       }
-      setRevenueLogs(initialLogs.reverse()); // Newest first
-  }, []);
+      setRevenueLogs(initialLogs.reverse()); 
+  }, [initialSaveData]);
 
   // Management Action Handler
   const handleManagementAction = (cost: number, changes: Partial<ManagementStats>) => {
@@ -356,13 +426,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
   // Facility Expansion Handler
   const handleUpgradeFacility = (facilityId: SceneId, costGold: number, costMatIds: string[], costMatCount: number) => {
-      // Check Resources again (Backend validation style)
       if (gold < costGold) return;
       for (const matId of costMatIds) {
           if ((inventory[matId] || 0) < costMatCount) return;
       }
 
-      // Deduct Resources
       setGold(prev => prev - costGold);
       setInventory(prev => {
           const newInv = { ...prev };
@@ -372,22 +440,18 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           return newInv;
       });
 
-      // Increase Level
       setSceneLevels(prev => {
           const newLevels = { ...prev };
           newLevels[facilityId] = (newLevels[facilityId] || 0) + 1;
           return newLevels;
       });
 
-      // Update Management Stats based on upgrades (Optional integration)
       if (facilityId === 'scen_1') {
-          // Increase Room Price
           setManagementStats(prev => ({
               ...prev,
-              roomPrice: 50 + ((sceneLevels['scen_1'] || 1) + 1 - 1) * 10 // Calculate for NEW level
+              roomPrice: 50 + ((sceneLevels['scen_1'] || 1) + 1 - 1) * 10 
           }));
       } else if (facilityId === 'scen_2') {
-          // Increase Max Occupancy
           setManagementStats(prev => ({
               ...prev,
               maxOccupancy: 20 + ((sceneLevels['scen_2'] || 1) + 1 - 1) * 5
@@ -426,7 +490,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
   const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
-  const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false); // New state
+  const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false); 
 
   const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
   const [ambientText, setAmbientText] = useState<string>('');
@@ -457,7 +521,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Helper to check for environment key
   const hasEnvKey = useMemo(() => {
       try {
           return !!(typeof process !== 'undefined' && process.env && process.env.API_KEY);
@@ -466,12 +529,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       }
   }, []);
 
-  // --- Real Weather Fetch Logic ---
   const updateRealWeather = async () => {
       const data = await fetchWeatherData();
       if (data) {
           realWeatherDataRef.current = data;
-          // Trigger a world state update to apply the new weather immediately
           setWorldState(prev => {
               return {
                   ...prev,
@@ -483,26 +544,33 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   };
 
   useEffect(() => {
-      // 1. Fetch immediately on mount
       updateRealWeather();
-
-      // 2. Set interval to check for the top of the hour every minute
       const checkInterval = setInterval(() => {
           const m = new Date().getMinutes();
           if (m === 0) {
               updateRealWeather();
           }
-      }, 60000); // Check every minute
+      }, 60000); 
 
       return () => clearInterval(checkInterval);
   }, []);
-  // --------------------------------
+
+  // Auto-Save Interval (Slot 0)
+  useEffect(() => {
+      const autoSaveInterval = setInterval(() => {
+          // 只在非对话、非转场、且不在主菜单时自动保存
+          if (!isDialogueMode && !isSceneTransitioning) {
+              handleSaveGame(0);
+          }
+      }, 60000 * 5); // Every 5 minutes
+
+      return () => clearInterval(autoSaveInterval);
+  }, [isDialogueMode, isSceneTransitioning, gold, worldState, managementStats, inventory, characterStats, sceneLevels, userId]);
 
   useEffect(() => {
     const update = () => {
         const newState = calculateWorldState(getSceneDisplayName(currentSceneId, sceneParams));
         
-        // Apply real weather override if available
         if (realWeatherDataRef.current) {
             newState.weather = realWeatherDataRef.current.text;
             newState.weatherCode = realWeatherDataRef.current.code;
@@ -510,7 +578,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
         setWorldState(newState);
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
-        // Apply forced locations overlay
         const finalLocs = { ...locs, ...forcedLocations };
         setCharacterLocations(finalLocs);
     };
@@ -521,7 +588,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         setWorldState(prev => {
              const newState = calculateWorldState(prev.sceneName);
              
-             // Apply real weather override if available
              if (realWeatherDataRef.current) {
                  newState.weather = realWeatherDataRef.current.text;
                  newState.weatherCode = realWeatherDataRef.current.code;
@@ -529,11 +595,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
 
              const currentHour = parseInt(newState.timeStr.split(':')[0]);
 
-             // --- Revenue & Stats Calculation Logic ---
              if (lastSettlementHourRef.current !== currentHour) {
                  
-                 // 1. Refresh Occupancy every hour (on the hour)
-                 // Formula: maxOccupancy * (attraction/100) * (satisfaction/100)
                  const calculatedOccupancy = Math.floor(
                      managementStats.maxOccupancy * 
                      (managementStats.attraction / 100) * 
@@ -546,20 +609,16 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                      occupancy: newOccupancy
                  }));
 
-                 // 2. Perform Settlement if at specific hours
                  const settlementHours = [6, 8, 12, 20];
                  if (settlementHours.includes(currentHour)) {
                      let revType: RevenueType = 'accommodation';
                      let amount = 0;
 
                      if (currentHour === 6) {
-                         // Tavern Settlement (06:00)
                          revType = 'tavern';
                          amount = Math.floor(1000 * (managementStats.attraction / 100) * (0.8 + Math.random() * 0.5));
                      } else {
-                         // Accommodation Settlement (08:00, 12:00, 20:00)
                          revType = 'accommodation';
-                         // Use newOccupancy calculated above
                          amount = Math.floor(newOccupancy * managementStats.roomPrice * (managementStats.satisfaction / 100) * (managementStats.reputation / 100));
                      }
 
@@ -578,11 +637,9 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
                  }
                  lastSettlementHourRef.current = currentHour;
              }
-             // ---------------------------------
 
              if (newState.timeStr !== prev.timeStr || newState.period !== prev.period) {
                  const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
-                 // Apply forced locations overlay
                  const finalLocs = { ...locs, ...forcedLocations };
                  setCharacterLocations(finalLocs);
              }
@@ -592,7 +649,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     return () => clearInterval(timer);
   }, [currentSceneId, sceneParams, forcedLocations, managementStats, sceneLevels]); 
 
-  // ... (rest of the file remains unchanged) ...
+  // ... (rest of the file remains unchanged until render) ...
   useEffect(() => {
     const unsubscribe = llmService.subscribeLogs((logs) => {
         setDebugLogs([...logs]); 
@@ -659,7 +716,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams, presentCharacters]);
 
   const generateAmbientLine = async (char: Character, state: ClothingState) => {
-      // Allow if settings key is present OR if env key is present
       if (!settings.apiConfig.apiKey && !hasEnvKey) {
           setAmbientText("......");
           return;
@@ -669,7 +725,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       try {
           await initLLM(char);
           
-          const stats = CHARACTER_STATS[char.id] || { level: 1, affinity: 0 };
+          const stats = characterStats[char.id] || { level: 1, affinity: 0 };
           let prompt = "";
 
           if (currentSceneId === 'scen_7') {
@@ -708,6 +764,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       }
   };
 
+  // ... (Audio effect hook remains same) ...
   useEffect(() => {
     if (audioRef.current && !fadeIntervalRef.current) {
         audioRef.current.volume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
@@ -809,12 +866,10 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
     
-    // Inject Env Key if needed
     const config = { ...settings.apiConfig };
     if (!config.apiKey && hasEnvKey) {
         try {
             config.apiKey = process.env.API_KEY || '';
-            // Default to Gemini model if env key is used and model is not set or default
             if (!config.model || config.model === 'grok-3') {
                 config.model = 'gemini-3-flash-preview';
                 config.provider = 'google';
@@ -849,7 +904,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         const newSceneName = getSceneDisplayName(sceneId, params);
         const newState = calculateWorldState(newSceneName);
         
-        // Apply real weather override if available
         if (realWeatherDataRef.current) {
             newState.weather = realWeatherDataRef.current.text;
             newState.weatherCode = realWeatherDataRef.current.code;
@@ -858,7 +912,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
         setWorldState(newState);
         
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
-        // Apply forced locations overlay
         const finalLocs = { ...locs, ...forcedLocations };
         setCharacterLocations(finalLocs);
 
@@ -901,7 +954,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     setIsDialogueMode(true);
     setIsDialogueEnding(false);
     
-    const stats = CHARACTER_STATS[characterId] || { level: 1, affinity: 0 };
+    const stats = characterStats[characterId] || { level: 1, affinity: 0 };
     
     if (connectionStatus === 'connected') {
         setIsLoading(true);
@@ -953,7 +1006,7 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
   const handleEndDialogueGeneration = async () => {
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
-    const stats = CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 };
+    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
     setIsLoading(true);
 
     try {
@@ -1007,7 +1060,6 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
       
-      // Apply pending move logic if character decided to move
       if (pendingMove) {
           setForcedLocations(prev => ({
               ...prev,
@@ -1074,13 +1126,11 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           }
       }
 
-      // Handle Character Movement Instruction
       if (response.move_to && SCENE_NAMES[response.move_to as SceneId]) {
           const targetName = SCENE_NAMES[response.move_to as SceneId];
           setMoveNotification(`${activeCharacter.name} 将前往 ${targetName}`);
           setPendingMove({ charId: activeCharacter.id, targetId: response.move_to });
           
-          // Clear notification after 4 seconds
           setTimeout(() => setMoveNotification(null), 4000);
       }
 
@@ -1238,8 +1288,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
     }
   };
 
-  const currentStats = activeCharacter ? (CHARACTER_STATS[activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
-  const ambientStats = ambientCharacter ? (CHARACTER_STATS[ambientCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
+  const currentStats = activeCharacter ? (characterStats[activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
+  const ambientStats = ambientCharacter ? (characterStats[ambientCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
 
   return (
     <div 
@@ -1318,7 +1368,8 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           )}
 
           <SystemMenu 
-            onLoadGame={onLoadGame} 
+            onLoadGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 
+            onSaveGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('save'); }}
             onOpenSettings={onOpenSettings} 
             onBackToMenu={onBackToMenu} 
             onDebug={handleOpenDebug}
@@ -1469,6 +1520,17 @@ const GameScene: React.FC<GameSceneProps> = ({ onBackToMenu, onOpenSettings, onL
           inventory={inventory}
           onUpdateGold={handleUpdateGold}
           onUpdateInventory={handleUpdateInventory}
+      />
+
+      {/* Save/Load Modal */}
+      <SaveLoadModal 
+          isOpen={isSaveLoadOpen}
+          onClose={() => setIsSaveLoadOpen(false)}
+          mode={saveLoadMode}
+          userId={userId}
+          onSave={handleSaveGame}
+          onLoad={handleLoadGame}
+          onDelete={handleDeleteSave}
       />
     </div>
   );

@@ -8,6 +8,7 @@ interface ConfigScreenProps {
   onUpdateSettings: (newSettings: GameSettings) => void;
   onBack: () => void;
   initialTab?: ConfigTab;
+  currentUserId?: number | null; // Added prop
 }
 
 // 定义 SVG 图标组件，使用 img 标签引入外部 SVG
@@ -167,7 +168,7 @@ const TypewriterPreview: React.FC<{
 // Main Component
 // -----------------------------------------------------------------------------
 
-const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings, onBack, initialTab = 'dialogue' }) => {
+const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings, onBack, initialTab = 'dialogue', currentUserId }) => {
   const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
   
   // 监听 initialTab 变化 (确保从不同入口进入时能正确切换)
@@ -367,10 +368,22 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
             className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center select-none"
             onClick={handleHeaderClick}
           >
-            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider cursor-default">
-              <i className="fa-solid fa-gear mr-2 md:mr-3"></i>
-              <span className="md:inline">系统设置</span>
-            </h2>
+            <div className="flex flex-col md:block">
+                {/* Desktop UID display (Above title) */}
+                {currentUserId !== null && (
+                    <div className="hidden md:block text-[10px] text-slate-600 font-mono mb-1">UID: {currentUserId}</div>
+                )}
+                
+                <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider cursor-default flex items-center">
+                    <i className="fa-solid fa-gear mr-2 md:mr-3"></i>
+                    <span>系统设置</span>
+                    {/* Mobile UID display (Right of title) */}
+                    {currentUserId !== null && (
+                        <span className="md:hidden ml-2 text-[10px] text-slate-600 font-mono self-end pb-1">UID: {currentUserId}</span>
+                    )}
+                </h2>
+            </div>
+
             {/* Mobile Close Button */}
             <button 
                 onClick={(e) => { e.stopPropagation(); onBack(); }} 

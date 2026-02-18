@@ -6,6 +6,7 @@ import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
 import { setHDMode } from './utils/imagePath';
+import { loadGame } from './services/db'; // Import loadGame
 
 const App: React.FC = () => {
   // 设置初始游戏状态
@@ -15,12 +16,18 @@ const App: React.FC = () => {
   // 记录设置界面初始化时应选中的标签页
   const [configInitialTab, setConfigInitialTab] = useState<ConfigTab>('dialogue');
 
+  // 当前登录用户ID
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
   // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
   const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
       const settings = loadSettings();
       setHDMode(settings.enableHD);
       return settings;
   });
+
+  // State to hold data loaded from Title Screen
+  const [initialSaveData, setInitialSaveData] = useState<any>(null);
 
   // --- 转场动画状态管理 ---
   const [overlayOpacity, setOverlayOpacity] = useState(0); // 0: 透明, 1: 全黑
@@ -54,6 +61,28 @@ const App: React.FC = () => {
             }, fadeInMs);
         });
     }, fadeOutMs);
+  };
+
+  const handleUserLogin = (uid: number) => {
+      setCurrentUserId(uid);
+  };
+
+  const handleTitleLoadGame = async (slotId: number) => {
+      if (currentUserId === null) return;
+      try {
+          const data = await loadGame(currentUserId, slotId);
+          if (data) {
+              setInitialSaveData(data);
+              handleSwitchScene(GameState.PLAYING, 1000, 2000);
+          }
+      } catch (e) {
+          console.error("Load failed", e);
+      }
+  };
+
+  const handleStartNewGame = () => {
+      setInitialSaveData(null); // Ensure fresh start
+      handleSwitchScene(GameState.PLAYING, 1000, 2000);
   };
 
   // 当设置变更时，保存到本地并应用副作用
@@ -102,21 +131,25 @@ const App: React.FC = () => {
       {/* 标题界面 */}
       {showMenu && (
         <TitleScreen 
-            onStartGame={() => handleSwitchScene(GameState.PLAYING, 1000, 2000)}
-            onLoadGame={() => {}}
+            onLogin={handleUserLogin}
+            onStartGame={handleStartNewGame}
+            onLoadGame={handleTitleLoadGame} // Pass the specific load handler
             onOpenConfig={() => handleOpenConfig(GameState.MENU, 'api')}
             volume={gameSettings.masterVolume}
             isMuted={gameSettings.isMuted}
+            currentUserId={currentUserId}
         />
       )}
 
       {/* 游戏进行层 */}
-      {showGame && (
+      {showGame && currentUserId !== null && (
         <div className="absolute inset-0 z-0 w-full h-full">
             <GameScene 
+                userId={currentUserId}
                 onBackToMenu={() => handleSwitchScene(GameState.MENU, 1000, 2000)}
                 onOpenSettings={(tab) => handleOpenConfig(GameState.PLAYING, tab)}
                 settings={gameSettings}
+                initialSaveData={initialSaveData} // Pass loaded data
             />
         </div>
       )}
@@ -129,6 +162,7 @@ const App: React.FC = () => {
                 onUpdateSettings={handleUpdateSettings}
                 onBack={handleBackFromConfig}
                 initialTab={configInitialTab}
+                currentUserId={currentUserId}
             />
         </div>
       )}

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ITEMS, ITEM_TAGS } from '../data/items';
+import { resolveImgPath } from '../utils/imagePath';
 
 interface ItemToastProps {
   itemId: string;
@@ -30,6 +31,9 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
 
   // Helper to get icon
   const getIcon = () => {
+      // If item has a custom image path, return an img tag (handled in JSX below)
+      if (item.imagePath) return null;
+
       // Try to find icon in ITEM_TAGS first
       if (item.tag) {
           const tagInfo = ITEM_TAGS.find(t => t.id === item.tag);
@@ -57,8 +61,16 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
         `}
     >
       {/* Icon Box */}
-      <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] text-xl shadow-inner">
-          {getIcon()}
+      <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] text-xl shadow-inner overflow-hidden">
+          {item.imagePath ? (
+              <img 
+                  src={resolveImgPath(item.imagePath)} 
+                  alt={item.name} 
+                  className="w-full h-full object-cover" 
+              />
+          ) : (
+              getIcon()
+          )}
       </div>
 
       {/* Text Info */}

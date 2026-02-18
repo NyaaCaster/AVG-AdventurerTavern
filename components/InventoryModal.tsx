@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { ITEMS, ITEM_CATEGORIES, ITEM_TAGS } from '../data/items';
 import { ItemCategory, ItemQuality, ItemData } from '../types';
+import { resolveImgPath } from '../utils/imagePath';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -147,12 +148,20 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                     className="bg-[#f5f0e6] border border-[#d6cbb8] p-3 rounded shadow-sm hover:shadow-lg hover:border-[#9b7a4c] transition-all flex gap-3 group cursor-pointer"
                                 >
                                     {/* Icon Box */}
-                                    <div className="w-16 h-16 bg-[#e0d6c5] border border-[#c7bca8] rounded flex items-center justify-center text-3xl shadow-inner flex-shrink-0 group-hover:bg-[#d6cbb8] transition-colors">
-                                        {getTagIcon(item.tag) || (
-                                            item.category === 'wpn' ? '⚔️' :
-                                            item.category === 'arm' ? '🛡️' :
-                                            item.category === 'itm' ? '🧪' :
-                                            item.category === 'acs' ? '💍' : '📦'
+                                    <div className="w-16 h-16 bg-[#e0d6c5] border border-[#c7bca8] rounded flex items-center justify-center text-3xl shadow-inner flex-shrink-0 group-hover:bg-[#d6cbb8] transition-colors overflow-hidden">
+                                        {item.imagePath ? (
+                                            <img 
+                                                src={resolveImgPath(item.imagePath)} 
+                                                alt={item.name} 
+                                                className="w-full h-full object-cover" 
+                                            />
+                                        ) : (
+                                            getTagIcon(item.tag) || (
+                                                item.category === 'wpn' ? '⚔️' :
+                                                item.category === 'arm' ? '🛡️' :
+                                                item.category === 'itm' ? '🧪' :
+                                                item.category === 'acs' ? '💍' : '📦'
+                                            )
                                         )}
                                     </div>
 
@@ -217,12 +226,20 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                     {/* Detail Header / Icon */}
                     <div className="bg-gradient-to-b from-[#3d3226] to-[#2c241b] p-6 flex flex-col items-center justify-center border-b border-[#9b7a4c]/30 relative">
                         <div className="absolute inset-0 opacity-10 bg-[url('img/svg/unicorn.svg')] bg-center bg-no-repeat bg-contain"></div>
-                        <div className="w-24 h-24 bg-[#e0d6c5] border-4 border-[#c7bca8] rounded-2xl flex items-center justify-center text-5xl shadow-xl z-10">
-                            {getTagIcon(selectedItem.tag) || (
-                                selectedItem.category === 'wpn' ? '⚔️' :
-                                selectedItem.category === 'arm' ? '🛡️' :
-                                selectedItem.category === 'itm' ? '🧪' :
-                                selectedItem.category === 'acs' ? '💍' : '📦'
+                        <div className="w-24 h-24 bg-[#e0d6c5] border-4 border-[#c7bca8] rounded-2xl flex items-center justify-center text-5xl shadow-xl z-10 overflow-hidden">
+                            {selectedItem.imagePath ? (
+                                <img 
+                                    src={resolveImgPath(selectedItem.imagePath)} 
+                                    alt={selectedItem.name} 
+                                    className="w-full h-full object-cover" 
+                                />
+                            ) : (
+                                getTagIcon(selectedItem.tag) || (
+                                    selectedItem.category === 'wpn' ? '⚔️' :
+                                    selectedItem.category === 'arm' ? '🛡️' :
+                                    selectedItem.category === 'itm' ? '🧪' :
+                                    selectedItem.category === 'acs' ? '💍' : '📦'
+                                )
                             )}
                         </div>
                         <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{selectedItem.name}</h2>
