@@ -12,10 +12,10 @@
 
 ```bash
 # 使用 Docker（推荐）
-docker run -d -p 3098:443 -p 3097:3097 honywen/adv-tavern:latest
+docker run -d -p 3098:80 -p 3097:3097 honywen/adv-tavern:latest
 
-# 访问游戏（HTTPS）
-https://localhost:3098
+# 访问游戏（HTTP）
+http://localhost:3098
 ```
 
 ## 📖 游戏内容与玩法
@@ -99,13 +99,11 @@ docker-compose up -d
 
 #### 3. 访问游戏
 Docker 部署默认映射端口：
-- **3098**: HTTPS 前端访问端口
-- **3097**: 后端 API 服务端口
+- **3098**: HTTP 前端访问端口
+- **3097**: 后端 API 服务端口（容器内部使用 HTTPS）
 
 请访问：
-👉 **https://localhost:3098**
-
-> **注意**: 项目使用 HTTPS，首次访问可能需要信任自签名证书。
+👉 **http://localhost:3098**
 
 #### 4. 更新到最新版本
 
@@ -181,7 +179,7 @@ docker pull honywen/adv-tavern:latest
 # 运行容器
 docker run -d \
   --name adventurertavern \
-  -p 3098:443 \
+  -p 3098:80 \
   -p 3097:3097 \
   --restart unless-stopped \
   honywen/adv-tavern:latest
@@ -252,14 +250,13 @@ docker run -d \
 ### 端口配置
 | 端口 | 协议 | 说明 |
 |------|------|------|
-| **80** | HTTP | 自动重定向到 HTTPS |
-| **443** | HTTPS | 前端访问端口（映射到宿主机 3098） |
-| **3097** | HTTP | 后端 API 服务端口 |
+| **80** | HTTP | 前端访问端口（映射到宿主机 3098） |
+| **3097** | HTTPS | 后端 API 服务端口（容器内部使用 HTTPS） |
 
 ### 包含组件
 | 组件 | 版本 | 说明 |
 |------|------|------|
-| **前端** | Nginx 1.27 + React 19 | 静态资源服务（HTTPS） |
+| **前端** | Nginx 1.27 + React 19 | 静态资源服务（HTTP） |
 | **后端** | Node.js 20 + Express | API 服务（端口 3097） |
 | **数据库** | SQLite 3 | 轻量级数据存储 |
 | **进程管理** | Shell Script | 轻量级进程管理 |
