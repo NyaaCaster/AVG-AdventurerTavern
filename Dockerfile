@@ -17,7 +17,9 @@ COPY components/ ./components/
 COPY services/ ./services/
 COPY utils/ ./utils/
 COPY WorldInfo/ ./WorldInfo/
+COPY data/ ./data/
 COPY vite.config.ts ./
+COPY tsconfig.json ./
 
 # 构建前端
 RUN npm run build && \
