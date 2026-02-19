@@ -207,7 +207,7 @@ docker run -d \
 - ✅ 仅保留运行时必需的文件和依赖
 - ✅ 移除 supervisor，使用轻量级 shell 脚本管理进程（减少 ~10MB）
 - ✅ 清理构建缓存和不必要文件（.md, LICENSE, .map 等）
-- ✅ 镜像体积优化至 ~160-170MB
+- ✅ 镜像体积优化至 ~126MB
 
 **构建加速**
 - ✅ 启用 BuildKit 缓存挂载 (`--mount=type=cache`)
@@ -241,7 +241,7 @@ docker run -d \
 
 ### 基本信息
 - **镜像名称**: `honywen/adv-tavern:latest`
-- **镜像大小**: ~160-170MB (已优化)
+- **镜像大小**: ~126MB (已优化)
 - **支持架构**: linux/amd64, linux/arm64
 - **基础镜像**: nginx:1.27-alpine3.20 + Node.js 20
 - **构建方式**: GitHub Actions 自动构建 (启用 BuildKit)
@@ -275,7 +275,7 @@ docker run -d \
 ### 资源要求
 - **CPU**: 0.5-1.0 核心
 - **内存**: 256-512MB (优化后内存占用更低)
-- **磁盘**: 镜像 ~170MB + 数据库文件（通常 < 100MB）
+- **磁盘**: 镜像 ~126MB + 数据库文件（通常 < 100MB）
 - **网络**: 需要访问 LLM API 服务
 
 ---
@@ -320,7 +320,8 @@ docker run -d \
 
 *   **开发状态**: 活跃开发中
 *   **Docker 镜像**: 自动构建和发布
-*   **镜像大小**: ~160-170MB (已优化)
+*   **镜像大小**: ~126MB (已优化)
+*   **构建时间**: ~50秒 (GitHub Actions)
 *   **支持架构**: linux/amd64, linux/arm64
 *   **基础镜像**: nginx:1.27-alpine3.20 + Node.js 20
 *   **构建工具**: Docker BuildKit + 多阶段构建
