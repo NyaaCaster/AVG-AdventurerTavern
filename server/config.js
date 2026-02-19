@@ -3,10 +3,16 @@
  * 后端服务配置文件
  */
 const path = require('path');
+const fs = require('fs');
 
 module.exports = {
     // 后端服务监听端口
     PORT: 3097,
+
+    // HTTPS 配置
+    HTTPS_ENABLED: true,
+    SSL_KEY_PATH: '/etc/nginx/ssl/h.hony-wen.com.key',
+    SSL_CERT_PATH: '/etc/nginx/ssl/h.hony-wen.com_bundle.crt',
 
     // 数据库文件存放路径 (相对于 server/ 目录)
     DB_PATH: path.resolve(__dirname, 'database.sqlite'),

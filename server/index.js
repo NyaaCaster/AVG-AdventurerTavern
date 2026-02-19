@@ -4,6 +4,9 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
 const config = require('./config'); // 引入配置文件
 
 const app = express();
@@ -205,10 +208,42 @@ app.post('/api/delete', (req, res) => {
     stmt.finalize();
 });
 
-// 监听所有网络接口 (不指定 IP)
-const server = app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// 创建服务器 (支持 HTTPS)
+let server;
+
+if (config.HTTPS_ENABLED) {
+    try {
+        // 检查SSL证书文件是否存在
+        if (fs.existsSync(config.SSL_KEY_PATH) && fs.existsSync(config.SSL_CERT_PATH)) {
+            const httpsOptions = {
+                key: fs.readFileSync(config.SSL_KEY_PATH),
+                cert: fs.readFileSync(config.SSL_CERT_PATH)
+            };
+            
+            server = https.createServer(httpsOptions, app);
+            server.listen(PORT, () => {
+                console.log(`HTTPS Server running on https://localhost:${PORT}`);
+            });
+        } else {
+            console.warn('SSL证书文件不存在，回退到HTTP模式');
+            server = http.createServer(app);
+            server.listen(PORT, () => {
+                console.log(`HTTP Server running on http://localhost:${PORT}`);
+            });
+        }
+    } catch (err) {
+        console.error('HTTPS启动失败，回退到HTTP模式:', err.message);
+        server = http.createServer(app);
+        server.listen(PORT, () => {
+            console.log(`HTTP Server running on http://localhost:${PORT}`);
+        });
+    }
+} else {
+    server = http.createServer(app);
+    server.listen(PORT, () => {
+        console.log(`HTTP Server running on http://localhost:${PORT}`);
+    });
+}
 
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
