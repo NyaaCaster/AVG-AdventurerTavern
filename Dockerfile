@@ -119,7 +119,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 VOLUME ["/app/data"]
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 80 443
 
 # 使用启动脚本
 CMD ["/entrypoint.sh"]

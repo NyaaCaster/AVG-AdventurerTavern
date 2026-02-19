@@ -6,10 +6,11 @@ services:
     container_name: adventurertavern
     pull_policy: always
     ports:
-      - "3098:80"
+      - "3098:443"
       - "3097:3097"
     volumes:
       - ./data:/app/data
+      - ./SSL:/etc/nginx/ssl:ro
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -23,7 +24,7 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "https://localhost:443/health", "--no-check-certificate"]
       interval: 30s
       timeout: 10s
       retries: 3
