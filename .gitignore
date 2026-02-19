@@ -25,3 +25,9 @@ dist-ssr
 
 # Google AI Studio metadata
 metadata.json
+
+# Database files
+data/database.sqlite
+server/database.sqlite
+
+
