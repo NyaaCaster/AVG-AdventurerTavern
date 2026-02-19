@@ -14,8 +14,8 @@ module.exports = {
     SSL_KEY_PATH: '/etc/nginx/ssl/h.hony-wen.com.key',
     SSL_CERT_PATH: '/etc/nginx/ssl/h.hony-wen.com_bundle.crt',
 
-    // 数据库文件存放路径 (相对于 server/ 目录)
-    DB_PATH: path.resolve(__dirname, 'database.sqlite'),
+    // 数据库文件存放路径 (使用数据卷以持久化)
+    DB_PATH: '/app/data/database.sqlite',
 
     // CORS (跨域资源共享) 配置
     CORS_CONFIG: {

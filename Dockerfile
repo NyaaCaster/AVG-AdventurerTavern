@@ -72,6 +72,10 @@ COPY server/package.json /app/server/
 # 复制配置文件
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# 创建 SSL 目录并复制证书
+RUN mkdir -p /etc/nginx/ssl
+COPY --chown=nodejs:nodejs SSL/ /etc/nginx/ssl/
+
 # 创建非特权用户和数据目录
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
