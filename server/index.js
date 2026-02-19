@@ -54,6 +54,64 @@ db.serialize(() => {
 
 // API Routes
 
+// 健康检查和状态端点 (GET请求，可通过浏览器直接访问)
+app.get('/api/health', (req, res) => {
+    const startTime = Date.now();
+    
+    // 测试数据库连接
+    db.get("SELECT COUNT(*) as userCount FROM users", [], (err, userRow) => {
+        if (err) {
+            return res.status(500).json({
+                status: 'error',
+                message: '数据库连接失败',
+                error: err.message,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        db.get("SELECT COUNT(*) as saveCount FROM saves", [], (err2, saveRow) => {
+            if (err2) {
+                return res.status(500).json({
+                    status: 'error',
+                    message: '数据库查询失败',
+                    error: err2.message,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            const responseTime = Date.now() - startTime;
+            
+            res.json({
+                status: 'ok',
+                message: '后端服务运行正常',
+                service: 'AdventurerTavern Backend',
+                version: '1.0.0',
+                database: {
+                    status: 'connected',
+                    path: config.DB_PATH,
+                    users: userRow.userCount,
+                    saves: saveRow.saveCount
+                },
+                server: {
+                    port: PORT,
+                    uptime: process.uptime(),
+                    memory: {
+                        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+                        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'
+                    },
+                    responseTime: responseTime + 'ms'
+                },
+                timestamp: new Date().toISOString()
+            });
+        });
+    });
+});
+
+// 根路径重定向到健康检查
+app.get('/', (req, res) => {
+    res.redirect('/api/health');
+});
+
 // 1. 注册
 app.post('/api/register', (req, res) => {
     const { username, password } = req.body;
