@@ -61,7 +61,7 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # 复制前端构建产物（仅dist目录）
-COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+COPY --from=frontend-builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # 复制后端文件（仅必要文件）
 COPY --from=backend-builder /app/server/node_modules /app/server/node_modules
@@ -83,9 +83,11 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # 清理 nginx 默认配置和不必要的文件
 RUN rm -f /etc/nginx/conf.d/default.conf.default && \
-    rm -rf /usr/share/nginx/html/index.html && \
     rm -rf /var/log/nginx/* && \
-    rm -rf /etc/nginx/http.d/default.conf
+    rm -rf /etc/nginx/http.d/default.conf && \
+    # 确保 nginx 用户可以访问静态文件
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
 
 # 创建启动脚本（替代 supervisor）
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
