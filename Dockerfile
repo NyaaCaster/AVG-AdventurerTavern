@@ -9,7 +9,7 @@ COPY package.json ./
 # 安装前端依赖（包括 devDependencies 用于构建）
 # 使用缓存挂载加速构建（需要 Docker BuildKit）
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --silent --prefer-offline
+    npm install --silent --prefer-offline
 
 # 只复制构建所需的文件（根据 .dockerignore）
 COPY *.tsx *.ts *.html *.json ./
@@ -37,7 +37,7 @@ COPY server/package.json ./
 
 # 安装后端依赖（仅生产依赖）
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --silent --omit=dev --prefer-offline && \
+    npm install --silent --omit=dev --prefer-offline && \
     # 清理不必要的文件
     find node_modules -name '*.md' -delete && \
     find node_modules -name 'LICENSE*' -delete && \
