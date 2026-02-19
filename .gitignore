@@ -30,4 +30,7 @@ metadata.json
 data/database.sqlite
 server/database.sqlite
 
+# SSL Certificates (stored in GitHub Secrets)
+SSL/
+
 
