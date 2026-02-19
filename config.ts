@@ -7,5 +7,5 @@ export const AppConfig = {
   // 后端 API 服务地址
   // 本地开发通常为: 'http://localhost:3097/api'
   // 远程部署请填写服务器的完整 URL
-  apiBaseUrl: 'http://h.hony-wen.com:3097/api',
+  apiBaseUrl: 'https://h.hony-wen.com:3097/api',
 };
