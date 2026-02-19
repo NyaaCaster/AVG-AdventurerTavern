@@ -66,6 +66,7 @@ COPY --from=frontend-builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 # 复制后端文件（仅必要文件）
 COPY --from=backend-builder /app/server/node_modules /app/server/node_modules
 COPY server/index.js /app/server/
+COPY server/config.js /app/server/
 COPY server/package.json /app/server/
 
 # 复制配置文件
