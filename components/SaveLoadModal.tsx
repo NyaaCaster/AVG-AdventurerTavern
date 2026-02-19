@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { db, getSaveSlots, GameSaveData } from '../services/db';
+import { getSaveSlots, GameSaveData } from '../services/db';
 import { resolveImgPath } from '../utils/imagePath';
 
 interface SaveLoadModalProps {

@@ -7,6 +7,8 @@ services:
     pull_policy: always
     ports:
       - "3098:80"
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -15,28 +17,26 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 512M
         reservations:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 15s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-        tag: "adventurertavern"
+        tag: "adventurertavern-fullstack"
     networks:
       - app-network
-        # security_opt:
-    #   - no-new-privileges:true
-    # 使用特权模式以便非root用户可以绑定端口80
-    # user: "1001:1001"  # 使用nginxuser的UID:GID
+    security_opt:
+      - no-new-privileges:true
     tmpfs:
       - /tmp
       - /run
@@ -44,4 +44,3 @@ services:
 networks:
   app-network:
     driver: bridge
-

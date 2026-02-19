@@ -4,7 +4,7 @@ import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
 import { fetchWeatherData } from '../services/weatherService'; 
-import { db, saveGame, loadGame } from '../services/db'; // Import DB services
+import { saveGame, loadGame, deleteGame } from '../services/db'; 
 
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
@@ -16,7 +16,7 @@ import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
 import ResourceDebugModal from './ResourceDebugModal'; 
-import SaveLoadModal from './SaveLoadModal'; // New Import
+import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
@@ -351,19 +351,7 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
 
   // Delete Game Handler
   const handleDeleteSave = async (slotId: number) => {
-      // Find the save first to get its ID for cascade delete
-      const save = await db.saves.where({ userId, slotId }).first();
-      
-      if (save && save.id) {
-          // Pass tables as an array to transaction to avoid "Expected 3-6 arguments, but got 7" error
-          await db.transaction('rw', [db.saves, db.savedInventory, db.savedCharacters, db.savedFacilities, db.savedRevenueLogs], async () => {
-             await db.savedInventory.where({ saveId: save.id! }).delete();
-             await db.savedCharacters.where({ saveId: save.id! }).delete();
-             await db.savedFacilities.where({ saveId: save.id! }).delete();
-             await db.savedRevenueLogs.where({ saveId: save.id! }).delete();
-             await db.saves.delete(save.id!);
-          });
-      }
+      await deleteGame(userId, slotId);
   };
 
   // Initialize some dummy revenue logs for "history" (Only if not loaded from save)
