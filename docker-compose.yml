@@ -7,6 +7,7 @@ services:
     pull_policy: always
     ports:
       - "3098:80"
+      - "3097:3097"
     volumes:
       - ./data:/app/data
     restart: unless-stopped
