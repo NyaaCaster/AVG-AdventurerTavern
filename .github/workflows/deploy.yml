@@ -19,7 +19,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
     
     - name: Restore SSL Certificates
       run: |
@@ -30,7 +29,7 @@ jobs:
         echo "${{ secrets.SSL_CSR }}" | base64 -d > SSL/h.hony-wen.com.csr
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install
     
     - name: Build
       run: npm run build
