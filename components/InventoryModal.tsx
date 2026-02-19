@@ -28,7 +28,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
   if (!isOpen) return null;
 
   // Helper to get quality color style
-  const getQualityStyle = (quality: ItemQuality) => {
+  const getQualityStyle = (quality?: ItemQuality) => {
+      if (!quality) return 'text-slate-400';
       switch(quality) {
           case 'S': return 'text-amber-400 font-bold drop-shadow-[0_0_2px_rgba(251,191,36,0.8)]'; // Gold/Legendary
           case 'A': return 'text-red-400 font-bold'; // Red/Epic
@@ -66,6 +67,30 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
             })}
         </>
       );
+  };
+
+  // 渲染等级/品质标签
+  const renderRankBadge = (item: ItemData, isLarge = false) => {
+      if (item.category === 'res') {
+          return (
+              <span className={`
+                  ${isLarge ? 'text-sm px-3 py-1' : 'text-xs px-1.5 py-0.5'}
+                  text-yellow-400 font-bold bg-black/40 rounded ml-1 border border-yellow-600/30 shadow-sm flex items-center gap-1
+              `}>
+                  <i className="fa-solid fa-star text-[10px] md:text-xs"></i>
+                  {item.star || '?'}
+              </span>
+          );
+      } else {
+          return (
+              <span className={`
+                  ${isLarge ? 'text-sm px-3 py-1' : 'text-xs px-1.5 py-0.5'}
+                  ${getQualityStyle(item.quality)} bg-[#2c241b]/80 rounded ml-1 font-mono border border-black/20
+              `}>
+                  {item.quality || '-'}
+              </span>
+          );
+      }
   };
 
   return (
@@ -169,9 +194,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                                         <div className="flex justify-between items-start">
                                             <h4 className="font-bold text-[#2c241b] truncate pr-2 text-sm md:text-base group-hover:text-[#9b7a4c] transition-colors">{item.name}</h4>
-                                            <span className={`text-xs ${getQualityStyle(item.quality)} bg-[#2c241b]/80 px-1.5 py-0.5 rounded ml-1 font-mono border border-black/20`}>
-                                                {item.quality}
-                                            </span>
+                                            {renderRankBadge(item)}
                                         </div>
                                         
                                         <div className="text-[10px] md:text-xs text-[#6e5d52] line-clamp-2 leading-tight min-h-[2.5em]">
@@ -245,9 +268,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                         <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{selectedItem.name}</h2>
                         
                         <div className="flex items-center gap-3 mt-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold bg-black/40 border border-white/10 ${getQualityStyle(selectedItem.quality)}`}>
-                                RANK: {selectedItem.quality}
-                            </span>
+                            {renderRankBadge(selectedItem, true)}
+                            
                             <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30 uppercase tracking-widest">
                                 {ITEM_CATEGORIES.find(c => c.id === selectedItem.category)?.name}
                             </span>

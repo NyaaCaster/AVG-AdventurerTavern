@@ -133,6 +133,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           if (result.success && result.uid !== undefined) {
               onLogin(result.uid);
               setTitleState('MENU');
+              // Automatically open API settings for new users
+              onOpenConfig();
           } else {
               setAuthError(result.message);
           }

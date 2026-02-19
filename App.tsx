@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameState, GameSettings, ConfigTab } from './types';
-import GameScene from './components/GameScene';
+import GameScene, { GameSceneRef } from './components/GameScene';
 import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
@@ -34,6 +34,9 @@ const App: React.FC = () => {
   const [transitionDuration, setTransitionDuration] = useState(0); // 动画持续时间(ms)
   const [isTransitioning, setIsTransitioning] = useState(false); // 是否正在转场中(阻挡点击)
 
+  // GameScene Ref for triggering auto-save
+  const gameSceneRef = React.useRef<GameSceneRef>(null);
+
   // 场景切换处理函数 (核心逻辑)
   const handleSwitchScene = (targetState: GameState, fadeOutMs: number = 1000, fadeInMs: number = 2000) => {
     if (isTransitioning) return;
@@ -63,6 +66,13 @@ const App: React.FC = () => {
     }, fadeOutMs);
   };
 
+  // 当设置变更时，保存到本地并应用副作用
+  const handleUpdateSettings = (newSettings: GameSettings) => {
+    setGameSettings(newSettings);
+    saveSettings(newSettings);
+    setHDMode(newSettings.enableHD); // 更新图片解析模式
+  };
+
   const handleUserLogin = (uid: number) => {
       setCurrentUserId(uid);
   };
@@ -72,6 +82,10 @@ const App: React.FC = () => {
       try {
           const data = await loadGame(currentUserId, slotId);
           if (data) {
+              // Restore settings from save if available
+              if (data.settings) {
+                  handleUpdateSettings(data.settings);
+              }
               setInitialSaveData(data);
               handleSwitchScene(GameState.PLAYING, 1000, 2000);
           }
@@ -83,13 +97,6 @@ const App: React.FC = () => {
   const handleStartNewGame = () => {
       setInitialSaveData(null); // Ensure fresh start
       handleSwitchScene(GameState.PLAYING, 1000, 2000);
-  };
-
-  // 当设置变更时，保存到本地并应用副作用
-  const handleUpdateSettings = (newSettings: GameSettings) => {
-    setGameSettings(newSettings);
-    saveSettings(newSettings);
-    setHDMode(newSettings.enableHD); // 更新图片解析模式
   };
 
   // 进入设置界面的处理函数
@@ -104,6 +111,11 @@ const App: React.FC = () => {
   const handleBackFromConfig = () => {
      // 直接切换回原来的状态
      setGameState(previousGameState);
+
+     // 如果是从游戏中进入设置并返回，则触发自动保存（保存设置和当前进度）
+     if (previousGameState === GameState.PLAYING && gameSceneRef.current) {
+         gameSceneRef.current.saveGame(0);
+     }
   };
 
   // 判断各层是否应该显示
@@ -145,9 +157,11 @@ const App: React.FC = () => {
       {showGame && currentUserId !== null && (
         <div className="absolute inset-0 z-0 w-full h-full">
             <GameScene 
+                ref={gameSceneRef}
                 userId={currentUserId}
                 onBackToMenu={() => handleSwitchScene(GameState.MENU, 1000, 2000)}
                 onOpenSettings={(tab) => handleOpenConfig(GameState.PLAYING, tab)}
+                onSettingsChange={handleUpdateSettings} // Pass handler for in-game loads
                 settings={gameSettings}
                 initialSaveData={initialSaveData} // Pass loaded data
             />

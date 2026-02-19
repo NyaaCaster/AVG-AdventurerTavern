@@ -135,6 +135,20 @@ export interface WorldState {
   sceneName: string;    // 新增：场景名称
 }
 
+// 用户自定义菜谱数据结构
+export interface UserRecipe {
+  id: string;           // 菜谱唯一ID (timestamp based)
+  templateId: string;   // 关联的 FOOD_RECIPES ID
+  name: string;         // 料理名称 (LLM生成或默认)
+  description: string;  // 料理描述 (LLM生成或默认)
+  imagePath: string;    // 图片路径
+  star: number;         // 料理星级 (素材平均)
+  price: number;        // 估算售价
+  mainResId: string;    // 主素材ID
+  otherResIds: string[];// 辅素材ID列表
+  createdAt: number;
+}
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;
@@ -148,6 +162,10 @@ export interface SceneProps {
   inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
   onOpenManagement?: () => void; // 新增：打开管理界面回调
   sceneLevels: Record<string, number>; // 新增：场景等级信息
+  // 烹饪系统相关
+  onOpenCooking?: () => void;
+  userRecipes?: UserRecipe[];
+  foodStock?: Record<string, number>;
 }
 
 // --- 道具系统类型定义 ---
@@ -178,7 +196,8 @@ export interface ItemData {
   name: string;
   category: ItemCategory;
   tag?: ItemTag;
-  quality: ItemQuality;
+  quality?: ItemQuality; // 改为可选
+  star?: string; // 新增：素材星级
   maxStack: number;
   description: string;
   stats?: ItemStats;

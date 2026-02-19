@@ -22,7 +22,7 @@ const Scen3: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
         <>
             <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setMenuState('move')} subLabel="Move" />
             <SceneActionBtn label="用餐" icon="fa-utensils" onClick={() => onAction('eat')} />
-            <SceneActionBtn label="烹饪" icon="fa-fire-burner" onClick={() => onAction('cook')} />
+            <SceneActionBtn label="烹饪" icon="fa-fire-burner" onClick={() => onAction('cook')} subLabel="Cooking" />
             <SceneActionBtn label="寻找女性角色" icon="fa-magnifying-glass" onClick={() => setMenuState('chars')} />
             
             <div className="h-px w-32 bg-white/10 my-2"></div>

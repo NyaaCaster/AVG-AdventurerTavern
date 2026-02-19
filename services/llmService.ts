@@ -31,21 +31,6 @@ export class LlmService {
 
   async initChat(character: Character, systemPrompt: string, config: ApiConfig) {
     this.config = { ...config }; // Create a copy
-    
-    // Auto-inject env key if missing in config
-    if (!this.config.apiKey) {
-        try {
-            if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-                this.config.apiKey = process.env.API_KEY;
-                // If model is also missing and we are using env key, default to Gemini
-                if (!this.config.model) {
-                    this.config.model = 'gemini-3-flash-preview';
-                    this.config.provider = 'google';
-                }
-            }
-        } catch(e) { /* ignore */ }
-    }
-
     this.history = [];
     this.systemInstruction = systemPrompt;
     
@@ -84,35 +69,11 @@ export class LlmService {
 
   async sendMessage(message: string): Promise<AIResponse> {
     if (!this.config || !this.config.apiKey) {
-        // Double check env var just in case initChat wasn't called with it or config was reset
-        try {
-             if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-                 if (!this.config) {
-                     this.config = {
-                         provider: 'google',
-                         baseUrl: '',
-                         apiKey: process.env.API_KEY,
-                         model: 'gemini-3-flash-preview',
-                         autoConnect: true
-                     };
-                 } else {
-                     this.config.apiKey = process.env.API_KEY;
-                 }
-             }
-        } catch(e) { /* ignore */ }
-    }
-
-    if (!this.config || !this.config.apiKey) {
         const err = new Error("API Config or API Key missing.");
         this.addLog('error', { message: err.message });
         throw err;
     }
     
-    if (!this.config.model) {
-        // Fallback model if missing
-        this.config.model = 'gemini-3-flash-preview';
-    }
-
     this.history.push({
       role: 'user',
       content: message
@@ -245,6 +206,113 @@ export class LlmService {
     }
     
     return null;
+  }
+
+  /**
+   * 生成料理名称和描述
+   */
+  async generateFoodLore(ingredients: string[], config: ApiConfig): Promise<{ name: string; description: string }> {
+      this.config = { ...config };
+      
+      if (!this.config.apiKey) throw new Error("API Key missing");
+      
+      const prompt = `
+你是一位异世界酒馆的创意主厨。
+请根据以下素材列表，设计一道充满幻想风格的料理。
+素材列表: [${ingredients.join(', ')}]
+
+请严格以 JSON 格式输出，包含以下字段：
+- name: 料理名称 (中文，不超过10个字，富有趣味性)
+- description: 料理描述 (中文，50字以内，描述口感和特色)
+
+示例:
+{
+  "name": "火焰史莱姆冻",
+  "description": "虽然外表红通通的，入口却是冰凉的果冻口感，随后在喉咙深处爆发出一股暖意，非常神奇。"
+}
+`;
+
+      const performRequest = async (useJsonMode: boolean) => {
+          const { endpoint, headers } = this.getProviderDetails();
+          const requestPayload: any = {
+              model: this.config!.model,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 1.0, // Creativity
+          };
+
+          if (useJsonMode) {
+              requestPayload.response_format = { type: "json_object" };
+          }
+
+          this.addLog('request', { type: 'food_gen', payload: requestPayload, useJsonMode });
+
+          const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify(requestPayload)
+          });
+
+          if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`${response.status} - ${errorText}`);
+          }
+          return await response.json();
+      };
+
+      try {
+          let data;
+          
+          // Only force JSON mode for providers that reliably support it to avoid 400 Bad Request
+          // Google and OpenAI usually support it. Others might strictly reject it.
+          const defaultUseJson = ['google', 'openai', 'deepseek'].includes(this.config.provider);
+
+          try {
+              data = await performRequest(defaultUseJson);
+          } catch (e: any) {
+              // Retry without JSON mode if we got a 400 error (likely unsupported parameter)
+              if (String(e).includes('400')) {
+                  console.warn("Food Gen got 400, retrying without response_format...");
+                  data = await performRequest(false);
+              } else {
+                  throw e;
+              }
+          }
+
+          this.addLog('response', { type: 'food_gen', data });
+
+          const content = data.choices?.[0]?.message?.content || "{}";
+          // Sanitize and parse
+          const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+          
+          let json;
+          try {
+              // Try to find the JSON object
+              const start = jsonStr.indexOf('{');
+              const end = jsonStr.lastIndexOf('}');
+              if (start !== -1 && end !== -1) {
+                  json = JSON.parse(jsonStr.substring(start, end + 1));
+              } else {
+                  json = JSON.parse(jsonStr);
+              }
+          } catch (pError) {
+              console.warn("JSON parse failed, falling back to raw text", jsonStr);
+              // Fallback: Try to heuristically extract info if JSON fails
+              return {
+                  name: "未知料理",
+                  description: content.substring(0, 50).replace(/\n/g, ' ') || "看起来可以吃。"
+              };
+          }
+          
+          return {
+              name: json.name || "未知料理",
+              description: json.description || "看起来可以吃。"
+          };
+
+      } catch (e) {
+          console.error("Food Gen Error", e);
+          this.addLog('error', { message: "Food Gen Failed", error: String(e) });
+          throw e;
+      }
   }
 
   private getProviderDetails(): { endpoint: string, headers: Record<string, string> } {

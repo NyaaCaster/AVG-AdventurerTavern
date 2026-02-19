@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { llmService } from '../services/llmService';
@@ -15,11 +15,12 @@ import ChatInterface from './ChatInterface';
 import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
+import CookingModal from './CookingModal'; // Import CookingModal
 import ResourceDebugModal from './ResourceDebugModal'; 
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import { generateSystemPrompt, USER_INFO_TEMPLATE, CHARACTERS } from '../data/scenarioData';
-import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType } from '../types';
+import { GameSettings, ConfigTab, WorldState, DialogueEntry, SceneId, Character, LogEntry, ClothingState, ManagementStats, RevenueLog, RevenueType, UserRecipe } from '../types';
 import { SCENE_BGM } from '../data/resources/audioResources';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 
@@ -38,9 +39,14 @@ interface GameSceneProps {
   userId: number; // New Prop
   onBackToMenu: () => void;
   onOpenSettings: (tab?: ConfigTab) => void;
+  onSettingsChange: (newSettings: GameSettings) => void; // Handler for restoring settings
   settings: GameSettings;
   onLoadGame?: () => void;
   initialSaveData?: any; // New prop to receive loaded data from Title Screen
+}
+
+export interface GameSceneRef {
+    saveGame: (slotId: number) => Promise<void>;
 }
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
@@ -274,7 +280,7 @@ const calculateCharacterLocations = (period: 'day'|'evening'|'night', dateStr: s
 };
 
 
-const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSettings, settings, initialSaveData }) => {
+const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
   const [sceneParams, setSceneParams] = useState<any>({});
   
@@ -288,6 +294,11 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
   const [gold, setGold] = useState<number>(3000); 
   const [sceneLevels, setSceneLevels] = useState<Record<string, number>>(INITIAL_SCENE_LEVELS);
   
+  // Cooking System States
+  const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
+  const [foodStock, setFoodStock] = useState<Record<string, number>>({});
+  const [isCookingOpen, setIsCookingOpen] = useState(false);
+
   // Converted CHARACTER_STATS to state to allow saving/loading
   const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
 
@@ -320,6 +331,15 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
       setSceneLevels(data.sceneLevels);
       setRevenueLogs(data.revenueLogs);
       
+      // Cooking data
+      if (data.userRecipes) setUserRecipes(data.userRecipes);
+      if (data.foodStock) setFoodStock(data.foodStock);
+
+      // Restore settings if present
+      if (data.settings && onSettingsChange) {
+          onSettingsChange(data.settings);
+      }
+      
       // Reset some UI states
       setForcedLocations({});
       setIsDialogueMode(false);
@@ -337,9 +357,17 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
           inventory,
           characterStats,
           sceneLevels,
-          revenueLogs
+          revenueLogs,
+          userRecipes, // Save recipes
+          foodStock,   // Save food stock
+          settings     // Save current settings (for both manual and auto saves)
       });
   };
+
+  // Expose saveGame to parent via ref
+  useImperativeHandle(ref, () => ({
+      saveGame: handleSaveGame
+  }));
 
   // Load Game Handler (In-game)
   const handleLoadGame = async (slotId: number) => {
@@ -447,6 +475,48 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
       }
   };
 
+  // Cooking: Add Recipe
+  const handleAddRecipe = (newRecipe: UserRecipe) => {
+      setUserRecipes(prev => [newRecipe, ...prev]);
+      // Also add 1 to stock
+      setFoodStock(prev => ({
+          ...prev,
+          [newRecipe.id]: (prev[newRecipe.id] || 0) + 1
+      }));
+  };
+
+  // Cooking: Consume Ingredients
+  const handleConsumeIngredients = (items: {id: string, count: number}[]) => {
+      setInventory(prev => {
+          const newInv = { ...prev };
+          items.forEach(item => {
+              newInv[item.id] = Math.max(0, (newInv[item.id] || 0) - item.count);
+          });
+          return newInv;
+      });
+  };
+
+  // Cooking: Craft Existing Recipe
+  const handleCraftRecipe = (recipeId: string, count: number, ingredients: {id: string, count: number}[]) => {
+      handleConsumeIngredients(ingredients);
+      setFoodStock(prev => ({
+          ...prev,
+          [recipeId]: (prev[recipeId] || 0) + count
+      }));
+  };
+
+  // Cooking: Delete Recipe
+  const handleDeleteRecipe = (recipeId: string) => {
+      setUserRecipes(prev => prev.filter(r => r.id !== recipeId));
+      // Keep stock data until it runs out, technically, but if recipe is deleted, stock is useless?
+      // Requirement says: keep stock until 0. So we don't delete from foodStock.
+  };
+
+  // Cooking: Rename Recipe
+  const handleRenameRecipe = (recipeId: string, newName: string) => {
+      setUserRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, name: newName } : r));
+  };
+
   // Debug - Resource Modification Handlers
   const handleUpdateGold = (newGold: number) => {
       setGold(newGold);
@@ -509,14 +579,6 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const hasEnvKey = useMemo(() => {
-      try {
-          return !!(typeof process !== 'undefined' && process.env && process.env.API_KEY);
-      } catch(e) {
-          return false;
-      }
-  }, []);
-
   const updateRealWeather = async () => {
       const data = await fetchWeatherData();
       if (data) {
@@ -553,7 +615,7 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
       }, 60000 * 5); // Every 5 minutes
 
       return () => clearInterval(autoSaveInterval);
-  }, [isDialogueMode, isSceneTransitioning, gold, worldState, managementStats, inventory, characterStats, sceneLevels, userId]);
+  }, [isDialogueMode, isSceneTransitioning, gold, worldState, managementStats, inventory, characterStats, sceneLevels, userId, userRecipes, foodStock, settings]);
 
   useEffect(() => {
     const update = () => {
@@ -704,7 +766,7 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
   }, [currentSceneId, worldState.period, isDialogueMode, isSceneTransitioning, sceneParams, presentCharacters]);
 
   const generateAmbientLine = async (char: Character, state: ClothingState) => {
-      if (!settings.apiConfig.apiKey && !hasEnvKey) {
+      if (!settings.apiConfig.apiKey) {
           setAmbientText("......");
           return;
       }
@@ -841,12 +903,12 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
   const currentBgUrl = getSceneBackground(currentSceneId, worldState.period, currentSceneLevel);
 
   useEffect(() => {
-     if (!settings.apiConfig.apiKey && !hasEnvKey) {
+     if (!settings.apiConfig.apiKey) {
        setConnectionStatus('disconnected');
      } else {
        setConnectionStatus('connected');
      }
-  }, [settings.apiConfig, hasEnvKey]);
+  }, [settings.apiConfig]);
 
   const initLLM = async (char: Character) => {
     const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
@@ -854,16 +916,8 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
     
-    const config = { ...settings.apiConfig };
-    if (!config.apiKey && hasEnvKey) {
-        try {
-            config.apiKey = process.env.API_KEY || '';
-            if (!config.model || config.model === 'grok-3') {
-                config.model = 'gemini-3-flash-preview';
-                config.provider = 'google';
-            }
-        } catch (e) {}
-    }
+    // Config strictly from settings, no hardcoded fallbacks
+    const config = settings.apiConfig;
 
     await llmService.initChat(char, fullPrompt, config);
   };
@@ -916,6 +970,8 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
   const handleAction = (action: string, param?: any) => {
     console.log(`Action triggered: ${action}`, param);
     if (action === 'rest') {
+    } else if (action === 'cook') {
+        setIsCookingOpen(true);
     }
   };
 
@@ -1252,7 +1308,10 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
         settings, 
         presentCharacters, 
         inventory,
-        sceneLevels 
+        sceneLevels,
+        // Cooking props
+        userRecipes,
+        foodStock
     };
 
     switch(currentSceneId) {
@@ -1501,6 +1560,21 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
           onUpgrade={handleUpgradeFacility}
       />
 
+      {/* Cooking Modal */}
+      <CookingModal 
+          isOpen={isCookingOpen}
+          onClose={() => setIsCookingOpen(false)}
+          inventory={inventory}
+          userRecipes={userRecipes}
+          foodStock={foodStock}
+          onAddRecipe={handleAddRecipe}
+          onConsumeIngredients={handleConsumeIngredients}
+          onCraftRecipe={handleCraftRecipe}
+          onDeleteRecipe={handleDeleteRecipe}
+          onRenameRecipe={handleRenameRecipe}
+          apiConfig={settings.apiConfig}
+      />
+
       <ResourceDebugModal 
           isOpen={isResourceDebugOpen}
           onClose={() => setIsResourceDebugOpen(false)}
@@ -1522,6 +1596,6 @@ const GameScene: React.FC<GameSceneProps> = ({ userId, onBackToMenu, onOpenSetti
       />
     </div>
   );
-};
+});
 
 export default GameScene;

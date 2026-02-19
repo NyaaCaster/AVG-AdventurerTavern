@@ -1,5 +1,5 @@
 
-import { WorldState, ManagementStats, RevenueLog } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -70,6 +70,9 @@ export const saveGame = async (
     characterStats: Record<string, { level: number; affinity: number }>;
     sceneLevels: Record<string, number>;
     revenueLogs: RevenueLog[];
+    userRecipes?: UserRecipe[];
+    foodStock?: Record<string, number>;
+    settings?: GameSettings; // Add settings to save data
   }
 ) => {
     const res = await apiCall('/save', {
