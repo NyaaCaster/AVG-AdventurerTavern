@@ -1,8 +1,10 @@
 
 import { WorldState, ManagementStats, RevenueLog } from '../types';
+import { AppConfig } from '../config';
 
 // 配置服务器地址
-const API_BASE_URL = 'http://localhost:3097/api';
+// 从 config.ts 中读取配置，方便统一管理
+const API_BASE_URL = AppConfig.apiBaseUrl;
 
 // --- 接口定义 ---
 
@@ -24,16 +26,17 @@ const apiCall = async (endpoint: string, body: any) => {
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
+            mode: 'cors', // 显式声明跨域模式
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
         if (!response.ok) {
-            throw new Error(`Server Error: ${response.status}`);
+            throw new Error(`Server Error: ${response.status} ${response.statusText}`);
         }
         return await response.json();
     } catch (e) {
         console.error(`API Call Failed [${endpoint}]:`, e);
-        return { success: false, message: '无法连接到服务器，请检查后端是否运行。' };
+        return { success: false, message: `无法连接到服务器 (${API_BASE_URL})。\n请检查:\n1. server/config.js 配置是否正确\n2. 后端服务是否运行` };
     }
 };
 

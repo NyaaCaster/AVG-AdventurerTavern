@@ -4,21 +4,30 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const config = require('./config'); // 引入配置文件
 
 const app = express();
-const PORT = 3097; // 后端运行在 3097 端口
+const PORT = config.PORT;
 
 // Middleware
-app.use(cors());
+// 使用配置文件中的 CORS 设置
+app.use(cors(config.CORS_CONFIG));
+
 app.use(bodyParser.json({ limit: '50mb' })); // 增加限制以支持大存档
 
-// Database Setup - 使用数据卷路径
-const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../data/database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
+// Database Setup
+// 使用配置文件中的数据库路径
+const db = new sqlite3.Database(config.DB_PATH, (err) => {
     if (err) {
-        console.error('Could not connect to database', err);
+        console.error('Could not connect to database at ' + config.DB_PATH, err);
     } else {
-        console.log('Connected to SQLite database');
+        console.log('Connected to SQLite database at ' + config.DB_PATH);
     }
 });
 
@@ -138,6 +147,15 @@ app.post('/api/delete', (req, res) => {
     stmt.finalize();
 });
 
-app.listen(PORT, () => {
+// 监听所有网络接口 (不指定 IP)
+const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+});
+
+server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+        console.error(`ERROR: Port ${PORT} is already in use. Please stop other processes or change the port.`);
+    } else {
+        console.error('Server error:', e);
+    }
 });
