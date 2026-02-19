@@ -215,10 +215,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
       // 只有 API Key 存在时才尝试生成
       if (apiConfig.apiKey) {
           try {
-              // 获取食材的真实中文名称列表
-              const ingredientNames = ingredients.map(id => ITEMS[id]?.name || "未知食材");
+              // 获取食材的真实中文名称列表及描述
+              const ingredientDetails = ingredients.map(id => ({
+                  name: ITEMS[id]?.name || "未知食材",
+                  description: ITEMS[id]?.description || ""
+              }));
               
-              const lore = await llmService.generateFoodLore(ingredientNames, apiConfig);
+              const lore = await llmService.generateFoodLore(ingredientDetails, apiConfig);
               if (lore.name) finalName = lore.name;
               if (lore.description) finalDesc = lore.description;
           } catch (e) {
@@ -357,11 +360,22 @@ const CookingModal: React.FC<CookingModalProps> = ({
 
                                     return (
                                         <div key={recipe.id} className="bg-[#fcfaf7] border-2 border-[#d6cbb8] rounded-lg p-3 flex gap-4 shadow-sm hover:border-[#9b7a4c] transition-colors relative group">
-                                            {/* Image */}
-                                            <div className="w-24 h-24 md:w-32 md:h-32 bg-[#e0d6c5] rounded border border-[#c7bca8] flex-shrink-0 overflow-hidden relative">
-                                                <img src={resolveImgPath(recipe.imagePath)} alt={recipe.name} className="w-full h-full object-cover" />
-                                                <div className="absolute top-0 left-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-br font-mono">
-                                                    Stock: {foodStock[recipe.id] || 0}
+                                            {/* Image & Stock */}
+                                            <div className="flex flex-col items-center gap-2 shrink-0">
+                                                <div className="w-24 h-24 md:w-32 md:h-32 bg-[#e0d6c5] rounded border border-[#c7bca8] overflow-hidden relative">
+                                                    <img src={resolveImgPath(recipe.imagePath)} alt={recipe.name} className="w-full h-full object-cover" />
+                                                    
+                                                    {/* Delete Button - Moved to Image Area for Mobile Optimization */}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); onDeleteRecipe(recipe.id); }}
+                                                        className="absolute top-1 left-1 w-6 h-6 flex items-center justify-center bg-black/60 text-white/80 hover:text-red-400 hover:bg-black/80 rounded-full transition-all backdrop-blur-[2px] shadow-sm z-10"
+                                                        title="删除食谱"
+                                                    >
+                                                        <i className="fa-solid fa-trash-can text-[10px]"></i>
+                                                    </button>
+                                                </div>
+                                                <div className="text-xs font-bold text-[#8c7b70] bg-[#e8dfd1] px-2 py-0.5 rounded border border-[#d6cbb8] shadow-sm whitespace-nowrap">
+                                                    库存: {foodStock[recipe.id] || 0}
                                                 </div>
                                             </div>
 
@@ -392,14 +406,21 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                         </h3>
                                                     )}
                                                     
-                                                    <div className="flex text-yellow-500 text-xs gap-0.5">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <i key={i} className={`fa-solid fa-star ${i < recipe.star ? '' : 'text-[#d6cbb8]'}`}></i>
-                                                        ))}
+                                                    {/* Star Rating Display */}
+                                                    <div className="flex items-center text-yellow-500 text-xs gap-0.5">
+                                                        {recipe.star > 5 ? (
+                                                            <span className="font-black text-sm flex items-center gap-1 text-[#b45309] bg-yellow-100 px-2 py-0.5 rounded border border-yellow-300 shadow-sm">
+                                                                {recipe.star} <i className="fa-solid fa-star text-xs"></i>
+                                                            </span>
+                                                        ) : (
+                                                            [...Array(5)].map((_, i) => (
+                                                                <i key={i} className={`fa-solid fa-star ${i < recipe.star ? '' : 'text-[#d6cbb8]'}`}></i>
+                                                            ))
+                                                        )}
                                                     </div>
                                                 </div>
 
-                                                <p className="text-xs text-[#5c4d45] line-clamp-2 leading-relaxed mb-2 min-h-[2.5em]">
+                                                <p className="text-xs text-[#5c4d45] leading-relaxed mb-2 min-h-[2.5em] whitespace-pre-wrap break-words">
                                                     {recipe.description}
                                                 </p>
 
@@ -412,24 +433,17 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                     ))}
                                                 </div>
 
-                                                <div className="mt-auto flex justify-between items-end">
-                                                    <div className="flex flex-col items-start bg-[#f5e6d3] px-2 py-1 rounded border border-[#e6dcc8]">
+                                                <div className="mt-auto flex justify-between items-end gap-2">
+                                                    <div className="flex flex-col items-start bg-[#f5e6d3] px-2 py-1 rounded border border-[#e6dcc8] shrink-0">
                                                         <span className="text-[10px] text-[#8c7b70] font-bold">估算售价</span>
-                                                        <span className="text-sm font-bold text-[#b45309] leading-none">{recipe.price} G</span>
+                                                        <span className="text-sm font-bold text-[#b45309] leading-none whitespace-nowrap">{recipe.price} G</span>
                                                     </div>
                                                     
                                                     <div className="flex gap-2">
                                                         <button 
-                                                            onClick={() => onDeleteRecipe(recipe.id)}
-                                                            className="w-8 h-8 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                            title="删除食谱"
-                                                        >
-                                                            <i className="fa-solid fa-trash-can"></i>
-                                                        </button>
-                                                        <button 
                                                             onClick={() => { setCraftingRecipeId(recipe.id); setCraftCount(1); }}
                                                             disabled={craftable <= 0}
-                                                            className={`px-4 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+                                                            className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap ${
                                                                 craftable > 0 
                                                                 ? 'bg-[#382b26] text-[#f0e6d2] hover:bg-[#4a3b32]' 
                                                                 : 'bg-[#d6cbb8] text-[#f5f0e6] cursor-not-allowed'

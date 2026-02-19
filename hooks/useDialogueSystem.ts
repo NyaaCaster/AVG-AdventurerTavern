@@ -1,0 +1,374 @@
+
+import { useState, useRef, useEffect } from 'react';
+import { 
+    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry 
+} from '../types';
+import { llmService } from '../services/llmService';
+import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
+import { getCharacterSprite } from '../utils/gameLogic';
+import { SCENE_NAMES } from '../utils/gameConstants';
+
+interface UseDialogueSystemProps {
+    settings: GameSettings;
+    worldState: WorldState;
+    characterStats: Record<string, { level: number; affinity: number }>;
+    onItemsGained: (items: { id: string; count: number }[]) => void;
+    onCharacterMove: (charId: string, targetId: string) => void;
+}
+
+export const useDialogueSystem = ({ 
+    settings, worldState, characterStats, onItemsGained, onCharacterMove 
+}: UseDialogueSystemProps) => {
+  const [isDialogueMode, setIsDialogueMode] = useState(false);
+  const [isDialogueEnding, setIsDialogueEnding] = useState(false);
+  const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
+  const [clothingState, setClothingState] = useState<ClothingState>('default');
+  
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentDialogue, setCurrentDialogue] = useState<{ speaker: string; text: string }>({ speaker: '', text: '' });
+  const [currentSprite, setCurrentSprite] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [history, setHistory] = useState<DialogueEntry[]>([]);
+  const [debugLogs, setDebugLogs] = useState<LogEntry[]>([]); 
+
+  // Ambient States
+  const [ambientCharacter, setAmbientCharacter] = useState<Character | null>(null);
+  const [ambientText, setAmbientText] = useState<string>('');
+  const [isAmbientLoading, setIsAmbientLoading] = useState(false);
+  const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); 
+  const [isAmbientBathing, setIsAmbientBathing] = useState(false); 
+  const [showAmbientDialogue, setShowAmbientDialogue] = useState(true);
+
+  // Subscribe to LLM logs
+  useEffect(() => {
+    const unsubscribe = llmService.subscribeLogs((logs) => {
+        setDebugLogs([...logs]); 
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const initLLM = async (char: Character) => {
+    const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW);
+    systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+    const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
+    
+    await llmService.initChat(char, fullPrompt, settings.apiConfig);
+  };
+
+  const handleEnterDialogue = async (characterId: string, actionType: string = 'chat') => {
+    const char = CHARACTERS[characterId];
+    if (!char) return;
+
+    let nextClothingState: ClothingState = 'default';
+    if (
+        (actionType === 'peep' || actionType === 'bath_together') || 
+        (actionType === 'massage_give' || actionType === 'massage_receive') 
+    ) {
+        nextClothingState = 'nude';
+    }
+    
+    setClothingState(nextClothingState);
+    setActiveCharacter(char);
+    
+    const sprite = getCharacterSprite(char, nextClothingState, 'normal');
+    setCurrentSprite(sprite);
+    setCurrentDialogue({ speaker: char.name, text: "..." });
+    setIsDialogueMode(true);
+    setIsDialogueEnding(false);
+    
+    const stats = characterStats[characterId] || { level: 1, affinity: 0 };
+    
+    if (settings.apiConfig.apiKey) {
+        setIsLoading(true);
+        try {
+            await initLLM(char);
+            
+            const contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为剧情生成指令]
+玩家(${settings.userName})在【${worldState.periodLabel}】的【${worldState.sceneName}】找到了你。
+玩家当前的行动意图是:【${actionType}】。
+当前你对玩家的好感度为: ${stats.affinity} (0-100)。
+你的衣着状态是: ${nextClothingState === 'nude' ? '裸体/未穿衣' : '日常装束'}。
+请根据你的性格、当前时间、地点、好感度以及玩家的行为，生成一句符合情境的开场白或反应。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+            const response = await llmService.sendMessage(contextPrompt);
+            const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+
+            setCurrentDialogue({ speaker: char.name, text: displayText });
+            setHistory(prev => [...prev, { 
+                speaker: char.name, text: displayText, timestamp: Date.now(), 
+                type: 'npc', avatarUrl: char.avatarUrl, tokens: response.usage?.completion_tokens 
+            }]);
+
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(char, nextClothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
+            }
+            setIsTyping(true);
+        } catch(e) {
+            console.error(e);
+            setErrorMessage("角色初始化失败");
+            setCurrentDialogue({ speaker: char.name, text: `*(${char.name}看着你)* ...有什么事吗？` });
+        } finally {
+            setIsLoading(false);
+        }
+    } else {
+        setCurrentDialogue({ speaker: char.name, text: `*(${char.name}似乎正在发呆)* ...` });
+    }
+  };
+
+  const handleSend = async () => {
+    if (!inputText.trim() || isLoading || !activeCharacter) return;
+    if (!settings.apiConfig.apiKey) {
+        setErrorMessage("请配置 API Key。");
+        return;
+    }
+
+    const userMessage = inputText;
+    setInputText('');
+    setIsLoading(true);
+    setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
+
+    try {
+      const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;
+      const enrichedMessage = `${contextBlock}\n用户发言: "${userMessage}"`;
+      
+      const response = await llmService.sendMessage(enrichedMessage);
+      const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+      
+      setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+      
+      if (response.items && response.items.length > 0) {
+          onItemsGained(response.items);
+      }
+
+      if (settings.enableNSFW && response.clothing) {
+          const newClothing = response.clothing.toLowerCase();
+          if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
+              setClothingState(newClothing as ClothingState);
+          }
+      }
+
+      if (response.move_to) {
+          onCharacterMove(activeCharacter.id, response.move_to);
+      }
+
+      setHistory(prev => {
+        const newHistory = [...prev];
+        for (let i = newHistory.length - 1; i >= 0; i--) {
+            if (newHistory[i].type === 'user' && !newHistory[i].tokens) {
+                 if (response.usage) newHistory[i] = { ...newHistory[i], tokens: response.usage.prompt_tokens };
+                 break; 
+            }
+        }
+        newHistory.push({ 
+            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: response.usage?.completion_tokens 
+        });
+        return newHistory;
+      });
+
+      const effectiveClothingState = (settings.enableNSFW && response.clothing && ['default', 'nude', 'bondage'].includes(response.clothing)) 
+                                     ? response.clothing 
+                                     : clothingState;
+
+      const sprite = response.emotion ? getCharacterSprite(activeCharacter, effectiveClothingState, response.emotion) 
+                                      : getCharacterSprite(activeCharacter, effectiveClothingState, 'normal');
+      setCurrentSprite(sprite);
+      setIsTyping(true);
+    } catch (error) {
+      setErrorMessage(`通信故障: ${error instanceof Error ? error.message : 'Unknown Error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+     if(isLoading || !activeCharacter) return;
+     setIsLoading(true);
+     try {
+         const response = await llmService.redoLastMessage();
+         if(response) {
+            const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+            setIsTyping(true);
+            
+            if (response.items && response.items.length > 0) onItemsGained(response.items);
+
+            if (settings.enableNSFW && response.clothing) {
+                const newClothing = response.clothing.toLowerCase();
+                if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
+                    setClothingState(newClothing as ClothingState);
+                }
+            }
+
+            if (response.move_to) onCharacterMove(activeCharacter.id, response.move_to);
+
+            setHistory(prev => {
+                const newHistory = [...prev];
+                if (newHistory.length > 0 && newHistory[newHistory.length - 1].type === 'npc') newHistory.pop();
+                
+                if (response.usage) {
+                    for (let i = newHistory.length - 1; i >= 0; i--) {
+                        if (newHistory[i].type === 'user') {
+                            newHistory[i] = { ...newHistory[i], tokens: response.usage.prompt_tokens };
+                            break;
+                        }
+                    }
+                }
+                newHistory.push({
+                    speaker: activeCharacter.name, text: displayText, timestamp: Date.now(),
+                    type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: response.usage?.completion_tokens
+                });
+                return newHistory;
+            });
+
+             const effectiveClothingState = (settings.enableNSFW && response.clothing && ['default', 'nude', 'bondage'].includes(response.clothing)) 
+                                     ? response.clothing 
+                                     : clothingState;
+             const sprite = response.emotion ? getCharacterSprite(activeCharacter, effectiveClothingState, response.emotion)
+                                             : getCharacterSprite(activeCharacter, effectiveClothingState, 'normal');
+             setCurrentSprite(sprite);
+         }
+     } catch (e) {
+         setErrorMessage("重生成失败");
+     } finally {
+         setIsLoading(false);
+     }
+  };
+
+  const handleEndDialogueGeneration = async () => {
+    if (isLoading || isDialogueEnding || !activeCharacter) return;
+    
+    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
+    setIsLoading(true);
+
+    try {
+        const contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+玩家决定结束当前的对话离开。
+请根据当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})以及刚才的对话氛围，生成一句简短自然的告别语。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+        let displayText = '';
+        let tokensUsed = 0;
+
+        if (settings.apiConfig.apiKey) {
+            const response = await llmService.sendMessage(contextPrompt);
+            displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            tokensUsed = response.usage?.completion_tokens || 0;
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
+            }
+        } else {
+             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 下次见。`;
+        }
+
+        setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+        setHistory(prev => [...prev, { 
+            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: tokensUsed
+        }]);
+        
+        setIsTyping(true);
+        setIsDialogueEnding(true); 
+    } catch(e) {
+        console.error(e);
+        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 回见。` });
+        setIsTyping(true);
+        setIsDialogueEnding(true);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleFinalClose = () => {
+      setIsDialogueMode(false);
+      setIsDialogueEnding(false);
+      setActiveCharacter(null);
+      setClothingState('default');
+  };
+
+  const generateAmbientLine = async (char: Character, state: ClothingState, sceneId: string) => {
+      if (!settings.apiConfig.apiKey) {
+          setAmbientText("......");
+          return;
+      }
+
+      setIsAmbientLoading(true);
+      try {
+          await initLLM(char);
+          
+          const stats = characterStats[char.id] || { level: 1, affinity: 0 };
+          let prompt = "";
+
+          if (sceneId === 'scen_7') {
+              prompt = `
+[系统指令: 此消息仅生成环境氛围台词]
+你现在正在温泉里泡澡，非常放松。
+你没有注意到玩家(${settings.userName})的到来，正在自言自语。
+请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。
+不要与玩家对话，不要使用第二人称。
+`;
+          } else {
+              prompt = `
+[系统指令: 此消息仅生成环境氛围台词]
+你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。
+玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。
+当前你对玩家的好感度为: ${stats.affinity}。
+请根据你的性格、当前时间、地点和心情，生成一句简短的“闲聊”或“自言自语”。
+或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。
+`;
+          }
+
+          const response = await llmService.sendMessage(prompt);
+          let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+          setAmbientText(text);
+          
+          if (response.emotion) {
+              const sprite = getCharacterSprite(char, state, response.emotion);
+              setCurrentSprite(sprite);
+          }
+
+      } catch (e) {
+          console.error("Ambient Gen Error", e);
+          setAmbientText("......");
+      } finally {
+          setIsAmbientLoading(false);
+      }
+  };
+
+  return {
+      isDialogueMode, setIsDialogueMode,
+      activeCharacter, setActiveCharacter,
+      clothingState, setClothingState,
+      inputText, setInputText,
+      isLoading, setIsLoading,
+      currentDialogue, setCurrentDialogue,
+      currentSprite, setCurrentSprite,
+      isTyping, setIsTyping,
+      errorMessage, setErrorMessage,
+      history, setHistory,
+      debugLogs, setDebugLogs,
+      isDialogueEnding, setIsDialogueEnding,
+      
+      ambientCharacter, setAmbientCharacter,
+      ambientText, setAmbientText,
+      isAmbientLoading, setIsAmbientLoading,
+      isAmbientSleeping, setIsAmbientSleeping,
+      isAmbientBathing, setIsAmbientBathing,
+      showAmbientDialogue, setShowAmbientDialogue,
+
+      handleEnterDialogue,
+      handleSend,
+      handleRegenerate,
+      handleEndDialogueGeneration,
+      handleFinalClose,
+      generateAmbientLine
+  };
+};
