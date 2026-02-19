@@ -11,11 +11,12 @@ COPY package.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install --silent --prefer-offline
 
-# 只复制构建所需的文件（根据 .dockerignore）
-COPY *.tsx *.ts *.html *.json ./
+# 复制所有构建所需的文件
+COPY *.tsx *.ts *.html ./
 COPY components/ ./components/
 COPY services/ ./services/
 COPY utils/ ./utils/
+COPY hooks/ ./hooks/
 COPY WorldInfo/ ./WorldInfo/
 COPY data/ ./data/
 COPY vite.config.ts ./
