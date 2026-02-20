@@ -17,7 +17,6 @@ COPY components/ ./components/
 COPY services/ ./services/
 COPY utils/ ./utils/
 COPY hooks/ ./hooks/
-COPY WorldInfo/ ./WorldInfo/
 COPY data/ ./data/
 COPY vite.config.ts ./
 COPY tsconfig.json ./
