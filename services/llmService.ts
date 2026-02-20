@@ -211,7 +211,7 @@ export class LlmService {
   /**
    * 生成料理名称和描述
    */
-  async generateFoodLore(ingredients: { name: string; description: string }[], config: ApiConfig): Promise<{ name: string; description: string }> {
+  async generateFoodLore(ingredients: { name: string; description: string }[], cookingMethod: string, config: ApiConfig): Promise<{ name: string; description: string }> {
       this.config = { ...config };
       
       if (!this.config.apiKey) throw new Error("API Key missing");
@@ -220,16 +220,18 @@ export class LlmService {
 
       const prompt = `
 你是一位异世界酒馆的创意主厨。
-请根据以下素材列表，设计一道充满幻想风格的料理。
-请务必结合【素材名称】和【素材描述】来理解食材的特性（如口感、味道、来源等），确保生成的料理名称和描述符合常识与逻辑。
-例如：如果是肉类素材，应偏向肉排、炖肉等；如果是面粉或水果，应偏向面包、甜点等。切勿出现素材与料理类型严重冲突的情况（如全是肉类却做成慕斯）。
+请根据以下素材列表和烹饪方法，设计一道充满幻想风格的料理。
+请务必结合【素材名称】、【素材描述】和【烹饪方法】来理解食材的特性（如口感、味道、来源等）和料理的做法，确保生成的料理名称和描述符合常识与逻辑。
+例如：如果是肉类素材且烹饪方法是"烤肉"，应生成烤肉类料理；如果是面粉且烹饪方法是"蛋糕"，应生成蛋糕类甜点。切勿出现素材、烹饪方法与料理类型严重冲突的情况（如全是肉类且方法是"炖肉"却做成慕斯）。
+
+烹饪方法: ${cookingMethod}
 
 素材列表:
 ${ingredientsInfo}
 
 请严格以 JSON 格式输出，包含以下字段：
-- name: 料理名称 (中文，不超过10个字，富有趣味性，必须体现素材特色)
-- description: 料理描述 (中文，50字以内，描述口感和特色，需要反映出素材描述中的要素)
+- name: 料理名称 (中文，不超过10个字，富有趣味性，必须体现素材特色和烹饪方法)
+- description: 料理描述 (中文，50字以内，描述口感和特色，需要反映出素材描述中的要素和烹饪方法)
 
 示例:
 {

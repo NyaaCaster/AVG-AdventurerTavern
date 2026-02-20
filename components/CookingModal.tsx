@@ -141,19 +141,20 @@ const CookingModal: React.FC<CookingModalProps> = ({
 
       // 2. 筛选符合条件的食谱
       // 规则：Main Tag 必须匹配。
-      // 规则：食谱要求的 other-res 必须被包含在用户提供的 subTags 中 (最小组合匹配)
-      // 注意：FOOD_RECIPES 里的 'other-res' 是需求列表。
+      // 规则：食谱要求的 other-res 必须被用户提供的 subTags 完全包含 (最小组合匹配)
+      // 注意：用户可以提供更多素材，但食谱要求的必须都有
       const matchedRecipes = FOOD_RECIPES.filter(recipe => {
           // A. 检查主料
           if (recipe['main-res'] !== mainTag) return false;
 
-          // B. 检查辅料 (Recipe Requirements must be subset of User Input)
+          // B. 检查辅料 (User Input must contain all Recipe Requirements)
           const requiredTags = recipe['other-res'];
           if (requiredTags.length === 0) return true; // 不需要辅料，必定满足
 
           // 创建用户提供的辅料Tag副本用于消耗检查
           const providedPool = [...subTags];
           
+          // 检查食谱要求的每个辅料是否都能在用户提供的素材中找到
           for (const reqTag of requiredTags) {
               const idx = providedPool.indexOf(reqTag);
               if (idx !== -1) {
@@ -221,7 +222,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                   description: ITEMS[id]?.description || ""
               }));
               
-              const lore = await llmService.generateFoodLore(ingredientDetails, apiConfig);
+              const lore = await llmService.generateFoodLore(ingredientDetails, recipeTemplate.keyword, apiConfig);
               if (lore.name) finalName = lore.name;
               if (lore.description) finalDesc = lore.description;
           } catch (e) {
@@ -540,8 +541,14 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                     {Object.entries(getAvailableInventory(activeSlotIndex)).map(([id, count]) => {
                                         const item = ITEMS[id];
-                                        // 过滤条件：必须是素材(res)，且非'non'和'drinks'，且有剩余数量
-                                        if (item.category !== 'res' || item.tag === 'non' || item.tag === 'drinks' || count <= 0) return null;
+                                        // 过滤条件：必须是素材(res)，且有剩余数量
+                                        if (item.category !== 'res' || count <= 0) return null;
+                                        
+                                        // 主料槽位(slot 0)：过滤掉 non, drinks, spice, milk
+                                        if (activeSlotIndex === 0 && ['non', 'drinks', 'spice', 'milk'].includes(item.tag)) return null;
+                                        
+                                        // 辅料槽位(slot 1-4)：过滤掉 non, drinks
+                                        if (activeSlotIndex !== 0 && ['non', 'drinks'].includes(item.tag)) return null;
 
                                         return (
                                             <button
