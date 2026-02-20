@@ -14,10 +14,11 @@ interface UseDialogueSystemProps {
     characterStats: Record<string, { level: number; affinity: number }>;
     onItemsGained: (items: { id: string; count: number }[]) => void;
     onCharacterMove: (charId: string, targetId: string) => void;
+    onAffinityChange: (charId: string, change: number) => void;
 }
 
 export const useDialogueSystem = ({ 
-    settings, worldState, characterStats, onItemsGained, onCharacterMove 
+    settings, worldState, characterStats, onItemsGained, onCharacterMove, onAffinityChange 
 }: UseDialogueSystemProps) => {
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false);
@@ -40,6 +41,10 @@ export const useDialogueSystem = ({
   const [isAmbientSleeping, setIsAmbientSleeping] = useState(false); 
   const [isAmbientBathing, setIsAmbientBathing] = useState(false); 
   const [showAmbientDialogue, setShowAmbientDialogue] = useState(true);
+  const [lastAffinityChange, setLastAffinityChange] = useState<number | undefined>(undefined);
+  
+  // [角色主动结束对话] 跟踪当前对话中的好感度累计变化
+  const [sessionAffinityTotal, setSessionAffinityTotal] = useState<number>(0);
 
   // Subscribe to LLM logs
   useEffect(() => {
@@ -61,6 +66,9 @@ export const useDialogueSystem = ({
   const handleEnterDialogue = async (characterId: string, actionType: string = 'chat') => {
     const char = CHARACTERS[characterId];
     if (!char) return;
+
+    // [角色主动结束对话] 重置对话会话的好感度累计
+    setSessionAffinityTotal(0);
 
     let nextClothingState: ClothingState = 'default';
     if (
@@ -146,6 +154,26 @@ export const useDialogueSystem = ({
           onItemsGained(response.items);
       }
 
+      if (response.affinity_change && activeCharacter) {
+          onAffinityChange(activeCharacter.id, response.affinity_change);
+          setLastAffinityChange(response.affinity_change);
+          // 清除变化指示器
+          setTimeout(() => setLastAffinityChange(undefined), 2500);
+          
+          // [角色主动结束对话] 累计好感度变化
+          const newTotal = sessionAffinityTotal + response.affinity_change;
+          setSessionAffinityTotal(newTotal);
+          
+          // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+          if (newTotal <= -10 && clothingState !== 'bondage') {
+              console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+              // 延迟触发，让当前消息显示完毕
+              setTimeout(() => {
+                  handleEndDialogueGeneration();
+              }, 1000);
+          }
+      }
+
       if (settings.enableNSFW && response.clothing) {
           const newClothing = response.clothing.toLowerCase();
           if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
@@ -199,6 +227,24 @@ export const useDialogueSystem = ({
             
             if (response.items && response.items.length > 0) onItemsGained(response.items);
 
+            if (response.affinity_change && activeCharacter) {
+                onAffinityChange(activeCharacter.id, response.affinity_change);
+                setLastAffinityChange(response.affinity_change);
+                setTimeout(() => setLastAffinityChange(undefined), 2500);
+                
+                // [角色主动结束对话] 累计好感度变化
+                const newTotal = sessionAffinityTotal + response.affinity_change;
+                setSessionAffinityTotal(newTotal);
+                
+                // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+                if (newTotal <= -10 && clothingState !== 'bondage') {
+                    console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+                    setTimeout(() => {
+                        handleEndDialogueGeneration();
+                    }, 1000);
+                }
+            }
+
             if (settings.enableNSFW && response.clothing) {
                 const newClothing = response.clothing.toLowerCase();
                 if (['default', 'nude', 'bondage'].includes(newClothing) && newClothing !== clothingState) {
@@ -248,12 +294,30 @@ export const useDialogueSystem = ({
     setIsLoading(true);
 
     try {
-        const contextPrompt = `
+        // [角色主动结束对话] 判断是否为角色主动结束
+        const isCharacterInitiated = sessionAffinityTotal <= -10 && clothingState !== 'bondage';
+        
+        let contextPrompt = '';
+        if (isCharacterInitiated) {
+            // 角色因恼怒主动结束对话
+            contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+你因为玩家的言行感到非常不满和恼怒，决定主动结束这次对话。
+当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})。
+在这次对话中，你的好感度累计下降了 ${Math.abs(sessionAffinityTotal)} 点。
+请根据刚才的对话内容和你当前的情绪状态（生气、失望、厌烦等），生成一句简短但明确表达不满的告别语。
+你的台词应该体现出你主动结束对话的意图，而不是被动告别。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+        } else {
+            // 玩家主动结束对话
+            contextPrompt = `
 [系统指令: 此消息不显示给玩家，仅作为系统指令]
 玩家决定结束当前的对话离开。
 请根据当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})以及刚才的对话氛围，生成一句简短自然的告别语。
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;
+        }
         let displayText = '';
         let tokensUsed = 0;
 
@@ -292,6 +356,8 @@ export const useDialogueSystem = ({
       setIsDialogueEnding(false);
       setActiveCharacter(null);
       setClothingState('default');
+      // [角色主动结束对话] 重置好感度累计
+      setSessionAffinityTotal(0);
   };
 
   const generateAmbientLine = async (char: Character, state: ClothingState, sceneId: string) => {
@@ -356,6 +422,8 @@ export const useDialogueSystem = ({
       history, setHistory,
       debugLogs, setDebugLogs,
       isDialogueEnding, setIsDialogueEnding,
+      lastAffinityChange,
+      sessionAffinityTotal, // [角色主动结束对话] 导出好感度累计
       
       ambientCharacter, setAmbientCharacter,
       ambientText, setAmbientText,

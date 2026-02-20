@@ -28,6 +28,9 @@ interface ChatInterfaceProps {
   onOpenSettings: (tab?: ConfigTab) => void;
   
   stats?: { level: number; affinity: number };
+  affinityChange?: number; // 新增：好感度变化值
+  sessionAffinityTotal?: number; // [角色主动结束对话] 当前对话好感度累计
+  clothingState?: string; // [角色主动结束对话] 当前衣着状态
 }
 
 const ProviderIcons: Record<ApiProvider, React.ReactNode> = {
@@ -66,7 +69,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   connectionStatus,
   onOpenSettings,
-  stats = { level: 1, affinity: 0 }
+  stats = { level: 1, affinity: 0 },
+  affinityChange,
+  sessionAffinityTotal = 0,
+  clothingState = 'default'
 }) => {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -117,6 +123,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onEndDialogue={!isEnding ? handleEndDialogueGeneration : undefined} // 正在结束时不再响应按钮
             level={stats.level}
             affinity={stats.affinity}
+            affinityChange={affinityChange}
           />
         </div>
 

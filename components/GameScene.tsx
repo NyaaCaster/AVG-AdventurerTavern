@@ -17,6 +17,7 @@ import CookingModal from './CookingModal';
 import ResourceDebugModal from './ResourceDebugModal'; 
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
+import AffinityToast from './AffinityToast'; 
 import { CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId } from '../types';
 import { SCENE_NAMES, INITIAL_MANAGEMENT_STATS } from '../utils/gameConstants';
@@ -76,6 +77,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
   const [showHistory, setShowHistory] = useState(false);
   const [showDebugLog, setShowDebugLog] = useState(false);
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
+  const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
 
@@ -104,12 +106,35 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
       }
   };
 
+  const handleAffinityChange = (charId: string, change: number) => {
+      if (change === 0) return;
+      
+      // Update character stats
+      core.setCharacterStats(prev => {
+          const current = prev[charId] || { level: 1, affinity: 0 };
+          const newAffinity = Math.max(0, Math.min(100, current.affinity + change));
+          return {
+              ...prev,
+              [charId]: { ...current, affinity: newAffinity }
+          };
+      });
+
+      // Show notification
+      const newNotification = {
+          id: Date.now() + Math.random().toString(),
+          charId,
+          change
+      };
+      setAffinityNotifications(prev => [...prev, newNotification]);
+  };
+
   const dialogue = useDialogueSystem({
       settings,
       worldState: world.worldState,
       characterStats: core.characterStats,
       onItemsGained: handleItemsGained,
-      onCharacterMove: handleCharacterMove
+      onCharacterMove: handleCharacterMove,
+      onAffinityChange: handleAffinityChange
   });
 
   // --- Game Loop: Revenue & Time ---
@@ -359,6 +384,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
       // Handle delayed movement clearing if needed, but hook handles movement set.
       // We might want to clear forced movement after a scene change or explicitly here if needed.
       // For now, worldSystem keeps it until nav.
+      
+      // 对话结束时触发自动存档（保存角色好感度等数据）
+      handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
   };
 
   const currentSceneLevel = core.sceneLevels[world.currentSceneId] || (['scen_5','scen_6','scen_7','scen_8'].includes(world.currentSceneId) ? 0 : 1);
@@ -433,6 +461,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
                       itemId={notification.itemId}
                       count={notification.count}
                       onComplete={() => setItemNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
+              ))}
+              {affinityNotifications.map(notification => (
+                  <AffinityToast 
+                      key={notification.id}
+                      change={notification.change}
+                      characterName={CHARACTERS[notification.charId]?.name || '角色'}
+                      onComplete={() => setAffinityNotifications(prev => prev.filter(n => n.id !== notification.id))}
                   />
               ))}
           </div>
@@ -541,6 +577,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
                  connectionStatus={connectionStatus}
                  onOpenSettings={onOpenSettings}
                  stats={currentStats}
+                 affinityChange={dialogue.lastAffinityChange}
+                 sessionAffinityTotal={dialogue.sessionAffinityTotal}
+                 clothingState={dialogue.clothingState}
               />
           )}
       </div>

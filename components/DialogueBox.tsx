@@ -16,6 +16,7 @@ interface DialogueBoxProps {
   onClose?: () => void;       // 用于 Ambient 模式：单纯关闭对话框
   level?: number;
   affinity?: number;
+  affinityChange?: number; // 新增：好感度变化值，用于触发动画
 }
 
 const DialogueBox: React.FC<DialogueBoxProps> = ({ 
@@ -31,10 +32,15 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   onEndDialogue,
   onClose,
   level = 1,
-  affinity = 0
+  affinity = 0,
+  affinityChange
 }) => {
   const [displayedText, setDisplayedText] = useState('');
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  const [showChangeIndicator, setShowChangeIndicator] = useState(false);
+  const [changeValue, setChangeValue] = useState(0);
   const textContentRef = useRef<HTMLDivElement>(null);
+  const prevAffinityRef = useRef(affinity);
 
   useEffect(() => {
     if (!isTyping || !typingEnabled) {
@@ -65,6 +71,28 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       textContentRef.current.scrollTop = textContentRef.current.scrollHeight;
     }
   }, [displayedText]);
+
+  // 监听好感度变化并触发动画
+  useEffect(() => {
+    if (affinityChange && affinityChange !== 0) {
+      setChangeValue(affinityChange);
+      setIsHeartAnimating(true);
+      setShowChangeIndicator(true);
+
+      const heartTimer = setTimeout(() => setIsHeartAnimating(false), 800);
+      const indicatorTimer = setTimeout(() => setShowChangeIndicator(false), 2000);
+
+      return () => {
+        clearTimeout(heartTimer);
+        clearTimeout(indicatorTimer);
+      };
+    }
+  }, [affinityChange]);
+
+  // 更新前一个好感度值
+  useEffect(() => {
+    prevAffinityRef.current = affinity;
+  }, [affinity]);
 
   const alpha = transparency / 100;
 
@@ -162,9 +190,29 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                     </span>
                     
                     {/* Affinity */}
-                    <div className="flex items-center gap-1 text-[#fcd34d] shadow-black text-shadow-sm">
-                        <i className="fa-solid fa-heart text-xs text-red-500 animate-pulse"></i>
-                        <span>{affinity}</span>
+                    <div className="relative flex items-center gap-1 text-[#fcd34d] shadow-black text-shadow-sm">
+                        <i className={`fa-solid fa-heart text-xs text-red-500 transition-all duration-300 ${
+                            isHeartAnimating ? 'scale-150 animate-pulse' : 'animate-pulse'
+                        }`}></i>
+                        <span className={`transition-all duration-300 ${
+                            isHeartAnimating ? 'scale-110 font-extrabold' : ''
+                        }`}>{affinity}</span>
+                        
+                        {/* 好感度变化指示器 */}
+                        {showChangeIndicator && changeValue !== 0 && (
+                            <span className={`
+                                absolute -top-6 left-1/2 transform -translate-x-1/2
+                                text-xs font-bold px-2 py-0.5 rounded
+                                animate-[fadeInUp_0.5s_ease-out]
+                                ${
+                                    changeValue > 0 
+                                        ? 'text-pink-300 bg-pink-900/80' 
+                                        : 'text-gray-400 bg-gray-800/80'
+                                }
+                            `}>
+                                {changeValue > 0 ? '+' : ''}{changeValue}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -210,6 +258,25 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             /* 括号文本专用：暗金色阴影 */
             .text-shadow-gold {
                 text-shadow: 0 0 5px rgba(180, 83, 9, 0.5), 0 0 1px rgba(146, 64, 14, 0.3);
+            }
+            /* 好感度变化指示器动画 */
+            @keyframes fadeInUp {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, 10px);
+                }
+                20% {
+                    opacity: 1;
+                    transform: translate(-50%, 0);
+                }
+                80% {
+                    opacity: 1;
+                    transform: translate(-50%, 0);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -10px);
+                }
             }
          `}</style>
 
