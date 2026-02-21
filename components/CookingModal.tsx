@@ -302,8 +302,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
             className="w-full max-w-6xl h-[90vh] bg-[#2c241b] border-[3px] border-[#9b7a4c] rounded-xl shadow-2xl flex flex-col overflow-hidden relative select-none"
             onClick={e => e.stopPropagation()}
             style={{
-                backgroundImage: `url(${resolveImgPath('img/bg/AdventurerTavern/wood_texture_dark.png')}), linear-gradient(to bottom, #2c241b, #1a1512)`,
-                backgroundBlendMode: 'overlay'
+                backgroundImage: 'linear-gradient(to bottom, #2c241b, #1a1512)'
             }}
         >
             {/* Header / Tabs - 修复布局问题 */}

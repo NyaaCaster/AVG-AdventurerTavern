@@ -47,8 +47,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
         className="w-full max-w-4xl bg-[#2c241b] border-[3px] border-[#5c4d45] rounded-lg shadow-2xl overflow-hidden relative flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
         style={{
-            backgroundImage: `url(${resolveImgPath('img/bg/AdventurerTavern/wood_texture_dark.png')}), linear-gradient(to bottom, #2c241b, #1a1512)`,
-            backgroundBlendMode: 'overlay'
+            backgroundImage: 'linear-gradient(to bottom, #2c241b, #1a1512)'
         }}
       >
         {/* Header */}

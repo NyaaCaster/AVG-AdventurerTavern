@@ -119,8 +119,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
         className="w-full max-w-4xl h-[85vh] bg-[#2c241b] border-2 border-[#9b7a4c] rounded-lg shadow-2xl overflow-hidden flex flex-col relative"
         onClick={e => e.stopPropagation()}
         style={{
-            backgroundImage: `url(${resolveImgPath('img/bg/AdventurerTavern/wood_texture_dark.png')}), linear-gradient(to bottom, #2c241b, #1a1512)`,
-            backgroundBlendMode: 'overlay'
+            backgroundImage: 'linear-gradient(to bottom, #2c241b, #1a1512)'
         }}
       >
         {/* Header & Tabs */}
