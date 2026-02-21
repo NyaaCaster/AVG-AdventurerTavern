@@ -18,6 +18,56 @@ export interface FacilityConfig {
   getEffectDescription: (level: number) => string;
 }
 
+// 导出计算函数，供其他模块使用（需要先定义，因为 FACILITY_DATA 会引用它们）
+
+// 柜台 (scen_1) - 客房基础价格
+export const calculateRoomPrice = (innLevel: number) => {
+  return 50 + (innLevel - 1) * 10;
+};
+
+// 客房区域 (scen_2) - 住宿人数上限
+export const calculateMaxOccupancy = (roomLevel: number) => {
+  return 20 + (roomLevel - 1) * 5;
+};
+
+// 酒场 (scen_3) - 餐饮溢价和栏位
+export const calculateTavernBonus = (tavernLevel: number) => {
+  const bonus = (tavernLevel - 1) * 2;
+  const slots = 1 + Math.floor((tavernLevel - 1) / 5);
+  return { bonus, slots };
+};
+
+// 训练场 (scen_4) - 训练经验值
+export const calculateTrainingExp = (trainingLevel: number) => {
+  return 50 + (trainingLevel - 1) * 25;
+};
+
+// 武器店 (scen_5) - 出售武器品质
+export const calculateWeaponQuality = (weaponShopLevel: number) => {
+  if (weaponShopLevel === 0) return null;
+  const qualities = ['E', 'D', 'C', 'B', 'A', 'S'];
+  return qualities[Math.min(weaponShopLevel - 1, 5)];
+};
+
+// 防具店 (scen_6) - 出售防具品质
+export const calculateArmorQuality = (armorShopLevel: number) => {
+  if (armorShopLevel === 0) return null;
+  const qualities = ['E', 'D', 'C', 'B', 'A', 'S'];
+  return qualities[Math.min(armorShopLevel - 1, 5)];
+};
+
+// 露天温泉 (scen_7) - 生命恢复加成
+export const calculateHotSpringBonus = (hotSpringLevel: number) => {
+  if (hotSpringLevel === 0) return 0;
+  return hotSpringLevel * 10; // Lv1=10%, Lv20=200%
+};
+
+// 按摩室 (scen_8) - 魔力恢复加成
+export const calculateMassageBonus = (massageLevel: number) => {
+  if (massageLevel === 0) return 0;
+  return massageLevel * 5; // Lv1=5%, Lv20=100%
+};
+
 export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
   'scen_1': {
     id: 'scen_1',
@@ -27,7 +77,7 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     baseCostMat: 10,
     unlockInnLevel: 1,
     dependencyType: 'multiply', // 自身无依赖
-    getEffectDescription: (level) => `客房基础价格: ${50 + (level - 1) * 10} G`,
+    getEffectDescription: (level) => `客房基础价格: ${calculateRoomPrice(level)} G`,
   },
   'scen_2': {
     id: 'scen_2',
@@ -38,7 +88,7 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     unlockInnLevel: 1,
     dependencyFactor: 1, // MaxLv = InnLv
     dependencyType: 'multiply',
-    getEffectDescription: (level) => `住宿人数上限: ${20 + (level - 1) * 5} 人`,
+    getEffectDescription: (level) => `住宿人数上限: ${calculateMaxOccupancy(level)} 人`,
   },
   'scen_3': {
     id: 'scen_3',
@@ -50,8 +100,7 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     dependencyFactor: 1, // MaxLv = InnLv
     dependencyType: 'multiply',
     getEffectDescription: (level) => {
-      const slots = 1 + Math.floor((level - 1) / 5);
-      const bonus = (level - 1) * 2;
+      const { bonus, slots } = calculateTavernBonus(level);
       return `餐饮溢价 +${bonus}% / 栏位: ${slots}`;
     },
   },
@@ -64,7 +113,7 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     unlockInnLevel: 1,
     dependencyFactor: 1, // MaxLv = InnLv
     dependencyType: 'multiply',
-    getEffectDescription: (level) => `训练经验值: ${50 + (level - 1) * 25}`,
+    getEffectDescription: (level) => `训练经验值: ${calculateTrainingExp(level)}`,
   },
   'scen_5': {
     id: 'scen_5',
@@ -77,8 +126,8 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     dependencyType: 'divide',
     getEffectDescription: (level) => {
         if (level === 0) return "未建设";
-        const qualities = ['E', 'D', 'C', 'B', 'A', 'S'];
-        return `出售武器品质: ${qualities[Math.min(level - 1, 5)]}`;
+        const quality = calculateWeaponQuality(level);
+        return `出售武器品质: ${quality}`;
     },
   },
   'scen_6': {
@@ -92,8 +141,8 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     dependencyType: 'divide',
     getEffectDescription: (level) => {
         if (level === 0) return "未建设";
-        const qualities = ['E', 'D', 'C', 'B', 'A', 'S'];
-        return `出售防具品质: ${qualities[Math.min(level - 1, 5)]}`;
+        const quality = calculateArmorQuality(level);
+        return `出售防具品质: ${quality}`;
     },
   },
   'scen_7': {
@@ -107,8 +156,8 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     dependencyType: 'divide',
     getEffectDescription: (level) => {
         if (level === 0) return "未建设";
-        // 初始10%，每级线性增长到200%。Lv1=10, Lv20=200. 每级+10%
-        return `生命恢复加成: +${level * 10}%`;
+        const bonus = calculateHotSpringBonus(level);
+        return `生命恢复加成: +${bonus}%`;
     },
   },
   'scen_8': {
@@ -122,8 +171,8 @@ export const FACILITY_DATA: Partial<Record<SceneId, FacilityConfig>> = {
     dependencyType: 'divide',
     getEffectDescription: (level) => {
         if (level === 0) return "未建设";
-        // 初始5%，每级线性增长到100%。Lv1=5, Lv20=100. 每级+5%
-        return `魔力恢复加成: +${level * 5}%`;
+        const bonus = calculateMassageBonus(level);
+        return `魔力恢复加成: +${bonus}%`;
     },
   },
 };

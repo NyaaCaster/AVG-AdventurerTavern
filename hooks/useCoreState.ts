@@ -5,8 +5,9 @@ import {
 } from '../types';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS 
+    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS
 } from '../utils/gameConstants';
+import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
 export const useCoreState = (initialSaveData?: any) => {
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
@@ -17,7 +18,16 @@ export const useCoreState = (initialSaveData?: any) => {
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
   
   const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
-  const [managementStats, setManagementStats] = useState<ManagementStats>(INITIAL_MANAGEMENT_STATS);
+  const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
+    // Calculate initial values based on facility levels
+    const innLevel = INITIAL_SCENE_LEVELS['scen_1'] || 1;
+    const roomLevel = INITIAL_SCENE_LEVELS['scen_2'] || 1;
+    return {
+      ...INITIAL_MANAGEMENT_STATS,
+      roomPrice: calculateRoomPrice(innLevel),
+      maxOccupancy: calculateMaxOccupancy(roomLevel)
+    };
+  });
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
 
   // Apply loaded data
@@ -72,22 +82,24 @@ export const useCoreState = (initialSaveData?: any) => {
 
       setSceneLevels(prev => {
           const newLevels = { ...prev };
-          newLevels[facilityId] = (newLevels[facilityId] || 0) + 1;
+          const newLevel = (newLevels[facilityId] || 0) + 1;
+          newLevels[facilityId] = newLevel;
+          
+          // Update related stats immediately with new level
+          if (facilityId === 'scen_1') {
+              setManagementStats(prevStats => ({
+                  ...prevStats,
+                  roomPrice: calculateRoomPrice(newLevel)
+              }));
+          } else if (facilityId === 'scen_2') {
+              setManagementStats(prevStats => ({
+                  ...prevStats,
+                  maxOccupancy: calculateMaxOccupancy(newLevel)
+              }));
+          }
+          
           return newLevels;
       });
-
-      // Update related stats
-      if (facilityId === 'scen_1') {
-          setManagementStats(prev => ({
-              ...prev,
-              roomPrice: 50 + ((sceneLevels['scen_1'] || 1) + 1 - 1) * 10 
-          }));
-      } else if (facilityId === 'scen_2') {
-          setManagementStats(prev => ({
-              ...prev,
-              maxOccupancy: 20 + ((sceneLevels['scen_2'] || 1) + 1 - 1) * 5
-          }));
-      }
   };
 
   // --- Cooking Handlers ---

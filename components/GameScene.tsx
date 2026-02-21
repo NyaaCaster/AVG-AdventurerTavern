@@ -20,7 +20,7 @@ import ItemToast from './ItemToast';
 import AffinityToast from './AffinityToast'; 
 import { CHARACTERS } from '../data/scenarioData';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId } from '../types';
-import { SCENE_NAMES, INITIAL_MANAGEMENT_STATS } from '../utils/gameConstants';
+import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
 
 import Scen1 from './scenes/scen_1';
@@ -191,6 +191,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
 
       const initialLogs: RevenueLog[] = [];
       const now = new Date();
+      
+      // Use actual initial stats from managementStats state
+      const stats = core.managementStats;
+      
       for (let i = 2; i >= 0; i--) {
           const date = new Date(now);
           date.setDate(date.getDate() - i);
@@ -207,10 +211,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
               if (i === 0 && event.hour > now.getHours()) return;
               let amount = 0;
               if (event.type === 'accommodation') {
-                  const occ = Math.floor(INITIAL_MANAGEMENT_STATS.occupancy * (0.8 + Math.random() * 0.4)); 
-                  amount = Math.floor(occ * INITIAL_MANAGEMENT_STATS.roomPrice * (INITIAL_MANAGEMENT_STATS.satisfaction / 100) * (INITIAL_MANAGEMENT_STATS.reputation / 100));
+                  const occ = Math.floor(stats.occupancy * (0.8 + Math.random() * 0.4)); 
+                  amount = Math.floor(occ * stats.roomPrice * (stats.satisfaction / 100) * (stats.reputation / 100));
               } else {
-                  amount = Math.floor(1000 * (INITIAL_MANAGEMENT_STATS.attraction / 100) * (0.8 + Math.random() * 0.5));
+                  amount = Math.floor(1000 * (stats.attraction / 100) * (0.8 + Math.random() * 0.5));
               }
               initialLogs.push({
                   id: `log-${date.getTime()}-${event.hour}`,
@@ -223,7 +227,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
           });
       }
       core.setRevenueLogs(initialLogs.reverse()); 
-  }, [initialSaveData]); // Run once on mount if no initial data
+  }, [initialSaveData, core.managementStats]); // Run once on mount if no initial data
 
   // --- Connection Status Check ---
   useEffect(() => {
