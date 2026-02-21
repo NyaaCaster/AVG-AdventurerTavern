@@ -290,6 +290,7 @@ AVG-AdventurerTavern/
 - **Team Leader / 设计师**: [NyaaCaster](https://github.com/NyaaCaster) (honywen)
 - **前端工程师**: Gemini (3.0 Pro Preview)
 - **后端工程师**: Claude (Sonnet 4.5)
+- **首席团队助理**: Continue
 
 ### 创意团队
 - **视觉艺术团队**: Comfy & WAI-illustrious-SDXL
@@ -297,6 +298,11 @@ AVG-AdventurerTavern/
 
 ### 基础设施
 - **运维支持团队**: GitHub & Docker Hub
+- **人力资源管理**: [QinyAPI](https://love.qinyan.icu/)
+
+### 工作环境
+- **团队总部**: Visual Studio Code
+- **团队支部**: Google AI Studio
 
 感谢所有团队成员的倾力支持！
 
