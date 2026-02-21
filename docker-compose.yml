@@ -1,46 +1,44 @@
 version: '3.8'
 
 services:
-  adventurertavern:
-    image: honywen/adv-tavern:latest
+  # 前端客户端服务
+  client:
+    image: honywen/adv-tavern
     container_name: adventurertavern
     pull_policy: always
     ports:
       - "3098:80"
-      - "3097:3097"
-    volumes:
-      - ./data:/app/data
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
       - TZ=Asia/Shanghai
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
           cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-        tag: "adventurertavern-fullstack"
+        tag: "adventurertavern-client"
     networks:
       - app-network
     security_opt:
       - no-new-privileges:true
-    tmpfs:
-      - /tmp
-      - /run
+
+  # 数据库服务器（需要本地构建）
+  # 请进入 database-server/ 目录使用独立的 docker-compose.yml 部署
+  # cd database-server && docker-compose up -d
 
 networks:
   app-network:

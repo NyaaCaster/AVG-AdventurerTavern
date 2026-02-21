@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  database-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adventurertavern-database:latest
+    container_name: adventurertavern-db
+    ports:
+      - "3097:3097"
+    volumes:
+      - ./data:/app/data
+      - ./SSL:/app/SSL:ro  # SSL证书只读挂载
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3097/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "adventurertavern-database"
+    networks:
+      - db-network
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  db-network:
+    driver: bridge

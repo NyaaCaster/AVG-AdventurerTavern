@@ -96,10 +96,16 @@ docker-compose.override.yml
 tmp
 temp
 
-# 数据库文件（开发用）
-server/database.sqlite
-server/*.db
-# data/ 目录包含游戏数据,构建时需要
+# 数据库服务器目录（已分离）
+database-server/
+
+# SSL 证书目录
+SSL/
+
+# 数据库文件
+*.sqlite
+*.db
+data/*.sqlite
 
 # 备份文件
 *.backup

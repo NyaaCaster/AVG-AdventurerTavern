@@ -11,8 +11,8 @@ module.exports = {
 
     // HTTPS 配置
     HTTPS_ENABLED: true,
-    SSL_KEY_PATH: '/etc/nginx/ssl/h.hony-wen.com.key',
-    SSL_CERT_PATH: '/etc/nginx/ssl/h.hony-wen.com_bundle.crt',
+    SSL_KEY_PATH: path.join(__dirname, 'SSL', 'h.hony-wen.com.key'),
+    SSL_CERT_PATH: path.join(__dirname, 'SSL', 'h.hony-wen.com_bundle.crt'),
 
     // 数据库文件存放路径 (使用数据卷以持久化)
     DB_PATH: '/app/data/database.sqlite',

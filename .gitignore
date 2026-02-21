@@ -28,9 +28,15 @@ metadata.json
 
 # Database files
 data/database.sqlite
-server/database.sqlite
+data/*.sqlite
+database-server/data/
+database-server/*.sqlite
 
-# SSL Certificates (stored in GitHub Secrets)
-SSL/
+# SSL Certificates (私密文件，不提交到仓库)
+# 保留 SSL 目录结构，但排除所有证书文件
+SSL/*
+!SSL/.gitkeep
+database-server/SSL/*
+!database-server/SSL/.gitkeep
 
 

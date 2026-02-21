@@ -1,9 +1,12 @@
-﻿name: Docker Build and Push
+﻿name: Docker Build and Push - Client Only
 
 on:
   push:
     branches: [main, master]
-    tags: [v*]
+    paths-ignore:
+      - 'database-server/**'
+      - '**.md'
+      - 'LICENSE'
   workflow_dispatch:
 
 env:
@@ -19,14 +22,6 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
-
-      - name: Restore SSL Certificates
-        run: |
-          mkdir -p SSL
-          echo "${{ secrets.SSL_KEY }}" | base64 -d > SSL/h.hony-wen.com.key
-          echo "${{ secrets.SSL_BUNDLE_CRT }}" | base64 -d > SSL/h.hony-wen.com_bundle.crt
-          echo "${{ secrets.SSL_BUNDLE_PEM }}" | base64 -d > SSL/h.hony-wen.com_bundle.pem
-          echo "${{ secrets.SSL_CSR }}" | base64 -d > SSL/h.hony-wen.com.csr
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -63,17 +58,13 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '0'
 
-      - name: Clean up SSL files
-        if: always()
-        run: rm -rf SSL/
-
       - name: Summary
         run: |
           echo "✅ Built and pushed image: ${{ env.IMAGE_NAME }}"
           echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
           echo "🏗️ Platforms: linux/amd64, linux/arm64"
           echo "🔗 https://hub.docker.com/r/${{ env.IMAGE_NAME }}"
-          echo "📦 Full-stack image: Frontend (Nginx) + Backend (Node.js + SQLite)"
+          echo "📦 Client-only image: Frontend static files (Nginx)"
           echo "🔒 Security scan completed"
-          echo "🔐 SSL certificates restored from secrets"
+          echo "ℹ️  Database server is deployed separately from database-server/ directory"
 

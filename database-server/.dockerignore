@@ -1,0 +1,34 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# 数据库文件
+data/
+*.sqlite
+*.sqlite-journal
+
+# SSL 证书（通过卷挂载）
+SSL/
+
+# Git
+.git
+.gitignore
+
+# 文档
+README.md
+*.md
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# 编辑器
+.vscode
+.idea
+*.swp
+*.swo
+
+# 日志
+logs
+*.log

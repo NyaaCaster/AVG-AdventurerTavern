@@ -12,9 +12,9 @@
 
 ```bash
 # 使用 Docker（推荐）
-docker run -d -p 3098:80 -p 3097:3097 honywen/adv-tavern:latest
+docker run -d -p 3098:80 honywen/adv-tavern
 
-# 访问游戏（HTTP）
+# 访问游戏
 http://localhost:3098
 ```
 
@@ -79,7 +79,9 @@ npm start
 
 推荐使用 Docker 进行部署，我们提供了预构建的 Docker 镜像，无需本地编译。
 
-### 方式 1：使用 Docker Hub 镜像（推荐）
+
+
+### 使用 Docker 部署
 
 #### 1. 环境准备
 *   安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) 或 Docker Engine (Linux)
@@ -98,65 +100,36 @@ docker-compose up -d
 ```
 
 #### 3. 访问游戏
-Docker 部署默认映射端口：
-- **3098**: HTTP 前端访问端口
-- **3097**: 后端 API 服务端口（容器内部使用 HTTPS）
 
-请访问：
-👉 **http://localhost:3098**
+请访问：👉 **http://localhost:3098**
 
-#### 4. 更新到最新版本
+
+
+#### 4. 服务管理
 
 ```bash
-# 拉取最新镜像并重启
+# 更新到最新版本
 docker-compose pull
 docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 查看容器状态
+docker-compose ps
+
+# 停止服务
+docker-compose stop
+
+# 启动服务
+docker-compose start
+
+# 重启服务
+docker-compose restart
+
+# 停止并移除容器
+docker-compose down
 ```
-
-### 方式 2：从源码构建（开发者）
-
-如果你需要修改代码或本地开发：
-
-```bash
-# 克隆代码
-git clone https://github.com/NyaaCaster/AVG-AdventurerTavern.git
-cd AVG-AdventurerTavern
-
-# 使用本地构建配置
-docker-compose -f docker-compose.local.yml up -d --build
-```
-
-### 服务管理命令
-
-*   **停止服务**:
-    ```bash
-    docker-compose stop
-    ```
-
-*   **启动服务**:
-    ```bash
-    docker-compose start
-    ```
-
-*   **重启服务**:
-    ```bash
-    docker-compose restart
-    ```
-
-*   **停止并移除容器**:
-    ```bash
-    docker-compose down
-    ```
-
-*   **查看日志**:
-    ```bash
-    docker-compose logs -f
-    ```
-
-*   **查看容器状态**:
-    ```bash
-    docker-compose ps
-    ```
 
 ---
 
@@ -165,24 +138,19 @@ docker-compose -f docker-compose.local.yml up -d --build
 本项目的 Docker 镜像托管在 Docker Hub 上，通过 GitHub Actions 自动构建和发布。
 
 *   **镜像地址**: [honywen/adv-tavern](https://hub.docker.com/r/honywen/adv-tavern)
-*   **可用标签**:
-    *   `latest` - 主分支最新稳定版本
-    *   `dev` - 开发版本
-    *   `vX.X.X` - 特定版本号
 
 ### 直接使用 Docker 运行
 
 ```bash
 # 拉取镜像
-docker pull honywen/adv-tavern:latest
+docker pull honywen/adv-tavern
 
 # 运行容器
 docker run -d \
   --name adventurertavern \
   -p 3098:80 \
-  -p 3097:3097 \
   --restart unless-stopped \
-  honywen/adv-tavern:latest
+  honywen/adv-tavern
 ```
 
 ### CI/CD 自动化
@@ -191,9 +159,8 @@ docker run -d \
 
 1. 推送代码到 `main` 分支
 2. GitHub Actions 自动触发构建
-3. 构建 Docker 镜像
+3. 构建 Docker 镜像（仅客户端）
 4. 推送到 Docker Hub
-5. 自动打上 `latest` 和 `dev` 标签
 
 查看构建状态：[GitHub Actions](https://github.com/NyaaCaster/AVG-AdventurerTavern/actions)
 
@@ -203,11 +170,9 @@ docker run -d \
 
 **镜像优化**
 - ✅ 使用 `nginx:1.27-alpine3.20` 作为基础镜像（更小更安全）
-- ✅ 多阶段构建分离前端和后端构建过程
-- ✅ 仅保留运行时必需的文件和依赖
-- ✅ 移除 supervisor，使用轻量级 shell 脚本管理进程（减少 ~10MB）
+- ✅ 多阶段构建，仅保留前端静态资源
 - ✅ 清理构建缓存和不必要文件（.md, LICENSE, .map 等）
-- ✅ 镜像体积优化至 ~126MB
+- ✅ 镜像体积优化至 ~50MB（仅前端）
 
 **构建加速**
 - ✅ 启用 BuildKit 缓存挂载 (`--mount=type=cache`)
@@ -217,8 +182,7 @@ docker run -d \
 
 **安全性提升**
 - ✅ 使用最新的 Alpine Linux 3.20
-- ✅ 创建专用非特权用户 `nodejs` (UID 1001)
-- ✅ 数据库文件存储在数据卷 `/app/data`（持久化且安全）
+- ✅ 仅包含静态资源，无后端代码
 - ✅ 使用 wget 进行健康检查（nginx 自带）
 - ✅ GitHub Actions 集成 Trivy 安全扫描
 
@@ -240,56 +204,62 @@ docker run -d \
 ## 📊 镜像信息
 
 ### 基本信息
-- **镜像名称**: `honywen/adv-tavern:latest`
-- **镜像大小**: ~126MB (已优化)
+- **镜像名称**: `honywen/adv-tavern`
+- **镜像大小**: ~50MB (仅前端静态资源)
 - **支持架构**: linux/amd64, linux/arm64
-- **基础镜像**: nginx:1.27-alpine3.20 + Node.js 20
+- **基础镜像**: nginx:1.27-alpine3.20
 - **构建方式**: GitHub Actions 自动构建 (启用 BuildKit)
 - **更新频率**: 推送到 main 分支自动更新
 
 ### 端口配置
 | 端口 | 协议 | 说明 |
 |------|------|------|
-| **80** | HTTP | 前端访问端口（映射到宿主机 3098） |
-| **3097** | HTTPS | 后端 API 服务端口（容器内部使用 HTTPS） |
+| **3098** | HTTP | 前端访问端口 |
 
 ### 包含组件
 | 组件 | 版本 | 说明 |
 |------|------|------|
-| **前端** | Nginx 1.27 + React 19 | 静态资源服务（HTTP） |
-| **后端** | Node.js 20 + Express | API 服务（端口 3097） |
-| **数据库** | SQLite 3 | 轻量级数据存储 |
-| **进程管理** | Shell Script | 轻量级进程管理 |
+| **前端** | Nginx 1.27 + React 19 | 静态资源服务 |
 | **基础系统** | Alpine Linux 3.20 | 最小化 Linux 发行版 |
 
 ### 功能特性
-- ✅ 用户注册和登录
-- ✅ 云存档（跨设备同步）
-- ✅ 数据持久化（需要数据卷）
-- ✅ 健康检查（使用 wget）
+- ✅ 静态资源服务（React 前端）
+- ✅ 健康检查
 - ✅ 自动重启
 - ✅ 多阶段构建优化
 - ✅ BuildKit 缓存加速
-- ✅ 非特权用户运行（安全性提升）
+- ✅ Gzip 压缩
+- ✅ 多架构支持（amd64/arm64）
 
 ### 资源要求
-- **CPU**: 0.5-1.0 核心
-- **内存**: 256-512MB (优化后内存占用更低)
-- **磁盘**: 镜像 ~126MB + 数据库文件（通常 < 100MB）
-- **网络**: 需要访问 LLM API 服务
+- **CPU**: 0.25-0.5 核心
+- **内存**: 128-256MB
+- **磁盘**: 镜像 ~50MB
+- **网络**: 需要访问后端 API 和 LLM 服务
 
 ---
 
 ## 📂 项目结构简介
 
-*   `components/`: React UI 组件 (场景、对话框、设置菜单等)
-*   `data/`: 游戏数据 (角色人设 `characters/`、提示词 `prompts/`、日程表 `schedules.ts`)
-*   `services/`: LLM 通信服务逻辑
-*   `types/`: TypeScript 类型定义
-*   `utils/`: 工具函数 (图片路径解析、场景工具等)
-*   `.github/workflows/`: GitHub Actions CI/CD 配置
-*   `Dockerfile`: Docker 镜像构建配置
-*   `docker-compose.yml`: Docker Compose 部署配置
+```
+AVG-AdventurerTavern/
+├── components/              # React UI 组件
+├── data/                    # 游戏数据
+│   ├── characters/         # 角色人设
+│   ├── prompts/            # AI 提示词
+│   └── schedules.ts        # 角色日程表
+├── services/               # LLM 通信服务
+├── types/                  # TypeScript 类型定义
+├── utils/                  # 工具函数
+├── database-server/        # 后端数据库服务（独立部署）
+├── .github/workflows/      # GitHub Actions CI/CD
+│   └── docker-publish.yml # 客户端自动构建
+├── Dockerfile              # 客户端镜像构建配置
+├── docker-compose.yml      # 客户端部署配置
+└── README.md               # 项目说明文档
+```
+
+
 
 ## 🔧 技术栈
 
@@ -319,11 +289,11 @@ docker run -d \
 ## 📊 项目状态
 
 *   **开发状态**: 活跃开发中
-*   **Docker 镜像**: 自动构建和发布
-*   **镜像大小**: ~126MB (已优化)
-*   **构建时间**: ~50秒 (GitHub Actions)
+*   **Docker 镜像**: 自动构建和发布（仅客户端）
+*   **镜像大小**: ~50MB (仅前端)
+*   **构建时间**: ~30秒 (GitHub Actions)
 *   **支持架构**: linux/amd64, linux/arm64
-*   **基础镜像**: nginx:1.27-alpine3.20 + Node.js 20
+*   **基础镜像**: nginx:1.27-alpine3.20
 *   **构建工具**: Docker BuildKit + 多阶段构建
 *   **安全扫描**: Trivy (GitHub Actions)
 *   **部署方式**: Docker / Node.js
