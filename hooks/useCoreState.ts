@@ -5,13 +5,13 @@ import {
 } from '../types';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS
+    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
 export const useCoreState = (initialSaveData?: any) => {
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
-  const [gold, setGold] = useState<number>(3000); 
+  const [gold, setGold] = useState<number>(INITIAL_GOLD); 
   const [sceneLevels, setSceneLevels] = useState<Record<string, number>>(INITIAL_SCENE_LEVELS);
   
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);

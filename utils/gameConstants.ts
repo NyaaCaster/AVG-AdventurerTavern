@@ -41,19 +41,21 @@ export const INITIAL_CHARACTER_STATS: Record<string, { level: number; affinity: 
   'char_111': { level: 9, affinity: 1 }, // 吉娜
 };
 
+export const INITIAL_GOLD = 100000;
+
 export const INITIAL_INVENTORY: Record<string, number> = {
-    'res-0001': 15, // 灵木
-    'res-0002': 15, // 幻皮
-    'res-0003': 15, // 魔晶石
-    'res-0101': 20, // 狂暴兔肉
-    'res-0201': 20, // 青菜
-    'res-0301': 20, // 发光菌伞
-    'res-0401': 20, // 面粉
-    'res-0501': 20, // 渡鸦蛋
-    'res-0601': 20, // 牛奶
-    'res-0701': 20, // 啤酒
-    'res-0801': 20, // 史莱姆凝胶
-    'res-0901': 20, // 木灵的胡椒
+    'res-0001': 1500, // 灵木
+    'res-0002': 1500, // 幻皮
+    'res-0003': 1500, // 魔晶石
+    'res-0101': 99, // 狂暴兔肉
+    'res-0201': 99, // 青菜
+    'res-0301': 99, // 发光菌伞
+    'res-0401': 99, // 面粉
+    'res-0501': 99, // 渡鸦蛋
+    'res-0601': 99, // 牛奶
+    'res-0701': 99, // 啤酒
+    'res-0801': 99, // 史莱姆凝胶
+    'res-0901': 99, // 木灵的胡椒
     'itm-01': 5, // 治疗药·小
     'itm-07': 1, // 精灵粉尘
     'wpn-102': 1, // 铁剑
