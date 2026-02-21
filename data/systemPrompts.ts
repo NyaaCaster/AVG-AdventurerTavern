@@ -85,7 +85,25 @@ const PROMPT_FORMATTING = `
   - 必须在 JSON 的 'gain_items' 字段中返回。
 `;
 
-// 6. 角色移动指令
+// 6. 好感度变化指令
+const PROMPT_AFFINITY = `
+## 好感度变化指令 (Affinity Change)
+- 根据对话内容和角色的情绪反应，在 JSON 响应中包含 'affinity_change' 字段来表示好感度变化。
+- 变化范围：-5 到 +5 之间的整数。
+- 正面情绪（高兴、感动、害羞、温暖、感激等）：+1 到 +5
+  - +1: 轻微好感（如普通的礼貌回应）
+  - +2~+3: 明显好感（如被夸奖、收到礼物、愉快的对话）
+  - +4~+5: 强烈好感（如深受感动、特别开心、产生亲密感）
+- 负面情绪（生气、厌恶、失望、不满、被冒犯等）：-1 到 -5
+  - -1: 轻微不满（如被打扰、话题不合适）
+  - -2~-3: 明显不满（如被冒犯、说了不该说的话）
+  - -4~-5: 强烈反感（如严重冒犯、侮辱、触碰底线）
+- 中性或平淡的对话不需要输出此字段。
+- 好感度变化应该符合角色性格和当前情境，保持自然和一致性。
+- 注意：如果对话中好感度累计下降过多（≤-10），角色可能会主动结束对话。
+`;
+
+// 7. 角色移动指令
 const PROMPT_MOVEMENT = `
 ## 角色移动指令 (Move)
 - 场景ID列表：
@@ -117,5 +135,6 @@ export const GLOBAL_AI_RULES = [
     PROMPT_CHARACTER_DEPTH,
     PROMPT_LOGIC_SAFETY,
     PROMPT_FORMATTING,
+    PROMPT_AFFINITY,
     PROMPT_MOVEMENT
 ].join('\n\n');
