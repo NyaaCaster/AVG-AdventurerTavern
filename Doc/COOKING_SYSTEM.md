@@ -744,5 +744,7 @@ function learnSharedRecipe(recipeId: string, userId: number) {
 ---
 
 **最后更新**: 2026-02-21  
-**维护者**: Nyaa  
+**设计者**: Nyaa  
+**开发者**: Gemini  
+**维护者**: Claude  
 **标签**: `#烹饪系统` `#LLM生成` `#游戏玩法`

@@ -35,11 +35,11 @@ GameScene.handleSaveGame()
     ↓
 services/db.saveGame()
     ↓
-HTTP POST /save
+HTTP POST /save → 数据库服务 (Port 3097)
     ↓
-后端验证并存储
+后端验证并存储 (database-server/index.js)
     ↓
-SQLite 数据库
+SQLite 数据库 (database-server/data/database.sqlite)
 ```
 
 ### 读档数据流
@@ -47,9 +47,11 @@ SQLite 数据库
 ```
 用户选择存档
     ↓
-HTTP POST /load
+HTTP POST /load → 数据库服务 (Port 3097)
     ↓
-后端查询数据库
+后端查询数据库 (database-server/index.js)
+    ↓
+从 SQLite 读取 (database-server/data/database.sqlite)
     ↓
 返回 JSON 数据
     ↓
@@ -137,6 +139,9 @@ const applyLoadedData = (data: any) => {
 3. **输入验证**: 所有用户输入都需要验证
 4. **SQL 注入防护**: 使用参数化查询
 5. **CORS 配置**: 生产环境限制允许的域名
+6. **服务隔离**: 数据库服务与前端客户端分离部署
+7. **网络安全**: 建议使用 HTTPS 加密通信（参考 database-server/SSL/）
+8. **端口管理**: 数据库服务端口 (3097) 仅对可信来源开放
 
 ---
 
@@ -147,8 +152,66 @@ const applyLoadedData = (data: any) => {
 3. **数据压缩**: 大型存档考虑压缩
 4. **索引优化**: 确保数据库索引正确
 5. **缓存策略**: 减少不必要的数据库查询
+6. **服务分离**: 前端和数据库独立扩展，避免资源竞争
+7. **连接池**: 数据库服务使用连接池管理并发请求
+8. **负载均衡**: 高并发场景可部署多个数据库服务实例
+
+---
+
+---
+
+## 🏗️ 服务架构说明
+
+### 前后端分离架构
+
+本项目采用**微服务架构**，前端客户端和数据库服务独立部署：
+
+```
+┌─────────────────────────────────────┐
+│      前端客户端 (Port 3098)          │
+│   Docker: honywen/adv-tavern        │
+│   Nginx + React 静态资源             │
+└─────────────────────────────────────┘
+              │
+              │ HTTP/HTTPS
+              │ API 调用
+              ▼
+┌─────────────────────────────────────┐
+│    数据库服务 (Port 3097)            │
+│   目录: database-server/             │
+│   Node.js + Express                 │
+│   SQLite: data/database.sqlite      │
+└─────────────────────────────────────┘
+```
+
+### 服务通信
+
+- **前端 → 数据库**: RESTful API (HTTP/HTTPS)
+- **端口配置**:
+  - 前端客户端: `3098`
+  - 数据库服务: `3097`
+- **数据格式**: JSON
+- **认证方式**: 用户名/密码 (bcrypt 加密)
+
+### 部署建议
+
+1. **开发环境**: 两个服务都在本地运行
+2. **生产环境**: 
+   - 前端部署到 CDN 或静态托管
+   - 数据库服务部署到独立服务器
+   - 使用 HTTPS 加密通信
+   - 配置防火墙限制数据库服务访问
+
+### 数据持久化
+
+- **数据库文件**: `database-server/data/database.sqlite`
+- **备份策略**: 定期备份 SQLite 文件
+- **Docker 卷**: 使用 Docker Volume 持久化数据
 
 ---
 
 **最后更新**: 2026-02-21  
-**维护者**: Nyaa
+**设计者**: Nyaa  
+**开发者**: Claude  
+**维护者**: Claude  
+**版本**: v2.0 (微服务架构)

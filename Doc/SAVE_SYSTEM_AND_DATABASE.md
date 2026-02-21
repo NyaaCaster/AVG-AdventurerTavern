@@ -55,7 +55,8 @@
 
 ### 数据库类型
 - **SQLite 3**: 轻量级、无需独立服务器、适合单机/小型部署
-- **位置**: `data/game.db`（Docker 容器内持久化卷）
+- **位置**: `database-server/data/database.sqlite`（独立数据库服务）
+- **部署方式**: 独立 Docker 容器部署（与前端客户端分离）
 
 ### 表结构
 
@@ -488,12 +489,12 @@ Response: { success: boolean }
 
 ## 🔧 配置文件
 
-### 服务器配置 (`server/config.js`)
+### 服务器配置 (`database-server/config.js`)
 
 ```javascript
 module.exports = {
     port: 3097,
-    dbPath: './data/game.db',
+    dbPath: './data/database.sqlite',
     corsOrigin: '*',
     jwtSecret: 'your-secret-key' // 未来使用
 };
@@ -549,11 +550,11 @@ console.log('[Load] Slot', slotId, 'loaded successfully');
 ### 2. 数据库查看
 
 ```bash
-# 进入 Docker 容器
-docker exec -it adventurertavern sh
+# 进入数据库服务容器
+docker exec -it database-server sh
 
 # 查看数据库
-sqlite3 /app/data/game.db
+sqlite3 /app/data/database.sqlite
 
 # 查询存档
 SELECT id, user_id, slot_id, label, saved_at FROM saves;
@@ -585,14 +586,88 @@ SELECT id, username, created_at FROM users;
 
 ## 📚 相关文件
 
+### 前端客户端
 - `services/db.ts` - 客户端存档服务
 - `utils/storage.ts` - 本地配置管理
 - `hooks/useCoreState.ts` - 游戏状态管理
-- `server/server.js` - 后端服务器
-- `server/config.js` - 服务器配置
+
+### 数据库服务（独立部署）
+- `database-server/index.js` - 后端服务器主文件
+- `database-server/config.js` - 服务器配置
+- `database-server/data/database.sqlite` - SQLite 数据库文件
+- `database-server/docker-compose.yml` - 数据库服务部署配置
+- `database-server/Dockerfile` - 数据库服务镜像构建
+- `database-server/README.md` - 数据库服务部署文档
+
+---
+
+---
+
+## 🏗️ 部署架构说明
+
+### 服务分离架构
+
+从 2026-02-21 起，本项目采用**前后端分离**的部署架构：
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   前端客户端容器                         │
+│              (honywen/adv-tavern)                       │
+│                   Port: 3098                            │
+│              Nginx + React 静态资源                      │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          │ HTTP/HTTPS
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                 数据库服务容器（独立部署）                │
+│              (database-server/)                         │
+│                   Port: 3097                            │
+│              Node.js + SQLite                           │
+│         database-server/data/database.sqlite            │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 部署步骤
+
+#### 1. 部署前端客户端
+```bash
+# 在项目根目录
+docker-compose up -d
+# 访问: http://localhost:3098
+```
+
+#### 2. 部署数据库服务（独立部署）
+```bash
+# 进入数据库服务目录
+cd database-server
+
+# 启动数据库服务
+docker-compose up -d
+
+# 数据库服务运行在: http://localhost:3097
+```
+
+### 服务通信
+
+- **前端客户端**: 通过配置的 API Base URL 连接到数据库服务
+- **数据库服务**: 提供 RESTful API 接口供前端调用
+- **数据持久化**: 数据库文件存储在 `database-server/data/database.sqlite`
+
+### 优势
+
+1. **独立扩展**: 前端和后端可以独立扩展和更新
+2. **资源隔离**: 数据库服务与前端服务资源隔离
+3. **安全性**: 数据库不直接暴露给客户端
+4. **灵活部署**: 可以将数据库服务部署到不同的服务器
+5. **维护便利**: 可以独立维护和备份数据库服务
 
 ---
 
 **最后更新**: 2026-02-21  
-**维护者**: Nyaa  
-**标签**: `#存档系统` `#数据库` `#数据字典` `#技术文档`
+**设计者**: Nyaa  
+**开发者**: Gemini  
+**维护者**: Claude  
+**版本**: v2.0 (服务分离架构)  
+**标签**: `#存档系统` `#数据库` `#数据字典` `#技术文档` `#微服务架构`

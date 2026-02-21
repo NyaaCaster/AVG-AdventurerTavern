@@ -539,8 +539,10 @@ grep -r "sessionAffinityTotal" .
 
 ## 👥 维护信息
 
-**最后更新**: 2025-02-21  
-**维护者**: Nyaa 
+**最后更新**: 2026-02-21  
+**设计者**: Nyaa  
+**开发者**: Gemini  
+**维护者**: Claude  
 **标签**: `#affinity_change` `#好感度系统` `#AI驱动` `#对话系统`
 
 ---
