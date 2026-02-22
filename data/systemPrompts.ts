@@ -196,23 +196,19 @@ c) **决定是否接受**：
    - 如果不接受，正常拒绝并输出负面 affinity_change
 
 d) **接受时的响应示例**：
-   ```json
    {
      "text": "你说的对...我愿意相信你。那就...试试看吧。",
      "emotion": "shy",
      "affinity_change": 3,
      "unlock_request": "accept_physical_contact"
    }
-   ```
 
 e) **不接受时的响应示例**：
-   ```json
    {
      "text": "对不起...我还没有准备好。也许以后吧。",
      "emotion": "sad",
      "affinity_change": 0
    }
-   ```
 
 #### 4. 角色特殊限制
 如果角色有特殊限制（如上方所示），无论玩家如何劝说，都不能接受该请求：
