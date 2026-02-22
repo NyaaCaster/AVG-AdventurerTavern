@@ -18,6 +18,9 @@ const App: React.FC = () => {
 
   // 当前登录用户ID
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  
+  // 当前存档槽位ID（0=自动存档，1-3=手动存档）
+  const [currentSlotId, setCurrentSlotId] = useState<number>(0);
 
   // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
   const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
@@ -87,6 +90,7 @@ const App: React.FC = () => {
                   handleUpdateSettings(data.settings);
               }
               setInitialSaveData(data);
+              setCurrentSlotId(slotId); // 记录当前槽位
               handleSwitchScene(GameState.PLAYING, 1000, 2000);
           }
       } catch (e) {
@@ -96,6 +100,7 @@ const App: React.FC = () => {
 
   const handleStartNewGame = () => {
       setInitialSaveData(null); // Ensure fresh start
+      setCurrentSlotId(0); // 新游戏使用自动存档槽位
       handleSwitchScene(GameState.PLAYING, 1000, 2000);
   };
 
@@ -159,6 +164,7 @@ const App: React.FC = () => {
             <GameScene 
                 ref={gameSceneRef}
                 userId={currentUserId}
+                currentSlotId={currentSlotId}
                 onBackToMenu={() => handleSwitchScene(GameState.MENU, 1000, 2000)}
                 onOpenSettings={(tab) => handleOpenConfig(GameState.PLAYING, tab)}
                 onSettingsChange={handleUpdateSettings} // Pass handler for in-game loads

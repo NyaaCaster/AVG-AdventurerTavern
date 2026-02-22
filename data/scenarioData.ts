@@ -1,6 +1,8 @@
 
-import { Character, CharacterImageConfig } from '../types';
+import { Character, CharacterImageConfig, CharacterUnlocks } from '../types';
 import { GLOBAL_AI_RULES } from './systemPrompts';
+import { formatUnlockStatusForAI, getDefaultUnlocks } from '../utils/unlockHelpers';
+import { CHARACTER_UNLOCK_RESTRICTIONS } from './unlockConditions';
 import { CHARACTER_IMAGES } from './resources/characterImageResources';
 import { CHARACTER_SCHEDULES } from './schedules';
 
@@ -76,7 +78,14 @@ enrich(char_109, p109);
 enrich(char_110, p110);
 enrich(char_111, p111);
 
-export const generateSystemPrompt = (character: Character, userInfo: string, innName: string, enableNSFW: boolean = false): string => {
+export const generateSystemPrompt = (
+  character: Character, 
+  userInfo: string, 
+  innName: string, 
+  enableNSFW: boolean = false,
+  characterUnlocks?: CharacterUnlocks,
+  currentAffinity?: number
+): string => {
   let persona = character.persona;
   let dialogue = character.dialogueExamples;
 
@@ -85,8 +94,30 @@ export const generateSystemPrompt = (character: Character, userInfo: string, inn
       if (character.dialogueExamples_nsfw) dialogue += `\n${character.dialogueExamples_nsfw}`;
   }
 
+  // Format unlock status for AI
+  const unlocks = characterUnlocks || getDefaultUnlocks();
+  const unlockStatusText = formatUnlockStatusForAI(unlocks);
+  
+  // Format current affinity
+  const affinityText = currentAffinity !== undefined ? `${currentAffinity}` : '未知';
+  
+  // Format character restrictions
+  const restrictions = CHARACTER_UNLOCK_RESTRICTIONS[character.id];
+  let restrictionsText = '无特殊限制';
+  if (restrictions && Object.keys(restrictions).length > 0) {
+      restrictionsText = Object.entries(restrictions)
+          .map(([key, reason]) => `- ${reason}`)
+          .join('\n');
+  }
+  
+  // Replace placeholders in GLOBAL_AI_RULES
+  let rulesWithContext = GLOBAL_AI_RULES
+      .replace('{{UNLOCK_STATUS}}', unlockStatusText)
+      .replace('{{CURRENT_AFFINITY}}', affinityText)
+      .replace('{{CHARACTER_RESTRICTIONS}}', restrictionsText);
+
   return `
-${GLOBAL_AI_RULES}
+${rulesWithContext}
 
 ${persona}
 

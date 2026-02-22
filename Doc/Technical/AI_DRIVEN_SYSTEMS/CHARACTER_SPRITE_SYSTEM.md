@@ -480,4 +480,3 @@ console.log(`[Sprite] Selected: ${selectedSprite}`);
 **开发者**: Gemini  
 **维护者**: Claude  
 **标签**: `#立绘系统` `#AI驱动` `#视觉反馈` `#表情切换`
-</contents>

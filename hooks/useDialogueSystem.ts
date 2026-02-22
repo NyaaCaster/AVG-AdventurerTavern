@@ -1,24 +1,30 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { 
-    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry 
+    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks 
 } from '../types';
 import { llmService } from '../services/llmService';
 import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
 import { getCharacterSprite } from '../utils/gameLogic';
 import { SCENE_NAMES } from '../utils/gameConstants';
+import { getDefaultUnlocks } from '../utils/unlockHelpers';
+import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
     worldState: WorldState;
     characterStats: Record<string, { level: number; affinity: number }>;
+    characterUnlocks: Record<string, CharacterUnlocks>;
+    userId: number;
+    currentSlotId: number;
     onItemsGained: (items: { id: string; count: number }[]) => void;
     onCharacterMove: (charId: string, targetId: string) => void;
     onAffinityChange: (charId: string, change: number) => void;
+    onUnlockUpdate: (charId: string, unlockKey: keyof CharacterUnlocks) => void;
 }
 
 export const useDialogueSystem = ({ 
-    settings, worldState, characterStats, onItemsGained, onCharacterMove, onAffinityChange 
+    settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate 
 }: UseDialogueSystemProps) => {
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false);
@@ -56,7 +62,14 @@ export const useDialogueSystem = ({
 
   const initLLM = async (char: Character) => {
     const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
-    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW);
+    
+    // Get character unlocks or use default
+    const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
+    
+    // Get current affinity
+    const stats = characterStats[char.id] || { level: 1, affinity: 0 };
+    
+    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
     
@@ -192,6 +205,25 @@ export const useDialogueSystem = ({
           onCharacterMove(activeCharacter.id, response.move_to);
       }
 
+      // Handle unlock request
+      if (response.unlock_request && activeCharacter) {
+          const unlockKey = response.unlock_request as keyof CharacterUnlocks;
+          console.log(`[Unlock Request] Character ${activeCharacter.id} agreed to unlock: ${unlockKey}`);
+          
+          // Update local state
+          onUnlockUpdate(activeCharacter.id, unlockKey);
+          
+          // Update database
+          try {
+              await updateCharacterUnlocksDB(userId, currentSlotId, activeCharacter.id, {
+                  [unlockKey]: 1
+              });
+              console.log(`[Unlock Request] Database updated successfully`);
+          } catch (error) {
+              console.error(`[Unlock Request] Failed to update database:`, error);
+          }
+      }
+
       setHistory(prev => {
         const newHistory = [...prev];
         for (let i = newHistory.length - 1; i >= 0; i--) {
@@ -267,6 +299,25 @@ export const useDialogueSystem = ({
             }
 
             if (response.move_to) onCharacterMove(activeCharacter.id, response.move_to);
+
+            // Handle unlock request
+            if (response.unlock_request && activeCharacter) {
+                const unlockKey = response.unlock_request as keyof CharacterUnlocks;
+                console.log(`[Unlock Request] Character ${activeCharacter.id} agreed to unlock: ${unlockKey}`);
+                
+                // Update local state
+                onUnlockUpdate(activeCharacter.id, unlockKey);
+                
+                // Update database
+                try {
+                    await updateCharacterUnlocksDB(userId, currentSlotId, activeCharacter.id, {
+                        [unlockKey]: 1
+                    });
+                    console.log(`[Unlock Request] Database updated successfully`);
+                } catch (error) {
+                    console.error(`[Unlock Request] Failed to update database:`, error);
+                }
+            }
 
             setHistory(prev => {
                 const newHistory = [...prev];

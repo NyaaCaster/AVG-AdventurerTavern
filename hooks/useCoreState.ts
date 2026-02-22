@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ManagementStats, RevenueLog, UserRecipe, SceneId 
+    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks 
 } from '../types';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD
+    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
+    INITIAL_CHARACTER_UNLOCKS
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
@@ -18,6 +19,7 @@ export const useCoreState = (initialSaveData?: any) => {
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
   
   const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
+  const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
     // Calculate initial values based on facility levels
     const innLevel = INITIAL_SCENE_LEVELS['scen_1'] || 1;
@@ -37,6 +39,37 @@ export const useCoreState = (initialSaveData?: any) => {
       }
   }, [initialSaveData]);
 
+  // Initialize character unlocks with default values
+  useEffect(() => {
+      const initialUnlocks: Record<string, CharacterUnlocks> = {};
+      
+      // For each character in INITIAL_CHARACTER_STATS
+      Object.keys(INITIAL_CHARACTER_STATS).forEach(charId => {
+          // Get character-specific initial unlocks or use all zeros
+          const charSpecificUnlocks = INITIAL_CHARACTER_UNLOCKS[charId] || {};
+          
+          // Create full unlock object with defaults
+          initialUnlocks[charId] = {
+              accept_battle_party: 0,
+              accept_flirt_topic: 0,
+              accept_nsfw_topic: 0,
+              accept_physical_contact: 0,
+              accept_indirect_sexual: 0,
+              accept_become_lover: 0,
+              accept_direct_sexual: 0,
+              accept_sexual_partner: 0,
+              accept_public_exposure: 0,
+              accept_public_sexual: 0,
+              accept_group_sexual: 0,
+              accept_prostitution: 0,
+              accept_sexual_slavery: 0,
+              ...charSpecificUnlocks // Override with character-specific values
+          };
+      });
+      
+      setCharacterUnlocks(initialUnlocks);
+  }, []);
+
   const applyLoadedData = (data: any) => {
       if (!data) return;
       setGold(data.gold);
@@ -48,6 +81,7 @@ export const useCoreState = (initialSaveData?: any) => {
       
       if (data.userRecipes) setUserRecipes(data.userRecipes);
       if (data.foodStock) setFoodStock(data.foodStock);
+      if (data.characterUnlocks) setCharacterUnlocks(data.characterUnlocks);
   };
 
   // --- Handlers ---
@@ -153,6 +187,59 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(prev => ({ ...prev, [itemId]: newCount }));
   };
 
+  // Character unlock handlers
+  const updateCharacterUnlock = (
+      characterId: string,
+      unlockKey: keyof CharacterUnlocks,
+      value: 0 | 1
+  ) => {
+      setCharacterUnlocks(prev => ({
+          ...prev,
+          [characterId]: {
+              ...(prev[characterId] || {
+                  accept_battle_party: 0,
+                  accept_flirt_topic: 0,
+                  accept_nsfw_topic: 0,
+                  accept_physical_contact: 0,
+                  accept_indirect_sexual: 0,
+                  accept_become_lover: 0,
+                  accept_direct_sexual: 0,
+                  accept_sexual_partner: 0,
+                  accept_public_exposure: 0,
+                  accept_public_sexual: 0,
+                  accept_group_sexual: 0,
+                  accept_prostitution: 0,
+                  accept_sexual_slavery: 0
+              }),
+              [unlockKey]: value
+          }
+      }));
+  };
+
+  const updateCharacterUnlocks = (characterId: string, unlocks: Partial<CharacterUnlocks>) => {
+      setCharacterUnlocks(prev => ({
+          ...prev,
+          [characterId]: {
+              ...(prev[characterId] || {
+                  accept_battle_party: 0,
+                  accept_flirt_topic: 0,
+                  accept_nsfw_topic: 0,
+                  accept_physical_contact: 0,
+                  accept_indirect_sexual: 0,
+                  accept_become_lover: 0,
+                  accept_direct_sexual: 0,
+                  accept_sexual_partner: 0,
+                  accept_public_exposure: 0,
+                  accept_public_sexual: 0,
+                  accept_group_sexual: 0,
+                  accept_prostitution: 0,
+                  accept_sexual_slavery: 0
+              }),
+              ...unlocks
+          }
+      }));
+  };
+
   return {
       inventory, setInventory,
       gold, setGold,
@@ -160,6 +247,7 @@ export const useCoreState = (initialSaveData?: any) => {
       userRecipes, setUserRecipes,
       foodStock, setFoodStock,
       characterStats, setCharacterStats,
+      characterUnlocks, setCharacterUnlocks,
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
       
@@ -174,6 +262,8 @@ export const useCoreState = (initialSaveData?: any) => {
       handleAddItems,
       updateGold,
       updateInventoryItem,
+      updateCharacterUnlock,
+      updateCharacterUnlocks,
       applyLoadedData
   };
 };

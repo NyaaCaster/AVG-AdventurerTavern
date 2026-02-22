@@ -41,6 +41,7 @@ import { useDialogueSystem } from '../hooks/useDialogueSystem';
 
 interface GameSceneProps {
   userId: number; 
+  currentSlotId: number;
   onBackToMenu: () => void;
   onOpenSettings: (tab?: ConfigTab) => void;
   onSettingsChange: (newSettings: GameSettings) => void; 
@@ -55,7 +56,7 @@ export interface GameSceneRef {
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
-const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
+const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   // --- Hooks ---
   const core = useCoreState(initialSaveData);
   const world = useWorldSystem(core.sceneLevels);
@@ -128,13 +129,22 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
       setAffinityNotifications(prev => [...prev, newNotification]);
   };
 
+  const handleUnlockUpdate = (charId: string, unlockKey: keyof import('../types').CharacterUnlocks) => {
+      console.log(`[GameScene] Updating unlock for ${charId}: ${unlockKey}`);
+      core.updateCharacterUnlock(charId, unlockKey, 1);
+  };
+
   const dialogue = useDialogueSystem({
       settings,
       worldState: world.worldState,
       characterStats: core.characterStats,
+      characterUnlocks: core.characterUnlocks,
+      userId,
+      currentSlotId,
       onItemsGained: handleItemsGained,
       onCharacterMove: handleCharacterMove,
-      onAffinityChange: handleAffinityChange
+      onAffinityChange: handleAffinityChange,
+      onUnlockUpdate: handleUnlockUpdate
   });
 
   // --- Game Loop: Revenue & Time ---
@@ -332,6 +342,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, onBa
           managementStats: core.managementStats,
           inventory: core.inventory,
           characterStats: core.characterStats,
+          characterUnlocks: core.characterUnlocks,
           sceneLevels: core.sceneLevels,
           revenueLogs: core.revenueLogs,
           userRecipes: core.userRecipes,

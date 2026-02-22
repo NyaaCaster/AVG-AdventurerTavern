@@ -83,6 +83,43 @@
 **索引**:
 - `UNIQUE(user_id, slot_id)` - 每个用户每个槽位只能有一个存档
 
+#### 3. `character_unlocks` 表（角色状态解锁）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 记录唯一 ID |
+| `user_id` | INTEGER | NOT NULL, FOREIGN KEY | 用户 ID（外键） |
+| `slot_id` | INTEGER | NOT NULL | 存档槽位 (0=自动, 1-3=手动) |
+| `character_id` | TEXT | NOT NULL | 角色 ID (如 char_101) |
+| `accept_battle_party` | INTEGER | DEFAULT 0 | 接受战斗组队 (0=未解锁, 1=已解锁) |
+| `accept_flirt_topic` | INTEGER | DEFAULT 0 | 接受暧昧话题 (0=未解锁, 1=已解锁) |
+| `accept_nsfw_topic` | INTEGER | DEFAULT 0 | 接受色情话题 (0=未解锁, 1=已解锁) |
+| `accept_physical_contact` | INTEGER | DEFAULT 0 | 接受身体接触 (0=未解锁, 1=已解锁) |
+| `accept_indirect_sexual` | INTEGER | DEFAULT 0 | 接受间接性行为 (0=未解锁, 1=已解锁) |
+| `accept_become_lover` | INTEGER | DEFAULT 0 | 接受成为恋人 (0=未解锁, 1=已解锁) |
+| `accept_direct_sexual` | INTEGER | DEFAULT 0 | 接受直接性行为 (0=未解锁, 1=已解锁) |
+| `accept_sexual_partner` | INTEGER | DEFAULT 0 | 接受成为性伴侣 (0=未解锁, 1=已解锁) |
+| `accept_public_exposure` | INTEGER | DEFAULT 0 | 接受公开露出 (0=未解锁, 1=已解锁) |
+| `accept_public_sexual` | INTEGER | DEFAULT 0 | 接受公开性行为 (0=未解锁, 1=已解锁) |
+| `accept_group_sexual` | INTEGER | DEFAULT 0 | 接受多人性行为 (0=未解锁, 1=已解锁) |
+| `accept_prostitution` | INTEGER | DEFAULT 0 | 接受卖春 (0=未解锁, 1=已解锁) |
+| `accept_sexual_slavery` | INTEGER | DEFAULT 0 | 接受性奴役 (0=未解锁, 1=已解锁) |
+| `updated_at` | INTEGER | NOT NULL | 最后更新时间戳 |
+
+**索引**:
+- `UNIQUE(user_id, slot_id, character_id)` - 每个存档中每个角色只有一条状态记录
+- `idx_character_unlocks_user_slot` - 复合索引 (user_id, slot_id)
+- `idx_character_unlocks_character` - 角色 ID 索引
+
+**外键约束**:
+- `user_id` → `users(id)` ON DELETE CASCADE - 删除用户时级联删除角色状态
+
+**设计说明**:
+- 所有解锁状态字段使用 INTEGER 类型存储布尔值 (0=false, 1=true)
+- 默认值均为 0（未解锁状态）
+- 与存档槽位关联，不同槽位的角色状态独立
+- 支持级联删除，确保数据一致性
+
 ---
 
 ## 📦 云存档数据字典（数据库 `saves.data` 字段）

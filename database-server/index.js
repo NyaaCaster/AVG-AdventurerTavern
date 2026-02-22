@@ -53,6 +53,36 @@ db.serialize(() => {
         updated_at INTEGER,
         PRIMARY KEY (user_id, slot_id)
     )`);
+
+    // 角色状态解锁表
+    db.run(`CREATE TABLE IF NOT EXISTS character_unlocks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        accept_battle_party INTEGER DEFAULT 0,
+        accept_flirt_topic INTEGER DEFAULT 0,
+        accept_nsfw_topic INTEGER DEFAULT 0,
+        accept_physical_contact INTEGER DEFAULT 0,
+        accept_indirect_sexual INTEGER DEFAULT 0,
+        accept_become_lover INTEGER DEFAULT 0,
+        accept_direct_sexual INTEGER DEFAULT 0,
+        accept_sexual_partner INTEGER DEFAULT 0,
+        accept_public_exposure INTEGER DEFAULT 0,
+        accept_public_sexual INTEGER DEFAULT 0,
+        accept_group_sexual INTEGER DEFAULT 0,
+        accept_prostitution INTEGER DEFAULT 0,
+        accept_sexual_slavery INTEGER DEFAULT 0,
+        updated_at INTEGER NOT NULL,
+        UNIQUE(user_id, slot_id, character_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    // 为角色状态表创建索引以提高查询性能
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_user_slot 
+            ON character_unlocks(user_id, slot_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_character 
+            ON character_unlocks(character_id)`);
 });
 
 // API Routes
@@ -206,6 +236,246 @@ app.post('/api/delete', (req, res) => {
         res.json({ success: true });
     });
     stmt.finalize();
+});
+
+// --- 角色解锁状态 API ---
+
+// 7. 获取单个角色的解锁状态
+app.post('/api/character_unlocks/get', (req, res) => {
+    const { userId, slotId, characterId } = req.body;
+    
+    // 验证必需参数
+    if (!userId || slotId === undefined || !characterId) {
+        return res.json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId, characterId' 
+        });
+    }
+    
+    db.get(
+        `SELECT 
+            accept_battle_party,
+            accept_flirt_topic,
+            accept_nsfw_topic,
+            accept_physical_contact,
+            accept_indirect_sexual,
+            accept_become_lover,
+            accept_direct_sexual,
+            accept_sexual_partner,
+            accept_public_exposure,
+            accept_public_sexual,
+            accept_group_sexual,
+            accept_prostitution,
+            accept_sexual_slavery
+        FROM character_unlocks 
+        WHERE user_id = ? AND slot_id = ? AND character_id = ?`,
+        [userId, slotId, characterId],
+        (err, row) => {
+            if (err) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: '数据库查询错误: ' + err.message 
+                });
+            }
+            
+            if (!row) {
+                // 如果没有记录，返回默认的全部未解锁状态
+                return res.json({
+                    success: true,
+                    unlocks: {
+                        accept_battle_party: 0,
+                        accept_flirt_topic: 0,
+                        accept_nsfw_topic: 0,
+                        accept_physical_contact: 0,
+                        accept_indirect_sexual: 0,
+                        accept_become_lover: 0,
+                        accept_direct_sexual: 0,
+                        accept_sexual_partner: 0,
+                        accept_public_exposure: 0,
+                        accept_public_sexual: 0,
+                        accept_group_sexual: 0,
+                        accept_prostitution: 0,
+                        accept_sexual_slavery: 0
+                    }
+                });
+            }
+            
+            res.json({ success: true, unlocks: row });
+        }
+    );
+});
+
+// 8. 更新角色解锁状态
+app.post('/api/character_unlocks/update', (req, res) => {
+    const { userId, slotId, characterId, unlocks } = req.body;
+    
+    // 验证必需参数
+    if (!userId || slotId === undefined || !characterId || !unlocks) {
+        return res.json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId, characterId, unlocks' 
+        });
+    }
+    
+    // 验证 unlocks 对象
+    if (typeof unlocks !== 'object') {
+        return res.json({ 
+            success: false, 
+            message: 'unlocks 必须是对象' 
+        });
+    }
+    
+    const timestamp = Date.now();
+    
+    // 构建 SET 子句
+    const validFields = [
+        'accept_battle_party',
+        'accept_flirt_topic',
+        'accept_nsfw_topic',
+        'accept_physical_contact',
+        'accept_indirect_sexual',
+        'accept_become_lover',
+        'accept_direct_sexual',
+        'accept_sexual_partner',
+        'accept_public_exposure',
+        'accept_public_sexual',
+        'accept_group_sexual',
+        'accept_prostitution',
+        'accept_sexual_slavery'
+    ];
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    for (const field of validFields) {
+        if (unlocks.hasOwnProperty(field)) {
+            const value = unlocks[field];
+            // 验证值必须是 0 或 1
+            if (value !== 0 && value !== 1) {
+                return res.json({ 
+                    success: false, 
+                    message: `字段 ${field} 的值必须是 0 或 1` 
+                });
+            }
+            updateFields.push(`${field} = ?`);
+            updateValues.push(value);
+        }
+    }
+    
+    if (updateFields.length === 0) {
+        return res.json({ 
+            success: false, 
+            message: '没有有效的更新字段' 
+        });
+    }
+    
+    // 添加 updated_at
+    updateFields.push('updated_at = ?');
+    updateValues.push(timestamp);
+    
+    // 添加 WHERE 条件的值
+    updateValues.push(userId, slotId, characterId);
+    
+    // 先尝试更新
+    const updateSql = `
+        UPDATE character_unlocks 
+        SET ${updateFields.join(', ')}
+        WHERE user_id = ? AND slot_id = ? AND character_id = ?
+    `;
+    
+    db.run(updateSql, updateValues, function(err) {
+        if (err) {
+            return res.status(500).json({ 
+                success: false, 
+                message: '更新失败: ' + err.message 
+            });
+        }
+        
+        // 如果没有更新任何行，说明记录不存在，需要插入
+        if (this.changes === 0) {
+            // 构建插入语句
+            const insertFields = ['user_id', 'slot_id', 'character_id', 'updated_at'];
+            const insertPlaceholders = ['?', '?', '?', '?'];
+            const insertValues = [userId, slotId, characterId, timestamp];
+            
+            for (const field of validFields) {
+                if (unlocks.hasOwnProperty(field)) {
+                    insertFields.push(field);
+                    insertPlaceholders.push('?');
+                    insertValues.push(unlocks[field]);
+                }
+            }
+            
+            const insertSql = `
+                INSERT INTO character_unlocks (${insertFields.join(', ')})
+                VALUES (${insertPlaceholders.join(', ')})
+            `;
+            
+            db.run(insertSql, insertValues, function(err) {
+                if (err) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: '插入失败: ' + err.message 
+                    });
+                }
+                res.json({ success: true, message: '解锁状态已创建' });
+            });
+        } else {
+            res.json({ success: true, message: '解锁状态已更新' });
+        }
+    });
+});
+
+// 9. 批量获取所有角色的解锁状态
+app.post('/api/character_unlocks/get_all', (req, res) => {
+    const { userId, slotId } = req.body;
+    
+    // 验证必需参数
+    if (!userId || slotId === undefined) {
+        return res.json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId' 
+        });
+    }
+    
+    db.all(
+        `SELECT 
+            character_id,
+            accept_battle_party,
+            accept_flirt_topic,
+            accept_nsfw_topic,
+            accept_physical_contact,
+            accept_indirect_sexual,
+            accept_become_lover,
+            accept_direct_sexual,
+            accept_sexual_partner,
+            accept_public_exposure,
+            accept_public_sexual,
+            accept_group_sexual,
+            accept_prostitution,
+            accept_sexual_slavery
+        FROM character_unlocks 
+        WHERE user_id = ? AND slot_id = ?`,
+        [userId, slotId],
+        (err, rows) => {
+            if (err) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: '数据库查询错误: ' + err.message 
+                });
+            }
+            
+            // 将数组转换为对象映射
+            const data = {};
+            rows.forEach(row => {
+                const characterId = row.character_id;
+                delete row.character_id;
+                data[characterId] = row;
+            });
+            
+            res.json({ success: true, data });
+        }
+    );
 });
 
 // 创建服务器 (支持 HTTPS)

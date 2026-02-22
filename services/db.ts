@@ -1,5 +1,6 @@
+jie
 
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -136,4 +137,72 @@ export const deleteGame = async (userId: number, slotId: number) => {
  */
 export const clearAllData = async () => {
     console.warn("clearAllData is deprecated in Cloud Mode");
+};
+
+// --- 角色解锁状态服务 ---
+
+/**
+ * 获取单个角色的解锁状态
+ */
+export const getCharacterUnlocks = async (
+    userId: number,
+    slotId: number,
+    characterId: string
+): Promise<CharacterUnlocks | null> => {
+    const res = await apiCall('/character_unlocks/get', {
+        userId,
+        slotId,
+        characterId
+    });
+    
+    if (res.success && res.unlocks) {
+        return res.unlocks;
+    }
+    
+    console.error('Failed to get character unlocks:', res.message);
+    return null;
+};
+
+/**
+ * 更新角色解锁状态
+ */
+export const updateCharacterUnlocks = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    unlocks: Partial<CharacterUnlocks>
+): Promise<boolean> => {
+    const res = await apiCall('/character_unlocks/update', {
+        userId,
+        slotId,
+        characterId,
+        unlocks
+    });
+    
+    if (!res.success) {
+        console.error('Failed to update character unlocks:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+/**
+ * 批量获取所有角色的解锁状态
+ */
+export const getAllCharacterUnlocks = async (
+    userId: number,
+    slotId: number
+): Promise<Record<string, CharacterUnlocks>> => {
+    const res = await apiCall('/character_unlocks/get_all', {
+        userId,
+        slotId
+    });
+    
+    if (res.success && res.data) {
+        return res.data;
+    }
+    
+    console.error('Failed to get all character unlocks:', res.message);
+    return {};
 };
