@@ -93,4 +93,3 @@ export function canAttemptUnlock(
     
     return { canAttempt: true };
 }
-</contents>
