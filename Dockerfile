@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install --silent --prefer-offline
 
 # 复制配置文件
-COPY tsconfig.json vite.config.ts vite-env.d.ts ./
+COPY tsconfig.json vite.config.ts vite-env.d.ts config.ts ./
 
 # 复制源代码目录
 COPY components/ ./components/
