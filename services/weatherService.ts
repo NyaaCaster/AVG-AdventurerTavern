@@ -22,6 +22,7 @@ const CACHE_KEY = 'adventurer_tavern_weather_cache';
 const getLocation = (): Promise<string> => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
+      console.log(`[Weather] Geolocation not supported, using default: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
       resolve(QWEATHER_CONFIG.DEFAULT_LOCATION);
       return;
     }
@@ -30,7 +31,9 @@ const getLocation = (): Promise<string> => {
       (position) => {
         const lat = position.coords.latitude.toFixed(2);
         const lon = position.coords.longitude.toFixed(2);
-        resolve(`${lon},${lat}`);
+        const coords = `${lon},${lat}`;
+        console.log(`[Weather] Using device location: ${coords}`);
+        resolve(coords);
       },
       (error) => {
         console.warn("Geolocation failed, using default:", error);

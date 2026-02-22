@@ -45,9 +45,10 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
             >
                 {/* Top Row: Date & Scene Name */}
                 <div className="flex items-center justify-between mb-1 gap-6">
-                    <div className="flex items-baseline gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider leading-none">
-                        <span>{dateStr}</span>
-                        <span>{weekDay}</span>
+                    <div className="flex items-baseline gap-2 text-xs font-bold uppercase tracking-wider leading-none">
+                        <span className="text-slate-500">{dateStr}</span>
+                        <span className="text-slate-500">{weekDay}</span>
+                        <span className={`${colorClass}`}>{periodLabel}</span>
                     </div>
                     
                     {/* Scene Name (Top Right) */}
@@ -61,14 +62,9 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 
                 {/* Bottom Row: Time & Weather */}
                 <div className="flex items-end justify-between">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black font-mono tabular-nums tracking-tight italic text-slate-800 leading-none -ml-0.5" style={{ textShadow: '2px 2px 0px rgba(255,255,255,0.5)' }}>
-                            {timeStr}
-                        </span>
-                        <span className={`text-sm font-black ${colorClass} leading-none mb-0.5`}>
-                            {periodLabel}
-                        </span>
-                    </div>
+                    <span className="text-3xl font-black font-mono tabular-nums tracking-tight italic text-slate-800 leading-none -ml-0.5" style={{ textShadow: '2px 2px 0px rgba(255,255,255,0.5)' }}>
+                        {timeStr}
+                    </span>
                     
                     <div className="flex items-center gap-2 mb-0.5">
                         {temp && (
