@@ -10,7 +10,10 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
   const [sceneParams, setSceneParams] = useState<any>({});
   
   const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
-  const [characterLocations, setCharacterLocations] = useState<Record<string, string>>({});
+  const [characterLocations, setCharacterLocations] = useState<Record<string, string>>(() => {
+    const initialState = calculateWorldState(getSceneDisplayName('scen_1'));
+    return calculateCharacterLocations(initialState.period, initialState.dateStr, initialState.timeStr, sceneLevels);
+  });
   const [forcedLocations, setForcedLocations] = useState<Record<string, string>>({});
   
   const [transitionOpacity, setTransitionOpacity] = useState(0); 
