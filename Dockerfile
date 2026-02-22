@@ -7,10 +7,12 @@ FROM node:20-alpine3.20 AS builder
 # 接收构建参数
 ARG VITE_QWEATHER_HOST
 ARG VITE_QWEATHER_KEY
+ARG GIT_COMMIT_HASH=unknown
 
 # 设置环境变量供 Vite 使用
 ENV VITE_QWEATHER_HOST=${VITE_QWEATHER_HOST}
 ENV VITE_QWEATHER_KEY=${VITE_QWEATHER_KEY}
+ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
 
 WORKDIR /app
 
@@ -28,8 +30,10 @@ COPY services/ ./services/
 COPY utils/ ./utils/
 COPY hooks/ ./hooks/
 COPY data/ ./data/
+COPY scripts/ ./scripts/
 COPY vite.config.ts ./
 COPY tsconfig.json ./
+COPY vite-env.d.ts ./
 
 # 构建前端
 RUN npm run build && \

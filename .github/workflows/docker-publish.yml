@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # 只获取最新 commit，足够获取 hash
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -36,6 +38,10 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Get commit hash
+        id: git
+        run: echo "hash=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -51,6 +57,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
             VITE_QWEATHER_HOST=${{ secrets.QWEATHER_HOST }}
             VITE_QWEATHER_KEY=${{ secrets.QWEATHER_KEY }}
+            GIT_COMMIT_HASH=${{ steps.git.outputs.hash }}
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@master

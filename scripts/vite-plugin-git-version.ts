@@ -10,13 +10,21 @@ export function gitVersionPlugin(): Plugin {
     config() {
       let commitHash = 'unknown';
       
-      try {
-        // Get the short commit hash (7 characters)
-        commitHash = execSync('git rev-parse --short=7 HEAD')
-          .toString()
-          .trim();
-      } catch (error) {
-        console.warn('[Git Version] Failed to get commit hash:', error);
+      // 优先使用环境变量（Docker 构建时传入）
+      if (process.env.GIT_COMMIT_HASH) {
+        commitHash = process.env.GIT_COMMIT_HASH;
+        console.log(`[Git Version] Using commit hash from env: ${commitHash}`);
+      } else {
+        // 尝试从 Git 获取
+        try {
+          commitHash = execSync('git rev-parse --short=7 HEAD')
+            .toString()
+            .trim();
+          console.log(`[Git Version] Using commit hash from git: ${commitHash}`);
+        } catch (error) {
+          console.warn('[Git Version] Failed to get commit hash, using "unknown"');
+          console.warn('[Git Version] This is normal in Docker builds without .git directory');
+        }
       }
 
       return {
