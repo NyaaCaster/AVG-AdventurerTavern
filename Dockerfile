@@ -36,7 +36,8 @@ COPY tsconfig.json ./
 COPY vite-env.d.ts ./
 
 # 构建前端
-RUN npm run build && \
+RUN echo "[Build] Starting build with GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" && \
+    npm run build 2>&1 | tee build.log || (cat build.log && exit 1) && \
     rm -rf node_modules .npm
 
 # 生产阶段 - 使用 nginx-alpine 作为基础镜像
