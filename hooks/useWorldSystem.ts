@@ -19,7 +19,7 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
   const [transitionOpacity, setTransitionOpacity] = useState(0); 
   const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
   
-  const realWeatherDataRef = useRef<{text: string, code: string, temp?: string} | null>(null);
+  const realWeatherDataRef = useRef<{text: string, code: string, temp: string} | null>(null);
 
   // Weather Sync
   const updateRealWeather = async () => {
@@ -29,7 +29,8 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
           setWorldState(prev => ({
               ...prev,
               weather: data.text,
-              weatherCode: data.code
+              weatherCode: data.code,
+              temp: data.temp
           }));
       }
   };
@@ -50,6 +51,7 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
         if (realWeatherDataRef.current) {
             newState.weather = realWeatherDataRef.current.text;
             newState.weatherCode = realWeatherDataRef.current.code;
+            newState.temp = realWeatherDataRef.current.temp;
         }
         setWorldState(newState);
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
@@ -63,6 +65,7 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
              if (realWeatherDataRef.current) {
                  newState.weather = realWeatherDataRef.current.text;
                  newState.weatherCode = realWeatherDataRef.current.code;
+                 newState.temp = realWeatherDataRef.current.temp;
              }
 
              // Location Update on Time Change
@@ -94,6 +97,7 @@ export const useWorldSystem = (sceneLevels: Record<string, number>) => {
         if (realWeatherDataRef.current) {
             newState.weather = realWeatherDataRef.current.text;
             newState.weatherCode = realWeatherDataRef.current.code;
+            newState.temp = realWeatherDataRef.current.temp;
         }
         setWorldState(newState);
         

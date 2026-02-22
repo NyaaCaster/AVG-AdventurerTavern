@@ -132,6 +132,7 @@ export interface WorldState {
   periodLabel: string;  // 时段显示名，例如 "深夜"
   weather: string;      // 天气描述
   weatherCode: string;  // 天气图标代码
+  temp?: string;        // 气温（摄氏度）
   sceneName: string;    // 新增：场景名称
 }
 

@@ -9,7 +9,7 @@ interface GameEnvironmentWidgetProps {
 }
 
 const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldState, gold }) => {
-  const { dateStr, weekDay, timeStr, period, periodLabel, weatherCode, sceneName } = worldState;
+  const { dateStr, weekDay, timeStr, period, periodLabel, weatherCode, temp, sceneName } = worldState;
   let colorClass = "text-indigo-600";
   let weatherColor = "text-slate-400";
   
@@ -61,14 +61,21 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 
                 {/* Bottom Row: Time & Weather */}
                 <div className="flex items-end justify-between">
-                    <span className="text-3xl font-black font-mono tabular-nums tracking-tight italic text-slate-800 leading-none -ml-0.5" style={{ textShadow: '2px 2px 0px rgba(255,255,255,0.5)' }}>
-                        {timeStr}
-                    </span>
-                    
-                    <div className="flex items-center gap-2 mb-0.5">
-                        <span className={`text-sm font-black ${colorClass}`}>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black font-mono tabular-nums tracking-tight italic text-slate-800 leading-none -ml-0.5" style={{ textShadow: '2px 2px 0px rgba(255,255,255,0.5)' }}>
+                            {timeStr}
+                        </span>
+                        <span className={`text-sm font-black ${colorClass} leading-none mb-0.5`}>
                             {periodLabel}
                         </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-0.5">
+                        {temp && (
+                            <span className="text-base font-bold text-slate-700 tabular-nums">
+                                {temp}℃
+                            </span>
+                        )}
                         <div className={`w-6 h-6 ${weatherColor} drop-shadow-sm`}>
                             <WeatherIcon code={weatherCode} />
                         </div>

@@ -11,18 +11,19 @@ export const calculateWorldState = (currentSceneName: string): WorldState => {
   
   let period: 'day' | 'evening' | 'night' = 'night';
   let periodLabel = "夜晚";
-  let weatherCode = "150"; 
+  // 模拟天气代码（降级方案）- 实际天气由 weatherService 通过 QWeather API 获取并覆盖
+  let weatherCode = "150"; // 晴（夜间）
   let weather = "晴朗的夜晚";
 
   if (h >= 6 && h < 17) {
       period = 'day';
       periodLabel = "日间";
-      weatherCode = "100"; 
+      weatherCode = "100"; // 晴（白天）
       weather = "晴朗的白天";
   } else if (h >= 17 && h < 20) {
       period = 'evening';
       periodLabel = "傍晚";
-      weatherCode = "100"; 
+      weatherCode = "150"; // 晴（夜间）
       weather = "日落时分的傍晚";
   }
 
@@ -34,6 +35,7 @@ export const calculateWorldState = (currentSceneName: string): WorldState => {
       periodLabel,
       weatherCode,
       weather,
+      temp: undefined, // 气温由 weatherService 提供
       sceneName: currentSceneName
   };
 };
