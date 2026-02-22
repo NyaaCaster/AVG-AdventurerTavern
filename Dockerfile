@@ -23,17 +23,19 @@ COPY package.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install --silent --prefer-offline
 
-# 复制所有构建所需的文件
-COPY *.tsx *.ts *.html ./
+# 复制配置文件
+COPY tsconfig.json vite.config.ts vite-env.d.ts ./
+
+# 复制源代码目录
 COPY components/ ./components/
 COPY services/ ./services/
 COPY utils/ ./utils/
 COPY hooks/ ./hooks/
 COPY data/ ./data/
 COPY scripts/ ./scripts/
-COPY vite.config.ts ./
-COPY tsconfig.json ./
-COPY vite-env.d.ts ./
+
+# 复制根目录的源文件
+COPY *.tsx *.ts *.html ./
 
 # 构建前端
 RUN echo "[Build] Starting build with GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" && \
