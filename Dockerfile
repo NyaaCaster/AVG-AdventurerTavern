@@ -39,7 +39,11 @@ COPY *.tsx *.ts *.html ./
 
 # 构建前端
 RUN echo "[Build] Starting build with GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" && \
-    npm run build 2>&1 | tee build.log || (cat build.log && exit 1) && \
+    echo "[Build] Node version: $(node --version)" && \
+    echo "[Build] NPM version: $(npm --version)" && \
+    echo "[Build] Listing files:" && ls -la && \
+    npm run build && \
+    echo "[Build] Build completed, checking dist:" && ls -la dist/ && \
     rm -rf node_modules .npm
 
 # 生产阶段 - 使用 nginx-alpine 作为基础镜像
