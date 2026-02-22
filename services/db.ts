@@ -1,5 +1,3 @@
-jie
-
 import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks } from '../types';
 import { AppConfig } from '../config';
 
