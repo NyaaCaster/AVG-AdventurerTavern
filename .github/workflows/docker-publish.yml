@@ -49,6 +49,8 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            VITE_QWEATHER_HOST=${{ secrets.QWEATHER_HOST }}
+            VITE_QWEATHER_KEY=${{ secrets.QWEATHER_KEY }}
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@master
