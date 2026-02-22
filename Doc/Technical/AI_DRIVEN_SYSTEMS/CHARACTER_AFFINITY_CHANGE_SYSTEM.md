@@ -10,6 +10,7 @@
 - **情绪反馈**: 将角色的情绪状态量化为好感度数值
 - **累计追踪**: 跟踪单次对话会话中的好感度累计变化
 - **触发机制**: 当好感度累计过低时触发角色主动结束对话
+- **上限控制**: 当好感度累计过高时停止增加，防止单次对话刷好感度
 
 ---
 
@@ -18,8 +19,9 @@
 1. **关系深度**: 量化玩家与角色的关系变化
 2. **即时反馈**: 玩家立即看到对话的影响
 3. **剧情驱动**: 好感度影响剧情发展和角色行为
-4. **平衡机制**: 防止玩家过度冒犯角色
+4. **平衡机制**: 防止玩家过度冒犯角色或单次对话刷好感度
 5. **真实情感**: 角色有自己的情绪底线，会主动结束不愉快的对话
+6. **渐进关系**: 好感度需要通过多次对话逐步积累，而非一次性获得
 
 ---
 
@@ -103,6 +105,7 @@ const PROMPT_AFFINITY = `
 - 负面情绪（生气、厌恶、失望、不满、被冒犯等）：-1 到 -5
 - 中性或平淡的对话不需要输出此字段。
 - 注意：如果对话中好感度累计下降过多（≤-10），角色可能会主动结束对话。
+- 注意：如果对话中好感度累计增加过多（≥+10），则不再输出正面的好感度变化（affinity_change字段），但负面变化仍然正常输出。
 `;
 ```
 
@@ -136,26 +139,33 @@ const handleEnterDialogue = async (characterId: string, actionType: string = ''c
 ```typescript
 // 在 handleSendMessage 函数中
 if (response.affinity_change && activeCharacter) {
-    // 更新全局好感度（永久存储）
-    onAffinityChange(activeCharacter.id, response.affinity_change);
+    // [好感度上限] 检查是否已达到正面好感度累计上限
+    const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
     
-    // 设置临时显示指示器
-    setLastAffinityChange(response.affinity_change);
-    
-    // 2.5秒后清除指示器
-    setTimeout(() => setLastAffinityChange(undefined), 2500);
-    
-    // [角色主动结束对话] 累计好感度变化
-    const newTotal = sessionAffinityTotal + response.affinity_change;
-    setSessionAffinityTotal(newTotal);
-    
-    // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
-    if (newTotal <= -10 && clothingState !== ''bondage'') {
-        console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
-        // 延迟1秒，让当前消息显示完毕
-        setTimeout(() => {
-            handleEndDialogueGeneration();
-        }, 1000);
+    if (shouldApplyChange) {
+        // 更新全局好感度（永久存储）
+        onAffinityChange(activeCharacter.id, response.affinity_change);
+        
+        // 设置临时显示指示器
+        setLastAffinityChange(response.affinity_change);
+        
+        // 2.5秒后清除指示器
+        setTimeout(() => setLastAffinityChange(undefined), 2500);
+        
+        // [角色主动结束对话] 累计好感度变化
+        const newTotal = sessionAffinityTotal + response.affinity_change;
+        setSessionAffinityTotal(newTotal);
+        
+        // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+        if (newTotal <= -10 && clothingState !== ''bondage'') {
+            console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+            // 延迟1秒，让当前消息显示完毕
+            setTimeout(() => {
+                handleEndDialogueGeneration();
+            }, 1000);
+        }
+    } else {
+        console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
     }
 }
 ```
@@ -276,7 +286,42 @@ AI 生成响应（包含 affinity_change）
 4. 继续对话...
 ```
 
-### 场景 2: 触发角色主动结束
+### 场景 2: 触发好感度上限
+
+```
+1. 对话历史:
+   - 消息1: affinity_change: +3 (累计: +3)
+   - 消息2: affinity_change: +2 (累计: +5)
+   - 消息3: affinity_change: +4 (累计: +9)
+   ↓
+2. 用户: "你真是太棒了！"
+   ↓
+3. AI 响应:
+   {
+     "text": "谢谢你~（开心地笑了）",
+     "emotion": "happy",
+     "affinity_change": 2
+   }
+   ↓
+4. 系统检测:
+   - 会话累计: 9
+   - 新变化: +2
+   - 累计会达到: 11 (超过上限 10)
+   ↓
+5. 系统处理:
+   - 忽略此次好感度变化
+   - 不更新全局好感度
+   - 不显示 UI 指示器
+   - 会话累计保持: 9
+   - 控制台输出: "[好感度上限] 当前累计: 9, 忽略正面变化: +2"
+   ↓
+6. 对话继续:
+   - AI 对话内容正常显示
+   - 角色情绪和行为不受影响
+   - 仅好感度数值不再增加
+```
+
+### 场景 3: 触发角色主动结束
 
 ```
 1. 对话历史:
@@ -433,6 +478,9 @@ grep -r "sessionAffinityTotal" .
 - [ ] 负面好感度变化正常更新
 - [ ] 会话累计值正确计算
 - [ ] 触发阈值 -10 正确检测
+- [ ] 触发上限 +10 正确检测
+- [ ] 达到上限后正面变化被忽略
+- [ ] 达到上限后负面变化仍然生效
 - [ ] bondage 状态下不触发自动结束
 - [ ] 对话开始时累计值重置为 0
 - [ ] 对话结束时累计值重置为 0
@@ -449,20 +497,37 @@ const testAffinitySystem = () => {
             name: ''正常好感度增加'',
             changes: [2, 3, 1],
             expectedTotal: 6,
-            shouldTriggerEnd: false
+            shouldTriggerEnd: false,
+            shouldTriggerCap: false
+        },
+        {
+            name: ''触发好感度上限'',
+            changes: [3, 3, 3, 2],
+            expectedTotal: 9,  // 最后一个 +2 被忽略
+            shouldTriggerEnd: false,
+            shouldTriggerCap: true
+        },
+        {
+            name: ''达到上限后负面变化仍生效'',
+            changes: [3, 3, 3, 2, -2],
+            expectedTotal: 7,  // 9 (上限前) + (-2)
+            shouldTriggerEnd: false,
+            shouldTriggerCap: false
         },
         {
             name: ''触发自动结束'',
             changes: [-3, -2, -4, -3],
             expectedTotal: -12,
-            shouldTriggerEnd: true
+            shouldTriggerEnd: true,
+            shouldTriggerCap: false
         },
         {
             name: ''bondage 状态豁免'',
             changes: [-3, -2, -4, -3],
             clothingState: ''bondage'',
             expectedTotal: -12,
-            shouldTriggerEnd: false
+            shouldTriggerEnd: false,
+            shouldTriggerCap: false
         }
     ];
     
@@ -601,10 +666,18 @@ const AFFINITY_LEVELS = {
 - ✅ 添加测试用例和调试指南
 - 🎨 优化文档结构和可读性
 
+### v2.1.0 (2026-02-22)
+- ✨ 新功能：添加好感度上限机制
+- 🎯 设计目标：防止单次对话刷好感度
+- 📝 实现：当会话累计好感度 ≥ +10 时，停止应用正面好感度变化
+- ⚠️ 重要：负面好感度变化不受上限限制，始终生效
+- 🤖 AI 提示：更新系统提示词，告知 AI 上限机制
+- 📚 文档：添加好感度上限相关说明和测试用例
+
 ---
 
 **最后更新**: 2026-02-22  
-**文档版本**: 2.0.0  
+**文档版本**: 2.1.0  
 **设计者**: Nyaa  
 **开发者**: Claude  
 **维护者**: Claude  

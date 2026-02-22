@@ -155,22 +155,29 @@ export const useDialogueSystem = ({
       }
 
       if (response.affinity_change && activeCharacter) {
-          onAffinityChange(activeCharacter.id, response.affinity_change);
-          setLastAffinityChange(response.affinity_change);
-          // 清除变化指示器
-          setTimeout(() => setLastAffinityChange(undefined), 2500);
+          // [好感度上限] 检查是否已达到正面好感度累计上限
+          const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
           
-          // [角色主动结束对话] 累计好感度变化
-          const newTotal = sessionAffinityTotal + response.affinity_change;
-          setSessionAffinityTotal(newTotal);
-          
-          // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
-          if (newTotal <= -10 && clothingState !== 'bondage') {
-              console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
-              // 延迟触发，让当前消息显示完毕
-              setTimeout(() => {
-                  handleEndDialogueGeneration();
-              }, 1000);
+          if (shouldApplyChange) {
+              onAffinityChange(activeCharacter.id, response.affinity_change);
+              setLastAffinityChange(response.affinity_change);
+              // 清除变化指示器
+              setTimeout(() => setLastAffinityChange(undefined), 2500);
+              
+              // [角色主动结束对话] 累计好感度变化
+              const newTotal = sessionAffinityTotal + response.affinity_change;
+              setSessionAffinityTotal(newTotal);
+              
+              // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+              if (newTotal <= -10 && clothingState !== 'bondage') {
+                  console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+                  // 延迟触发，让当前消息显示完毕
+                  setTimeout(() => {
+                      handleEndDialogueGeneration();
+                  }, 1000);
+              }
+          } else {
+              console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
           }
       }
 
@@ -228,20 +235,27 @@ export const useDialogueSystem = ({
             if (response.items && response.items.length > 0) onItemsGained(response.items);
 
             if (response.affinity_change && activeCharacter) {
-                onAffinityChange(activeCharacter.id, response.affinity_change);
-                setLastAffinityChange(response.affinity_change);
-                setTimeout(() => setLastAffinityChange(undefined), 2500);
+                // [好感度上限] 检查是否已达到正面好感度累计上限
+                const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
                 
-                // [角色主动结束对话] 累计好感度变化
-                const newTotal = sessionAffinityTotal + response.affinity_change;
-                setSessionAffinityTotal(newTotal);
-                
-                // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
-                if (newTotal <= -10 && clothingState !== 'bondage') {
-                    console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
-                    setTimeout(() => {
-                        handleEndDialogueGeneration();
-                    }, 1000);
+                if (shouldApplyChange) {
+                    onAffinityChange(activeCharacter.id, response.affinity_change);
+                    setLastAffinityChange(response.affinity_change);
+                    setTimeout(() => setLastAffinityChange(undefined), 2500);
+                    
+                    // [角色主动结束对话] 累计好感度变化
+                    const newTotal = sessionAffinityTotal + response.affinity_change;
+                    setSessionAffinityTotal(newTotal);
+                    
+                    // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+                    if (newTotal <= -10 && clothingState !== 'bondage') {
+                        console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+                        setTimeout(() => {
+                            handleEndDialogueGeneration();
+                        }, 1000);
+                    }
+                } else {
+                    console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
                 }
             }
 
