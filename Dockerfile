@@ -60,12 +60,12 @@ WORKDIR /app
 # 复制前端构建产物
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
-# 复制 SSL 证书（从 build secrets）
+# 复制 SSL 证书（从 build secrets，需要 Base64 解码）
 RUN --mount=type=secret,id=ssl_cert \
     --mount=type=secret,id=ssl_key \
     if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then \
-        cp /run/secrets/ssl_cert /etc/nginx/ssl/certificate.crt && \
-        cp /run/secrets/ssl_key /etc/nginx/ssl/certificate.key && \
+        base64 -d /run/secrets/ssl_cert > /etc/nginx/ssl/certificate.crt && \
+        base64 -d /run/secrets/ssl_key > /etc/nginx/ssl/certificate.key && \
         chmod 644 /etc/nginx/ssl/certificate.crt && \
         chmod 600 /etc/nginx/ssl/certificate.key && \
         chown nginx:nginx /etc/nginx/ssl/certificate.* ; \
