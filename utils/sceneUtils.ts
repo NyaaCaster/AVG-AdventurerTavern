@@ -13,28 +13,34 @@ export const getSceneBackground = (sceneId: SceneId, period: WorldState['period'
   // 统一处理时间段后缀：evening 对应 evenfall 资源
   const p = period === 'evening' ? 'evenfall' : period;
 
-  // 辅助函数：限制等级范围
-  // 如果当前等级超过最大资源等级，则使用最大等级资源
-  const clampLevel = (lvl: number, max: number) => Math.min(Math.max(lvl, 1), max);
+  let resLevel = 1;
 
   switch (sceneId) {
-    case 'scen_1': // 柜台: LV1-LV5
-      return `${basePath}/scen_1/bg_scen_1_lv${clampLevel(level, 5)}_${p}.png`;
+    case 'scen_1': // 柜台
+      // LV1~LV9: lv1, LV10~LV19: lv2, LV20~LV29: lv3, LV30~LV39: lv4, LV40+: lv5
+      if (level >= 40) resLevel = 5;
+      else if (level >= 30) resLevel = 4;
+      else if (level >= 20) resLevel = 3;
+      else if (level >= 10) resLevel = 2;
+      else resLevel = 1;
+      return `${basePath}/scen_1/bg_scen_1_lv${resLevel}_${p}.png`;
 
-    case 'scen_2': // 客房: LV1-LV3
-      return `${basePath}/scen_2/bg_scen_2_lv${clampLevel(level, 3)}_${p}.png`;
+    case 'scen_2': // 客房
+    case 'scen_3': // 酒场
+    case 'scen_4': // 训练场
+      // LV1~LV9: lv1, LV10~LV19: lv2, LV20+: lv3
+      if (level >= 20) resLevel = 3;
+      else if (level >= 10) resLevel = 2;
+      else resLevel = 1;
+      return `${basePath}/${sceneId}/bg_${sceneId}_lv${resLevel}_${p}.png`;
 
-    case 'scen_3': // 酒场: LV1-LV3
-      return `${basePath}/scen_3/bg_scen_3_lv${clampLevel(level, 3)}_${p}.png`;
-
-    case 'scen_4': // 训练场: LV1-LV3
-      return `${basePath}/scen_4/bg_scen_4_lv${clampLevel(level, 3)}_${p}.png`;
-
-    case 'scen_5': // 武器店: LV1-LV3
-      return `${basePath}/scen_5/bg_scen_5_lv${clampLevel(level, 3)}_${p}.png`;
-
-    case 'scen_6': // 防具店: LV1-LV3
-      return `${basePath}/scen_6/bg_scen_6_lv${clampLevel(level, 3)}_${p}.png`;
+    case 'scen_5': // 武器店
+    case 'scen_6': // 防具店
+      // LV1~LV2: lv1, LV3~LV4: lv2, LV5+: lv3
+      if (level >= 5) resLevel = 3;
+      else if (level >= 3) resLevel = 2;
+      else resLevel = 1;
+      return `${basePath}/${sceneId}/bg_${sceneId}_lv${resLevel}_${p}.png`;
 
     // 以下场景无等级区分，使用通用背景
     case 'scen_7': // 温泉
