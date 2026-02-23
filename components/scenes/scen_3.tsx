@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen3: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, presentCharacters, settings, worldState, sceneLevels }) => {
+const Scen3: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, presentCharacters, settings, worldState, sceneLevels, onOpenTavernMenu }) => {
   const [menuState, setMenuState] = useState<'main' | 'move' | 'chars'>('main');
 
   if (!isMenuVisible) return null;
@@ -21,7 +21,7 @@ const Scen3: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
       {menuState === 'main' && (
         <>
             <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setMenuState('move')} subLabel="Move" />
-            <SceneActionBtn label="用餐" icon="fa-utensils" onClick={() => onAction('eat')} />
+            <SceneActionBtn label="餐饮管理" icon="fa-list-check" onClick={() => onOpenTavernMenu?.()} subLabel="Menu" />
             <SceneActionBtn label="烹饪" icon="fa-fire-burner" onClick={() => onAction('cook')} subLabel="Cooking" />
             <SceneActionBtn label="寻找女性角色" icon="fa-magnifying-glass" onClick={() => setMenuState('chars')} />
             

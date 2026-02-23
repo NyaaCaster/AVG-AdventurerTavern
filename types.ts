@@ -124,6 +124,12 @@ export interface SceneConfig {
 }
 
 // 新增：世界环境状态，用于同步 UI 和 LLM 上下文
+// 新增：酒场菜单状态
+export interface TavernMenuState {
+  foods: (string | null)[];
+  drinks: (string | null)[];
+}
+
 export interface WorldState {
   dateStr: string;      // 例如 "10月24日"
   weekDay: string;      // 例如 "周日"
@@ -185,6 +191,9 @@ export interface SceneProps {
   onOpenCooking?: () => void;
   userRecipes?: UserRecipe[];
   foodStock?: Record<string, number>;
+  // 酒场菜单系统
+  onOpenTavernMenu?: () => void;
+  tavernMenu?: TavernMenuState;
 }
 
 // --- 道具系统类型定义 ---

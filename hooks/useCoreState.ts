@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks 
+    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
 } from '../types';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
@@ -17,6 +17,7 @@ export const useCoreState = (initialSaveData?: any) => {
   
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
+  const [tavernMenu, setTavernMenu] = useState<TavernMenuState>({ foods: [], drinks: [] });
   
   const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
@@ -82,9 +83,50 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.userRecipes) setUserRecipes(data.userRecipes);
       if (data.foodStock) setFoodStock(data.foodStock);
       if (data.characterUnlocks) setCharacterUnlocks(data.characterUnlocks);
+      if (data.tavernMenu) setTavernMenu(data.tavernMenu);
   };
 
   // --- Handlers ---
+
+  const handleUpdateTavernMenu = (type: 'foods' | 'drinks', index: number, itemId: string | null) => {
+      setTavernMenu(prev => {
+          const newList = [...prev[type]];
+          // Ensure array size
+          while (newList.length <= index) newList.push(null);
+          newList[index] = itemId;
+          return { ...prev, [type]: newList };
+      });
+  };
+
+  const handleClearTavernMenu = () => {
+      setTavernMenu({ foods: [], drinks: [] });
+  };
+
+  const handleTavernSales = (earnedGold: number, foodSold: Record<string, number>, drinksSold: Record<string, number>) => {
+      if (earnedGold > 0) {
+          setGold(prev => prev + earnedGold);
+      }
+
+      if (Object.keys(foodSold).length > 0) {
+          setFoodStock(prev => {
+              const next = { ...prev };
+              Object.entries(foodSold).forEach(([id, count]) => {
+                  next[id] = Math.max(0, (next[id] || 0) - count);
+              });
+              return next;
+          });
+      }
+
+      if (Object.keys(drinksSold).length > 0) {
+          setInventory(prev => {
+              const next = { ...prev };
+              Object.entries(drinksSold).forEach(([id, count]) => {
+                  next[id] = Math.max(0, (next[id] || 0) - count);
+              });
+              return next;
+          });
+      }
+  };
 
   const handleManagementAction = (cost: number, changes: Partial<ManagementStats>) => {
       if (gold < cost) return;
@@ -264,6 +306,10 @@ export const useCoreState = (initialSaveData?: any) => {
       updateInventoryItem,
       updateCharacterUnlock,
       updateCharacterUnlocks,
-      applyLoadedData
+      applyLoadedData,
+      tavernMenu, setTavernMenu,
+      handleUpdateTavernMenu,
+      handleClearTavernMenu,
+      handleTavernSales
   };
 };

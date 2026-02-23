@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
@@ -14,12 +13,15 @@ import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
 import CookingModal from './CookingModal'; 
+import TavernMenuModal from './TavernMenuModal';
 import DebugResourceModal from './DebugResourceModal'; 
 import DebugSchedulesModal from './DebugSchedulesModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import { CHARACTERS } from '../data/scenarioData';
+import { ITEMS } from '../data/items';
+import { getResValue } from '../data/item-value-table';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
@@ -67,6 +69,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isExpansionOpen, setIsExpansionOpen] = useState(false); 
   const [isCookingOpen, setIsCookingOpen] = useState(false);
+  const [isTavernMenuOpen, setIsTavernMenuOpen] = useState(false);
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -164,28 +167,83 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           
           core.setManagementStats(prev => ({ ...prev, occupancy: newOccupancy }));
 
-          const settlementHours = [6, 8, 12, 20];
-          if (settlementHours.includes(currentHour)) {
-              let revType: RevenueType = 'accommodation';
-              let amount = 0;
-
-              if (currentHour === 6) {
-                  revType = 'tavern';
-                  amount = Math.floor(1000 * (stats.attraction / 100) * (0.8 + Math.random() * 0.5));
-              } else {
-                  revType = 'accommodation';
-                  amount = Math.floor(newOccupancy * stats.roomPrice * (stats.satisfaction / 100) * (stats.reputation / 100));
-              }
-
+          // 1. 住宿结算 (8, 12, 20点)
+          const accomHours = [8, 12, 20];
+          if (accomHours.includes(currentHour)) {
+              const amount = Math.floor(newOccupancy * stats.roomPrice * (stats.satisfaction / 100) * (stats.reputation / 100));
               if (amount > 0) {
                   core.setGold(g => g + amount);
                   const newLog: RevenueLog = {
-                      id: `log-${Date.now()}`,
+                      id: `log-${Date.now()}-accom`,
                       timestamp: Date.now(),
                       dateStr: world.worldState.dateStr,
                       timeStr: `${currentHour.toString().padStart(2, '0')}:00`,
-                      type: revType,
+                      type: 'accommodation',
                       amount
+                  };
+                  core.setRevenueLogs(prev => [newLog, ...prev].slice(0, 100));
+              }
+          }
+
+          // 2. 酒场每小时结算 (傍晚和夜晚)
+          if (world.worldState.period === 'evening' || world.worldState.period === 'night') {
+              let totalTavernRevenue = 0;
+              const soldFoods: Record<string, number> = {};
+              const soldDrinks: Record<string, number> = {};
+              
+              // 使用临时库存避免超卖
+              const tempFoodStock = { ...core.foodStock };
+              const tempDrinkStock = { ...core.inventory };
+
+              // 销售基数：受集客力影响 (0~5份/小时)
+              const baseSalesVolume = Math.max(1, Math.floor(5 * (stats.attraction / 100)));
+
+              // 处理餐点销售
+              core.tavernMenu.foods.forEach(recipeId => {
+                  if (!recipeId) return;
+                  const stock = tempFoodStock[recipeId] || 0;
+                  if (stock <= 0) return;
+
+                  const recipe = core.userRecipes.find(r => r.id === recipeId);
+                  if (!recipe) return;
+
+                  // 随机销量
+                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  if (sales > 0) {
+                      soldFoods[recipeId] = (soldFoods[recipeId] || 0) + sales;
+                      tempFoodStock[recipeId] -= sales;
+                      totalTavernRevenue += sales * recipe.price;
+                  }
+              });
+
+              // 处理酒水销售
+              core.tavernMenu.drinks.forEach(itemId => {
+                  if (!itemId) return;
+                  const stock = tempDrinkStock[itemId] || 0;
+                  if (stock <= 0) return;
+
+                  const item = ITEMS[itemId];
+                  if (!item) return;
+
+                  // 随机销量
+                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  if (sales > 0) {
+                      soldDrinks[itemId] = (soldDrinks[itemId] || 0) + sales;
+                      tempDrinkStock[itemId] -= sales;
+                      // 酒水售价：基准价值
+                      totalTavernRevenue += sales * getResValue(item.star);
+                  }
+              });
+
+              if (totalTavernRevenue > 0) {
+                  core.handleTavernSales(totalTavernRevenue, soldFoods, soldDrinks);
+                  const newLog: RevenueLog = {
+                      id: `log-${Date.now()}-tavern`,
+                      timestamp: Date.now(),
+                      dateStr: world.worldState.dateStr,
+                      timeStr: `${currentHour.toString().padStart(2, '0')}:00`,
+                      type: 'tavern',
+                      amount: totalTavernRevenue
                   };
                   core.setRevenueLogs(prev => [newLog, ...prev].slice(0, 100));
               }
@@ -348,6 +406,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           revenueLogs: core.revenueLogs,
           userRecipes: core.userRecipes,
           foodStock: core.foodStock,
+          tavernMenu: core.tavernMenu,
           settings: settings
       });
   };
@@ -429,7 +488,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     switch(world.currentSceneId) {
         case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} />;
         case 'scen_2': return <Scen2 {...commonProps} />;
-        case 'scen_3': return <Scen3 {...commonProps} />;
+        case 'scen_3': return <Scen3 {...commonProps} onOpenTavernMenu={() => setIsTavernMenuOpen(true)} />;
         case 'scen_4': return <Scen4 {...commonProps} />;
         case 'scen_5': return <Scen5 {...commonProps} />;
         case 'scen_6': return <Scen6 {...commonProps} />;
@@ -589,7 +648,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       <CookingModal 
           isOpen={isCookingOpen}
           onClose={() => setIsCookingOpen(false)}
-          inventory={core.inventory}
+          inventory={core.inventory} 
           userRecipes={core.userRecipes}
           foodStock={core.foodStock}
           onAddRecipe={core.handleAddRecipe}
@@ -598,6 +657,17 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onDeleteRecipe={core.handleDeleteRecipe}
           onRenameRecipe={core.handleRenameRecipe}
           apiConfig={settings.apiConfig}
+      />
+
+      <TavernMenuModal
+          isOpen={isTavernMenuOpen}
+          onClose={() => setIsTavernMenuOpen(false)}
+          inventory={core.inventory}
+          userRecipes={core.userRecipes}
+          foodStock={core.foodStock}
+          tavernLevel={core.sceneLevels['scen_3'] || 1}
+          tavernMenu={core.tavernMenu}
+          onUpdateMenu={core.handleUpdateTavernMenu}
       />
 
       <DebugResourceModal isOpen={isResourceDebugOpen} onClose={() => setIsResourceDebugOpen(false)} gold={core.gold} inventory={core.inventory} onUpdateGold={core.updateGold} onUpdateInventory={core.updateInventoryItem} />
