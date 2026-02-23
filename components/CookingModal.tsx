@@ -541,7 +541,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                     {Object.entries(getAvailableInventory(activeSlotIndex)).map(([id, count]) => {
                                         const item = ITEMS[id];
                                         // 过滤条件：必须是素材(res)，且有剩余数量
-                                        if (item.category !== 'res' || count <= 0) return null;
+                                        if (item.category !== 'res' || (count as number) <= 0) return null;
                                         
                                         // 主料槽位(slot 0)：过滤掉 non, drinks, spice, milk
                                         if (activeSlotIndex === 0 && ['non', 'drinks', 'spice', 'milk'].includes(item.tag)) return null;

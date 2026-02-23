@@ -48,28 +48,28 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn" onClick={onClose}>
-        <div className="bg-slate-900 border border-yellow-500/50 rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn font-mono text-sm" onClick={onClose}>
+        <div className="bg-[#0c0c0c] border border-slate-700/50 rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-[0_25px_50px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-950/50 rounded-t-lg shrink-0">
-                <h3 className="text-lg font-bold text-yellow-500 flex items-center gap-2">
+            <div className="flex items-center justify-between p-3 px-4 border-b border-slate-800 bg-[#1a1a1a] rounded-t-lg shrink-0">
+                <h3 className="text-base font-bold text-emerald-400 flex items-center gap-2">
                     <i className="fa-solid fa-screwdriver-wrench"></i>
                     资源调整 (Debug)
                 </h3>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors">
                     <i className="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <div className="overflow-y-auto p-4 custom-scrollbar space-y-3">
+            <div className="overflow-y-auto p-4 custom-scrollbar space-y-4 bg-[#0c0c0c] rounded-b-lg">
                 {/* Gold Row */}
                 <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded border border-yellow-500/20">
                     <div className="flex flex-col">
-                        <span className="text-yellow-400 font-bold text-base"><i className="fa-solid fa-coins mr-2"></i>资金 (Gold)</span>
-                        <span className="text-xs text-slate-500 font-mono">Limit: {MAX_GOLD.toLocaleString()}</span>
+                        <span className="text-yellow-500 font-bold text-base"><i className="fa-solid fa-coins mr-2"></i>资金 (Gold)</span>
+                        <span className="text-[10px] text-slate-500">Limit: {MAX_GOLD.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-6">
-                        <span className="font-mono text-white text-lg font-bold w-32 text-right">{gold.toLocaleString()}</span>
+                        <span className="text-slate-200 text-lg font-bold w-32 text-right">{gold.toLocaleString()}</span>
                         <div className="flex gap-1">
                             <button
                                 onClick={() => handleGoldChange(-0.1)}
@@ -85,7 +85,7 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
                     </div>
                 </div>
 
-                <div className="h-px bg-slate-700 my-2"></div>
+                <div className="h-px bg-slate-800/50 my-2"></div>
 
                 {/* Items List */}
                 <div className="grid grid-cols-1 gap-2">
@@ -95,26 +95,26 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
                             <div key={item.id} className="flex items-center justify-between bg-slate-800/30 p-2 px-3 rounded border border-slate-700/50 hover:border-slate-600 transition-colors">
                                 <div className="flex flex-col min-w-0 flex-1 mr-4">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-slate-200 font-medium truncate">{item.name}</span>
-                                        <span className="text-[10px] bg-slate-700 text-slate-400 px-1.5 rounded">{item.category}</span>
+                                        <span className="text-slate-300 font-medium truncate">{item.name}</span>
+                                        <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded uppercase font-bold">{item.category}</span>
                                     </div>
-                                    <div className="flex gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
+                                    <div className="flex gap-3 text-[10px] text-slate-500 mt-1">
                                         <span>ID: {item.id}</span>
                                         <span>Max: {item.maxStack}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className={`font-mono w-16 text-right font-bold ${count >= item.maxStack ? 'text-yellow-500' : 'text-slate-300'}`}>
+                                    <span className={`w-16 text-right font-bold ${count >= item.maxStack ? 'text-yellow-500' : 'text-slate-300'}`}>
                                         {count}
                                     </span>
                                     <div className="flex gap-1">
                                         <button
                                             onClick={() => handleItemChange(item, -0.1)}
-                                            className="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-slate-300 transition-colors"
+                                            className="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-red-900/50 border border-slate-600 hover:border-red-500 rounded text-slate-300 hover:text-red-200 transition-all"
                                         >-</button>
                                         <button
                                             onClick={() => handleItemChange(item, 0.1)}
-                                            className="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-slate-300 transition-colors"
+                                            className="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-emerald-900/50 border border-slate-600 hover:border-emerald-500 rounded text-slate-300 hover:text-emerald-200 transition-all"
                                         >+</button>
                                     </div>
                                 </div>

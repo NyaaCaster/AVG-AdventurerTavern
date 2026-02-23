@@ -14,7 +14,8 @@ import InventoryModal from './InventoryModal';
 import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
 import CookingModal from './CookingModal'; 
-import ResourceDebugModal from './ResourceDebugModal'; 
+import DebugResourceModal from './DebugResourceModal'; 
+import DebugSchedulesModal from './DebugSchedulesModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
@@ -523,32 +524,12 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               </div>
           )}
 
-          {isScheduleViewerOpen && (
-              <div className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={() => setIsScheduleViewerOpen(false)}>
-                  <div className="bg-slate-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/50 rounded-t-lg">
-                          <h3 className="text-lg font-bold text-yellow-500 flex items-center gap-2"><i className="fa-solid fa-clock"></i> Current Location Distribution ({world.worldState.periodLabel})</h3>
-                          <button onClick={() => setIsScheduleViewerOpen(false)} className="text-slate-400 hover:text-white"><i className="fa-solid fa-xmark"></i></button>
-                      </div>
-                      <div className="p-4 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {Object.keys(SCENE_NAMES).map(key => {
-                              const sid = key as SceneId;
-                              const chars = Object.values(CHARACTERS).filter(c => world.characterLocations[c.id] === sid);
-                              return (
-                                  <div key={sid} className="bg-slate-800/50 border border-slate-700 p-3 rounded">
-                                      <div className="font-bold text-slate-300 text-sm mb-1 flex justify-between">
-                                          <span>{SCENE_NAMES[sid]}</span><span className="text-slate-600 font-mono text-xs">{sid}</span>
-                                      </div>
-                                      <div className="min-h-[20px] flex flex-wrap gap-1">
-                                          {chars.length > 0 ? chars.map(c => <span key={c.id} className="px-1.5 py-0.5 bg-indigo-900/50 text-indigo-200 text-xs rounded border border-indigo-500/20">{c.name}</span>) : <span className="text-slate-600 text-xs italic">Empty</span>}
-                                      </div>
-                                  </div>
-                              )
-                          })}
-                      </div>
-                  </div>
-              </div>
-          )}
+          <DebugSchedulesModal 
+              isOpen={isScheduleViewerOpen} 
+              onClose={() => setIsScheduleViewerOpen(false)} 
+              periodLabel={world.worldState.periodLabel} 
+              characterLocations={world.characterLocations} 
+          />
 
           <div className="pointer-events-auto">
              {renderScene()}
@@ -619,7 +600,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           apiConfig={settings.apiConfig}
       />
 
-      <ResourceDebugModal isOpen={isResourceDebugOpen} onClose={() => setIsResourceDebugOpen(false)} gold={core.gold} inventory={core.inventory} onUpdateGold={core.updateGold} onUpdateInventory={core.updateInventoryItem} />
+      <DebugResourceModal isOpen={isResourceDebugOpen} onClose={() => setIsResourceDebugOpen(false)} gold={core.gold} inventory={core.inventory} onUpdateGold={core.updateGold} onUpdateInventory={core.updateInventoryItem} />
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
     </div>

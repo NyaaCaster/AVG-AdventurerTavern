@@ -67,6 +67,7 @@ export const saveGame = async (
     managementStats: ManagementStats;
     inventory: Record<string, number>;
     characterStats: Record<string, { level: number; affinity: number }>;
+    characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;
     revenueLogs: RevenueLog[];
     userRecipes?: UserRecipe[];

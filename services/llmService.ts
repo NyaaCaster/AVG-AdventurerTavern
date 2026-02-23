@@ -8,6 +8,7 @@ export interface AIResponse {
   move_to?: string; // 角色移动指令
   items?: { id: string; count: number }[];
   affinity_change?: number; // 好感度变化 (-5 到 +5)
+  unlock_request?: string; // 角色解锁请求
   usage?: {
       prompt_tokens: number;
       completion_tokens: number;
