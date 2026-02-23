@@ -355,9 +355,14 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                         className="w-full h-full object-contain" 
                         />
                     </div>
-                    <span className="text-amber-500/50 font-sans text-sm text-shadow select-none">
+                    <a 
+                        href="https://github.com/NyaaCaster/AVG-AdventurerTavern/commits/main/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-amber-500/50 hover:text-amber-500 font-sans text-sm text-shadow select-none transition-colors duration-300"
+                    >
                         {GAME_VERSION}
-                    </span>
+                    </a>
                 </div>
                 <h1 className="vn-title text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400 tracking-tighter filter drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] border-white">
                 Adventurer<br/>
