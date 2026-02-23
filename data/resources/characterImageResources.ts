@@ -36,10 +36,10 @@ export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
           "img/char/char_101/1_3/1_3_00.png",
           "img/char/char_101/1_3/1_3_01.png",
           "img/char/char_101/1_3/1_3_02.png",
-          "img/char/char_101/1_3/1_3_03.png",
-          "img/char/char_101/1_3/1_3_04.png",
-          "img/char/char_101/1_3/1_3_05.png",
-          "img/char/char_101/1_3/1_3_06.png"
+          "img/char/char_101/1_3/1_3_03.png"
+          // "img/char/char_101/1_3/1_3_04.png",
+          // "img/char/char_101/1_3/1_3_05.png",
+          // "img/char/char_101/1_3/1_3_06.png"
         ],
         "sad": [
           "img/char/char_101/1_4/1_4_00.png",
@@ -193,10 +193,10 @@ export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
           "img/char/char_102/1_3/1_3_01.png",
           "img/char/char_102/1_3/1_3_02.png",
           "img/char/char_102/1_3/1_3_03.png",
-          "img/char/char_102/1_3/1_3_04.png",
-          "img/char/char_102/1_3/1_3_05.png",
-          "img/char/char_102/1_3/1_3_06.png",
-          "img/char/char_102/1_3/1_3_07.png",
+          // "img/char/char_102/1_3/1_3_04.png",
+          // "img/char/char_102/1_3/1_3_05.png",
+          // "img/char/char_102/1_3/1_3_06.png",
+          // "img/char/char_102/1_3/1_3_07.png",
           "img/char/char_102/1_3/1_3_08.png",
           "img/char/char_102/1_3/1_3_09.png"
         ],
@@ -320,10 +320,10 @@ export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
         "angry": [
           "img/char/char_103/1_3/1_3_00.png",
           "img/char/char_103/1_3/1_3_01.png",
-          "img/char/char_103/1_3/1_3_02.png",
-          "img/char/char_103/1_3/1_3_03.png",
-          "img/char/char_103/1_3/1_3_04.png",
-          "img/char/char_103/1_3/1_3_05.png",
+          // "img/char/char_103/1_3/1_3_02.png",
+          // "img/char/char_103/1_3/1_3_03.png",
+          // "img/char/char_103/1_3/1_3_04.png",
+          // "img/char/char_103/1_3/1_3_05.png",
           "img/char/char_103/1_3/1_3_06.png",
           "img/char/char_103/1_3/1_3_07.png"
         ],
