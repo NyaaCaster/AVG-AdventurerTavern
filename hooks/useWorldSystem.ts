@@ -5,12 +5,26 @@ import { calculateWorldState, calculateCharacterLocations, getSceneDisplayName }
 import { fetchWeatherData } from '../services/weatherService';
 import { CHARACTERS } from '../data/scenarioData';
 
-export const useWorldSystem = (sceneLevels: Record<string, number>) => {
-  const [currentSceneId, setCurrentSceneId] = useState<SceneId>('scen_1');
+export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?: any) => {
+  const [currentSceneId, setCurrentSceneId] = useState<SceneId>(() => {
+    if (initialData?.currentSceneId) {
+        return initialData.currentSceneId as SceneId;
+    }
+    return 'scen_1';
+  });
   const [sceneParams, setSceneParams] = useState<any>({});
   
-  const [worldState, setWorldState] = useState<WorldState>(() => calculateWorldState(getSceneDisplayName('scen_1')));
+  const [worldState, setWorldState] = useState<WorldState>(() => {
+    if (initialData?.worldState) {
+        return initialData.worldState;
+    }
+    return calculateWorldState(getSceneDisplayName('scen_1'));
+  });
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>(() => {
+    if (initialData?.worldState) {
+        // 使用存档的时间计算位置
+        return calculateCharacterLocations(initialData.worldState.period, initialData.worldState.dateStr, initialData.worldState.timeStr, sceneLevels);
+    }
     const initialState = calculateWorldState(getSceneDisplayName('scen_1'));
     return calculateCharacterLocations(initialState.period, initialState.dateStr, initialState.timeStr, sceneLevels);
   });

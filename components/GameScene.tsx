@@ -60,7 +60,7 @@ type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   // --- Hooks ---
   const core = useCoreState(initialSaveData);
-  const world = useWorldSystem(core.sceneLevels);
+  const world = useWorldSystem(core.sceneLevels, initialSaveData);
   const audioRef = useGameAudio(world.currentSceneId, settings);
   
   // --- UI Local State ---

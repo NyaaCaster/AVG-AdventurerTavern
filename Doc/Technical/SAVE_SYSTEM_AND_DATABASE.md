@@ -369,6 +369,27 @@ type ApiProvider = 'openai_compatible' | 'google' | 'deepseek' | 'openai' | 'cla
 
 ## 🔄 存档流程
 
+### 状态初始化与恢复原则
+
+为确保组件挂载时（如从标题界面读档进入游戏）状态能正确初始化，所有管理核心游戏状态的 Hook（如 `useWorldSystem`, `useCoreState`）必须遵循以下原则：
+
+1. **支持初始数据注入**: Hook 应接受可选的 `initialData` 参数。
+2. **同步初始化**: 使用 `useState` 的初始化函数来同步设置初始状态，而不是完全依赖 `useEffect`。这避免了组件挂载时的状态闪烁或错误计算。
+3. **数据传递**: 父组件（如 `GameScene`）负责将加载的存档数据传递给这些 Hook。
+
+**示例代码**:
+
+```typescript
+// hooks/useWorldSystem.ts
+export const useWorldSystem = (sceneLevels: any, initialData?: any) => {
+  // 优先使用存档数据初始化，否则使用默认值
+  const [currentSceneId, setCurrentSceneId] = useState<SceneId>(() => {
+      return (initialData?.currentSceneId as SceneId) || 'scen_1';
+  });
+  // ...
+};
+```
+
 ### 自动存档（Slot 0）
 
 **触发时机**:
