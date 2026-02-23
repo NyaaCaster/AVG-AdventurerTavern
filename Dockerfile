@@ -51,10 +51,25 @@ RUN apk add --no-cache tzdata && \
     apk del tzdata && \
     rm -rf /var/cache/apk/*
 
+# 创建 SSL 证书目录
+RUN mkdir -p /etc/nginx/ssl && \
+    chown -R nginx:nginx /etc/nginx/ssl
+
 WORKDIR /app
 
 # 复制前端构建产物
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
+
+# 复制 SSL 证书（从 build secrets）
+RUN --mount=type=secret,id=ssl_cert \
+    --mount=type=secret,id=ssl_key \
+    if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then \
+        cp /run/secrets/ssl_cert /etc/nginx/ssl/certificate.crt && \
+        cp /run/secrets/ssl_key /etc/nginx/ssl/certificate.key && \
+        chmod 644 /etc/nginx/ssl/certificate.crt && \
+        chmod 600 /etc/nginx/ssl/certificate.key && \
+        chown nginx:nginx /etc/nginx/ssl/certificate.* ; \
+    fi
 
 # 复制 nginx 配置文件
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -69,10 +84,10 @@ RUN rm -f /etc/nginx/conf.d/default.conf.default && \
 
 # 设置健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || wget --no-verbose --tries=1 --spider --no-check-certificate https://localhost:443/ || exit 1
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 80 443
 
 # 启动 nginx
 CMD ["nginx", "-g", "daemon off;"]

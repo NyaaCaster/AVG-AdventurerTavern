@@ -58,6 +58,9 @@ jobs:
             VITE_QWEATHER_HOST=${{ secrets.QWEATHER_HOST }}
             VITE_QWEATHER_KEY=${{ secrets.QWEATHER_KEY }}
             GIT_COMMIT_HASH=${{ steps.git.outputs.hash }}
+          secrets: |
+            ssl_cert=${{ secrets.SSL_CERTIFICATE_CRT }}
+            ssl_key=${{ secrets.SSL_CERTIFICATE_KEY }}
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@master
@@ -75,5 +78,7 @@ jobs:
           echo "🔗 https://hub.docker.com/r/${{ env.IMAGE_NAME }}"
           echo "📦 Client-only image: Frontend static files (Nginx)"
           echo "🔒 Security scan completed"
+          echo "🔐 SSL certificates embedded in image"
+          echo "🌐 HTTPS enabled on port 3096"
           echo "ℹ️  Database server is deployed separately from database-server/ directory"
 

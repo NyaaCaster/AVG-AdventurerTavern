@@ -6,6 +6,7 @@ services:
     pull_policy: always
     ports:
       - "3098:80"
+      - "3096:443"
     restart: unless-stopped
     environment:
       - TZ=Asia/Shanghai

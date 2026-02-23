@@ -12,10 +12,11 @@
 
 ```bash
 # 使用 Docker（推荐）
-docker run -d -p 3098:80 honywen/adv-tavern
+docker run -d -p 3098:80 -p 3096:443 honywen/adv-tavern
 
 # 访问游戏
-http://localhost:3098
+http://localhost:3098   # HTTP
+https://localhost:3096  # HTTPS
 ```
 
 ## 📖 游戏内容与玩法
@@ -101,7 +102,9 @@ docker-compose up -d
 
 #### 3. 访问游戏
 
-请访问：👉 **http://localhost:3098**
+请访问：
+- HTTP: 👉 **http://localhost:3098**
+- HTTPS: 👉 **https://localhost:3096**
 
 
 
@@ -149,6 +152,7 @@ docker pull honywen/adv-tavern
 docker run -d \
   --name adventurertavern \
   -p 3098:80 \
+  -p 3096:443 \
   --restart unless-stopped \
   honywen/adv-tavern
 ```
@@ -215,6 +219,7 @@ docker run -d \
 | 端口 | 协议 | 说明 |
 |------|------|------|
 | **3098** | HTTP | 前端访问端口 |
+| **3096** | HTTPS | 前端安全访问端口 |
 
 ### 包含组件
 | 组件 | 版本 | 说明 |
