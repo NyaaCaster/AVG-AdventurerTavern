@@ -59,6 +59,7 @@ Thumbs.db
 .dockerenv
 
 # 文档
+Doc/
 README.md
 README-SERVER.md
 DOCKER-DEPLOY.md
