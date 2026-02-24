@@ -44,7 +44,7 @@ const DebugMenu: React.FC<DebugMenuProps> = ({
   const handleButtonClick = (e: React.MouseEvent, openModal: () => void) => {
     e.stopPropagation();
     openModal();
-    onClose();
+    setTimeout(onClose, 100);
   };
 
   return (
