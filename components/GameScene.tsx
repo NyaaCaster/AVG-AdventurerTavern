@@ -398,6 +398,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     } else {
         dialogue.setAmbientCharacter(null);
         dialogue.setAmbientText('');
+        dialogue.setShowAmbientDialogue(false);
     }
   }, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
 
