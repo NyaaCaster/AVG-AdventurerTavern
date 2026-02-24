@@ -205,3 +205,174 @@ export const getAllCharacterUnlocks = async (
     console.error('Failed to get all character unlocks:', res.message);
     return {};
 };
+
+// --- AI 聊天记忆系统服务 ---
+
+/**
+ * 获取角色的聊天历史（短期工作记忆）
+ */
+export const getChatMessages = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    limit: number = 20
+): Promise<Array<{ role: string; content: string; created_at: number }>> => {
+    const res = await apiCall('/chat/messages/get', {
+        userId,
+        slotId,
+        characterId,
+        limit
+    });
+    
+    if (res.success && Array.isArray(res.messages)) {
+        return res.messages;
+    }
+    
+    console.error('Failed to get chat messages:', res.message);
+    return [];
+};
+
+/**
+ * 添加一条新的聊天记录
+ */
+export const addChatMessage = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    role: 'user' | 'assistant',
+    content: string
+): Promise<boolean> => {
+    const res = await apiCall('/chat/messages/add', {
+        userId,
+        slotId,
+        characterId,
+        role,
+        content
+    });
+    
+    if (!res.success) {
+        console.error('Failed to add chat message:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+/**
+ * 获取角色的核心记忆（长期记忆）
+ */
+export const getCharacterMemories = async (
+    userId: number,
+    slotId: number,
+    characterId: string
+): Promise<Array<{ memory_type: string; content: string; created_at: number }>> => {
+    const res = await apiCall('/chat/memories/get', {
+        userId,
+        slotId,
+        characterId
+    });
+    
+    if (res.success && Array.isArray(res.memories)) {
+        return res.memories;
+    }
+    
+    console.error('Failed to get character memories:', res.message);
+    return [];
+};
+
+/**
+ * 批量添加核心记忆
+ */
+export const addCharacterMemories = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    memories: string[],
+    type: 'core_fact' | 'summary' = 'core_fact'
+): Promise<boolean> => {
+    const res = await apiCall('/chat/memories/add_batch', {
+        userId,
+        slotId,
+        characterId,
+        memories,
+        type
+    });
+    
+    if (!res.success) {
+        console.error('Failed to add character memories:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+/**
+ * 同步存档槽位的聊天和记忆数据
+ * 用于手动存档时，将当前对话环境复制到目标槽位
+ */
+export const syncChatSlot = async (
+    userId: number,
+    sourceSlotId: number,
+    targetSlotId: number
+): Promise<boolean> => {
+    const res = await apiCall('/chat/sync_slot', {
+        userId,
+        sourceSlotId,
+        targetSlotId
+    });
+    
+    if (!res.success) {
+        console.error('Failed to sync chat slot:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+/**
+ * 更新角色的历史摘要（滚动更新）
+ */
+export const updateCharacterSummary = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    summaryText: string
+): Promise<boolean> => {
+    const res = await apiCall('/chat/summary/update', {
+        userId,
+        slotId,
+        characterId,
+        summaryText
+    });
+    
+    if (!res.success) {
+        console.error('Failed to update character summary:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+/**
+ * 删除已总结的旧对话记录
+ */
+export const deleteOldMessages = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    beforeTimestamp: number
+): Promise<boolean> => {
+    const res = await apiCall('/chat/messages/delete_old', {
+        userId,
+        slotId,
+        characterId,
+        beforeTimestamp
+    });
+    
+    if (!res.success) {
+        console.error('Failed to delete old messages:', res.message);
+        return false;
+    }
+    
+    return true;
+};

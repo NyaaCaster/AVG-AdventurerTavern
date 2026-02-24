@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
-import { saveGame, loadGame, deleteGame } from '../services/db'; 
+import { saveGame, loadGame, deleteGame, syncChatSlot } from '../services/db'; 
 
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
@@ -408,6 +408,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   const handleSaveGame = async (slotId: number) => {
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
+      
+      // 保存游戏数据
       await saveGame(userId, slotId, label, {
           gold: core.gold,
           currentSceneId: world.currentSceneId,
@@ -423,6 +425,12 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           tavernMenu: core.tavernMenu,
           settings: settings
       });
+      
+      // 如果是手动存档（slotId 1-3），同步聊天记忆
+      if (slotId >= 1 && slotId <= 3) {
+          console.log(`[AI Memory] Syncing chat memory from slot 0 to slot ${slotId}`);
+          await syncChatSlot(userId, 0, slotId);
+      }
   };
 
   const handleLoadGame = async (slotId: number) => {

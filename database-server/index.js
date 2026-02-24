@@ -1,4 +1,3 @@
-
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
@@ -83,6 +82,38 @@ db.serialize(() => {
             ON character_unlocks(user_id, slot_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_character 
             ON character_unlocks(character_id)`);
+
+    // ----------------- 新增：AI 聊天系统数据表 -----------------
+
+    // 对话历史表 (短期工作记忆)
+    db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    // 长期记忆表 (核心事实与摘要)
+    db.run(`CREATE TABLE IF NOT EXISTS character_memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        memory_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    // 为聊天和记忆表创建索引以提高查询性能
+    db.run(`CREATE INDEX IF NOT EXISTS idx_chat_messages 
+            ON chat_messages(user_id, slot_id, character_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_memories 
+            ON character_memories(user_id, slot_id, character_id)`);
 });
 
 // API Routes
@@ -179,7 +210,7 @@ app.post('/api/save', (req, res) => {
     const dataStr = JSON.stringify(data);
     const timestamp = Date.now();
 
-    // 使用 INSERT OR REPLACE 实现“存在即更新，不存在即插入”
+    // 使用 INSERT OR REPLACE 实现"存在即更新，不存在即插入"
     const stmt = db.prepare(`
         INSERT OR REPLACE INTO saves (user_id, slot_id, label, data, updated_at)
         VALUES (?, ?, ?, ?, ?)
@@ -218,8 +249,7 @@ app.post('/api/slots', (req, res) => {
             slotId: row.slot_id,
             label: row.label,
             savedAt: row.updated_at,
-            // 构造简略信息用于UI显示
-            gold: 0, // 列表接口暂不返回详细数据以节省流量
+            gold: 0,
             currentSceneId: '...',
             worldState: { dateStr: '', timeStr: '', sceneName: 'Server Save' }
         }));
@@ -233,9 +263,168 @@ app.post('/api/delete', (req, res) => {
     const stmt = db.prepare("DELETE FROM saves WHERE user_id = ? AND slot_id = ?");
     stmt.run(userId, slotId, function(err) {
         if (err) return res.json({ success: false, message: err.message });
+        
+        // 级联删除相关联的聊天和记忆数据
+        const stmtChats = db.prepare("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?");
+        stmtChats.run(userId, slotId);
+        stmtChats.finalize();
+        
+        const stmtMemories = db.prepare("DELETE FROM character_memories WHERE user_id = ? AND slot_id = ?");
+        stmtMemories.run(userId, slotId);
+        stmtMemories.finalize();
+        
         res.json({ success: true });
     });
     stmt.finalize();
+});
+
+// ----------------- 新增：AI 记忆与聊天系统 API -----------------
+
+// 6.1 获取角色聊天历史 (短期记忆)
+app.post('/api/chat/messages/get', (req, res) => {
+    const { userId, slotId, characterId, limit = 20 } = req.body;
+    db.all(
+        `SELECT role, content, created_at FROM chat_messages 
+         WHERE user_id = ? AND slot_id = ? AND character_id = ?
+         ORDER BY created_at DESC LIMIT ?`,
+        [userId, slotId, characterId, limit],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, messages: rows.reverse() });
+        }
+    );
+});
+
+// 6.2 记录一条新对话
+app.post('/api/chat/messages/add', (req, res) => {
+    const { userId, slotId, characterId, role, content } = req.body;
+    const stmt = db.prepare(`INSERT INTO chat_messages (user_id, slot_id, character_id, role, content, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
+    stmt.run(userId, slotId, characterId, role, content, Date.now(), function(err) {
+        if (err) return res.json({ success: false, message: err.message });
+        res.json({ success: true, id: this.lastID });
+    });
+    stmt.finalize();
+});
+
+// 6.3 获取角色核心记忆 (长期记忆)
+app.post('/api/chat/memories/get', (req, res) => {
+    const { userId, slotId, characterId } = req.body;
+    db.all(
+        `SELECT memory_type, content, created_at FROM character_memories 
+         WHERE user_id = ? AND slot_id = ? AND character_id = ?
+         ORDER BY created_at ASC`,
+        [userId, slotId, characterId],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, memories: rows });
+        }
+    );
+});
+
+// 6.4 批量添加核心记忆
+app.post('/api/chat/memories/add_batch', (req, res) => {
+    const { userId, slotId, characterId, memories, type = 'core_fact' } = req.body;
+    if (!memories || !Array.isArray(memories) || memories.length === 0) {
+        return res.json({ success: true });
+    }
+
+    const stmt = db.prepare(`INSERT INTO character_memories (user_id, slot_id, character_id, memory_type, content, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
+    const now = Date.now();
+    
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        memories.forEach(content => {
+            stmt.run(userId, slotId, characterId, type, content, now);
+        });
+        db.run("COMMIT", (err) => {
+            if (err) return res.json({ success: false, message: err.message });
+            res.json({ success: true });
+        });
+    });
+    stmt.finalize();
+});
+
+// 6.5 存档时同步复制对话和记忆 (解决读档覆盖/时空错乱问题)
+app.post('/api/chat/sync_slot', (req, res) => {
+    const { userId, sourceSlotId, targetSlotId } = req.body;
+    
+    if (sourceSlotId === targetSlotId) return res.json({ success: true });
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        
+        db.run("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?", [userId, targetSlotId]);
+        db.run("DELETE FROM character_memories WHERE user_id = ? AND slot_id = ?", [userId, targetSlotId]);
+
+        db.run(`INSERT INTO chat_messages (user_id, slot_id, character_id, role, content, created_at)
+                SELECT user_id, ?, character_id, role, content, created_at FROM chat_messages 
+                WHERE user_id = ? AND slot_id = ?`, [targetSlotId, userId, sourceSlotId]);
+
+        db.run(`INSERT INTO character_memories (user_id, slot_id, character_id, memory_type, content, created_at)
+                SELECT user_id, ?, character_id, memory_type, content, created_at FROM character_memories 
+                WHERE user_id = ? AND slot_id = ?`, [targetSlotId, userId, sourceSlotId]);
+
+        db.run("COMMIT", (err) => {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+            res.json({ success: true });
+        });
+    });
+});
+
+// 6.6 更新角色的历史摘要 (滚动更新)
+app.post('/api/chat/summary/update', (req, res) => {
+    const { userId, slotId, characterId, summaryText } = req.body;
+    
+    if (!userId || slotId === undefined || !characterId || !summaryText) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+
+    const now = Date.now();
+
+    // 先尝试更新现有的 summary
+    db.run(
+        `UPDATE character_memories 
+         SET content = ?, created_at = ? 
+         WHERE user_id = ? AND slot_id = ? AND character_id = ? AND memory_type = 'summary'`,
+        [summaryText, now, userId, slotId, characterId],
+        function(err) {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+            
+            // 如果没有更新任何行，说明还没有 summary，需要插入
+            if (this.changes === 0) {
+                const stmt = db.prepare(
+                    `INSERT INTO character_memories (user_id, slot_id, character_id, memory_type, content, created_at) 
+                     VALUES (?, ?, ?, 'summary', ?, ?)`
+                );
+                stmt.run(userId, slotId, characterId, summaryText, now, function(err) {
+                    if (err) return res.status(500).json({ success: false, message: err.message });
+                    res.json({ success: true, message: '摘要已创建' });
+                });
+                stmt.finalize();
+            } else {
+                res.json({ success: true, message: '摘要已更新' });
+            }
+        }
+    );
+});
+
+// 6.7 删除已总结的旧对话记录
+app.post('/api/chat/messages/delete_old', (req, res) => {
+    const { userId, slotId, characterId, beforeTimestamp } = req.body;
+    
+    if (!userId || slotId === undefined || !characterId || !beforeTimestamp) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+
+    db.run(
+        `DELETE FROM chat_messages 
+         WHERE user_id = ? AND slot_id = ? AND character_id = ? AND created_at <= ?`,
+        [userId, slotId, characterId, beforeTimestamp],
+        function(err) {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+            res.json({ success: true, deletedCount: this.changes });
+        }
+    );
 });
 
 // --- 角色解锁状态 API ---
@@ -244,7 +433,6 @@ app.post('/api/delete', (req, res) => {
 app.post('/api/character_unlocks/get', (req, res) => {
     const { userId, slotId, characterId } = req.body;
     
-    // 验证必需参数
     if (!userId || slotId === undefined || !characterId) {
         return res.json({ 
             success: false, 
@@ -279,7 +467,6 @@ app.post('/api/character_unlocks/get', (req, res) => {
             }
             
             if (!row) {
-                // 如果没有记录，返回默认的全部未解锁状态
                 return res.json({
                     success: true,
                     unlocks: {
@@ -309,7 +496,6 @@ app.post('/api/character_unlocks/get', (req, res) => {
 app.post('/api/character_unlocks/update', (req, res) => {
     const { userId, slotId, characterId, unlocks } = req.body;
     
-    // 验证必需参数
     if (!userId || slotId === undefined || !characterId || !unlocks) {
         return res.json({ 
             success: false, 
@@ -317,7 +503,6 @@ app.post('/api/character_unlocks/update', (req, res) => {
         });
     }
     
-    // 验证 unlocks 对象
     if (typeof unlocks !== 'object') {
         return res.json({ 
             success: false, 
@@ -327,7 +512,6 @@ app.post('/api/character_unlocks/update', (req, res) => {
     
     const timestamp = Date.now();
     
-    // 构建 SET 子句
     const validFields = [
         'accept_battle_party',
         'accept_flirt_topic',
@@ -350,7 +534,6 @@ app.post('/api/character_unlocks/update', (req, res) => {
     for (const field of validFields) {
         if (unlocks.hasOwnProperty(field)) {
             const value = unlocks[field];
-            // 验证值必须是 0 或 1
             if (value !== 0 && value !== 1) {
                 return res.json({ 
                     success: false, 
@@ -369,14 +552,11 @@ app.post('/api/character_unlocks/update', (req, res) => {
         });
     }
     
-    // 添加 updated_at
     updateFields.push('updated_at = ?');
     updateValues.push(timestamp);
     
-    // 添加 WHERE 条件的值
     updateValues.push(userId, slotId, characterId);
     
-    // 先尝试更新
     const updateSql = `
         UPDATE character_unlocks 
         SET ${updateFields.join(', ')}
@@ -391,9 +571,7 @@ app.post('/api/character_unlocks/update', (req, res) => {
             });
         }
         
-        // 如果没有更新任何行，说明记录不存在，需要插入
         if (this.changes === 0) {
-            // 构建插入语句
             const insertFields = ['user_id', 'slot_id', 'character_id', 'updated_at'];
             const insertPlaceholders = ['?', '?', '?', '?'];
             const insertValues = [userId, slotId, characterId, timestamp];
@@ -430,7 +608,6 @@ app.post('/api/character_unlocks/update', (req, res) => {
 app.post('/api/character_unlocks/get_all', (req, res) => {
     const { userId, slotId } = req.body;
     
-    // 验证必需参数
     if (!userId || slotId === undefined) {
         return res.json({ 
             success: false, 
@@ -465,7 +642,6 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
                 });
             }
             
-            // 将数组转换为对象映射
             const data = {};
             rows.forEach(row => {
                 const characterId = row.character_id;
@@ -483,7 +659,6 @@ let server;
 
 if (config.HTTPS_ENABLED) {
     try {
-        // 检查SSL证书文件是否存在
         if (fs.existsSync(config.SSL_KEY_PATH) && fs.existsSync(config.SSL_CERT_PATH)) {
             const httpsOptions = {
                 key: fs.readFileSync(config.SSL_KEY_PATH),

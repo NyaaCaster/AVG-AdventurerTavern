@@ -9,6 +9,7 @@ import { getCharacterSprite } from '../utils/gameLogic';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getDefaultUnlocks } from '../utils/unlockHelpers';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
+import { useAIMemory } from './useAIMemory';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
@@ -26,6 +27,12 @@ interface UseDialogueSystemProps {
 export const useDialogueSystem = ({ 
     settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate 
 }: UseDialogueSystemProps) => {
+  // AI 记忆系统
+  const aiMemory = useAIMemory({ 
+      userId, 
+      slotId: currentSlotId,
+      apiConfig: settings.apiConfig 
+  });
   const [isDialogueMode, setIsDialogueMode] = useState(false);
   const [isDialogueEnding, setIsDialogueEnding] = useState(false);
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
@@ -71,7 +78,15 @@ export const useDialogueSystem = ({
     
     let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
-    const fullPrompt = `${systemPrompt}\n\n${dynamicUserInfo}`;
+    
+    // 加载角色记忆并增强 System Prompt
+    const memoryContext = await aiMemory.getMemoryContext(char.id);
+    const enhancedPrompt = aiMemory.buildEnhancedPrompt(systemPrompt, memoryContext);
+    
+    // 添加 update_memory 字段的说明
+    const memoryInstruction = `\n\n【记忆提取指令】\n"update_memory": [可选] 字符串数组。如果你在对话中得知了关于玩家的重要信息、喜好、约定或承诺，请将它们作为简短的事实提取出来。\n例如：["玩家喜欢喝麦酒", "约定了明天一起去温泉"]。如果没有重要信息，请不要输出此字段。`;
+    
+    const fullPrompt = `${enhancedPrompt}${memoryInstruction}\n\n${dynamicUserInfo}`;
     
     await llmService.initChat(char, fullPrompt, settings.apiConfig);
   };
@@ -119,6 +134,9 @@ export const useDialogueSystem = ({
             const response = await llmService.sendMessage(contextPrompt);
             const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
 
+            // 保存开场白到聊天记录
+            await aiMemory.saveMessage(char.id, 'assistant', displayText);
+
             setCurrentDialogue({ speaker: char.name, text: displayText });
             setHistory(prev => [...prev, { 
                 speaker: char.name, text: displayText, timestamp: Date.now(), 
@@ -160,6 +178,21 @@ export const useDialogueSystem = ({
       
       const response = await llmService.sendMessage(enrichedMessage);
       const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+      
+      // 保存用户消息和 AI 回复到聊天记录
+      await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
+      await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
+      
+      // 如果 AI 提取了新的核心记忆，保存到数据库
+      if (response.update_memory && response.update_memory.length > 0) {
+          console.log('[AI Memory] Extracted memories:', response.update_memory);
+          await aiMemory.saveMemories(activeCharacter.id, response.update_memory, 'core_fact');
+      }
+      
+      // 静默触发摘要压缩（不阻塞 UI）
+      aiMemory.triggerSummaryIfNeeded(activeCharacter.id).catch(err => {
+          console.error('[AI Memory] Summary trigger failed:', err);
+      });
       
       setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
       
