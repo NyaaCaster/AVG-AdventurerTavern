@@ -4,6 +4,7 @@ services:
     image: honywen/adv-tavern
     container_name: adventurertavern
     pull_policy: always
+    privileged: true
     ports:
       - "3098:80"
       - "3096:443"
