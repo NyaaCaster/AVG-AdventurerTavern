@@ -36,7 +36,7 @@ const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                     />
                     
                     {settings.enableNSFW && (
-                        <SceneActionBtn label="共浴" icon="fa-heart" onClick={() => onEnterDialogue(char.id, 'bath_together')} disabled subLabel="(好感度不足)" />
+                        <SceneActionBtn label={`与${char.name}共浴`} icon="fa-heart" onClick={() => onEnterDialogue(char.id, 'bath_together')} disabled subLabel="(好感度不足)" />
                     )}
                     <div className="h-2"></div>
                 </React.Fragment>
