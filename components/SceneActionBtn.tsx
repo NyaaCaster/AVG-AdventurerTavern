@@ -37,22 +37,23 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
   }, []);
 
   const handleClick = (e: React.MouseEvent) => {
-    if (disabled) return;
-
-    // 电脑/平板模式：直接触发
+    // 电脑/平板模式：检查 disabled 后直接触发
     if (!isMobile) {
+      if (disabled) return;
       onClick();
       return;
     }
 
     // 手机模式：
-    // 如果已经展开，则触发动作
-    if (isExpanded) {
-      onClick();
-    } else {
-      // 如果是收缩状态，点击视为"展开"
+    // 如果是收缩状态，第一次点击总是允许展开（无论是否 disabled）
+    if (!isExpanded) {
       setIsExpanded(true);
+      return;
     }
+
+    // 如果已经展开，则检查 disabled 状态后触发动作
+    if (disabled) return;
+    onClick();
   };
 
   // 手机模式下的鼠标悬停逻辑
@@ -95,7 +96,7 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      disabled={disabled}
+      disabled={!isMobile && disabled}
       className={`
         ${widthClass}
         py-3 px-0 mb-2 relative group transition-all duration-300 ease-in-out
