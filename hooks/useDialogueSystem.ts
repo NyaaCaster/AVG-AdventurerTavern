@@ -466,6 +466,9 @@ export const useDialogueSystem = ({
 
       setIsAmbientLoading(true);
       try {
+          // 加载角色记忆以增强环境台词的连续性
+          const memoryContext = await aiMemory.getMemoryContext(char.id);
+          
           await initLLM(char);
           
           const stats = characterStats[char.id] || { level: 1, affinity: 0 };
@@ -490,7 +493,9 @@ export const useDialogueSystem = ({
 `;
           }
 
-          const response = await llmService.sendMessage(prompt);
+          // 增强 prompt，加入角色记忆上下文
+          const enhancedPrompt = aiMemory.buildEnhancedPrompt(prompt, memoryContext);
+          const response = await llmService.sendMessage(enhancedPrompt);
           let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
           setAmbientText(text);
           
