@@ -125,7 +125,7 @@ export class LlmService {
 
       let jsonResponse: AIResponse;
       try {
-        const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const cleanText = responseText.replace(/`{3}json/g, '').replace(/`{3}/g, '').trim();
         const firstBrace = cleanText.indexOf('{');
         const lastBrace = cleanText.lastIndexOf('}');
         
@@ -293,7 +293,7 @@ ${ingredientsInfo}
 
           const content = data.choices?.[0]?.message?.content || "{}";
           // Sanitize and parse
-          const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const jsonStr = content.replace(/`{3}json/g, '').replace(/`{3}/g, '').trim();
           
           let json;
           try {

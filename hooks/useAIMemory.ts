@@ -208,7 +208,7 @@ ${conversationText}
             const summaryText = data.choices?.[0]?.message?.content || oldSummary;
             
             // 清理可能的 Markdown 标记
-            return summaryText.replace(/```/g, '').trim();
+            return summaryText.replace(/`{3}/g, '').trim();
         } catch (error) {
             console.error('[AI Memory] Failed to generate summary:', error);
             return oldSummary; // 失败时返回旧摘要
@@ -275,4 +275,3 @@ ${conversationText}
         triggerSummaryIfNeeded
     };
 };
-```
