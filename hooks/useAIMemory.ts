@@ -160,8 +160,7 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             .map(m => `${m.role === 'user' ? '玩家' : 'AI'}: ${m.content}`)
             .join('\n');
 
-        const summaryPrompt = `
-[系统指令]
+        const summaryPrompt = `[系统指令]
 你是一个记忆整理助手。请将以下【新发生的对话】融入到【原有的记忆摘要】中。
 
 要求：
@@ -177,8 +176,7 @@ ${oldSummary || "无"}
 【新发生的对话】
 ${conversationText}
 
-请输出新的摘要：
-`;
+请输出新的摘要：`;
 
         try {
             // 使用临时的 LLM 实例，避免污染主对话历史
