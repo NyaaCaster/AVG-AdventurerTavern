@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 
-const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings, presentCharacters, worldState, sceneLevels }) => {
+const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings, presentCharacters, worldState, sceneLevels, characterUnlocks }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -36,7 +36,13 @@ const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                     />
                     
                     {settings.enableNSFW && (
-                        <SceneActionBtn label={`与${char.name}共浴`} icon="fa-heart" onClick={() => onEnterDialogue(char.id, 'bath_together')} disabled subLabel="(好感度不足)" />
+                        <SceneActionBtn 
+                            label={`与${char.name}共浴`} 
+                            icon="fa-heart" 
+                            onClick={() => onEnterDialogue(char.id, 'bath_together')} 
+                            disabled={!(characterUnlocks[char.id]?.accept_indirect_sexual)} 
+                            subLabel={!(characterUnlocks[char.id]?.accept_indirect_sexual) ? `未获得${char.name}许可` : ""} 
+                        />
                     )}
                     <div className="h-2"></div>
                 </React.Fragment>

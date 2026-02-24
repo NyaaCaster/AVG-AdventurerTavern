@@ -187,6 +187,7 @@ export interface SceneProps {
   inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
   onOpenManagement?: () => void; // 新增：打开管理界面回调
   sceneLevels: Record<string, number>; // 新增：场景等级信息
+  characterUnlocks: Record<string, CharacterUnlocks>; // 新增：角色解锁状态
   // 烹饪系统相关
   onOpenCooking?: () => void;
   userRecipes?: UserRecipe[];

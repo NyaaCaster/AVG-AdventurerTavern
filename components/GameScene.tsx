@@ -15,6 +15,9 @@ import ExpansionModal from './ExpansionModal';
 import CookingModal from './CookingModal'; 
 import TavernMenuModal from './TavernMenuModal';
 import DebugMenu from './DebugMenu';
+import DebugSchedulesModal from './DebugSchedulesModal';
+import DebugResourceModal from './DebugResourceModal';
+import DebugUnlocksModal from './DebugUnlocksModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
@@ -74,6 +77,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
   
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
+  const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
+  const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false);
+  const [isUnlocksDebugOpen, setIsUnlocksDebugOpen] = useState(false);
   
   const [isUIHidden, setIsUIHidden] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -518,6 +524,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         presentCharacters: world.presentCharacters, 
         inventory: core.inventory,
         sceneLevels: core.sceneLevels,
+        characterUnlocks: core.characterUnlocks,
         userRecipes: core.userRecipes,
         foodStock: core.foodStock
     };
@@ -609,31 +616,47 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             showDebug={settings.enableDebug}
           />
 
-          {isDebugMenuOpen && (
-              <DebugMenu
-                isOpen={isDebugMenuOpen}
-                onClose={() => setIsDebugMenuOpen(false)}
-                periodLabel={world.worldState.periodLabel}
-                characterLocations={world.characterLocations}
-                gold={core.gold}
-                inventory={core.inventory}
-                onUpdateGold={core.updateGold}
-                onUpdateInventory={core.updateInventoryItem}
-                characterUnlocks={core.characterUnlocks}
-                characterStats={core.characterStats}
-                onUpdateCharacterAffinity={(charId, newAffinity) => {
-                  core.setCharacterStats(prev => {
-                    const current = prev[charId] || { level: 1, affinity: 0 };
-                    return {
-                      ...prev,
-                      [charId]: { ...current, affinity: newAffinity }
-                    };
-                  });
-                }}
-                onUpdateCharacterUnlock={core.updateCharacterUnlock}
-                onSaveGame={() => handleSaveGame(0)}
-              />
-          )}
+          <DebugMenu
+            isOpen={isDebugMenuOpen}
+            onClose={() => setIsDebugMenuOpen(false)}
+            onOpenSchedules={() => setIsScheduleViewerOpen(true)}
+            onOpenResources={() => setIsResourceDebugOpen(true)}
+            onOpenUnlocks={() => setIsUnlocksDebugOpen(true)}
+          />
+
+          <DebugSchedulesModal
+            isOpen={isScheduleViewerOpen}
+            onClose={() => setIsScheduleViewerOpen(false)}
+            periodLabel={world.worldState.periodLabel}
+            characterLocations={world.characterLocations}
+          />
+
+          <DebugResourceModal
+            isOpen={isResourceDebugOpen}
+            onClose={() => setIsResourceDebugOpen(false)}
+            gold={core.gold}
+            inventory={core.inventory}
+            onUpdateGold={core.updateGold}
+            onUpdateInventory={core.updateInventoryItem}
+          />
+
+          <DebugUnlocksModal
+            isOpen={isUnlocksDebugOpen}
+            onClose={() => setIsUnlocksDebugOpen(false)}
+            characterUnlocks={core.characterUnlocks}
+            characterStats={core.characterStats}
+            onUpdateCharacterAffinity={(charId, newAffinity) => {
+              core.setCharacterStats(prev => {
+                const current = prev[charId] || { level: 1, affinity: 0 };
+                return {
+                  ...prev,
+                  [charId]: { ...current, affinity: newAffinity }
+                };
+              });
+            }}
+            onUpdateCharacterUnlock={core.updateCharacterUnlock}
+            onSaveGame={() => handleSaveGame(0)}
+          />
 
           <div className="pointer-events-auto">
              {renderScene()}

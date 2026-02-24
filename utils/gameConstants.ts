@@ -86,18 +86,21 @@ export const INITIAL_CHARACTER_UNLOCKS: Record<string, Partial<CharacterUnlocks>
     },
     // 米娜 - 酒场服务员
     'char_102': {
-        accept_flirt_topic: 1,          // 暧昧话题
-        accept_become_lover: 1          // 成为恋人
+        accept_flirt_topic: 1,         // 暧昧话题
+        accept_physical_contact: 1,    // 身体接触
+        accept_indirect_sexual: 1      // 间接性行为
     },
     // 欧若拉
     'char_103': {
         accept_battle_party: 1,         // 战斗组队
         accept_flirt_topic: 1,          // 暧昧话题
+        accept_physical_contact: 1,     // 身体接触
         accept_indirect_sexual: 1,      // 间接性行为
         accept_become_lover: 1          // 成为恋人
     },
     // 朱迪斯
     'char_104': {
+        accept_physical_contact: 1,     // 身体接触
         accept_direct_sexual: 1         // 直接性行为
     },
     // 吉娜

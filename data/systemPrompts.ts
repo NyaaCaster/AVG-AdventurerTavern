@@ -149,6 +149,7 @@ const PROMPT_UNLOCK_SYSTEM = `
 - 色情话题讨论 → accept_nsfw_topic
 - 身体接触（拥抱、牵手） → accept_physical_contact
 - 亲密行为（亲吻、爱抚） → accept_indirect_sexual
+- 共浴邀请（如"一起去洗澡吧"等） → accept_indirect_sexual
 - 确立恋爱关系 → accept_become_lover
 - 直接性行为（包括阴道插入） → accept_direct_sexual
 - 确立性伴侣关系 → accept_sexual_partner

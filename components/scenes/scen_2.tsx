@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import { CHARACTERS } from '../../data/scenarioData';
 
-const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, targetCharacterId, onAction, settings, presentCharacters, worldState, sceneLevels }) => {
+const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, targetCharacterId, onAction, settings, presentCharacters, worldState, sceneLevels, characterUnlocks }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -46,11 +46,23 @@ const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                               <>
                                   <SceneActionBtn label="睡眠奸" icon="fa-moon" onClick={() => onEnterDialogue(targetChar.id, 'sleep_sex')} disabled subLabel="(需安眠药)" />
                                   <SceneActionBtn label="媚药奸" icon="fa-flask" onClick={() => onEnterDialogue(targetChar.id, 'drug_sex')} disabled subLabel="(需媚药)" />
-                                  <SceneActionBtn label="调情" icon="fa-heart" onClick={() => onEnterDialogue(targetChar.id, 'flirt')} subLabel="Flirt" />
+                                  <SceneActionBtn 
+                                      label="调情" 
+                                      icon="fa-heart" 
+                                      onClick={() => onEnterDialogue(targetChar.id, 'flirt')} 
+                                      disabled={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic)} 
+                                      subLabel={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic) ? `未获得${targetChar.name}许可` : "Flirt"} 
+                                  />
                                   <SceneActionBtn label="操控" icon="fa-eye" onClick={() => onEnterDialogue(targetChar.id, 'hypnosis')} disabled subLabel="(需催眠药)" />
                               </>
                           ) : (
-                              <SceneActionBtn label="调情" icon="fa-heart" onClick={() => onEnterDialogue(targetChar.id, 'flirt')} subLabel="Flirt" />
+                              <SceneActionBtn 
+                                  label="调情" 
+                                  icon="fa-heart" 
+                                  onClick={() => onEnterDialogue(targetChar.id, 'flirt')} 
+                                  subLabel={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic) ? `未获得${targetChar.name}许可` : "Flirt"} 
+                                  disabled={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic)} 
+                              />
                           )}
                       </>
                   ) : (

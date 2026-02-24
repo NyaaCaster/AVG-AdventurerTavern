@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 
-const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings, presentCharacters, worldState, sceneLevels }) => {
+const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, settings, presentCharacters, worldState, sceneLevels, characterUnlocks }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -25,8 +25,20 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                 <React.Fragment key={char.id}>
                     {settings.enableNSFW && (
                         <>
-                            <SceneActionBtn label={`为${char.name}按摩`} icon="fa-hands" onClick={() => onEnterDialogue(char.id, 'massage_give')} />
-                            <SceneActionBtn label={`请${char.name}按摩`} icon="fa-hand-sparkles" onClick={() => onEnterDialogue(char.id, 'massage_receive')} disabled />
+                            <SceneActionBtn 
+                                label={`为${char.name}按摩`} 
+                                icon="fa-hands" 
+                                onClick={() => onEnterDialogue(char.id, 'massage_give')} 
+                                disabled={!(characterUnlocks[char.id]?.accept_physical_contact)} 
+                                subLabel={!(characterUnlocks[char.id]?.accept_physical_contact) ? `未获得${char.name}许可` : ""} 
+                            />
+                            <SceneActionBtn 
+                                label={`请${char.name}按摩`} 
+                                icon="fa-hand-sparkles" 
+                                onClick={() => onEnterDialogue(char.id, 'massage_receive')} 
+                                disabled={!(characterUnlocks[char.id]?.accept_physical_contact)} 
+                                subLabel={!(characterUnlocks[char.id]?.accept_physical_contact) ? `未获得${char.name}许可` : ""} 
+                            />
                         </>
                     )}
                     <SceneActionBtn 
