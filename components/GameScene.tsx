@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
-import { saveGame, loadGame, deleteGame, syncChatSlot } from '../services/db'; 
+import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks } from '../services/db'; 
 
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
@@ -14,8 +14,7 @@ import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
 import CookingModal from './CookingModal'; 
 import TavernMenuModal from './TavernMenuModal';
-import DebugResourceModal from './DebugResourceModal'; 
-import DebugSchedulesModal from './DebugSchedulesModal';
+import DebugMenu from './DebugMenu';
 import SaveLoadModal from './SaveLoadModal'; 
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
@@ -75,8 +74,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
   
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
-  const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
-  const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false);
   
   const [isUIHidden, setIsUIHidden] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -445,6 +442,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           if (data.settings && onSettingsChange) {
               onSettingsChange(data.settings);
           }
+          
+          // 用存档的解锁状态覆盖数据库
+          if (data.characterUnlocks) {
+              for (const [characterId, unlocks] of Object.entries(data.characterUnlocks)) {
+                  await updateCharacterUnlocks(userId, slotId, characterId, unlocks);
+              }
+          }
+          
           // Reset UI
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
@@ -472,8 +477,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   // --- Rendering Helpers ---
   const handleOpenDebug = () => {
       setIsDebugMenuOpen(!isDebugMenuOpen);
-      setIsScheduleViewerOpen(false); 
-      setIsResourceDebugOpen(false);
   };
 
   const handleFinalCloseDialogue = () => {
@@ -607,22 +610,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           />
 
           {isDebugMenuOpen && (
-              <div className="absolute top-16 right-4 z-[60] flex flex-col gap-2 bg-black/80 backdrop-blur p-2 rounded border border-yellow-500/30 shadow-lg pointer-events-auto animate-fadeIn">
-                  <button onClick={() => { setIsScheduleViewerOpen(true); setIsDebugMenuOpen(false); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-yellow-500 text-sm font-mono border border-slate-600 rounded transition-colors text-left flex items-center gap-2">
-                      <i className="fa-solid fa-calendar-days"></i> Schedules
-                  </button>
-                  <button onClick={() => { setIsResourceDebugOpen(true); setIsDebugMenuOpen(false); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-yellow-500 text-sm font-mono border border-slate-600 rounded transition-colors text-left flex items-center gap-2">
-                      <i className="fa-solid fa-screwdriver-wrench"></i> 资源调整
-                  </button>
-              </div>
+              <DebugMenu
+                isOpen={isDebugMenuOpen}
+                onClose={() => setIsDebugMenuOpen(false)}
+                periodLabel={world.worldState.periodLabel}
+                characterLocations={world.characterLocations}
+                gold={core.gold}
+                inventory={core.inventory}
+                onUpdateGold={core.updateGold}
+                onUpdateInventory={core.updateInventoryItem}
+                characterUnlocks={core.characterUnlocks}
+              />
           )}
-
-          <DebugSchedulesModal 
-              isOpen={isScheduleViewerOpen} 
-              onClose={() => setIsScheduleViewerOpen(false)} 
-              periodLabel={world.worldState.periodLabel} 
-              characterLocations={world.characterLocations} 
-          />
 
           <div className="pointer-events-auto">
              {renderScene()}
@@ -703,8 +702,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           tavernMenu={core.tavernMenu}
           onUpdateMenu={core.handleUpdateTavernMenu}
       />
-
-      <DebugResourceModal isOpen={isResourceDebugOpen} onClose={() => setIsResourceDebugOpen(false)} gold={core.gold} inventory={core.inventory} onUpdateGold={core.updateGold} onUpdateInventory={core.updateInventoryItem} />
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
     </div>
