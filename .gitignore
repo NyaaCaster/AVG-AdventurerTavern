@@ -49,4 +49,9 @@ database-server/SSL/*
 # .continue/config.json  - AI 助手配置（团队共享）
 # .continue/README.md   - 使用说明文档（团队共享）
 
+# GitHub Actions 日志目录
+# 保留目录结构，但排除所有日志文件
+.github/workflows/job-logs/*
+!.github/workflows/job-logs/.gitkeep
+
 

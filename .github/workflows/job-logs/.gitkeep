@@ -1,0 +1,2 @@
+# 此文件用于让 Git 跟踪 job-logs 目录
+# 目录内的日志文件会被 .gitignore 排除
