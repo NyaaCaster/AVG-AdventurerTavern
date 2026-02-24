@@ -100,7 +100,7 @@ export const useDialogueSystem = ({
 
     let nextClothingState: ClothingState = 'default';
     if (
-        (actionType === 'peep' || actionType === 'bath_together') || 
+        (actionType.includes('peep') || actionType.includes('bath')) || 
         (actionType === 'massage_give' || actionType === 'massage_receive') 
     ) {
         nextClothingState = 'nude';
