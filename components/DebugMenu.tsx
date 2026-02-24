@@ -14,6 +14,10 @@ interface DebugMenuProps {
   onUpdateGold: (newGold: number) => void;
   onUpdateInventory: (itemId: string, newCount: number) => void;
   characterUnlocks: Record<string, CharacterUnlocks>;
+  characterStats: Record<string, { level: number; affinity: number }>;
+  onUpdateCharacterAffinity: (charId: string, newAffinity: number) => void;
+  onUpdateCharacterUnlock: (charId: string, unlockKey: keyof CharacterUnlocks, value: 0 | 1) => void;
+  onSaveGame: () => void;
 }
 
 const DebugMenu: React.FC<DebugMenuProps> = ({
@@ -25,7 +29,11 @@ const DebugMenu: React.FC<DebugMenuProps> = ({
   inventory,
   onUpdateGold,
   onUpdateInventory,
-  characterUnlocks
+  characterUnlocks,
+  characterStats,
+  onUpdateCharacterAffinity,
+  onUpdateCharacterUnlock,
+  onSaveGame
 }) => {
   const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
   const [isResourceDebugOpen, setIsResourceDebugOpen] = useState(false);
@@ -81,6 +89,10 @@ const DebugMenu: React.FC<DebugMenuProps> = ({
         isOpen={isUnlocksDebugOpen}
         onClose={() => setIsUnlocksDebugOpen(false)}
         characterUnlocks={characterUnlocks}
+        characterStats={characterStats}
+        onUpdateCharacterAffinity={onUpdateCharacterAffinity}
+        onUpdateCharacterUnlock={onUpdateCharacterUnlock}
+        onSaveGame={onSaveGame}
       />
     </>
   );

@@ -620,6 +620,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                 onUpdateGold={core.updateGold}
                 onUpdateInventory={core.updateInventoryItem}
                 characterUnlocks={core.characterUnlocks}
+                characterStats={core.characterStats}
+                onUpdateCharacterAffinity={(charId, newAffinity) => {
+                  core.setCharacterStats(prev => {
+                    const current = prev[charId] || { level: 1, affinity: 0 };
+                    return {
+                      ...prev,
+                      [charId]: { ...current, affinity: newAffinity }
+                    };
+                  });
+                }}
+                onUpdateCharacterUnlock={core.updateCharacterUnlock}
+                onSaveGame={() => handleSaveGame(0)}
               />
           )}
 
