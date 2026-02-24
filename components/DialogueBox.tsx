@@ -41,12 +41,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [changeValue, setChangeValue] = useState(0);
   const textContentRef = useRef<HTMLDivElement>(null);
   const prevAffinityRef = useRef(affinity);
+  const onCompleteRef = useRef(onComplete);
+
+  // 保持 onComplete 引用最新
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!isTyping || !typingEnabled) {
       setDisplayedText(text);
-      if (isTyping && onComplete) {
-        onComplete();
+      if (isTyping && onCompleteRef.current) {
+        onCompleteRef.current();
       }
       return;
     }
@@ -58,12 +64,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       i++;
       if (i >= text.length) {
         clearInterval(interval);
-        if (onComplete) onComplete();
+        if (onCompleteRef.current) onCompleteRef.current();
       }
     }, 35);
 
     return () => clearInterval(interval);
-  }, [text, isTyping, onComplete, typingEnabled]);
+  }, [text, isTyping, typingEnabled]);
 
   // 文本更新时自动滚动到底部
   useEffect(() => {
