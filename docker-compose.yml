@@ -33,8 +33,6 @@ services:
         tag: "adventurertavern-client"
     networks:
       - app-network
-    security_opt:
-      - no-new-privileges:true
 
   # 数据库服务器（需要本地构建）
   # 请进入 database-server/ 目录使用独立的 docker-compose.yml 部署
