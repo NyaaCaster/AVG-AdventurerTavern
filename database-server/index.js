@@ -242,17 +242,34 @@ app.post('/api/load', (req, res) => {
 // 5. 获取存档列表
 app.post('/api/slots', (req, res) => {
     const { userId } = req.body;
-    db.all("SELECT slot_id, label, updated_at FROM saves WHERE user_id = ?", [userId], (err, rows) => {
+    db.all("SELECT slot_id, label, data, updated_at FROM saves WHERE user_id = ?", [userId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         
-        const slots = rows.map(row => ({
-            slotId: row.slot_id,
-            label: row.label,
-            savedAt: row.updated_at,
-            gold: 0,
-            currentSceneId: '...',
-            worldState: { dateStr: '', timeStr: '', sceneName: 'Server Save' }
-        }));
+        const slots = rows.map(row => {
+            try {
+                const data = JSON.parse(row.data);
+                return {
+                    slotId: row.slot_id,
+                    label: row.label,
+                    savedAt: row.updated_at,
+                    gold: data.gold || 0,
+                    currentSceneId: data.currentSceneId || '',
+                    worldState: data.worldState || { dateStr: '', timeStr: '', sceneName: '' },
+                    characterStats: data.characterStats || {}
+                };
+            } catch (e) {
+                // 如果解析失败，返回默认值
+                return {
+                    slotId: row.slot_id,
+                    label: row.label,
+                    savedAt: row.updated_at,
+                    gold: 0,
+                    currentSceneId: '',
+                    worldState: { dateStr: '', timeStr: '', sceneName: '数据损坏' },
+                    characterStats: {}
+                };
+            }
+        });
         res.json({ success: true, slots });
     });
 });

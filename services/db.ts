@@ -16,7 +16,8 @@ export interface GameSaveData {
   gold: number;
   currentSceneId: string;
   worldState: WorldState;
-  managementStats: ManagementStats;
+  managementStats?: ManagementStats;
+  characterStats?: Record<string, { level: number; affinity: number }>;
 }
 
 // --- API 辅助函数 ---
@@ -106,19 +107,19 @@ export const loadGame = async (userId: number, slotId: number) => {
 /**
  * 获取指定用户的所有存档槽位信息
  */
-export const getSaveSlots = async (userId: number) => {
+export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
     const res = await apiCall('/slots', { userId });
     
     if (res.success && Array.isArray(res.slots)) {
-        // 适配前端 UI 需要的格式
         return res.slots.map((s: any) => ({
+            userId,
             slotId: s.slotId,
             label: s.label,
             savedAt: s.savedAt,
-            // 填充伪数据以满足 UI 类型检查 (实际加载时会获取完整数据)
-            gold: 0, 
-            worldState: { dateStr: 'Cloud', timeStr: 'Save', sceneName: '服务器存档' },
-            currentSceneId: ''
+            gold: s.gold || 0,
+            currentSceneId: s.currentSceneId || '',
+            worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
+            characterStats: s.characterStats || {}
         }));
     }
     return [];

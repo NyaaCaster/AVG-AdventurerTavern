@@ -65,7 +65,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
         </div>
 
         {/* Room Grid */}
-        <div className="p-6 md:p-10 overflow-y-auto custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]">
+        <div className="p-6 md:p-10 overflow-y-auto custom-scrollbar">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 
                 {/* My Room Card */}

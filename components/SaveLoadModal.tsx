@@ -53,6 +53,13 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     return `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
   };
 
+  // 计算已入住角色数量（不包括玩家自己）
+  const getCharacterCount = (data: GameSaveData) => {
+    if (!data.characterStats) return 0;
+    // 排除玩家自己，只统计 NPC 角色
+    return Object.keys(data.characterStats).length;
+  };
+
   const handleSlotClick = (slotId: number) => {
     const existing = getSlotData(slotId);
 
@@ -116,53 +123,57 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-fadeIn font-sans" onClick={onClose}>
       <div 
-        className="w-full max-w-4xl h-[85vh] bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-[0_25px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden flex flex-col relative"
+        className="w-full max-w-3xl bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col relative"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header & Tabs */}
-        <div className="flex items-center justify-between px-6 py-3 bg-slate-950/50 border-b border-slate-700/50 shrink-0">
-          <div className="flex gap-4">
-             {/* 读档 Tab */}
-             <button
-               onClick={() => allowSwitchMode && setActiveTab('load')}
-               className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-2 ${
-                 activeTab === 'load' 
-                 ? 'text-white bg-gradient-to-t from-cyan-900/40 to-transparent border-cyan-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]' 
-                 : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/5'
-               }`}
-             >
-               <i className="fa-solid fa-folder-open mr-2"></i>
-               读档
-             </button>
-
-             {/* 存档 Tab - 仅当允许切换时显示 */}
-             {allowSwitchMode && (
-               <button
-                onClick={() => setActiveTab('save')}
-                className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-2 ${
-                  activeTab === 'save' 
-                  ? 'text-white bg-gradient-to-t from-amber-900/40 to-transparent border-amber-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]' 
-                  : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/5'
-                }`}
-               >
-                 <i className="fa-solid fa-floppy-disk mr-2"></i>
-                 存档
-               </button>
-             )}
+        {/* Header */}
+        <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider flex items-center">
+              <i className={`fa-solid ${activeTab === 'load' ? 'fa-folder-open' : 'fa-floppy-disk'} mr-2 md:mr-3`}></i>
+              {activeTab === 'load' ? '读取存档' : '保存进度'}
+            </h2>
           </div>
-
           <button 
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            title="关闭"
           >
-            <i className="fa-solid fa-xmark text-xl"></i>
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
+        {/* Tab Switcher - Only show if allowed */}
+        {allowSwitchMode && (
+          <div className="px-4 md:px-6 pt-4 flex gap-2">
+            <button
+              onClick={() => setActiveTab('load')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                activeTab === 'load'
+                  ? 'bg-gradient-to-r from-cyan-900/40 to-transparent border-l-4 border-cyan-500 text-white shadow-lg'
+                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+              }`}
+            >
+              <i className={`fa-solid fa-folder-open ${activeTab === 'load' ? 'text-cyan-400' : 'opacity-70'}`}></i>
+              <span className="font-medium tracking-wide">读档</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('save')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                activeTab === 'save'
+                  ? 'bg-gradient-to-r from-amber-900/40 to-transparent border-l-4 border-amber-500 text-white shadow-lg'
+                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+              }`}
+            >
+              <i className={`fa-solid fa-floppy-disk ${activeTab === 'save' ? 'text-amber-400' : 'opacity-70'}`}></i>
+              <span className="font-medium tracking-wide">存档</span>
+            </button>
+          </div>
+        )}
+
         {/* Slots Grid */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-black/40 custom-scrollbar">
-          {/* Changed to grid-cols-2 on MD for 2x2 layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full content-start">
+        <div className="overflow-y-auto p-4 md:p-6 space-y-4">
+          <div className="space-y-3">
             {[0, 1, 2, 3].map(slotId => {
               const data = getSlotData(slotId);
               const isAuto = slotId === 0;
@@ -176,72 +187,67 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   key={slotId}
                   onClick={() => !isDisabled && handleSlotClick(slotId)}
                   className={`
-                    relative w-full h-28 md:h-40 border rounded-lg flex flex-col transition-all duration-200 group overflow-hidden
+                    relative p-4 border rounded-lg transition-all duration-200 group
                     ${isDisabled 
-                      ? 'border-slate-700 bg-slate-900/30 opacity-50 cursor-not-allowed' 
-                      : 'border-slate-700/30 bg-slate-800/40 hover:border-cyan-500/50 hover:bg-slate-800/60 cursor-pointer hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]'
+                      ? 'border-slate-700/30 bg-slate-800/20 opacity-50 cursor-not-allowed' 
+                      : isEmpty
+                        ? 'border-slate-700/30 bg-slate-800/40 hover:border-slate-600 hover:bg-slate-800/50 cursor-pointer'
+                        : 'border-slate-700/30 bg-slate-800/40 hover:border-cyan-500/50 hover:bg-slate-800/60 cursor-pointer hover:shadow-lg'
                     }
                     ${activeTab === 'load' && isEmpty ? 'opacity-50 pointer-events-none' : ''}
                   `}
                 >
-                  {/* Slot Number Label */}
-                  <div className={`
-                    absolute top-0 left-0 px-3 py-1 text-xs font-bold rounded-br-lg z-10
-                    ${isAuto ? 'bg-cyan-900/60 text-cyan-400 border-r border-b border-cyan-500/20' : 'bg-slate-800/80 text-amber-500'}
-                  `}>
-                    {isAuto ? '自动存档' : `存档 ${slotId}`}
-                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    {/* Slot Label */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-1 h-6 rounded-full ${
+                        isAuto ? 'bg-cyan-500' : 'bg-amber-500'
+                      }`}></div>
+                      <span className={`text-sm font-bold tracking-wide ${
+                        isAuto ? 'text-cyan-400' : 'text-amber-500'
+                      }`}>
+                        {isAuto ? '自动存档' : `存档 ${slotId}`}
+                      </span>
+                    </div>
 
-                  {/* Delete Button (Only for manual slots in Save mode) */}
-                  {!isAuto && !isEmpty && activeTab === 'save' && (
-                    <button
-                      onClick={(e) => handleDeleteClick(e, slotId)}
-                      className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-red-900/50 text-red-400 hover:bg-red-600 hover:text-white transition-colors z-20"
-                      title="删除存档"
-                    >
-                      <i className="fa-solid fa-trash-can"></i>
-                    </button>
-                  )}
+                    {/* Delete Button */}
+                    {!isAuto && !isEmpty && activeTab === 'save' && (
+                      <button
+                        onClick={(e) => handleDeleteClick(e, slotId)}
+                        className="w-7 h-7 flex items-center justify-center rounded bg-red-900/50 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+                        title="删除存档"
+                      >
+                        <i className="fa-solid fa-trash-can text-xs"></i>
+                      </button>
+                    )}
+                  </div>
 
                   {/* Content */}
                   {isEmpty ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-600">
-                      <i className="fa-solid fa-plus text-3xl mb-2 opacity-50"></i>
-                      <span className="font-bold tracking-widest text-sm">---- 空记录 ----</span>
+                    <div className="flex items-center justify-center py-6 text-slate-600">
+                      <i className="fa-solid fa-plus text-2xl mr-2 opacity-50"></i>
+                      <span className="font-medium tracking-wide text-sm">空记录</span>
                     </div>
                   ) : (
-                    <div className="flex-1 p-4 flex flex-col justify-center relative">
-                        {/* Removed Screenshot placeholder */}
-                        
-                        <div className="flex justify-between items-start mb-2 mt-4 md:mt-2">
-                           <h3 className="text-base md:text-lg font-bold text-slate-100 tracking-wide truncate pr-8">
-                             {data.label || '无标题'}
-                           </h3>
-                        </div>
-                        
-                        <div className="text-xs md:text-sm text-cyan-400 font-mono mb-2">
-                             {formatTime(data.savedAt)}
-                        </div>
+                    <div className="space-y-2">
+                      <h3 className="text-base font-bold text-slate-100 tracking-wide truncate">
+                        {data.label || '无标题'}
+                      </h3>
+                      
+                      <div className="text-xs text-cyan-400 font-mono">
+                        {formatTime(data.savedAt)}
+                      </div>
 
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-                           <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-coins text-amber-400"></i>
-                             {data.gold.toLocaleString()} G
-                           </span>
-                           <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-calendar-days text-blue-400"></i>
-                             {data.worldState.dateStr} {data.worldState.timeStr}
-                           </span>
-                           <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-location-dot text-red-400"></i>
-                             {data.worldState.sceneName}
-                           </span>
-                        </div>
-                        
-                        {/* Subtle ID indicator */}
-                        <div className="absolute bottom-2 right-2 text-[10px] text-slate-600 font-mono opacity-50">
-                            {data.currentSceneId}
-                        </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <span className="flex items-center gap-1.5">
+                          <i className="fa-solid fa-coins text-amber-400"></i>
+                          {data.gold?.toLocaleString() || 0} G
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <i className="fa-solid fa-users text-purple-400"></i>
+                          {getCharacterCount(data)} 位角色
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
