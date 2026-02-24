@@ -273,4 +273,3 @@ await aiMemory.triggerSummaryIfNeeded(characterId);
 **版本**: 2.0.0  
 **状态**: ✅ 已完成  
 **标签**: `#AI记忆` `#分层架构` `#Token优化` `#滚动摘要`
-```
