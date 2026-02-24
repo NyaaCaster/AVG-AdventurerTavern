@@ -76,7 +76,7 @@ export const useDialogueSystem = ({
     // Get current affinity
     const stats = characterStats[char.id] || { level: 1, affinity: 0 };
     
-    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity);
+    let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     
     // 加载角色记忆并增强 System Prompt

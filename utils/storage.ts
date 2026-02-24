@@ -19,7 +19,8 @@ export const defaultSettings: GameSettings = {
   isMuted: false,
   enableNSFW: false, // 默认关闭 NSFW
   enableDebug: false, // 默认关闭 Debug
-  enableHD: false // 默认关闭 HD 模式
+  enableHD: false, // 默认关闭 HD 模式
+  isBloodRelated: true // 默认为亲生姐姐
 };
 
 export const loadSettings = (): GameSettings => {
@@ -43,6 +44,9 @@ export const loadSettings = (): GameSettings => {
     }
     if (typeof parsed.enableHD !== 'boolean') {
         mergedSettings.enableHD = defaultSettings.enableHD;
+    }
+    if (typeof parsed.isBloodRelated !== 'boolean') {
+        mergedSettings.isBloodRelated = defaultSettings.isBloodRelated;
     }
     
     return mergedSettings;

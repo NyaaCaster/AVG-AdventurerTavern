@@ -426,6 +426,22 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                   onChange={(val) => onUpdateSettings({...settings, innName: val})}
                 />
               </div>
+              
+              {/* 血缘关系设置 */}
+              <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 mt-6">
+                <div>
+                  <h4 className="text-lg font-medium text-slate-200">与莉莉娅的关系</h4>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {settings.isBloodRelated ? '亲生姐姐 - 有血缘关系' : '义姐 - 无血缘关系'}
+                  </p>
+                </div>
+                <ToggleSwitch 
+                  checked={settings.isBloodRelated} 
+                  onChange={(checked) => onUpdateSettings({...settings, isBloodRelated: checked})} 
+                  color="bg-pink-600"
+                />
+              </div>
+              
               <div className="w-full h-px bg-slate-800 my-4" />
               
               {/* 视觉效果 - Click trigger for Debug Mode */}

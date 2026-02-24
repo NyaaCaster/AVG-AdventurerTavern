@@ -38,7 +38,7 @@ export const USER_INFO_TEMPLATE = `
 - 人族男性，25岁。
 - {{user}}过去是战胜魔王的勇者，被称为「疾风の剑圣」，持有圣剑「莫比乌斯」和短时间改变时间流逝方式的权能「境界线」。
 - 因为{{user}}为人低调，世人知道勇者「疾风の剑圣」讨伐了魔王，但除了国王与大臣几乎无人知道勇者都长相和名字。
-- 讨伐魔王后，国王接见{{user}}，并许诺将皇女欧若拉嫁给{{user}}，不愿被皇室身份拘束的{{user}}吓得连夜逃回乡下，协助亲姐姐\`莉莉娅\`经营冒险者旅店，开始了第二段人生。
+- 讨伐魔王后，国王接见{{user}}，并许诺将皇女欧若拉嫁给{{user}}，不愿被皇室身份拘束的{{user}}吓得连夜逃回乡下，协助{{user_relationship}}\`莉莉娅\`经营冒险者旅店，开始了第二段人生。
 - 虽已隐退，但战斗技艺并未衰退，只是为了避免暴露身份藏起来圣剑，也不再轻易使用自己的权能。以本名重新登记为E级冒险者。
 - 基本上是个认真稳重、性格温柔的人。
 - 但同时也是个相当闷骚的人，经常用带有性意味的目光打量前来住宿的女冒险者。
@@ -84,13 +84,46 @@ export const generateSystemPrompt = (
   innName: string, 
   enableNSFW: boolean = false,
   characterUnlocks?: CharacterUnlocks,
-  currentAffinity?: number
+  currentAffinity?: number,
+  isBloodRelated: boolean = true
 ): string => {
   let persona = character.persona;
   let dialogue = character.dialogueExamples;
+  let processedUserInfo = userInfo;
+
+  // 处理 char_101 的血缘关系替换
+  if (character.id === 'char_101') {
+    const relationship = isBloodRelated ? '亲生姐姐' : '义姐';
+    const hairDesc = isBloodRelated ? '和{{user}}一样' : '';
+    const userRelationship = isBloodRelated ? '亲生姐姐' : '义姐';
+    
+    persona = persona
+      .replace('{{relationship}}', relationship)
+      .replace('{{hair_desc}}', hairDesc);
+    
+    processedUserInfo = processedUserInfo
+      .replace('{{user_relationship}}', userRelationship);
+  } else {
+    // 对于其他角色，移除占位符
+    processedUserInfo = processedUserInfo.replace('{{user_relationship}}', '亲生姐姐');
+  }
 
   if (enableNSFW) {
-      if (character.persona_nsfw) persona += `\n${character.persona_nsfw}`;
+      if (character.persona_nsfw) {
+        let nsfwPersona = character.persona_nsfw;
+        
+        // 处理 char_101 的血缘关系 NSFW 内容
+        if (character.id === 'char_101') {
+          const bloodRelatedNsfw = isBloodRelated 
+            ? p101.PERSONA_NSFW_BLOOD_RELATED 
+            : p101.PERSONA_NSFW_NOT_BLOOD_RELATED;
+          nsfwPersona = nsfwPersona.replace('{{blood_related_nsfw}}', bloodRelatedNsfw);
+        } else {
+          nsfwPersona = nsfwPersona.replace('{{blood_related_nsfw}}', '');
+        }
+        
+        persona += `\n${nsfwPersona}`;
+      }
       if (character.dialogueExamples_nsfw) dialogue += `\n${character.dialogueExamples_nsfw}`;
   }
 
@@ -122,6 +155,8 @@ ${rulesWithContext}
 ${persona}
 
 ${dialogue}
+
+${processedUserInfo}
 
 [当前情境]
 你正在"${innName}"旅店中。
