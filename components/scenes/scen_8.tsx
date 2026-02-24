@@ -28,14 +28,14 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                             <SceneActionBtn 
                                 label={`为${char.name}按摩`} 
                                 icon="fa-hands" 
-                                onClick={() => onEnterDialogue(char.id, 'massage_give')} 
+                                onClick={() => onEnterDialogue(char.id, 'massage_give_passionate')} 
                                 disabled={!(characterUnlocks[char.id]?.accept_physical_contact)} 
                                 subLabel={!(characterUnlocks[char.id]?.accept_physical_contact) ? `未获得${char.name}许可` : ""} 
                             />
                             <SceneActionBtn 
                                 label={`请${char.name}按摩`} 
                                 icon="fa-hand-sparkles" 
-                                onClick={() => onEnterDialogue(char.id, 'massage_receive')} 
+                                onClick={() => onEnterDialogue(char.id, 'massage_receive_passionate')} 
                                 disabled={!(characterUnlocks[char.id]?.accept_physical_contact)} 
                                 subLabel={!(characterUnlocks[char.id]?.accept_physical_contact) ? `未获得${char.name}许可` : ""} 
                             />

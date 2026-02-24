@@ -15,6 +15,9 @@ const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
   // Check if the target character is actually in the room (scheduled)
   const isTargetPresent = targetChar ? presentCharacters.some(c => c.id === targetChar.id) : false;
 
+  // Check if character is sleeping
+  const isSleeping = worldState?.period === 'night';
+
   // Prop shop visibility logic
   const showPropShop = settings.enableNSFW || (worldState?.period !== 'night');
 
@@ -37,7 +40,7 @@ const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                               label={`与${targetChar.name}对话`} 
                               icon="fa-comments" 
                               variant="primary"
-                              onClick={() => onEnterDialogue(targetChar.id, 'room_visit')} 
+                              onClick={() => onEnterDialogue(targetChar.id, isSleeping ? 'room_visit_sleeping' : 'room_visit')} 
                           />
                           
                           <div className="h-px w-32 bg-white/10 my-2"></div>
@@ -49,7 +52,7 @@ const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                                   <SceneActionBtn 
                                       label="调情" 
                                       icon="fa-heart" 
-                                      onClick={() => onEnterDialogue(targetChar.id, 'flirt')} 
+                                      onClick={() => onEnterDialogue(targetChar.id, 'flirt_romantic')} 
                                       disabled={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic)} 
                                       subLabel={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic) ? `未获得${targetChar.name}许可` : "Flirt"} 
                                   />
@@ -59,7 +62,7 @@ const Scen2: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                               <SceneActionBtn 
                                   label="调情" 
                                   icon="fa-heart" 
-                                  onClick={() => onEnterDialogue(targetChar.id, 'flirt')} 
+                                  onClick={() => onEnterDialogue(targetChar.id, 'flirt_romantic')} 
                                   subLabel={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic) ? `未获得${targetChar.name}许可` : "Flirt"} 
                                   disabled={!(characterUnlocks[targetChar.id]?.accept_nsfw_topic)} 
                               />

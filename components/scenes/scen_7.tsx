@@ -25,7 +25,7 @@ const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
             {presentCharacters.map(char => (
                 <React.Fragment key={char.id}>
                     {settings.enableNSFW && (
-                        <SceneActionBtn label={`偷窥${char.name}`} icon="fa-eye" onClick={() => onEnterDialogue(char.id, 'peep')} variant="special" />
+                        <SceneActionBtn label={`偷窥${char.name}`} icon="fa-eye" onClick={() => onEnterDialogue(char.id, 'peep_embarrassed')} variant="special" />
                     )}
                     
                     <SceneActionBtn 
@@ -39,7 +39,7 @@ const Scen7: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                         <SceneActionBtn 
                             label={`与${char.name}共浴`} 
                             icon="fa-heart" 
-                            onClick={() => onEnterDialogue(char.id, 'bath_together')} 
+                            onClick={() => onEnterDialogue(char.id, 'bath_together_passionate')} 
                             disabled={!(characterUnlocks[char.id]?.accept_indirect_sexual)} 
                             subLabel={!(characterUnlocks[char.id]?.accept_indirect_sexual) ? `未获得${char.name}许可` : ""} 
                         />
