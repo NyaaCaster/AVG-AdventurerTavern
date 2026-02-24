@@ -114,24 +114,21 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn font-sans" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-fadeIn font-sans" onClick={onClose}>
       <div 
-        className="w-full max-w-4xl h-[85vh] bg-[#2c241b] border-2 border-[#9b7a4c] rounded-lg shadow-2xl overflow-hidden flex flex-col relative"
+        className="w-full max-w-4xl h-[85vh] bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-[0_25px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden flex flex-col relative"
         onClick={e => e.stopPropagation()}
-        style={{
-            backgroundImage: 'linear-gradient(to bottom, #2c241b, #1a1512)'
-        }}
       >
         {/* Header & Tabs */}
-        <div className="flex items-center justify-between px-6 py-3 bg-[#382b26] border-b border-[#9b7a4c]/50 shrink-0">
+        <div className="flex items-center justify-between px-6 py-3 bg-slate-950/50 border-b border-slate-700/50 shrink-0">
           <div className="flex gap-4">
              {/* 读档 Tab */}
              <button
                onClick={() => allowSwitchMode && setActiveTab('load')}
-               className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-4 ${
+               className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-2 ${
                  activeTab === 'load' 
-                 ? 'text-[#f0e6d2] border-[#9b7a4c] bg-[#4a3b32]' 
-                 : 'text-[#8c7b70] border-transparent hover:text-[#d6cbb8]'
+                 ? 'text-white bg-gradient-to-t from-cyan-900/40 to-transparent border-cyan-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]' 
+                 : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/5'
                }`}
              >
                <i className="fa-solid fa-folder-open mr-2"></i>
@@ -142,10 +139,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
              {allowSwitchMode && (
                <button
                 onClick={() => setActiveTab('save')}
-                className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-4 ${
+                className={`px-6 py-2 rounded-t-lg font-bold text-lg tracking-wider transition-all border-b-2 ${
                   activeTab === 'save' 
-                  ? 'text-[#f0e6d2] border-[#9b7a4c] bg-[#4a3b32]' 
-                  : 'text-[#8c7b70] border-transparent hover:text-[#d6cbb8]'
+                  ? 'text-white bg-gradient-to-t from-amber-900/40 to-transparent border-amber-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]' 
+                  : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/5'
                 }`}
                >
                  <i className="fa-solid fa-floppy-disk mr-2"></i>
@@ -156,14 +153,14 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 
           <button 
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-[#9b7a4c] hover:text-[#f0e6d2] transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
           >
             <i className="fa-solid fa-xmark text-xl"></i>
           </button>
         </div>
 
         {/* Slots Grid */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#1a1512]/50 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-black/40 custom-scrollbar">
           {/* Changed to grid-cols-2 on MD for 2x2 layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full content-start">
             {[0, 1, 2, 3].map(slotId => {
@@ -179,10 +176,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   key={slotId}
                   onClick={() => !isDisabled && handleSlotClick(slotId)}
                   className={`
-                    relative w-full h-28 md:h-40 border-2 rounded-lg flex flex-col transition-all duration-200 group overflow-hidden
+                    relative w-full h-28 md:h-40 border rounded-lg flex flex-col transition-all duration-200 group overflow-hidden
                     ${isDisabled 
-                      ? 'border-[#3d3226] bg-[#1a1512] opacity-50 cursor-not-allowed' 
-                      : 'border-[#5c4d45] bg-[#2a2320] hover:border-[#9b7a4c] hover:bg-[#382b26] cursor-pointer hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                      ? 'border-slate-700 bg-slate-900/30 opacity-50 cursor-not-allowed' 
+                      : 'border-slate-700/30 bg-slate-800/40 hover:border-cyan-500/50 hover:bg-slate-800/60 cursor-pointer hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]'
                     }
                     ${activeTab === 'load' && isEmpty ? 'opacity-50 pointer-events-none' : ''}
                   `}
@@ -190,7 +187,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   {/* Slot Number Label */}
                   <div className={`
                     absolute top-0 left-0 px-3 py-1 text-xs font-bold rounded-br-lg z-10
-                    ${isAuto ? 'bg-indigo-900/80 text-indigo-200' : 'bg-[#4a3b32] text-[#9b7a4c]'}
+                    ${isAuto ? 'bg-cyan-900/60 text-cyan-400 border-r border-b border-cyan-500/20' : 'bg-slate-800/80 text-amber-500'}
                   `}>
                     {isAuto ? '自动存档' : `存档 ${slotId}`}
                   </div>
@@ -208,7 +205,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 
                   {/* Content */}
                   {isEmpty ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[#5c4d45]">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-600">
                       <i className="fa-solid fa-plus text-3xl mb-2 opacity-50"></i>
                       <span className="font-bold tracking-widest text-sm">---- 空记录 ----</span>
                     </div>
@@ -217,32 +214,32 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                         {/* Removed Screenshot placeholder */}
                         
                         <div className="flex justify-between items-start mb-2 mt-4 md:mt-2">
-                           <h3 className="text-base md:text-lg font-bold text-[#f0e6d2] tracking-wide truncate pr-8">
+                           <h3 className="text-base md:text-lg font-bold text-slate-100 tracking-wide truncate pr-8">
                              {data.label || '无标题'}
                            </h3>
                         </div>
                         
-                        <div className="text-xs md:text-sm text-[#9b7a4c] font-mono mb-2">
+                        <div className="text-xs md:text-sm text-cyan-400 font-mono mb-2">
                              {formatTime(data.savedAt)}
                         </div>
 
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8c7b70]">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
                            <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-coins text-amber-600"></i>
+                             <i className="fa-solid fa-coins text-amber-400"></i>
                              {data.gold.toLocaleString()} G
                            </span>
                            <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-calendar-days text-blue-600"></i>
+                             <i className="fa-solid fa-calendar-days text-blue-400"></i>
                              {data.worldState.dateStr} {data.worldState.timeStr}
                            </span>
                            <span className="flex items-center gap-1">
-                             <i className="fa-solid fa-location-dot text-red-600"></i>
+                             <i className="fa-solid fa-location-dot text-red-400"></i>
                              {data.worldState.sceneName}
                            </span>
                         </div>
                         
                         {/* Subtle ID indicator */}
-                        <div className="absolute bottom-2 right-2 text-[10px] text-[#5c4d45] font-mono opacity-50">
+                        <div className="absolute bottom-2 right-2 text-[10px] text-slate-600 font-mono opacity-50">
                             {data.currentSceneId}
                         </div>
                     </div>
@@ -255,21 +252,21 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 
         {/* Confirmation Modal Overlay */}
         {confirmDialog && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn p-4">
-            <div className="bg-[#2a2320] border border-[#9b7a4c] p-6 rounded-lg shadow-2xl max-w-sm w-full text-center">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn p-4">
+            <div className="bg-slate-900/90 border border-slate-700/50 backdrop-blur-xl p-6 rounded-lg shadow-[0_25px_50px_rgba(0,0,0,0.5)] max-w-sm w-full text-center">
               <i className={`text-4xl mb-4 fa-solid ${
                 confirmDialog.type === 'delete' ? 'fa-triangle-exclamation text-red-500' : 
                 confirmDialog.type === 'overwrite' ? 'fa-floppy-disk text-amber-500' : 'fa-folder-open text-blue-500'
               }`}></i>
               
-              <p className="text-[#f0e6d2] text-sm md:text-base mb-6 whitespace-pre-wrap leading-relaxed font-bold">
+              <p className="text-slate-100 text-sm md:text-base mb-6 whitespace-pre-wrap leading-relaxed font-bold">
                 {confirmDialog.message}
               </p>
 
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="px-5 py-2 rounded border border-[#5c4d45] text-[#8c7b70] hover:text-[#f0e6d2] hover:bg-[#382b26] transition-colors font-bold text-sm"
+                  className="px-5 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-bold text-sm"
                 >
                   取消
                 </button>
@@ -279,8 +276,8 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                     else if (confirmDialog.type === 'load') doLoad(confirmDialog.slotId);
                     else if (confirmDialog.type === 'delete') doDelete(confirmDialog.slotId);
                   }}
-                  className={`px-6 py-2 rounded font-bold text-white shadow-lg transition-colors text-sm ${
-                    confirmDialog.type === 'delete' ? 'bg-red-700 hover:bg-red-600' : 'bg-[#b45309] hover:bg-[#d97706]'
+                  className={`px-6 py-2 rounded-lg font-bold text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-colors text-sm ${
+                    confirmDialog.type === 'delete' ? 'bg-red-700 hover:bg-red-600' : 'bg-amber-700 hover:bg-amber-600'
                   }`}
                 >
                   确定
