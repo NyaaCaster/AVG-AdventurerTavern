@@ -337,7 +337,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     const findCharacterForScene = () => {
         if (world.currentSceneId === 'scen_2' && world.sceneParams?.target && world.sceneParams.target !== 'user') {
             const target = CHARACTERS[world.sceneParams.target];
-            if (world.characterLocations[target.id] === 'scen_2') {
+            // [角色移动系统] 检查角色是否真的在这个场景
+            const actualLocation = world.forcedLocations[target.id] || world.characterLocations[target.id];
+            if (actualLocation === 'scen_2') {
                 return target;
             }
             return null;
@@ -346,10 +348,22 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         if (world.presentCharacters.length > 0) {
             if (world.currentSceneId === 'scen_3') {
                 const mina = world.presentCharacters.find(c => c.id === 'char_102');
-                if (mina) return mina;
+                if (mina) {
+                    // [角色移动系统] 确认 Mina 真的在酒场
+                    const actualLocation = world.forcedLocations[mina.id] || world.characterLocations[mina.id];
+                    if (actualLocation === 'scen_3') return mina;
+                }
             }
-            const randomIndex = Math.floor(Math.random() * world.presentCharacters.length);
-            return world.presentCharacters[randomIndex];
+            // [角色移动系统] 过滤掉已经移动走的角色
+            const actuallyPresentChars = world.presentCharacters.filter(c => {
+                const actualLocation = world.forcedLocations[c.id] || world.characterLocations[c.id];
+                return actualLocation === world.currentSceneId;
+            });
+            
+            if (actuallyPresentChars.length === 0) return null;
+            
+            const randomIndex = Math.floor(Math.random() * actuallyPresentChars.length);
+            return actuallyPresentChars[randomIndex];
         }
         return null;
     };
@@ -456,9 +470,21 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   const handleFinalCloseDialogue = () => {
       dialogue.handleFinalClose();
-      // Handle delayed movement clearing if needed, but hook handles movement set.
-      // We might want to clear forced movement after a scene change or explicitly here if needed.
-      // For now, worldSystem keeps it until nav.
+      
+      // [角色移动系统] 对话结束后，检查角色是否已移动
+      // 如果角色已经移动到其他场景，清除当前场景的 Ambient 显示
+      if (dialogue.activeCharacter) {
+          const charId = dialogue.activeCharacter.id;
+          const actualLocation = world.forcedLocations[charId] || world.characterLocations[charId];
+          
+          if (actualLocation !== world.currentSceneId) {
+              // 角色已经不在当前场景，清除 Ambient
+              dialogue.setAmbientCharacter(null);
+              dialogue.setAmbientText('');
+              dialogue.setShowAmbientDialogue(false);
+              console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation as any] || actualLocation}，清除当前场景的 Ambient 显示`);
+          }
+      }
       
       // 对话结束时触发自动存档（保存角色好感度等数据）
       handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));

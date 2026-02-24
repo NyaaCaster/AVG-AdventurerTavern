@@ -103,7 +103,8 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
     setTimeout(() => {
         setCurrentSceneId(sceneId);
         setSceneParams(params || {});
-        setForcedLocations({}); // Reset movements on navigation? Or keep them? Usually resetting logic is in GameScene based on context.
+        // [角色移动系统] 保持强制定位，不在场景切换时清除
+        // setForcedLocations({}) 已移除，让角色移动持续生效
         
         // Immediate State Update during blind spot
         const newSceneName = getSceneDisplayName(sceneId, params);
@@ -116,7 +117,7 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
         setWorldState(newState);
         
         const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
-        setCharacterLocations({ ...locs, ...forcedLocations }); // Keep forced locations? GameScene logic cleared it.
+        setCharacterLocations({ ...locs, ...forcedLocations });
 
         setTimeout(() => {
             setTransitionOpacity(0); 

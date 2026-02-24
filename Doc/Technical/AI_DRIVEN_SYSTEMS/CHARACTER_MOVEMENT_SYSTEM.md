@@ -363,47 +363,105 @@ useEffect(() => {
 
 **说明**: 当游戏时间进入下一个时段（如从早晨到中午），所有角色恢复日程表定位。
 
-#### 方式 2: 对话结束时可选清除
-
-```typescript
-// hooks/useDialogueSystem.ts
-
-const handleFinalClose = () => {
-    // ... 其他清理逻辑
-    
-    // 可选：清除该角色的强制定位
-    if (shouldClearLocation) {
-        world.setForcedLocations(prev => {
-            const newLocations = { ...prev };
-            delete newLocations[activeCharacter.id];
-            return newLocations;
-        });
-    }
-};
-```
-
-**说明**: 对话结束后，可以选择性地清除角色的强制定位，让其恢复日程表行为。
-
-#### 方式 3: 玩家离开场景时清除
+#### 方式 2: 对话结束时自动检查和清理
 
 ```typescript
 // components/GameScene.tsx
 
-const handleLeaveScene = () => {
-    // 清除当前场景中所有角色的强制定位
-    const charactersInScene = getCharactersInScene(currentScene);
+const handleFinalCloseDialogue = () => {
+    dialogue.handleFinalClose();
     
-    world.setForcedLocations(prev => {
-        const newLocations = { ...prev };
-        charactersInScene.forEach(charId => {
-            delete newLocations[charId];
-        });
-        return newLocations;
-    });
+    // [角色移动系统] 对话结束后，检查角色是否已移动
+    // 如果角色已经移动到其他场景，清除当前场景的 Ambient 显示
+    if (dialogue.activeCharacter) {
+        const charId = dialogue.activeCharacter.id;
+        const actualLocation = world.forcedLocations[charId] || world.characterLocations[charId];
+        
+        if (actualLocation !== world.currentSceneId) {
+            // 角色已经不在当前场景，清除 Ambient
+            dialogue.setAmbientCharacter(null);
+            dialogue.setAmbientText('');
+            dialogue.setShowAmbientDialogue(false);
+            console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation]}，清除当前场景的 Ambient 显示`);
+        }
+    }
+    
+    // 对话结束时触发自动存档
+    handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
 };
 ```
 
-### 2. 持久化策略
+**说明**: 对话结束后，系统会自动检查角色是否已移动到其他场景。如果角色不在当前场景，会立即清除 Ambient 显示，避免显示已经离开的角色。
+
+**重要**: 强制定位本身**不会**在对话结束时清除，这确保了玩家可以在目标场景找到角色。只有 Ambient 显示会被清理。
+
+### 2. 场景切换时的定位保持
+
+**关键设计**: 强制定位在玩家切换场景时**不会被清除**，这确保了角色移动的持续性。
+
+```typescript
+// hooks/useWorldSystem.ts
+
+const handleNavigate = (sceneId: SceneId, params?: any) => {
+    // ... 场景切换逻辑
+    
+    // [角色移动系统] 保持强制定位，不在场景切换时清除
+    // setForcedLocations({}) 已移除，让角色移动持续生效
+    
+    // 更新角色位置时会合并强制定位
+    const locs = calculateCharacterLocations(newState.period, newState.dateStr, newState.timeStr, sceneLevels);
+    setCharacterLocations({ ...locs, ...forcedLocations });
+};
+```
+
+**行为说明**:
+- ✅ 角色在对话中移动到温泉
+- ✅ 玩家切换到其他场景再回来
+- ✅ 角色仍然在温泉（强制定位保持）
+- ✅ 直到时间段变化，角色才恢复日程表定位
+
+### 3. Ambient 角色显示的智能过滤
+
+**问题**: 即使角色已经移动走了，原场景可能仍然显示该角色的 Ambient 状态。
+
+**解决方案**: 在查找场景中的角色时，检查实际位置（包括强制定位）。
+
+```typescript
+// components/GameScene.tsx
+
+const findCharacterForScene = () => {
+    if (world.currentSceneId === 'scen_2' && world.sceneParams?.target && world.sceneParams.target !== 'user') {
+        const target = CHARACTERS[world.sceneParams.target];
+        // [角色移动系统] 检查角色是否真的在这个场景
+        const actualLocation = world.forcedLocations[target.id] || world.characterLocations[target.id];
+        if (actualLocation === 'scen_2') {
+            return target;
+        }
+        return null;
+    }
+
+    if (world.presentCharacters.length > 0) {
+        // [角色移动系统] 过滤掉已经移动走的角色
+        const actuallyPresentChars = world.presentCharacters.filter(c => {
+            const actualLocation = world.forcedLocations[c.id] || world.characterLocations[c.id];
+            return actualLocation === world.currentSceneId;
+        });
+        
+        if (actuallyPresentChars.length === 0) return null;
+        
+        const randomIndex = Math.floor(Math.random() * actuallyPresentChars.length);
+        return actuallyPresentChars[randomIndex];
+    }
+    return null;
+};
+```
+
+**关键点**:
+- 优先检查 `forcedLocations`（AI 驱动的移动）
+- 回退到 `characterLocations`（日程表定位）
+- 只显示真正在当前场景的角色
+
+### 4. 持久化策略
 
 **临时移动** (不持久化):
 - 对话期间的移动
@@ -537,10 +595,12 @@ const handleCharacterMove = (charId: string, targetId: string) => {
 - [ ] 移动通知正常显示和消失
 - [ ] 强制定位正确覆盖日程表
 - [ ] 时间推进时强制定位被清除
-- [ ] 对话结束时可选清除生效
+- [ ] 对话结束后已移动角色不显示 Ambient
+- [ ] 场景切换后强制定位保持有效
+- [ ] 玩家可以在目标场景找到已移动的角色
 - [ ] 多个角色同时移动不冲突
 - [ ] 角色拒绝移动时不执行
-- [ ] 移动后玩家能在目标场景找到角色
+- [ ] Ambient 只显示真正在场景中的角色
 
 ### 测试脚本
 
@@ -642,6 +702,153 @@ const recordMovement = (charId: string, from: string, to: string) => {
 
 ---
 
+## ❓ 常见问题与解决方案
+
+### 问题 1: 角色移动后玩家找不到角色
+
+**症状**: 
+- AI 响应了 `move_to` 指令
+- 显示了移动通知
+- 但玩家前往目标场景时找不到角色
+
+**原因**: 
+在早期实现中，`useWorldSystem.ts` 的 `handleNavigate` 函数会在场景切换时清空 `forcedLocations`：
+```typescript
+setForcedLocations({}); // 这会清除所有强制定位
+```
+
+**解决方案**: 
+移除场景切换时的强制定位清空逻辑，让强制定位持续生效直到时间段变化：
+```typescript
+// [角色移动系统] 保持强制定位，不在场景切换时清除
+// setForcedLocations({}) 已移除
+```
+
+**验证**: 
+1. 在柜台与角色对话，AI 响应移动到温泉
+2. 玩家切换到其他场景
+3. 玩家前往温泉
+4. ✅ 角色应该在温泉出现
+
+---
+
+### 问题 2: 对话结束后角色还在原场景显示 Ambient
+
+**症状**: 
+- 角色在对话中移动到其他场景
+- 对话结束后，原场景仍然显示该角色的 Ambient 对话
+- 角色看起来同时在两个场景
+
+**原因**: 
+Ambient Logic 只检查了 `isDialogueMode`，没有验证角色是否真的在当前场景。即使角色已经通过 `forcedLocations` 移动走了，系统仍然会基于 `presentCharacters` 显示 Ambient。
+
+**解决方案**: 
+
+**方案 A**: 在 `findCharacterForScene` 中过滤已移动的角色
+```typescript
+const findCharacterForScene = () => {
+    // ... 其他逻辑
+    
+    // [角色移动系统] 过滤掉已经移动走的角色
+    const actuallyPresentChars = world.presentCharacters.filter(c => {
+        const actualLocation = world.forcedLocations[c.id] || world.characterLocations[c.id];
+        return actualLocation === world.currentSceneId;
+    });
+    
+    if (actuallyPresentChars.length === 0) return null;
+    // ...
+};
+```
+
+**方案 B**: 在 `handleFinalCloseDialogue` 中清除 Ambient
+```typescript
+const handleFinalCloseDialogue = () => {
+    dialogue.handleFinalClose();
+    
+    // 检查角色是否已移动
+    if (dialogue.activeCharacter) {
+        const charId = dialogue.activeCharacter.id;
+        const actualLocation = world.forcedLocations[charId] || world.characterLocations[charId];
+        
+        if (actualLocation !== world.currentSceneId) {
+            // 清除 Ambient 显示
+            dialogue.setAmbientCharacter(null);
+            dialogue.setAmbientText('');
+            dialogue.setShowAmbientDialogue(false);
+        }
+    }
+};
+```
+
+**最佳实践**: 同时使用两种方案，提供双重保护。
+
+**验证**: 
+1. 在柜台与角色对话，AI 响应移动到温泉
+2. 对话结束
+3. ✅ 柜台不应该显示该角色的 Ambient
+4. 前往温泉
+5. ✅ 温泉应该显示该角色的 Ambient
+
+---
+
+### 问题 3: 多个角色在同一场景时移动冲突
+
+**症状**: 
+- 场景中有多个角色
+- 其中一个移动走了
+- Ambient 仍然可能选中已移动的角色
+
+**解决方案**: 
+在 Ambient Logic 的 `useEffect` 中，每次重新计算时都要过滤实际位置：
+```typescript
+useEffect(() => {
+    // ... 场景切换和对话模式检查
+    
+    const char = findCharacterForScene(); // 内部已过滤
+    
+    if (char) {
+        // 再次验证角色确实在场景中
+        const actualLocation = world.forcedLocations[char.id] || world.characterLocations[char.id];
+        if (actualLocation === world.currentSceneId) {
+            dialogue.setAmbientCharacter(char);
+            // ...
+        }
+    }
+}, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
+```
+
+---
+
+### 调试技巧
+
+**1. 检查角色实际位置**:
+```typescript
+console.log('Forced:', world.forcedLocations);
+console.log('Schedule:', world.characterLocations);
+console.log('Actual:', world.forcedLocations[charId] || world.characterLocations[charId]);
+```
+
+**2. 监控移动事件**:
+```typescript
+const handleCharacterMove = (charId: string, targetId: string) => {
+    console.log(`[Character Move] ${charName} → ${targetName} (${targetId})`);
+    // ...
+};
+```
+
+**3. 验证 Ambient 选择**:
+```typescript
+const findCharacterForScene = () => {
+    const char = /* ... */;
+    if (char) {
+        console.log(`[Ambient] Selected ${char.name} for ${world.currentSceneId}`);
+    }
+    return char;
+};
+```
+
+---
+
 ## 📚 相关文档
 
 - [AI 驱动系统技术标准](./AI_DRIVEN_SYSTEMS.md) - 总体技术标准
@@ -661,9 +868,33 @@ const recordMovement = (charId: string, from: string, to: string) => {
 
 ---
 
-**最后更新**: 2026-02-22  
-**文档版本**: 1.0.0  
-**设计者**: Nyaa  
-**开发者**: Gemini  
-**维护者**: Claude  
+---
+
+## 📝 变更日志
+
+### v1.1.0 (2025-01-24)
+- 🐛 修复：角色移动后玩家找不到角色的问题
+  - 移除场景切换时清空 `forcedLocations` 的逻辑
+  - 强制定位现在持续到时间段变化
+- 🐛 修复：对话结束后角色仍显示 Ambient 的问题
+  - 在 `findCharacterForScene` 中添加实际位置验证
+  - 在 `handleFinalCloseDialogue` 中添加 Ambient 清理逻辑
+- 📖 添加：常见问题与解决方案章节
+- 📖 更新：移动生命周期说明
+- 📖 更新：测试清单
+
+### v1.0.0 (2026-02-22)
+- 🎉 初始版本
+- ✨ 实现基本的角色移动功能
+- ✨ 实现强制定位系统
+- ✨ 实现移动通知
+- 📖 完整的技术文档
+
+---
+
+**最后更新**: 2025-01-24
+**文档版本**: 1.1.0
+**设计者**: Nyaa
+**开发者**: Gemini
+**维护者**: Claude
 **标签**: `#角色移动` `#AI驱动` `#位置管理` `#世界系统`
