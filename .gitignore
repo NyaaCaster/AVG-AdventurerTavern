@@ -39,7 +39,14 @@ SSL/*
 database-server/SSL/*
 !database-server/SSL/.gitkeep
 
-# Continue IDE prompts (本地配置，不提交到仓库)
-.continue/prompts/
+# Continue IDE 配置
+# 提交团队共享的配置文件，排除个人数据
+.continue/prompts/          # 排除对话历史
+.continue/.continuerc.json  # 排除个人设置
+.continue/config.json.local # 排除本地配置覆盖
+
+# 保留这些文件在版本管理中：
+# .continue/config.json  - AI 助手配置（团队共享）
+# .continue/README.md   - 使用说明文档（团队共享）
 
 
