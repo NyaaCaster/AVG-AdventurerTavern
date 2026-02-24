@@ -13,7 +13,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={onClose}>
+    <div className="fixed inset-0 z-[120] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={onClose}>
         <div className="bg-[#0c0c0c] border border-slate-400/50 rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col shadow-[0_25px_50px_rgba(0,0,0,0.5)] font-mono" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#1a1a1a] rounded-t-lg">
                 <h3 className="text-base md:text-lg font-bold text-emerald-400 flex items-center gap-2"><i className="fa-solid fa-unlock"></i> 角色解锁状态 (Debug)</h3>
