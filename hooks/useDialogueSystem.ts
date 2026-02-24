@@ -236,6 +236,12 @@ export const useDialogueSystem = ({
 
       if (response.move_to) {
           onCharacterMove(activeCharacter.id, response.move_to);
+          // [角色移动系统] 当角色决定移动场景时，主动结束对话
+          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+          // 延迟触发，让当前消息显示完毕
+          setTimeout(() => {
+              handleEndDialogueGenerationWithMove(response.move_to);
+          }, 1000);
       }
 
       // Handle unlock request
@@ -331,7 +337,15 @@ export const useDialogueSystem = ({
                 }
             }
 
-            if (response.move_to) onCharacterMove(activeCharacter.id, response.move_to);
+            if (response.move_to) {
+                onCharacterMove(activeCharacter.id, response.move_to);
+                // [角色移动系统] 当角色决定移动场景时，主动结束对话
+                console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+                // 延迟触发，让当前消息显示完毕
+                setTimeout(() => {
+                    handleEndDialogueGenerationWithMove(response.move_to);
+                }, 1000);
+            }
 
             // Handle unlock request
             if (response.unlock_request && activeCharacter) {
@@ -449,6 +463,57 @@ export const useDialogueSystem = ({
     }
   };
 
+  const handleEndDialogueGenerationWithMove = async (targetSceneId: string) => {
+    if (isLoading || isDialogueEnding || !activeCharacter) return;
+    
+    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
+    const targetSceneName = SCENE_NAMES[targetSceneId as any] || '未知场景';
+    setIsLoading(true);
+
+    try {
+        // [角色移动系统] 角色决定移动场景，生成包含目标场景的告别语
+        const contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+你决定主动结束当前对话并前往 ${targetSceneName}。
+当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})。
+请根据刚才的对话内容和你当前的情绪状态，生成一句简短但明确表达你要前往 ${targetSceneName} 的告别语。
+你的台词应该自然流畅，体现出你即将离开的意图，并且明确提到你要去的地方。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+        
+        let displayText = '';
+        let tokensUsed = 0;
+
+        if (settings.apiConfig.apiKey) {
+            const response = await llmService.sendMessage(contextPrompt);
+            displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            tokensUsed = response.usage?.completion_tokens || 0;
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
+            }
+        } else {
+             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
+        }
+
+        setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+        setHistory(prev => [...prev, { 
+            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: tokensUsed
+        }]);
+        
+        setIsTyping(true);
+        setIsDialogueEnding(true); 
+    } catch(e) {
+        console.error(e);
+        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 我去${targetSceneName}了，回见。` });
+        setIsTyping(true);
+        setIsDialogueEnding(true);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   const handleFinalClose = () => {
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
@@ -539,6 +604,7 @@ export const useDialogueSystem = ({
       handleSend,
       handleRegenerate,
       handleEndDialogueGeneration,
+      handleEndDialogueGenerationWithMove, // [角色移动系统] 导出移动时的对话结束函数
       handleFinalClose,
       generateAmbientLine
   };

@@ -10,6 +10,7 @@
 - **自动定位**: 系统自动更新角色在世界中的位置
 - **视觉反馈**: 通过通知告知玩家角色的移动
 - **强制定位**: 支持临时覆盖角色的日程表定位
+- **对话终止**: 角色决定移动时自动结束当前对话并生成包含目标场景的告别语
 
 ---
 
@@ -177,9 +178,66 @@ const handleSendMessage = async (message: string) => {
     // 检查是否有移动指令
     if (response.move_to) {
         onCharacterMove(activeCharacter.id, response.move_to);
+        // [角色移动系统] 当角色决定移动场景时，主动结束对话
+        console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+        // 延迟触发，让当前消息显示完毕
+        setTimeout(() => {
+            handleEndDialogueGenerationWithMove(response.move_to);
+        }, 1000);
     }
     
     // ... 处理其他响应字段
+};
+
+const handleEndDialogueGenerationWithMove = async (targetSceneId: string) => {
+    if (isLoading || isDialogueEnding || !activeCharacter) return;
+    
+    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
+    const targetSceneName = SCENE_NAMES[targetSceneId as any] || '未知场景';
+    setIsLoading(true);
+
+    try {
+        // [角色移动系统] 角色决定移动场景，生成包含目标场景的告别语
+        const contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+你决定主动结束当前对话并前往 ${targetSceneName}。
+当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})。
+请根据刚才的对话内容和你当前的情绪状态，生成一句简短但明确表达你要前往 ${targetSceneName} 的告别语。
+你的台词应该自然流畅，体现出你即将离开的意图，并且明确提到你要去的地方。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+        
+        let displayText = '';
+        let tokensUsed = 0;
+
+        if (settings.apiConfig.apiKey) {
+            const response = await llmService.sendMessage(contextPrompt);
+            displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            tokensUsed = response.usage?.completion_tokens || 0;
+            if (response.emotion) {
+                const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
+                setCurrentSprite(emotionSprite);
+            }
+        } else {
+             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
+        }
+
+        setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+        setHistory(prev => [...prev, { 
+            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: tokensUsed
+        }]);
+        
+        setIsTyping(true);
+        setIsDialogueEnding(true); 
+    } catch(e) {
+        console.error(e);
+        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 我去${targetSceneName}了，回见。` });
+        setIsTyping(true);
+        setIsDialogueEnding(true);
+    } finally {
+        setIsLoading(false);
+    }
 };
 ```
 
@@ -286,8 +344,10 @@ const handleCharacterMove = (charId: string, targetId: string) => {
 1. ✅ 验证场景 ID: `scen_7` 有效
 2. ✅ 显示通知: "莉莉娅 将前往 温泉"
 3. ✅ 设置强制定位: `forcedLocations['char_101'] = 'scen_7'`
-4. ✅ 玩家可以在温泉场景找到该角色
-5. ✅ 好感度 +2
+4. ✅ 生成告别语: "我去温泉泡个澡放松一下，再见啦！"
+5. ✅ 自动结束当前对话
+6. ✅ 玩家可以在温泉场景找到该角色
+7. ✅ 好感度 +2
 
 ### 场景 2: 建议回房休息
 
@@ -305,8 +365,11 @@ const handleCharacterMove = (charId: string, targetId: string) => {
 **系统执行**:
 1. ✅ 验证场景 ID: `scen_2` 有效
 2. ✅ 显示通知: "莉莉娅 将前往 客房"
-3. ✅ 角色返回自己的房间
-4. ✅ 4秒后通知消失
+3. ✅ 设置强制定位: `forcedLocations['char_101'] = 'scen_2'`
+4. ✅ 生成告别语: "你说得对，我确实有点累了，先回房间休息了。"
+5. ✅ 自动结束当前对话
+6. ✅ 角色返回自己的房间
+7. ✅ 4秒后通知消失
 
 ### 场景 3: 角色拒绝移动
 
@@ -872,6 +935,15 @@ const findCharacterForScene = () => {
 
 ## 📝 变更日志
 
+### v1.2.0 (2026-02-25)
+- ✨ 新增：角色移动时自动结束对话功能
+  - 当角色决定移动场景时，系统自动结束当前对话
+  - 生成包含目标场景名称的告别语
+  - 延迟执行确保对话消息正常显示
+- 📖 更新：核心功能章节，添加对话终止功能
+- 📖 更新：移动处理逻辑，添加新的实现代码
+- 📖 更新：使用示例，展示新的系统执行流程
+
 ### v1.1.0 (2025-01-24)
 - 🐛 修复：角色移动后玩家找不到角色的问题
   - 移除场景切换时清空 `forcedLocations` 的逻辑
@@ -892,9 +964,9 @@ const findCharacterForScene = () => {
 
 ---
 
-**最后更新**: 2025-01-24
-**文档版本**: 1.1.0
+**最后更新**: 2026-02-25
+**文档版本**: 1.2.0
 **设计者**: Nyaa
 **开发者**: Gemini
-**维护者**: Claude
+**维护者**: SOLO Coder
 **标签**: `#角色移动` `#AI驱动` `#位置管理` `#世界系统`
