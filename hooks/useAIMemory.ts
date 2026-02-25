@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { 
     getChatMessages, 
     addChatMessage, 
@@ -40,6 +40,96 @@ const SUMMARY_MAX_LENGTH = 150;  // 摘要最大字数
 export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => {
     const [isLoadingMemory, setIsLoadingMemory] = useState(false);
     const [isSummarizing, setIsSummarizing] = useState(false);
+    
+    // 本地缓存，减少重复查询
+    const memoryCache = useRef<{
+        [key: string]: {
+            data: any;
+            timestamp: number;
+        }
+    }>({});
+    
+    // 缓存有效期（毫秒）
+    const CACHE_TTL = 30000; // 30秒
+
+    /**
+     * 缓存管理工具函数
+     */
+    const cacheManager = {
+        /**
+         * 生成缓存键
+         */
+        generateKey: (prefix: string, characterId: string) => {
+            return `${prefix}_${userId}_${slotId}_${characterId}`;
+        },
+
+        /**
+         * 获取缓存数据
+         */
+        get: (key: string) => {
+            const cached = memoryCache.current[key];
+            if (!cached) return null;
+            
+            const now = Date.now();
+            if (now - cached.timestamp > CACHE_TTL) {
+                // 缓存过期，清除
+                delete memoryCache.current[key];
+                return null;
+            }
+            
+            return cached.data;
+        },
+
+        /**
+         * 设置缓存数据
+         */
+        set: (key: string, data: any) => {
+            memoryCache.current[key] = {
+                data,
+                timestamp: Date.now()
+            };
+        },
+
+        /**
+         * 清除缓存
+         */
+        clear: (characterId?: string) => {
+            if (characterId) {
+                // 清除指定角色的缓存
+                Object.keys(memoryCache.current).forEach(key => {
+                    if (key.includes(`_${characterId}`)) {
+                        delete memoryCache.current[key];
+                    }
+                });
+            } else {
+                // 清除所有缓存
+                memoryCache.current = {};
+            }
+        }
+    };
+
+    /**
+     * 带重试机制的API调用
+     */
+    const retryApiCall = async <T>(apiCall: () => Promise<T>, maxRetries: number = 2, delay: number = 500): Promise<T | null> => {
+        let lastError: any = null;
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return await apiCall();
+            } catch (error) {
+                lastError = error;
+                console.warn(`[AI Memory] API call attempt ${attempt + 1} failed:`, error);
+                
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        
+        console.error('[AI Memory] All API call attempts failed:', lastError);
+        return null;
+    };
 
     /**
      * 获取角色的完整记忆上下文（用于构建 LLM Prompt）
@@ -49,23 +139,40 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         coreMemories: CharacterMemory[];
         summaries: CharacterMemory[];
     }> => {
+        // 尝试从缓存获取
+        const cacheKey = cacheManager.generateKey('context', characterId);
+        const cachedContext = cacheManager.get(cacheKey);
+        if (cachedContext) {
+            console.log('[AI Memory] Using cached memory context');
+            return cachedContext;
+        }
+
         setIsLoadingMemory(true);
         try {
-            // 并行获取短期对话和长期记忆
-            const [messages, memories] = await Promise.all([
-                getChatMessages(userId, slotId, characterId, 15), // 获取最近15条对话
-                getCharacterMemories(userId, slotId, characterId)
+            // 带重试机制的并行获取
+            const [messagesResult, memoriesResult] = await Promise.all([
+                retryApiCall(() => getChatMessages(userId, slotId, characterId, 15)), // 获取最近15条对话
+                retryApiCall(() => getCharacterMemories(userId, slotId, characterId))
             ]);
+
+            // 处理可能的空结果
+            const messages = messagesResult || [];
+            const memories = memoriesResult || [];
 
             // 分类记忆
             const coreMemories = memories.filter(m => m.memory_type === 'core_fact');
             const summaries = memories.filter(m => m.memory_type === 'summary');
 
-            return {
+            const result = {
                 recentMessages: messages,
                 coreMemories,
                 summaries
             };
+
+            // 缓存结果
+            cacheManager.set(cacheKey, result);
+
+            return result;
         } catch (error) {
             console.error('[AI Memory] Failed to load memory context:', error);
             return {
@@ -87,7 +194,15 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         content: string
     ): Promise<boolean> => {
         try {
-            return await addChatMessage(userId, slotId, characterId, role, content);
+            const result = await retryApiCall(() => addChatMessage(userId, slotId, characterId, role, content));
+            
+            // 清除相关缓存
+            if (result !== null) {
+                cacheManager.clear(characterId);
+                console.log('[AI Memory] Cache cleared after saving message');
+            }
+            
+            return result !== null;
         } catch (error) {
             console.error('[AI Memory] Failed to save message:', error);
             return false;
@@ -105,7 +220,15 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         if (!memories || memories.length === 0) return true;
         
         try {
-            return await addCharacterMemories(userId, slotId, characterId, memories, type);
+            const result = await retryApiCall(() => addCharacterMemories(userId, slotId, characterId, memories, type));
+            
+            // 清除相关缓存
+            if (result !== null) {
+                cacheManager.clear(characterId);
+                console.log('[AI Memory] Cache cleared after saving memories');
+            }
+            
+            return result !== null;
         } catch (error) {
             console.error('[AI Memory] Failed to save memories:', error);
             return false;
@@ -161,14 +284,29 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             .join('\n');
 
         const summaryPrompt = `[系统指令]
-你是一个记忆整理助手。请将以下【新发生的对话】融入到【原有的记忆摘要】中。
+你是一个专业的记忆整理助手，擅长从对话中提取核心信息并生成简洁明了的摘要。
 
-要求：
-1. 提取推动剧情的事件、感情变化和关键信息
-2. 忽略没有营养的寒暄和重复内容
-3. 必须使用第三人称客观描述
-4. 总字数严格控制在 ${SUMMARY_MAX_LENGTH} 字以内！
-5. 只输出摘要文本，不要添加任何前缀或解释
+请将以下【新发生的对话】融入到【原有的记忆摘要】中，生成一个新的综合摘要。
+
+重要要求：
+1. 核心信息提取：重点提取以下内容
+   - 玩家的重要偏好、习惯和特点
+   - 角色与玩家之间的约定、承诺或计划
+   - 情感变化和关系发展
+   - 影响游戏进程的关键事件
+   - 角色状态的重要变化
+
+2. 摘要质量要求：
+   - 必须使用第三人称客观描述
+   - 语言简洁明了，逻辑清晰
+   - 保持信息的准确性和完整性
+   - 忽略无关紧要的寒暄和重复内容
+   - 总字数严格控制在 ${SUMMARY_MAX_LENGTH} 字以内！
+
+3. 格式要求：
+   - 只输出摘要文本，不要添加任何前缀或解释
+   - 不要包含对话原文，只包含提炼后的信息
+   - 使用自然流畅的中文表达
 
 【原有记忆摘要】
 ${oldSummary || "无"}
@@ -176,7 +314,7 @@ ${oldSummary || "无"}
 【新发生的对话】
 ${conversationText}
 
-请输出新的摘要：`;
+请输出新的综合摘要：`;
 
         try {
             // 使用临时的 LLM 实例，避免污染主对话历史
@@ -194,8 +332,11 @@ ${conversationText}
                     body: JSON.stringify({
                         model: apiConfig.model,
                         messages: [{ role: 'user', content: summaryPrompt }],
-                        temperature: 0.3, // 降低温度，让摘要更稳定
-                        max_tokens: 300
+                        temperature: 0.2, // 进一步降低温度，提高摘要的一致性和准确性
+                        max_tokens: 300,
+                        top_p: 0.9, // 控制生成的多样性
+                        frequency_penalty: 0.1, // 减少重复内容
+                        presence_penalty: 0.1 // 鼓励新内容
                     })
                 }
             );
@@ -207,8 +348,15 @@ ${conversationText}
             const data = await response.json();
             const summaryText = data.choices?.[0]?.message?.content || oldSummary;
             
-            // 清理可能的 Markdown 标记
-            return summaryText.replace(/`{3}/g, '').trim();
+            // 清理可能的 Markdown 标记和多余的空白
+            let cleanedSummary = summaryText.replace(/`{3}/g, '').trim();
+            
+            // 确保摘要长度符合要求
+            if (cleanedSummary.length > SUMMARY_MAX_LENGTH) {
+                cleanedSummary = cleanedSummary.substring(0, SUMMARY_MAX_LENGTH).trim();
+            }
+            
+            return cleanedSummary;
         } catch (error) {
             console.error('[AI Memory] Failed to generate summary:', error);
             return oldSummary; // 失败时返回旧摘要
@@ -243,21 +391,25 @@ ${conversationText}
             const messagesToSummarize = messages.slice(0, SUMMARIZE_BATCH);
             const lastTimestampToSummarize = messagesToSummarize[SUMMARIZE_BATCH - 1].created_at;
 
-            // 4. 获取旧的摘要
-            const memories = await getCharacterMemories(userId, slotId, characterId);
+            // 4. 获取旧的摘要（带重试）
+            const memoriesResult = await retryApiCall(() => getCharacterMemories(userId, slotId, characterId));
+            const memories = memoriesResult || [];
             const oldSummary = memories.find(m => m.memory_type === 'summary')?.content || "";
 
             // 5. 生成新摘要
             const newSummary = await generateSummary(oldSummary, messagesToSummarize);
 
-            // 6. 更新数据库
-            await updateCharacterSummary(userId, slotId, characterId, newSummary);
+            // 6. 更新数据库（带重试）
+            await retryApiCall(() => updateCharacterSummary(userId, slotId, characterId, newSummary));
             
-            // 7. 删除已经总结过的原始对话
-            await deleteOldMessages(userId, slotId, characterId, lastTimestampToSummarize);
+            // 7. 删除已经总结过的原始对话（带重试）
+            await retryApiCall(() => deleteOldMessages(userId, slotId, characterId, lastTimestampToSummarize));
 
+            // 清除相关缓存
+            cacheManager.clear(characterId);
             console.log(`[AI Memory] 摘要更新成功，删除了 ${SUMMARIZE_BATCH} 条旧消息`);
             console.log(`[AI Memory] 新摘要: ${newSummary.substring(0, 50)}...`);
+            console.log('[AI Memory] Cache cleared after summary update');
         } catch (error) {
             console.error('[AI Memory] 摘要生成失败，留待下次触发:', error);
         } finally {
