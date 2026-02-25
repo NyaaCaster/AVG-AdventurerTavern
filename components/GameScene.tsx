@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
+import { calculateCharacterLocations } from '../utils/gameLogic';
 import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks } from '../services/db'; 
 
 import DialogueBox from './DialogueBox'; 
@@ -445,6 +446,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           world.setCurrentSceneId(data.currentSceneId);
           world.setWorldState(data.worldState);
           world.setForcedLocations({});
+          // 立即更新角色位置，确保presentCharacters计算正确
+          const locs = calculateCharacterLocations(data.worldState.period, data.worldState.dateStr, data.worldState.timeStr, core.sceneLevels);
+          world.setCharacterLocations(locs);
           // Restore settings
           if (data.settings && onSettingsChange) {
               onSettingsChange(data.settings);
@@ -460,6 +464,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           // Reset UI
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
+          // 重置环境逻辑状态
+          dialogue.setAmbientCharacter(null);
+          dialogue.setAmbientText('');
+          dialogue.setShowAmbientDialogue(false);
       }
   };
 
