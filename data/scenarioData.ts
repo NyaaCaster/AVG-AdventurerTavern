@@ -1,7 +1,7 @@
 
 import { Character, CharacterImageConfig, CharacterUnlocks } from '../types';
 import { GLOBAL_AI_RULES } from './systemPrompts';
-import { formatUnlockStatusForAI, getDefaultUnlocks } from '../utils/unlockHelpers';
+import { formatUnlockStatusForAI, getDefaultUnlocks } from './unlockConditions';
 import { CHARACTER_UNLOCK_RESTRICTIONS } from './unlockConditions';
 import { CHARACTER_IMAGES } from './resources/characterImageResources';
 import { CHARACTER_SCHEDULES } from './schedules';

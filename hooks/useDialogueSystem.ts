@@ -7,7 +7,7 @@ import { llmService } from '../services/llmService';
 import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
 import { getCharacterSprite } from '../utils/gameLogic';
 import { SCENE_NAMES } from '../utils/gameConstants';
-import { getDefaultUnlocks } from '../utils/unlockHelpers';
+import { getDefaultUnlocks } from '../data/unlockConditions';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 import { useAIMemory } from './useAIMemory';
 
@@ -122,12 +122,23 @@ export const useDialogueSystem = ({
         try {
             await initLLM(char);
             
-            const contextPrompt = `
+            let contextPrompt = `
 [系统指令: 此消息不显示给玩家，仅作为剧情生成指令]
 玩家(${settings.userName})在【${worldState.periodLabel}】的【${worldState.sceneName}】找到了你。
 玩家当前的行动意图是:【${actionType}】。
 当前你对玩家的好感度为: ${stats.affinity} (0-100)。
 你的衣着状态是: ${nextClothingState === 'nude' ? '裸体/未穿衣' : '日常装束'}。
+`;
+            
+            // 添加间接性行为的生成内容要素
+            if (actionType === 'bath_together_passionate' || actionType === 'massage_receive_passionate') {
+                contextPrompt += `
+[内容要素: 间接性行为]
+在这次互动中，可能会包含亲吻、爱抚等亲密行为。请根据你的性格和当前好感度，自然地表现出相应的反应，包括身体的接触、情感的表达等。
+`;
+            }
+            
+            contextPrompt += `
 请根据你的性格、当前时间、地点、好感度以及玩家的行为，生成一句符合情境的开场白或反应。
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;

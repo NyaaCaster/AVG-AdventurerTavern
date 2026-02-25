@@ -160,19 +160,22 @@ export interface UserRecipe {
 // --- 角色解锁系统类型定义 ---
 
 export interface CharacterUnlocks {
-  accept_battle_party: 0 | 1;
-  accept_flirt_topic: 0 | 1;
-  accept_nsfw_topic: 0 | 1;
-  accept_physical_contact: 0 | 1;
-  accept_indirect_sexual: 0 | 1;
-  accept_become_lover: 0 | 1;
-  accept_direct_sexual: 0 | 1;
-  accept_sexual_partner: 0 | 1;
-  accept_public_exposure: 0 | 1;
-  accept_public_sexual: 0 | 1;
-  accept_group_sexual: 0 | 1;
-  accept_prostitution: 0 | 1;
-  accept_sexual_slavery: 0 | 1;
+    accept_battle_party: 0 | 1;
+    accept_flirt_topic: 0 | 1;
+    accept_nsfw_topic: 0 | 1;
+    accept_physical_contact: 0 | 1;
+    accept_indirect_sexual: 0 | 1;
+    accept_become_lover: 0 | 1;
+    accept_direct_sexual: 0 | 1;
+    accept_sexual_partner: 0 | 1;
+    accept_public_exposure: 0 | 1;
+    accept_public_sexual: 0 | 1;
+    accept_group_sexual: 0 | 1;
+    accept_prostitution: 0 | 1;
+    accept_sexual_slavery: 0 | 1;
+    accept_bathing_together: 0 | 1;
+    accept_player_massage: 0 | 1;
+    accept_character_massage: 0 | 1;
 }
 
 export interface SceneProps {

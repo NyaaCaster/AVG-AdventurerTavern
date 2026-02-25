@@ -72,6 +72,9 @@ db.serialize(() => {
         accept_group_sexual INTEGER DEFAULT 0,
         accept_prostitution INTEGER DEFAULT 0,
         accept_sexual_slavery INTEGER DEFAULT 0,
+        accept_bathing_together INTEGER DEFAULT 0,
+        accept_player_massage INTEGER DEFAULT 0,
+        accept_character_massage INTEGER DEFAULT 0,
         updated_at INTEGER NOT NULL,
         UNIQUE(user_id, slot_id, character_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -471,7 +474,10 @@ app.post('/api/character_unlocks/get', (req, res) => {
             accept_public_sexual,
             accept_group_sexual,
             accept_prostitution,
-            accept_sexual_slavery
+            accept_sexual_slavery,
+            accept_bathing_together,
+            accept_player_massage,
+            accept_character_massage
         FROM character_unlocks 
         WHERE user_id = ? AND slot_id = ? AND character_id = ?`,
         [userId, slotId, characterId],
@@ -499,7 +505,10 @@ app.post('/api/character_unlocks/get', (req, res) => {
                         accept_public_sexual: 0,
                         accept_group_sexual: 0,
                         accept_prostitution: 0,
-                        accept_sexual_slavery: 0
+                        accept_sexual_slavery: 0,
+                        accept_bathing_together: 0,
+                        accept_player_massage: 0,
+                        accept_character_massage: 0
                     }
                 });
             }
@@ -542,7 +551,10 @@ app.post('/api/character_unlocks/update', (req, res) => {
         'accept_public_sexual',
         'accept_group_sexual',
         'accept_prostitution',
-        'accept_sexual_slavery'
+        'accept_sexual_slavery',
+        'accept_bathing_together',
+        'accept_player_massage',
+        'accept_character_massage'
     ];
     
     const updateFields = [];
@@ -647,7 +659,10 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
             accept_public_sexual,
             accept_group_sexual,
             accept_prostitution,
-            accept_sexual_slavery
+            accept_sexual_slavery,
+            accept_bathing_together,
+            accept_player_massage,
+            accept_character_massage
         FROM character_unlocks 
         WHERE user_id = ? AND slot_id = ?`,
         [userId, slotId],
