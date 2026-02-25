@@ -73,6 +73,9 @@ export const useCoreState = (initialSaveData?: any) => {
               accept_group_sexual: 0,
               accept_prostitution: 0,
               accept_sexual_slavery: 0,
+              accept_bathing_together: 0,
+              accept_player_massage: 0,
+              accept_character_massage: 0,
               ...charSpecificUnlocks // Override with character-specific values
           };
       });
