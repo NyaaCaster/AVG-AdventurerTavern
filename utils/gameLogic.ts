@@ -121,6 +121,10 @@ export const calculateCharacterLocations = (period: 'day'|'evening'|'night', dat
             const validScenes = possibleScenes.filter(sid => {
                 if (sid === 'scen_2') return true;
                 
+                // 检查场景等级，只允许等级≥1的场景
+                const sceneLevel = sceneLevels[sid] || 0;
+                if (sceneLevel < 1) return false;
+                
                 if (sid === 'scen_3') {
                     if (charId === 'char_102') return true; 
                     return (sceneOccupancy['scen_3'] || 0) < 5;
