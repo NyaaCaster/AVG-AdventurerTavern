@@ -54,7 +54,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
                 <button onClick={handleClose} className="text-slate-500 hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark"></i></button>
             </div>
             <div className="p-4 overflow-y-auto custom-scrollbar bg-[#0c0c0c] rounded-b-lg space-y-6">
-                {Object.values(CHARACTERS).map(character => {
+                {Object.values(CHARACTERS).filter(character => character.id !== 'char_1').map(character => {
                     const unlocks = characterUnlocks[character.id] || {} as CharacterUnlocks;
                     const stats = characterStats[character.id] || { level: 1, affinity: 0 };
                     

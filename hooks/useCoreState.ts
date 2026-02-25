@@ -5,7 +5,7 @@ import {
 } from '../types';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-    INITIAL_CHARACTER_STATS, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
+    INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
     INITIAL_CHARACTER_UNLOCKS
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
@@ -19,7 +19,16 @@ export const useCoreState = (initialSaveData?: any) => {
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
   const [tavernMenu, setTavernMenu] = useState<TavernMenuState>({ foods: [], drinks: [] });
   
-  const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(INITIAL_CHARACTER_STATS);
+  const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(() => {
+    const initialStats: Record<string, { level: number; affinity: number }> = {};
+    Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+      initialStats[charId] = {
+        level: INITIAL_CHARACTER_LEVEL[charId],
+        affinity: INITIAL_CHARACTER_AFFINITY[charId]
+      };
+    });
+    return initialStats;
+  });
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
     // Calculate initial values based on facility levels
@@ -44,8 +53,8 @@ export const useCoreState = (initialSaveData?: any) => {
   useEffect(() => {
       const initialUnlocks: Record<string, CharacterUnlocks> = {};
       
-      // For each character in INITIAL_CHARACTER_STATS
-      Object.keys(INITIAL_CHARACTER_STATS).forEach(charId => {
+      // For each character in INITIAL_CHARACTER_LEVEL
+      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
           // Get character-specific initial unlocks or use all zeros
           const charSpecificUnlocks = INITIAL_CHARACTER_UNLOCKS[charId] || {};
           

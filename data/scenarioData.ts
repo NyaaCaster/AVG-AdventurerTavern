@@ -7,6 +7,7 @@ import { CHARACTER_IMAGES } from './resources/characterImageResources';
 import { CHARACTER_SCHEDULES } from './schedules';
 
 // Import individual characters
+import { char_1, USER_INFO_TEMPLATE } from './characters/char_1';
 import { char_101 } from './characters/char_101';
 import { char_102 } from './characters/char_102';
 import { char_103 } from './characters/char_103';
@@ -32,18 +33,7 @@ import * as p109 from './prompts/char_109';
 import * as p110 from './prompts/char_110';
 import * as p111 from './prompts/char_111';
 
-export const USER_INFO_TEMPLATE = `
-## {{user}}-角色信息
-- 角色名：{{user}}
-- 人族男性，25岁。
-- {{user}}过去是战胜魔王的勇者，被称为「疾风の剑圣」，持有圣剑「莫比乌斯」和短时间改变时间流逝方式的权能「境界线」。
-- 因为{{user}}为人低调，世人知道勇者「疾风の剑圣」讨伐了魔王，但除了国王与大臣几乎无人知道勇者都长相和名字。
-- 讨伐魔王后，国王接见{{user}}，并许诺将皇女欧若拉嫁给{{user}}，不愿被皇室身份拘束的{{user}}吓得连夜逃回乡下，协助{{user_relationship}}\`莉莉娅\`经营冒险者旅店，开始了第二段人生。
-- 虽已隐退，但战斗技艺并未衰退，只是为了避免暴露身份藏起来圣剑，也不再轻易使用自己的权能。以本名重新登记为E级冒险者。
-- 基本上是个认真稳重、性格温柔的人。
-- 但同时也是个相当闷骚的人，经常用带有性意味的目光打量前来住宿的女冒险者。
-- 由于容貌十分端正，在住宿的女性客人中评价很高。虽然因其性格带有受虐倾向属实，但实际上也兼具施虐的一面。
-`;
+
 
 // Helper to attach NSFW data, image resources, and schedules
 const enrich = (char: Character, prompts: any) => {
@@ -165,6 +155,7 @@ ${processedUserInfo}
 };
 
 export const CHARACTERS: Record<string, Character> = {
+  'char_1': char_1,
   'char_101': char_101,
   'char_102': char_102,
   'char_103': char_103,

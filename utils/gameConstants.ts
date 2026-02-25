@@ -1,4 +1,3 @@
-
 import { SceneId, ManagementStats, CharacterUnlocks } from '../types';
 
 export const SCENE_NAMES: Record<SceneId, string> = {
@@ -27,18 +26,34 @@ export const INITIAL_SCENE_LEVELS: Record<string, number> = {
   'scen_10': 1, // 道具店
 };
 
-export const INITIAL_CHARACTER_STATS: Record<string, { level: number; affinity: number }> = {
-  'char_101': { level: 1, affinity: 10 }, // 莉莉娅
-  'char_102': { level: 99, affinity: 5 }, // 米娜
-  'char_103': { level: 2, affinity: 5 }, // 欧若拉
-  'char_104': { level: 4, affinity: 1 }, // 朱迪斯
-  'char_105': { level: 9, affinity: 1 }, // 莲华
-  'char_106': { level: 7, affinity: 1 }, // 艾琳
-  'char_107': { level: 7, affinity: 1 }, // 菲洛
-  'char_108': { level: 7, affinity: 1 }, // 卡特琳娜
-  'char_109': { level: 5, affinity: 3 }, // 莱拉
-  'char_110': { level: 9, affinity: 1 }, // 琉卡
-  'char_111': { level: 9, affinity: 1 }, // 吉娜
+export const INITIAL_CHARACTER_LEVEL: Record<string, number> = {
+  'char_1': 1, // {{user}}
+  'char_101': 1, // 莉莉娅
+  'char_102': 99, // 米娜
+  'char_103': 2, // 欧若拉
+  'char_104': 4, // 朱迪斯
+  'char_105': 9, // 莲华
+  'char_106': 7, // 艾琳
+  'char_107': 7, // 菲洛
+  'char_108': 7, // 卡特琳娜
+  'char_109': 5, // 莱拉
+  'char_110': 9, // 琉卡
+  'char_111': 9, // 吉娜
+};
+
+export const INITIAL_CHARACTER_AFFINITY: Record<string, number> = {
+  'char_1': 0, // {{user}}
+  'char_101': 10, // 莉莉娅
+  'char_102': 5, // 米娜
+  'char_103': 5, // 欧若拉
+  'char_104': 1, // 朱迪斯
+  'char_105': 1, // 莲华
+  'char_106': 1, // 艾琳
+  'char_107': 1, // 菲洛
+  'char_108': 1, // 卡特琳娜
+  'char_109': 3, // 莱拉
+  'char_110': 1, // 琉卡
+  'char_111': 1, // 吉娜
 };
 
 export const INITIAL_GOLD = 100000;

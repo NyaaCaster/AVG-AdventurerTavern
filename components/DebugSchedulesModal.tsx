@@ -23,7 +23,7 @@ const DebugSchedulesModal: React.FC<DebugSchedulesModalProps> = ({ isOpen, onClo
             <div className="p-4 overflow-y-auto custom-scrollbar bg-[#0c0c0c] rounded-b-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.keys(SCENE_NAMES).map(key => {
                     const sid = key as SceneId;
-                    const chars = Object.values(CHARACTERS).filter(c => characterLocations[c.id] === sid);
+                    const chars = Object.values(CHARACTERS).filter(c => c.id !== 'char_1' && characterLocations[c.id] === sid);
                     return (
                         <div key={sid} className="bg-slate-800/50 border border-slate-700 p-3 rounded">
                             <div className="font-bold text-slate-300 text-sm mb-2 flex justify-between items-center">
