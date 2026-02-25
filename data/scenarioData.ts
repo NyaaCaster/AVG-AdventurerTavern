@@ -154,6 +154,8 @@ ${processedUserInfo}
 `;
 };
 
+export { USER_INFO_TEMPLATE };
+
 export const CHARACTERS: Record<string, Character> = {
   'char_1': char_1,
   'char_101': char_101,
