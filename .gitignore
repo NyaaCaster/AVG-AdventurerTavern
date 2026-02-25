@@ -54,4 +54,7 @@ database-server/SSL/*
 .github/workflows/job-logs/*
 !.github/workflows/job-logs/.gitkeep
 
+# Trae IDE 生成的文档目录
+.trae/
+
 
