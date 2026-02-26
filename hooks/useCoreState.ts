@@ -1,27 +1,27 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
+  ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
 } from '../types';
 import { 
-    INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-    INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-    INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
+  INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
+  INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
+  INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
-export const useCoreState = (initialSaveData?: any) => {
-  const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
-  const [gold, setGold] = useState<number>(INITIAL_GOLD); 
-  const [sceneLevels, setSceneLevels] = useState<Record<string, number>>(INITIAL_SCENE_LEVELS);
+export const useCoreState = (initialSaveData?: any) =&gt; {
+  const [inventory, setInventory] = useState&lt;Record&lt;string, number&gt;&gt;(INITIAL_INVENTORY);
+  const [gold, setGold] = useState&lt;number&gt;(INITIAL_GOLD); 
+  const [sceneLevels, setSceneLevels] = useState&lt;Record&lt;string, number&gt;&gt;(INITIAL_SCENE_LEVELS);
   
-  const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
-  const [foodStock, setFoodStock] = useState<Record<string, number>>({});
-  const [tavernMenu, setTavernMenu] = useState<TavernMenuState>({ foods: [], drinks: [] });
+  const [userRecipes, setUserRecipes] = useState&lt;UserRecipe[]&gt;([]);
+  const [foodStock, setFoodStock] = useState&lt;Record&lt;string, number&gt;&gt;({});
+  const [tavernMenu, setTavernMenu] = useState&lt;TavernMenuState&gt;({ foods: [], drinks: [] });
   
-  const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(() => {
-    const initialStats: Record<string, { level: number; affinity: number }> = {};
-    Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+  const [characterStats, setCharacterStats] = useState&lt;Record&lt;string, { level: number; affinity: number }&gt;&gt;(() =&gt; {
+    const initialStats: Record&lt;string, { level: number; affinity: number }&gt; = {};
+    Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId =&gt; {
       initialStats[charId] = {
         level: INITIAL_CHARACTER_LEVEL[charId],
         affinity: INITIAL_CHARACTER_AFFINITY[charId]
@@ -29,9 +29,8 @@ export const useCoreState = (initialSaveData?: any) => {
     });
     return initialStats;
   });
-  const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
-  const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
-    // Calculate initial values based on facility levels
+  const [characterUnlocks, setCharacterUnlocks] = useState&lt;Record&lt;string, CharacterUnlocks&gt;&gt;({});
+  const [managementStats, setManagementStats] = useState&lt;ManagementStats&gt;(() =&gt; {
     const innLevel = INITIAL_SCENE_LEVELS['scen_1'] || 1;
     const roomLevel = INITIAL_SCENE_LEVELS['scen_2'] || 1;
     return {
@@ -40,25 +39,20 @@ export const useCoreState = (initialSaveData?: any) => {
       maxOccupancy: calculateMaxOccupancy(roomLevel)
     };
   });
-  const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
+  const [revenueLogs, setRevenueLogs] = useState&lt;RevenueLog[]&gt;([]);
 
-  // Apply loaded data
-  useEffect(() => {
+  useEffect(() =&gt; {
       if (initialSaveData) {
           applyLoadedData(initialSaveData);
       }
   }, [initialSaveData]);
 
-  // Initialize character unlocks with default values
-  useEffect(() => {
-      const initialUnlocks: Record<string, CharacterUnlocks> = {};
+  useEffect(() =&gt; {
+      const initialUnlocks: Record&lt;string, CharacterUnlocks&gt; = {};
       
-      // For each character in INITIAL_CHARACTER_LEVEL
-      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
-          // Get character-specific initial unlocks or use all zeros
+      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId =&gt; {
           const charSpecificUnlocks = INITIAL_CHARACTER_UNLOCKS[charId] || {};
           
-          // Create full unlock object with defaults
           initialUnlocks[charId] = {
               accept_battle_party: 0,
               accept_flirt_topic: 0,
@@ -76,14 +70,14 @@ export const useCoreState = (initialSaveData?: any) => {
               accept_bathing_together: 0,
               accept_player_massage: 0,
               accept_character_massage: 0,
-              ...charSpecificUnlocks // Override with character-specific values
+              ...charSpecificUnlocks
           };
       });
       
       setCharacterUnlocks(initialUnlocks);
   }, []);
 
-  const applyLoadedData = (data: any) => {
+  const applyLoadedData = (data: any) =&gt; {
       if (!data) return;
       setGold(data.gold);
       setManagementStats(data.managementStats);
@@ -98,41 +92,38 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.tavernMenu) setTavernMenu(data.tavernMenu);
   };
 
-  // --- Handlers ---
-
-  const handleUpdateTavernMenu = (type: 'foods' | 'drinks', index: number, itemId: string | null) => {
-      setTavernMenu(prev => {
+  const handleUpdateTavernMenu = (type: 'foods' | 'drinks', index: number, itemId: string | null) =&gt; {
+      setTavernMenu(prev =&gt; {
           const newList = [...prev[type]];
-          // Ensure array size
-          while (newList.length <= index) newList.push(null);
+          while (newList.length &lt;= index) newList.push(null);
           newList[index] = itemId;
           return { ...prev, [type]: newList };
       });
   };
 
-  const handleClearTavernMenu = () => {
+  const handleClearTavernMenu = () =&gt; {
       setTavernMenu({ foods: [], drinks: [] });
   };
 
-  const handleTavernSales = (earnedGold: number, foodSold: Record<string, number>, drinksSold: Record<string, number>) => {
-      if (earnedGold > 0) {
-          setGold(prev => Math.min(MAX_GOLD, prev + earnedGold));
+  const handleTavernSales = (earnedGold: number, foodSold: Record&lt;string, number&gt;, drinksSold: Record&lt;string, number&gt;) =&gt; {
+      if (earnedGold &gt; 0) {
+          setGold(prev =&gt; Math.min(MAX_GOLD, prev + earnedGold));
       }
 
-      if (Object.keys(foodSold).length > 0) {
-          setFoodStock(prev => {
+      if (Object.keys(foodSold).length &gt; 0) {
+          setFoodStock(prev =&gt; {
               const next = { ...prev };
-              Object.entries(foodSold).forEach(([id, count]) => {
+              Object.entries(foodSold).forEach(([id, count]) =&gt; {
                   next[id] = Math.max(0, (next[id] || 0) - count);
               });
               return next;
           });
       }
 
-      if (Object.keys(drinksSold).length > 0) {
-          setInventory(prev => {
+      if (Object.keys(drinksSold).length &gt; 0) {
+          setInventory(prev =&gt; {
               const next = { ...prev };
-              Object.entries(drinksSold).forEach(([id, count]) => {
+              Object.entries(drinksSold).forEach(([id, count]) =&gt; {
                   next[id] = Math.max(0, (next[id] || 0) - count);
               });
               return next;
@@ -140,11 +131,11 @@ export const useCoreState = (initialSaveData?: any) => {
       }
   };
 
-  const handleManagementAction = (cost: number, changes: Partial<ManagementStats>) => {
-      if (gold < cost) return;
-      setGold(prev => prev - cost);
+  const handleManagementAction = (cost: number, changes: Partial&lt;ManagementStats&gt;) =&gt; {
+      if (gold &lt; cost) return;
+      setGold(prev =&gt; prev - cost);
       
-      setManagementStats(prev => {
+      setManagementStats(prev =&gt; {
           let newStats = { ...prev };
           if (changes.satisfaction !== undefined) newStats.satisfaction = Math.max(0, Math.min(100, prev.satisfaction + changes.satisfaction));
           if (changes.attraction !== undefined) newStats.attraction = Math.max(0, Math.min(100, prev.attraction + changes.attraction));
@@ -153,14 +144,14 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
-  const handleUpgradeFacility = (facilityId: SceneId, costGold: number, costMatIds: string[], costMatCount: number) => {
-      if (gold < costGold) return;
+  const handleUpgradeFacility = (facilityId: SceneId, costGold: number, costMatIds: string[], costMatCount: number) =&gt; {
+      if (gold &lt; costGold) return;
       for (const matId of costMatIds) {
-          if ((inventory[matId] || 0) < costMatCount) return;
+          if ((inventory[matId] || 0) &lt; costMatCount) return;
       }
 
-      setGold(prev => prev - costGold);
-      setInventory(prev => {
+      setGold(prev =&gt; prev - costGold);
+      setInventory(prev =&gt; {
           const newInv = { ...prev };
           for (const matId of costMatIds) {
               newInv[matId] = (newInv[matId] || 0) - costMatCount;
@@ -168,19 +159,18 @@ export const useCoreState = (initialSaveData?: any) => {
           return newInv;
       });
 
-      setSceneLevels(prev => {
+      setSceneLevels(prev =&gt; {
           const newLevels = { ...prev };
           const newLevel = (newLevels[facilityId] || 0) + 1;
           newLevels[facilityId] = newLevel;
           
-          // Update related stats immediately with new level
           if (facilityId === 'scen_1') {
-              setManagementStats(prevStats => ({
+              setManagementStats(prevStats =&gt; ({
                   ...prevStats,
                   roomPrice: calculateRoomPrice(newLevel)
               }));
           } else if (facilityId === 'scen_2') {
-              setManagementStats(prevStats => ({
+              setManagementStats(prevStats =&gt; ({
                   ...prevStats,
                   maxOccupancy: calculateMaxOccupancy(newLevel)
               }));
@@ -190,64 +180,77 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
-  // --- Cooking Handlers ---
-  const handleAddRecipe = (newRecipe: UserRecipe) => {
-      setUserRecipes(prev => [newRecipe, ...prev]);
-      setFoodStock(prev => ({
+  const handleAddRecipe = (newRecipe: UserRecipe) =&gt; {
+      setUserRecipes(prev =&gt; [newRecipe, ...prev]);
+      setFoodStock(prev =&gt; ({
           ...prev,
           [newRecipe.id]: (prev[newRecipe.id] || 0) + 1
       }));
   };
 
-  const handleConsumeIngredients = (items: {id: string, count: number}[]) => {
-      setInventory(prev => {
+  const handleConsumeIngredients = (items: {id: string, count: number}[]) =&gt; {
+      setInventory(prev =&gt; {
           const newInv = { ...prev };
-          items.forEach(item => {
+          items.forEach(item =&gt; {
               newInv[item.id] = Math.max(0, (newInv[item.id] || 0) - item.count);
           });
           return newInv;
       });
   };
 
-  const handleCraftRecipe = (recipeId: string, count: number, ingredients: {id: string, count: number}[]) => {
+  const handleCraftRecipe = (recipeId: string, count: number, ingredients: {id: string, count: number}[]) =&gt; {
       handleConsumeIngredients(ingredients);
-      setFoodStock(prev => ({
+      setFoodStock(prev =&gt; ({
           ...prev,
           [recipeId]: (prev[recipeId] || 0) + count
       }));
   };
 
-  const handleDeleteRecipe = (recipeId: string) => {
-      setUserRecipes(prev => prev.filter(r => r.id !== recipeId));
+  const handleDeleteRecipe = (recipeId: string) =&gt; {
+      setUserRecipes(prev =&gt; prev.filter(r =&gt; r.id !== recipeId));
   };
 
-  const handleRenameRecipe = (recipeId: string, newName: string) => {
-      setUserRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, name: newName } : r));
+  const handleRenameRecipe = (recipeId: string, newName: string) =&gt; {
+      setUserRecipes(prev =&gt; prev.map(r =&gt; r.id === recipeId ? { ...r, name: newName } : r));
   };
 
-  const handleAddItems = (items: { id: string; count: number }[]) => {
+  const handleAddItems = (items: { id: string; count: number }[]) =&gt; {
       const newInventory = { ...inventory };
-      items.forEach(item => {
-          if (item.id && item.count > 0) {
+      items.forEach(item =&gt; {
+          if (item.id &amp;&amp; item.count &gt; 0) {
               newInventory[item.id] = (newInventory[item.id] || 0) + item.count;
           }
       });
       setInventory(newInventory);
   };
 
-  // Debug Modifiers
-  const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
-  const updateInventoryItem = (itemId: string, newCount: number) => {
-      setInventory(prev => ({ ...prev, [itemId]: newCount }));
+  const handleShopTransaction = (changes: { goldChange: number; inventoryChanges: Record&lt;string, number&gt; }) =&gt; {
+      const { goldChange, inventoryChanges } = changes;
+      setGold(prev =&gt; Math.min(MAX_GOLD, Math.max(0, prev + goldChange)));
+      setInventory(prev =&gt; {
+          const newInv = { ...prev };
+          Object.entries(inventoryChanges).forEach(([itemId, count]) =&gt; {
+              if (count &lt;= 0) {
+                  delete newInv[itemId];
+              } else {
+                  newInv[itemId] = count;
+              }
+          });
+          return newInv;
+      });
   };
 
-  // Character unlock handlers
+  const updateGold = (newGold: number) =&gt; setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
+  const updateInventoryItem = (itemId: string, newCount: number) =&gt; {
+      setInventory(prev =&gt; ({ ...prev, [itemId]: newCount }));
+  };
+
   const updateCharacterUnlock = (
       characterId: string,
       unlockKey: keyof CharacterUnlocks,
       value: 0 | 1
-  ) => {
-      setCharacterUnlocks(prev => ({
+  ) =&gt; {
+      setCharacterUnlocks(prev =&gt; ({
           ...prev,
           [characterId]: {
               ...(prev[characterId] || {
@@ -270,8 +273,8 @@ export const useCoreState = (initialSaveData?: any) => {
       }));
   };
 
-  const updateCharacterUnlocks = (characterId: string, unlocks: Partial<CharacterUnlocks>) => {
-      setCharacterUnlocks(prev => ({
+  const updateCharacterUnlocks = (characterId: string, unlocks: Partial&lt;CharacterUnlocks&gt;) =&gt; {
+      setCharacterUnlocks(prev =&gt; ({
           ...prev,
           [characterId]: {
               ...(prev[characterId] || {
@@ -305,7 +308,6 @@ export const useCoreState = (initialSaveData?: any) => {
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
       
-      // Handlers
       handleManagementAction,
       handleUpgradeFacility,
       handleAddRecipe,
@@ -322,6 +324,7 @@ export const useCoreState = (initialSaveData?: any) => {
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,
       handleClearTavernMenu,
-      handleTavernSales
+      handleTavernSales,
+      handleShopTransaction
   };
 };

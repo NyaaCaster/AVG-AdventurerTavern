@@ -270,3 +270,24 @@ export interface RevenueLog {
   type: RevenueType;
   amount: number;
 }
+
+// --- 商店系统类型定义 ---
+export type ShopTab = 'buy' | 'sell';
+
+export interface CartItem {
+  itemId: string;
+  quantity: number;
+  price: number;
+}
+
+export interface ShopItemModalProps {
+  isOpen: boolean;
+  onClose: () =&gt; void;
+  initialTab?: ShopTab;
+  inventory: Record&lt;string, number&gt;;
+  currentGold: number;
+  onTransaction?: (changes: {
+    goldChange: number;
+    inventoryChanges: Record&lt;string, number&gt;;
+  }) =&gt; void;
+}
