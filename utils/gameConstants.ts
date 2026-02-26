@@ -57,6 +57,7 @@ export const INITIAL_CHARACTER_AFFINITY: Record<string, number> = {
 };
 
 export const INITIAL_GOLD = 100000;
+export const MAX_GOLD = 999999; // 金币上限
 
 export const INITIAL_INVENTORY: Record<string, number> = {
     'res-0001': 1500, // 灵木

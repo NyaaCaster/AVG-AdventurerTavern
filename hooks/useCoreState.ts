@@ -6,7 +6,7 @@ import {
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-    INITIAL_CHARACTER_UNLOCKS
+    INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
@@ -116,7 +116,7 @@ export const useCoreState = (initialSaveData?: any) => {
 
   const handleTavernSales = (earnedGold: number, foodSold: Record<string, number>, drinksSold: Record<string, number>) => {
       if (earnedGold > 0) {
-          setGold(prev => prev + earnedGold);
+          setGold(prev => Math.min(MAX_GOLD, prev + earnedGold));
       }
 
       if (Object.keys(foodSold).length > 0) {
@@ -236,7 +236,7 @@ export const useCoreState = (initialSaveData?: any) => {
   };
 
   // Debug Modifiers
-  const updateGold = (newGold: number) => setGold(newGold);
+  const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
   const updateInventoryItem = (itemId: string, newCount: number) => {
       setInventory(prev => ({ ...prev, [itemId]: newCount }));
   };

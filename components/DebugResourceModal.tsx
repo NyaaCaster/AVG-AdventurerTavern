@@ -12,7 +12,7 @@ interface ResourceDebugModalProps {
   onUpdateInventory: (itemId: string, newCount: number) => void;
 }
 
-const MAX_GOLD = 999999;
+import { MAX_GOLD } from '../utils/gameConstants';
 
 const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
   isOpen, onClose, gold, inventory, onUpdateGold, onUpdateInventory
