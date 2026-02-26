@@ -5,7 +5,7 @@ import { calculateWorldState, calculateCharacterLocations, getSceneDisplayName }
 import { fetchWeatherData } from '../services/weatherService';
 import { CHARACTERS } from '../data/scenarioData';
 
-export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?: any) => {
+export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?: any, checkedInCharacters?: string[]) => {
   const [currentSceneId, setCurrentSceneId] = useState<SceneId>(() => {
     if (initialData?.currentSceneId) {
         return initialData.currentSceneId as SceneId;
@@ -129,13 +129,15 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
   };
 
   const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
+      // 未入住的角色不出现在任何场景
+      if (checkedInCharacters && !checkedInCharacters.includes(char.id)) return false;
       if (currentSceneId === 'scen_2') {
           if (sceneParams?.target === 'user') return false; 
           if (sceneParams?.target) return char.id === sceneParams.target && characterLocations[char.id] === 'scen_2';
           return false; 
       }
       return characterLocations[char.id] === currentSceneId;
-  }), [currentSceneId, sceneParams, characterLocations]);
+  }), [currentSceneId, sceneParams, characterLocations, checkedInCharacters]);
 
   return {
       currentSceneId, setCurrentSceneId,

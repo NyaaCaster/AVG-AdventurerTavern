@@ -69,7 +69,8 @@ type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
-  const world = useWorldSystem(core.sceneLevels, initialSaveData);
+  const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(INITIAL_CHECKED_IN_CHARACTERS);
+  const world = useWorldSystem(core.sceneLevels, initialSaveData, checkedInCharacters);
   const audioRef = useGameAudio(world.currentSceneId, settings);
   
   // --- UI 本地状态 ---
@@ -93,7 +94,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [showDebugLog, setShowDebugLog] = useState(false);
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
   const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
-  const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(INITIAL_CHECKED_IN_CHARACTERS);
   const [checkInNotifications, setCheckInNotifications] = useState<{id: string, charId: string}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
