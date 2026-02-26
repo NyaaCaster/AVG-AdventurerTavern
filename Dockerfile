@@ -42,9 +42,13 @@ COPY scripts/ ./scripts/
 COPY *.tsx *.ts *.html ./
 
 # Verify file encoding (check for HTML entities)
-RUN if grep -r "&gt;\|&lt;\|&quot;\|&amp;" components/ services/ utils/ hooks/ *.tsx *.ts 2>/dev/null; then \
+RUN echo "Checking for HTML entities..." && \
+    if find . -name "*.tsx" -o -name "*.ts" | xargs grep -l "&gt;\|&lt;\|&quot;\|&amp;" 2>/dev/null; then \
         echo "ERROR: HTML entities found in source files!"; \
+        find . -name "*.tsx" -o -name "*.ts" | xargs grep -n "&gt;\|&lt;\|&quot;\|&amp;" 2>/dev/null || true; \
         exit 1; \
+    else \
+        echo "✓ No HTML entities found"; \
     fi
 
 # Build frontend

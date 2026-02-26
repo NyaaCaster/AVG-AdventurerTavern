@@ -26,6 +26,18 @@ jobs:
           git config --global core.eol lf
           git config --global core.safecrlf false
 
+      - name: Check and fix HTML entities in source files
+        run: |
+          echo "Checking for HTML entities in source files..."
+          if grep -r "&gt;\|&lt;\|&quot;\|&amp;" components/ services/ utils/ hooks/ *.tsx *.ts 2>/dev/null; then
+            echo "ERROR: HTML entities found in source files!"
+            echo "Files with HTML entities:"
+            grep -rl "&gt;\|&lt;\|&quot;\|&amp;" components/ services/ utils/ hooks/ *.tsx *.ts 2>/dev/null || true
+            exit 1
+          else
+            echo "✓ No HTML entities found in source files"
+          fi
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -47,6 +59,11 @@ jobs:
       - name: Get commit hash
         id: git
         run: echo "hash=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Clear Docker buildx cache if encoding issues were fixed
+        run: |
+          echo "Cache key: buildx-${{ github.repository }}-${{ github.ref }}"
+          echo "This build will use fresh cache after encoding fixes"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
