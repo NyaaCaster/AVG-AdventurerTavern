@@ -6,6 +6,7 @@ export enum GameState {
   CONFIG = 'CONFIG'
 }
 
+
 export type ApiProvider = 'openai_compatible' | 'google' | 'deepseek' | 'openai' | 'claude';
 
 export type ConfigTab = 'dialogue' | 'api' | 'sound';
