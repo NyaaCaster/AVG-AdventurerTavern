@@ -600,10 +600,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
          )}
       </div>
 
-      <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
-          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} />
-
-          <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[110] pointer-events-none">
+      {/* 通知层 - 独立于 z-50 父容器之外，确保始终在最上层 */}
+      <div className="absolute inset-0 z-[110] pointer-events-none">
+        <div className="absolute bottom-[200px] left-4 flex flex-col gap-2">
               {itemNotifications.map(notification => (
                   <ItemToast 
                       key={notification.id}
@@ -628,22 +627,26 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                       onComplete={() => setCheckInNotifications(prev => prev.filter(n => n.id !== notification.id))}
                   />
               ))}
-          </div>
-
-          {moveNotification && (
-              <div className="absolute bottom-[300px] left-4 z-[70] animate-fadeIn pointer-events-none">
-                  <div className="bg-indigo-900/90 border-l-4 border-indigo-400 text-indigo-100 px-6 py-3 rounded-r shadow-2xl flex items-center gap-3 backdrop-blur-md">
-                      <i className="fa-solid fa-shoe-prints text-indigo-300"></i>
-                      <span className="font-bold tracking-wider text-sm">{moveNotification}</span>
-                  </div>
-              </div>
-          )}
-
-          {dialogue.errorMessage && (
-            <div onClick={() => dialogue.setErrorMessage(null)} className="absolute top-24 left-1/2 transform -translate-x-1/2 z-[60] bg-red-900/90 border border-red-500/50 text-red-100 px-6 py-4 rounded pointer-events-auto cursor-pointer">
-                {dialogue.errorMessage}
             </div>
-          )}
+
+        {moveNotification && (
+            <div className="absolute bottom-[300px] left-4 animate-fadeIn">
+                <div className="bg-indigo-900/90 border-l-4 border-indigo-400 text-indigo-100 px-6 py-3 rounded-r shadow-2xl flex items-center gap-3 backdrop-blur-md">
+<i className="fa-solid fa-shoe-prints text-indigo-300"></i>
+                    <span className="font-bold tracking-wider text-sm">{moveNotification}</span>
+                </div>
+            </div>
+        )}
+
+        {dialogue.errorMessage && (
+          <div onClick={() => dialogue.setErrorMessage(null)} className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-red-900/90 border border-red-500/50 text-red-100 px-6 py-4 rounded pointer-events-auto cursor-pointer">
+              {dialogue.errorMessage}
+          </div>
+        )}
+      </div>
+
+      <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
+          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} />
 
           <SystemMenu 
             onLoadGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 

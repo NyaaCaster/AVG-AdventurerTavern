@@ -9,6 +9,6 @@ Write-Host "`nStopping Docker containers..." -ForegroundColor Cyan
 docker compose down
 
 Write-Host "`nStarting Docker containers..." -ForegroundColor Cyan
-docker compose up -d
+docker compose up -d --pull never
 
 Write-Host "`nDone!" -ForegroundColor Green
