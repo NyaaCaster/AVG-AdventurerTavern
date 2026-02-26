@@ -1,36 +1,32 @@
 # 客户端 Dockerfile - 仅构建前端静态资源
 # 后端数据库服务器已分离到 database-server/ 目录
 
-# Build stage - Frontend
+# 构建阶段 - 前端
 FROM node:20-alpine3.20 AS builder
 
-# Set locale and encoding
-ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
-
-# Accept build arguments
+# 接收构建参数
 ARG VITE_QWEATHER_HOST
 ARG VITE_QWEATHER_KEY
 ARG GIT_COMMIT_HASH=unknown
 
-# Set environment variables for Vite
+# 设置环境变量供 Vite 使用
 ENV VITE_QWEATHER_HOST=${VITE_QWEATHER_HOST}
 ENV VITE_QWEATHER_KEY=${VITE_QWEATHER_KEY}
 ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
 
 WORKDIR /app
 
-# Copy frontend dependency files
+# 复制前端依赖文件
 COPY package.json ./
 
-# Install frontend dependencies (including devDependencies for build)
+# 安装前端依赖（包括 devDependencies 用于构建）
 RUN --mount=type=cache,target=/root/.npm \
     npm install --silent --prefer-offline
 
-# Copy configuration files
+# 复制配置文件
 COPY tsconfig.json vite.config.ts vite-env.d.ts config.ts ./
 
-# Copy source code directories
+# 复制源代码目录
 COPY components/ ./components/
 COPY services/ ./services/
 COPY utils/ ./utils/
@@ -38,42 +34,33 @@ COPY hooks/ ./hooks/
 COPY data/ ./data/
 COPY scripts/ ./scripts/
 
-# Copy root source files
+# 复制根目录的源文件
 COPY *.tsx *.ts *.html ./
 
-# Fix HTML entity encoding issues before build
-RUN echo "Fixing HTML entity encoding..." && \
-    node scripts/fix-encoding.js && \
-    echo "✓ Encoding fixed"
-
-# Build frontend
+# 构建前端
 RUN npm run build && \
     rm -rf node_modules .npm
 
-# Production stage - Use nginx-alpine as base image
+# 生产阶段 - 使用 nginx-alpine 作为基础镜像
 FROM nginx:1.27-alpine3.20
 
-# Set timezone and locale
-ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
-
-# Configure timezone
+# 设置时区
 RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone && \
     apk del tzdata && \
     rm -rf /var/cache/apk/*
 
-# Create SSL certificate directory
+# 创建 SSL 证书目录
 RUN mkdir -p /etc/nginx/ssl && \
     chown -R nginx:nginx /etc/nginx/ssl
 
 WORKDIR /app
 
-# Copy frontend build artifacts
+# 复制前端构建产物
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
-# Copy SSL certificates (from build secrets, requires Base64 decoding)
+# 复制 SSL 证书（从 build secrets，需要 Base64 解码）
 RUN --mount=type=secret,id=ssl_cert \
     --mount=type=secret,id=ssl_key \
     if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then \
@@ -84,23 +71,23 @@ RUN --mount=type=secret,id=ssl_cert \
         chown nginx:nginx /etc/nginx/ssl/certificate.* ; \
     fi
 
-# Copy nginx configuration file
+# 复制 nginx 配置文件
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Create directories required for nginx
+# 创建 nginx 运行所需的目录
 RUN mkdir -p /var/cache/nginx /var/log/nginx && \
     chown -R nginx:nginx /var/cache/nginx /var/log/nginx /usr/share/nginx/html
 
-# Clean up nginx default configuration
+# 清理 nginx 默认配置
 RUN rm -f /etc/nginx/conf.d/default.conf.default && \
     rm -rf /etc/nginx/http.d/default.conf
 
-# Set health check
+# 设置健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || wget --no-verbose --tries=1 --spider --no-check-certificate https://localhost:443/ || exit 1
 
-# Expose ports
+# 暴露端口
 EXPOSE 80 443
 
-# Start nginx
+# 启动 nginx
 CMD ["nginx", "-g", "daemon off;"]

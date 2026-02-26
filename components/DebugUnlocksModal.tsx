@@ -1,4 +1,4 @@
-mport React from 'react';
+import React from 'react';
 import { CHARACTERS } from '../data/scenarioData';
 import { UNLOCK_STATUS_NAMES } from '../data/unlockConditions';
 import { CharacterUnlocks } from '../types';
@@ -50,7 +50,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
     <div className="fixed inset-0 z-[120] bg-black/80 flex items-center justify-center p-4 md:p-10 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={handleClose}>
         <div className="bg-[#0c0c0c] border border-slate-400/50 rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col shadow-[0_25px_50px_rgba(0,0,0,0.5)] font-mono" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#1a1a1a] rounded-t-lg">
-                <h3 className="text-base md:text-lg font-bold text-emerald-400 flex items-center gap-2"><i className="fa-solid fa-unlock"></i> 瑙掕壊瑙ｉ攣鐘舵€?(Debug)</h3>
+                <h3 className="text-base md:text-lg font-bold text-emerald-400 flex items-center gap-2"><i className="fa-solid fa-unlock"></i> 角色解锁状态 (Debug)</h3>
                 <button onClick={handleClose} className="text-slate-500 hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark"></i></button>
             </div>
             <div className="p-4 overflow-y-auto custom-scrollbar bg-[#0c0c0c] rounded-b-lg space-y-6">
@@ -66,13 +66,13 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
                             </div>
                             
                             <div className="mb-4">
-                                <div className="text-slate-400 text-xs mb-2">濂芥劅搴? <span className="text-yellow-400">{stats.affinity}/100</span></div>
+                                <div className="text-slate-400 text-xs mb-2">好感度: <span className="text-yellow-400">{stats.affinity}/100</span></div>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => handleAffinityChange(character.id, -999)}
                                         className="px-2 py-1 bg-red-900/30 text-red-400 text-xs rounded border border-red-500/20 hover:bg-red-900/50 transition-colors"
                                     >
-                                        娓呴浂
+                                        清零
                                     </button>
                                     <button 
                                         onClick={() => handleAffinityChange(character.id, -10)}
@@ -90,7 +90,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
                             </div>
                             
                             <div className="space-y-2">
-                                <div className="text-slate-400 text-xs mb-2">瑙ｉ攣鍔熻兘:</div>
+                                <div className="text-slate-400 text-xs mb-2">解锁功能:</div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     {Object.entries(UNLOCK_STATUS_NAMES).map(([key, name]) => {
                                         const unlockKey = key as keyof CharacterUnlocks;
@@ -108,7 +108,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
                                                 <div className="flex items-center justify-between">
                                                     <span>{name}</span>
                                                     <span className={`text-xs font-bold ${isUnlocked ? 'text-emerald-400' : 'text-slate-500'}`}>
-                                                        {isUnlocked ? '寮€鍚? : '鍏抽棴'}
+                                                        {isUnlocked ? '开启' : '关闭'}
                                                     </span>
                                                 </div>
                                             </button>

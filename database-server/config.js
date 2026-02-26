@@ -1,26 +1,27 @@
+
 /**
- * 鍚庣鏈嶅姟閰嶇疆鏂囦欢
+ * 后端服务配置文件
  */
 const path = require('path');
 const fs = require('fs');
 
 module.exports = {
-    // 鍚庣鏈嶅姟鐩戝惉绔彛
+    // 后端服务监听端口
     PORT: 3097,
 
-    // HTTPS 閰嶇疆
+    // HTTPS 配置
     HTTPS_ENABLED: true,
     SSL_KEY_PATH: path.join(__dirname, 'SSL', 'h.hony-wen.com.key'),
     SSL_CERT_PATH: path.join(__dirname, 'SSL', 'h.hony-wen.com_bundle.crt'),
 
-    // 鏁版嵁搴撴枃浠跺瓨鏀捐矾寰?(浣跨敤鏁版嵁鍗蜂互鎸佷箙鍖?
+    // 数据库文件存放路径 (使用数据卷以持久化)
     DB_PATH: '/app/data/database.sqlite',
 
-    // CORS (璺ㄥ煙璧勬簮鍏变韩) 閰嶇疆
+    // CORS (跨域资源共享) 配置
     CORS_CONFIG: {
-        origin: true, // 鍏佽鎵€鏈夋潵婧?(寮€鍙戠幆澧?锛岀敓浜х幆澧冨缓璁涓哄叿浣撳煙鍚?        credentials: true,
+        origin: true, // 允许所有来源 (开发环境)，生产环境建议设为具体域名
+        credentials: true,
         methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization']
     }
 };
-

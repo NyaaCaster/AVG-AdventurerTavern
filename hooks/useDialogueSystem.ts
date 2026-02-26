@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { 
     Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks 
@@ -26,7 +27,7 @@ interface UseDialogueSystemProps {
 export const useDialogueSystem = ({ 
     settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate 
 }: UseDialogueSystemProps) => {
-  // AI 璁板繂绯荤粺
+  // AI 记忆系统
   const aiMemory = useAIMemory({ 
       userId, 
       slotId: currentSlotId,
@@ -55,7 +56,8 @@ export const useDialogueSystem = ({
   const [showAmbientDialogue, setShowAmbientDialogue] = useState(true);
   const [lastAffinityChange, setLastAffinityChange] = useState<number | undefined>(undefined);
   
-  // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 璺熻釜褰撳墠瀵硅瘽涓殑濂芥劅搴︾疮璁″彉鍖?  const [sessionAffinityTotal, setSessionAffinityTotal] = useState<number>(0);
+  // [角色主动结束对话] 跟踪当前对话中的好感度累计变化
+  const [sessionAffinityTotal, setSessionAffinityTotal] = useState<number>(0);
 
   // Subscribe to LLM logs
   useEffect(() => {
@@ -77,11 +79,12 @@ export const useDialogueSystem = ({
     let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated);
     systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
     
-    // 鍔犺浇瑙掕壊璁板繂骞跺寮?System Prompt
+    // 加载角色记忆并增强 System Prompt
     const memoryContext = await aiMemory.getMemoryContext(char.id);
     const enhancedPrompt = aiMemory.buildEnhancedPrompt(systemPrompt, memoryContext);
     
-    // 娣诲姞 update_memory 瀛楁鐨勮鏄?    const memoryInstruction = `\n\n銆愯蹇嗘彁鍙栨寚浠ゃ€慭n"update_memory": [鍙€塢 瀛楃涓叉暟缁勩€傚鏋滀綘鍦ㄥ璇濅腑寰楃煡浜嗗叧浜庣帺瀹剁殑閲嶈淇℃伅銆佸枩濂姐€佺害瀹氭垨鎵胯锛岃灏嗗畠浠綔涓虹畝鐭殑浜嬪疄鎻愬彇鍑烘潵銆俓n渚嬪锛歔"鐜╁鍠滄鍠濋害閰?, "绾﹀畾浜嗘槑澶╀竴璧峰幓娓╂硥"]銆傚鏋滄病鏈夐噸瑕佷俊鎭紝璇蜂笉瑕佽緭鍑烘瀛楁銆俙;
+    // 添加 update_memory 字段的说明
+    const memoryInstruction = `\n\n【记忆提取指令】\n"update_memory": [可选] 字符串数组。如果你在对话中得知了关于玩家的重要信息、喜好、约定或承诺，请将它们作为简短的事实提取出来。\n例如：["玩家喜欢喝麦酒", "约定了明天一起去温泉"]。如果没有重要信息，请不要输出此字段。`;
     
     const fullPrompt = `${enhancedPrompt}${memoryInstruction}\n\n${dynamicUserInfo}`;
     
@@ -92,7 +95,7 @@ export const useDialogueSystem = ({
     const char = CHARACTERS[characterId];
     if (!char) return;
 
-    // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 閲嶇疆瀵硅瘽浼氳瘽鐨勫ソ鎰熷害绱
+    // [角色主动结束对话] 重置对话会话的好感度累计
     setSessionAffinityTotal(0);
 
     let nextClothingState: ClothingState = 'default';
@@ -120,22 +123,30 @@ export const useDialogueSystem = ({
             await initLLM(char);
             
             let contextPrompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭笉鏄剧ず缁欑帺瀹讹紝浠呬綔涓哄墽鎯呯敓鎴愭寚浠
-鐜╁(${settings.userName})鍦ㄣ€?{worldState.periodLabel}銆戠殑銆?{worldState.sceneName}銆戞壘鍒颁簡浣犮€?鐜╁褰撳墠鐨勮鍔ㄦ剰鍥炬槸:銆?{actionType}銆戙€?褰撳墠浣犲鐜╁鐨勫ソ鎰熷害涓? ${stats.affinity} (0-100)銆?浣犵殑琛ｇ潃鐘舵€佹槸: ${nextClothingState === 'nude' ? '瑁镐綋/鏈┛琛? : '鏃ュ父瑁呮潫'}銆?`;
+[系统指令: 此消息不显示给玩家，仅作为剧情生成指令]
+玩家(${settings.userName})在【${worldState.periodLabel}】的【${worldState.sceneName}】找到了你。
+玩家当前的行动意图是:【${actionType}】。
+当前你对玩家的好感度为: ${stats.affinity} (0-100)。
+你的衣着状态是: ${nextClothingState === 'nude' ? '裸体/未穿衣' : '日常装束'}。
+`;
             
-            // 娣诲姞闂存帴鎬ц涓虹殑鐢熸垚鍐呭瑕佺礌
+            // 添加间接性行为的生成内容要素
             if (actionType === 'bath_together_passionate' || actionType === 'massage_receive_passionate') {
                 contextPrompt += `
-[鍐呭瑕佺礌: 闂存帴鎬ц涓篯
-鍦ㄨ繖娆′簰鍔ㄤ腑锛屽彲鑳戒細鍖呭惈浜插惢銆佺埍鎶氱瓑浜插瘑琛屼负銆傝鏍规嵁浣犵殑鎬ф牸鍜屽綋鍓嶅ソ鎰熷害锛岃嚜鐒跺湴琛ㄧ幇鍑虹浉搴旂殑鍙嶅簲锛屽寘鎷韩浣撶殑鎺ヨЕ銆佹儏鎰熺殑琛ㄨ揪绛夈€?`;
+[内容要素: 间接性行为]
+在这次互动中，可能会包含亲吻、爱抚等亲密行为。请根据你的性格和当前好感度，自然地表现出相应的反应，包括身体的接触、情感的表达等。
+`;
             }
             
             contextPrompt += `
-璇锋牴鎹綘鐨勬€ф牸銆佸綋鍓嶆椂闂淬€佸湴鐐广€佸ソ鎰熷害浠ュ強鐜╁鐨勮涓猴紝鐢熸垚涓€鍙ョ鍚堟儏澧冪殑寮€鍦虹櫧鎴栧弽搴斻€?涓嶉渶瑕佹坊鍔犱换浣曠郴缁熷墠缂€锛岀洿鎺ヨ緭鍑鸿鑹茬殑鍙拌瘝鍜屽姩浣滄弿鍐欍€?`;
+请根据你的性格、当前时间、地点、好感度以及玩家的行为，生成一句符合情境的开场白或反应。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
             const response = await llmService.sendMessage(contextPrompt);
             const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
 
-            // 淇濆瓨寮€鍦虹櫧鍒拌亰澶╄褰?            await aiMemory.saveMessage(char.id, 'assistant', displayText);
+            // 保存开场白到聊天记录
+            await aiMemory.saveMessage(char.id, 'assistant', displayText);
 
             setCurrentDialogue({ speaker: char.name, text: displayText });
             setHistory(prev => [...prev, { 
@@ -150,20 +161,20 @@ export const useDialogueSystem = ({
             setIsTyping(true);
         } catch(e) {
             console.error(e);
-            setErrorMessage("瑙掕壊鍒濆鍖栧け璐?);
-            setCurrentDialogue({ speaker: char.name, text: `*(${char.name}鐪嬬潃浣?* ...鏈変粈涔堜簨鍚楋紵` });
+            setErrorMessage("角色初始化失败");
+            setCurrentDialogue({ speaker: char.name, text: `*(${char.name}看着你)* ...有什么事吗？` });
         } finally {
             setIsLoading(false);
         }
     } else {
-        setCurrentDialogue({ speaker: char.name, text: `*(${char.name}浼间箮姝ｅ湪鍙戝憜)* ...` });
+        setCurrentDialogue({ speaker: char.name, text: `*(${char.name}似乎正在发呆)* ...` });
     }
   };
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading || !activeCharacter) return;
     if (!settings.apiConfig.apiKey) {
-        setErrorMessage("璇烽厤缃?API Key銆?);
+        setErrorMessage("请配置 API Key。");
         return;
     }
 
@@ -173,22 +184,24 @@ export const useDialogueSystem = ({
     setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
 
     try {
-      const contextBlock = `\n[褰撳墠鐜]\n鍦烘櫙: ${worldState.sceneName}\n鏃堕棿: ${worldState.timeStr}\n琛ｇ潃: ${clothingState}\n`;
-      const enrichedMessage = `${contextBlock}\n鐢ㄦ埛鍙戣█: "${userMessage}"`;
+      const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;
+      const enrichedMessage = `${contextBlock}\n用户发言: "${userMessage}"`;
       
       const response = await llmService.sendMessage(enrichedMessage);
       const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
       
-      // 淇濆瓨鐢ㄦ埛娑堟伅鍜?AI 鍥炲鍒拌亰澶╄褰?      await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
+      // 保存用户消息和 AI 回复到聊天记录
+      await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
       await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
       
-      // 濡傛灉 AI 鎻愬彇浜嗘柊鐨勬牳蹇冭蹇嗭紝淇濆瓨鍒版暟鎹簱
+      // 如果 AI 提取了新的核心记忆，保存到数据库
       if (response.update_memory && response.update_memory.length > 0) {
           console.log('[AI Memory] Extracted memories:', response.update_memory);
           await aiMemory.saveMemories(activeCharacter.id, response.update_memory, 'core_fact');
       }
       
-      // 闈欓粯瑙﹀彂鎽樿鍘嬬缉锛堜笉闃诲 UI锛?      aiMemory.triggerSummaryIfNeeded(activeCharacter.id).catch(err => {
+      // 静默触发摘要压缩（不阻塞 UI）
+      aiMemory.triggerSummaryIfNeeded(activeCharacter.id).catch(err => {
           console.error('[AI Memory] Summary trigger failed:', err);
       });
       
@@ -199,26 +212,29 @@ export const useDialogueSystem = ({
       }
 
       if (response.affinity_change && activeCharacter) {
-          // [濂芥劅搴︿笂闄怾 妫€鏌ユ槸鍚﹀凡杈惧埌姝ｉ潰濂芥劅搴︾疮璁′笂闄?          const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
+          // [好感度上限] 检查是否已达到正面好感度累计上限
+          const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
           
           if (shouldApplyChange) {
               onAffinityChange(activeCharacter.id, response.affinity_change);
               setLastAffinityChange(response.affinity_change);
-              // 娓呴櫎鍙樺寲鎸囩ず鍣?              setTimeout(() => setLastAffinityChange(undefined), 2500);
+              // 清除变化指示器
+              setTimeout(() => setLastAffinityChange(undefined), 2500);
               
-              // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 绱濂芥劅搴﹀彉鍖?              const newTotal = sessionAffinityTotal + response.affinity_change;
+              // [角色主动结束对话] 累计好感度变化
+              const newTotal = sessionAffinityTotal + response.affinity_change;
               setSessionAffinityTotal(newTotal);
               
-              // 濡傛灉绱濂芥劅搴﹀彉鍖?<= -10 涓斾笉鍦?bondage 鐘舵€侊紝瑙掕壊涓诲姩缁撴潫瀵硅瘽
+              // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
               if (newTotal <= -10 && clothingState !== 'bondage') {
-                  console.log(`[瑙掕壊涓诲姩缁撴潫瀵硅瘽] 濂芥劅搴︾疮璁? ${newTotal}, 瑙﹀彂寮哄埗缁撴潫`);
-                  // 寤惰繜瑙﹀彂锛岃褰撳墠娑堟伅鏄剧ず瀹屾瘯
+                  console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
+                  // 延迟触发，让当前消息显示完毕
                   setTimeout(() => {
                       handleEndDialogueGeneration();
                   }, 1000);
               }
           } else {
-              console.log(`[濂芥劅搴︿笂闄怾 褰撳墠绱: ${sessionAffinityTotal}, 蹇界暐姝ｉ潰鍙樺寲: +${response.affinity_change}`);
+              console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
           }
       }
 
@@ -231,8 +247,9 @@ export const useDialogueSystem = ({
 
       if (response.move_to) {
           onCharacterMove(activeCharacter.id, response.move_to);
-          // [瑙掕壊绉诲姩绯荤粺] 褰撹鑹插喅瀹氱Щ鍔ㄥ満鏅椂锛屼富鍔ㄧ粨鏉熷璇?          console.log(`[瑙掕壊绉诲姩绯荤粺] ${activeCharacter.name} 鍐冲畾绉诲姩鍒?${response.move_to}锛屼富鍔ㄧ粨鏉熷璇漙);
-          // 寤惰繜瑙﹀彂锛岃褰撳墠娑堟伅鏄剧ず瀹屾瘯
+          // [角色移动系统] 当角色决定移动场景时，主动结束对话
+          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+          // 延迟触发，让当前消息显示完毕
           setTimeout(() => {
               handleEndDialogueGenerationWithMove(response.move_to);
           }, 1000);
@@ -281,7 +298,7 @@ export const useDialogueSystem = ({
       setCurrentSprite(sprite);
       setIsTyping(true);
     } catch (error) {
-      setErrorMessage(`閫氫俊鏁呴殰: ${error instanceof Error ? error.message : 'Unknown Error'}`);
+      setErrorMessage(`通信故障: ${error instanceof Error ? error.message : 'Unknown Error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -300,25 +317,27 @@ export const useDialogueSystem = ({
             if (response.items && response.items.length > 0) onItemsGained(response.items);
 
             if (response.affinity_change && activeCharacter) {
-                // [濂芥劅搴︿笂闄怾 妫€鏌ユ槸鍚﹀凡杈惧埌姝ｉ潰濂芥劅搴︾疮璁′笂闄?                const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
+                // [好感度上限] 检查是否已达到正面好感度累计上限
+                const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
                 
                 if (shouldApplyChange) {
                     onAffinityChange(activeCharacter.id, response.affinity_change);
                     setLastAffinityChange(response.affinity_change);
                     setTimeout(() => setLastAffinityChange(undefined), 2500);
                     
-                    // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 绱濂芥劅搴﹀彉鍖?                    const newTotal = sessionAffinityTotal + response.affinity_change;
+                    // [角色主动结束对话] 累计好感度变化
+                    const newTotal = sessionAffinityTotal + response.affinity_change;
                     setSessionAffinityTotal(newTotal);
                     
-                    // 濡傛灉绱濂芥劅搴﹀彉鍖?<= -10 涓斾笉鍦?bondage 鐘舵€侊紝瑙掕壊涓诲姩缁撴潫瀵硅瘽
+                    // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
                     if (newTotal <= -10 && clothingState !== 'bondage') {
-                        console.log(`[瑙掕壊涓诲姩缁撴潫瀵硅瘽] 濂芥劅搴︾疮璁? ${newTotal}, 瑙﹀彂寮哄埗缁撴潫`);
+                        console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
                         setTimeout(() => {
                             handleEndDialogueGeneration();
                         }, 1000);
                     }
                 } else {
-                    console.log(`[濂芥劅搴︿笂闄怾 褰撳墠绱: ${sessionAffinityTotal}, 蹇界暐姝ｉ潰鍙樺寲: +${response.affinity_change}`);
+                    console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
                 }
             }
 
@@ -331,8 +350,9 @@ export const useDialogueSystem = ({
 
             if (response.move_to) {
                 onCharacterMove(activeCharacter.id, response.move_to);
-                // [瑙掕壊绉诲姩绯荤粺] 褰撹鑹插喅瀹氱Щ鍔ㄥ満鏅椂锛屼富鍔ㄧ粨鏉熷璇?                console.log(`[瑙掕壊绉诲姩绯荤粺] ${activeCharacter.name} 鍐冲畾绉诲姩鍒?${response.move_to}锛屼富鍔ㄧ粨鏉熷璇漙);
-                // 寤惰繜瑙﹀彂锛岃褰撳墠娑堟伅鏄剧ず瀹屾瘯
+                // [角色移动系统] 当角色决定移动场景时，主动结束对话
+                console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+                // 延迟触发，让当前消息显示完毕
                 setTimeout(() => {
                     handleEndDialogueGenerationWithMove(response.move_to);
                 }, 1000);
@@ -384,7 +404,7 @@ export const useDialogueSystem = ({
              setCurrentSprite(sprite);
          }
      } catch (e) {
-         setErrorMessage("閲嶇敓鎴愬け璐?);
+         setErrorMessage("重生成失败");
      } finally {
          setIsLoading(false);
      }
@@ -397,18 +417,29 @@ export const useDialogueSystem = ({
     setIsLoading(true);
 
     try {
-        // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 鍒ゆ柇鏄惁涓鸿鑹蹭富鍔ㄧ粨鏉?        const isCharacterInitiated = sessionAffinityTotal <= -10 && clothingState !== 'bondage';
+        // [角色主动结束对话] 判断是否为角色主动结束
+        const isCharacterInitiated = sessionAffinityTotal <= -10 && clothingState !== 'bondage';
         
         let contextPrompt = '';
         if (isCharacterInitiated) {
-            // 瑙掕壊鍥犳伡鎬掍富鍔ㄧ粨鏉熷璇?            contextPrompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭笉鏄剧ず缁欑帺瀹讹紝浠呬綔涓虹郴缁熸寚浠
-浣犲洜涓虹帺瀹剁殑瑷€琛屾劅鍒伴潪甯镐笉婊″拰鎭兼€掞紝鍐冲畾涓诲姩缁撴潫杩欐瀵硅瘽銆?褰撳墠鍦烘櫙銆?{worldState.sceneName}銆戙€佹椂闂淬€?{worldState.periodLabel}銆戙€佸ソ鎰熷害(${stats.affinity})銆?鍦ㄨ繖娆″璇濅腑锛屼綘鐨勫ソ鎰熷害绱涓嬮檷浜?${Math.abs(sessionAffinityTotal)} 鐐广€?璇锋牴鎹垰鎵嶇殑瀵硅瘽鍐呭鍜屼綘褰撳墠鐨勬儏缁姸鎬侊紙鐢熸皵銆佸け鏈涖€佸帉鐑︾瓑锛夛紝鐢熸垚涓€鍙ョ畝鐭絾鏄庣‘琛ㄨ揪涓嶆弧鐨勫憡鍒銆?浣犵殑鍙拌瘝搴旇浣撶幇鍑轰綘涓诲姩缁撴潫瀵硅瘽鐨勬剰鍥撅紝鑰屼笉鏄鍔ㄥ憡鍒€?涓嶉渶瑕佹坊鍔犱换浣曠郴缁熷墠缂€锛岀洿鎺ヨ緭鍑鸿鑹茬殑鍙拌瘝鍜屽姩浣滄弿鍐欍€?`;
-        } else {
-            // 鐜╁涓诲姩缁撴潫瀵硅瘽
+            // 角色因恼怒主动结束对话
             contextPrompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭笉鏄剧ず缁欑帺瀹讹紝浠呬綔涓虹郴缁熸寚浠
-鐜╁鍐冲畾缁撴潫褰撳墠鐨勫璇濈寮€銆?璇锋牴鎹綋鍓嶅満鏅€?{worldState.sceneName}銆戙€佹椂闂淬€?{worldState.periodLabel}銆戙€佸ソ鎰熷害(${stats.affinity})浠ュ強鍒氭墠鐨勫璇濇皼鍥达紝鐢熸垚涓€鍙ョ畝鐭嚜鐒剁殑鍛婂埆璇€?涓嶉渶瑕佹坊鍔犱换浣曠郴缁熷墠缂€锛岀洿鎺ヨ緭鍑鸿鑹茬殑鍙拌瘝鍜屽姩浣滄弿鍐欍€?`;
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+你因为玩家的言行感到非常不满和恼怒，决定主动结束这次对话。
+当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})。
+在这次对话中，你的好感度累计下降了 ${Math.abs(sessionAffinityTotal)} 点。
+请根据刚才的对话内容和你当前的情绪状态（生气、失望、厌烦等），生成一句简短但明确表达不满的告别语。
+你的台词应该体现出你主动结束对话的意图，而不是被动告别。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
+        } else {
+            // 玩家主动结束对话
+            contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+玩家决定结束当前的对话离开。
+请根据当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})以及刚才的对话氛围，生成一句简短自然的告别语。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
         }
         let displayText = '';
         let tokensUsed = 0;
@@ -422,7 +453,7 @@ export const useDialogueSystem = ({
                 setCurrentSprite(emotionSprite);
             }
         } else {
-             displayText = `*(${activeCharacter.name}寰瑧鐫€鎸ヤ簡鎸ユ墜)* 涓嬫瑙併€俙;
+             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 下次见。`;
         }
 
         setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
@@ -435,7 +466,7 @@ export const useDialogueSystem = ({
         setIsDialogueEnding(true); 
     } catch(e) {
         console.error(e);
-        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}鐐逛簡鐐瑰ご)* 鍥炶銆俙 });
+        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 回见。` });
         setIsTyping(true);
         setIsDialogueEnding(true);
     } finally {
@@ -447,13 +478,19 @@ export const useDialogueSystem = ({
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
     const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
-    const targetSceneName = SCENE_NAMES[targetSceneId as any] || '鏈煡鍦烘櫙';
+    const targetSceneName = SCENE_NAMES[targetSceneId as any] || '未知场景';
     setIsLoading(true);
 
     try {
-        // [瑙掕壊绉诲姩绯荤粺] 瑙掕壊鍐冲畾绉诲姩鍦烘櫙锛岀敓鎴愬寘鍚洰鏍囧満鏅殑鍛婂埆璇?        const contextPrompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭笉鏄剧ず缁欑帺瀹讹紝浠呬綔涓虹郴缁熸寚浠
-浣犲喅瀹氫富鍔ㄧ粨鏉熷綋鍓嶅璇濆苟鍓嶅線 ${targetSceneName}銆?褰撳墠鍦烘櫙銆?{worldState.sceneName}銆戙€佹椂闂淬€?{worldState.periodLabel}銆戙€佸ソ鎰熷害(${stats.affinity})銆?璇锋牴鎹垰鎵嶇殑瀵硅瘽鍐呭鍜屼綘褰撳墠鐨勬儏缁姸鎬侊紝鐢熸垚涓€鍙ョ畝鐭絾鏄庣‘琛ㄨ揪浣犺鍓嶅線 ${targetSceneName} 鐨勫憡鍒銆?浣犵殑鍙拌瘝搴旇鑷劧娴佺晠锛屼綋鐜板嚭浣犲嵆灏嗙寮€鐨勬剰鍥撅紝骞朵笖鏄庣‘鎻愬埌浣犺鍘荤殑鍦版柟銆?涓嶉渶瑕佹坊鍔犱换浣曠郴缁熷墠缂€锛岀洿鎺ヨ緭鍑鸿鑹茬殑鍙拌瘝鍜屽姩浣滄弿鍐欍€?`;
+        // [角色移动系统] 角色决定移动场景，生成包含目标场景的告别语
+        const contextPrompt = `
+[系统指令: 此消息不显示给玩家，仅作为系统指令]
+你决定主动结束当前对话并前往 ${targetSceneName}。
+当前场景【${worldState.sceneName}】、时间【${worldState.periodLabel}】、好感度(${stats.affinity})。
+请根据刚才的对话内容和你当前的情绪状态，生成一句简短但明确表达你要前往 ${targetSceneName} 的告别语。
+你的台词应该自然流畅，体现出你即将离开的意图，并且明确提到你要去的地方。
+不需要添加任何系统前缀，直接输出角色的台词和动作描写。
+`;
         
         let displayText = '';
         let tokensUsed = 0;
@@ -467,7 +504,7 @@ export const useDialogueSystem = ({
                 setCurrentSprite(emotionSprite);
             }
         } else {
-             displayText = `*(${activeCharacter.name}寰瑧鐫€鎸ヤ簡鎸ユ墜)* 鎴戣鍘?{targetSceneName}浜嗭紝涓嬫瑙併€俙;
+             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
         }
 
         setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
@@ -480,7 +517,7 @@ export const useDialogueSystem = ({
         setIsDialogueEnding(true); 
     } catch(e) {
         console.error(e);
-        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}鐐逛簡鐐瑰ご)* 鎴戝幓${targetSceneName}浜嗭紝鍥炶銆俙 });
+        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 我去${targetSceneName}了，回见。` });
         setIsTyping(true);
         setIsDialogueEnding(true);
     } finally {
@@ -493,7 +530,8 @@ export const useDialogueSystem = ({
       setIsDialogueEnding(false);
       setActiveCharacter(null);
       setClothingState('default');
-      // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 閲嶇疆濂芥劅搴︾疮璁?      setSessionAffinityTotal(0);
+      // [角色主动结束对话] 重置好感度累计
+      setSessionAffinityTotal(0);
   };
 
   const generateAmbientLine = async (char: Character, state: ClothingState, sceneId: string) => {
@@ -504,7 +542,8 @@ export const useDialogueSystem = ({
 
       setIsAmbientLoading(true);
       try {
-          // 鍔犺浇瑙掕壊璁板繂浠ュ寮虹幆澧冨彴璇嶇殑杩炵画鎬?          const memoryContext = await aiMemory.getMemoryContext(char.id);
+          // 加载角色记忆以增强环境台词的连续性
+          const memoryContext = await aiMemory.getMemoryContext(char.id);
           
           await initLLM(char);
           
@@ -513,15 +552,24 @@ export const useDialogueSystem = ({
 
           if (sceneId === 'scen_7') {
               prompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭粎鐢熸垚鐜姘涘洿鍙拌瘝]
-浣犵幇鍦ㄦ鍦ㄦ俯娉夐噷娉℃尽锛岄潪甯告斁鏉俱€?浣犳病鏈夋敞鎰忓埌鐜╁(${settings.userName})鐨勫埌鏉ワ紝姝ｅ湪鑷█鑷銆?璇风粨鍚堝綋鍓嶇殑鑸掗€傜幆澧冿紝鐢熸垚涓€鍙ョ畝鐭殑銆佺鍚堜綘鎬ф牸鐨勮嚜瑷€鑷銆?涓嶈涓庣帺瀹跺璇濓紝涓嶈浣跨敤绗簩浜虹О銆?`;
+[系统指令: 此消息仅生成环境氛围台词]
+你现在正在温泉里泡澡，非常放松。
+你没有注意到玩家(${settings.userName})的到来，正在自言自语。
+请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。
+不要与玩家对话，不要使用第二人称。
+`;
           } else {
               prompt = `
-[绯荤粺鎸囦护: 姝ゆ秷鎭粎鐢熸垚鐜姘涘洿鍙拌瘝]
-浣犵洰鍓嶈韩澶勩€?{worldState.sceneName}銆戯紝鏃堕棿鏄€?{worldState.periodLabel}銆戯紝澶╂皵銆?{worldState.weather}銆戙€?鐜╁(${settings.userName})鍒氬垰杩涘叆杩欎釜鍦烘櫙锛屼絾杩樻病鏈夊拰浣犳惌璇濄€?褰撳墠浣犲鐜╁鐨勫ソ鎰熷害涓? ${stats.affinity}銆?璇锋牴鎹綘鐨勬€ф牸銆佸綋鍓嶆椂闂淬€佸湴鐐瑰拰蹇冩儏锛岀敓鎴愪竴鍙ョ畝鐭殑鈥滈棽鑱娾€濇垨鈥滆嚜瑷€鑷鈥濄€?鎴栬€呮槸娉ㄦ剰鍒扮帺瀹惰繘鏉ュ悗鐨勪竴鍙ョ畝鍗曠殑鎷涘懠锛堝鏋滄槸澶栧悜鎬ф牸锛夈€?`;
+[系统指令: 此消息仅生成环境氛围台词]
+你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。
+玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。
+当前你对玩家的好感度为: ${stats.affinity}。
+请根据你的性格、当前时间、地点和心情，生成一句简短的“闲聊”或“自言自语”。
+或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。
+`;
           }
 
-          // 澧炲己 prompt锛屽姞鍏ヨ鑹茶蹇嗕笂涓嬫枃
+          // 增强 prompt，加入角色记忆上下文
           const enhancedPrompt = aiMemory.buildEnhancedPrompt(prompt, memoryContext);
           const response = await llmService.sendMessage(enhancedPrompt);
           let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
@@ -554,7 +602,8 @@ export const useDialogueSystem = ({
       debugLogs, setDebugLogs,
       isDialogueEnding, setIsDialogueEnding,
       lastAffinityChange,
-      sessionAffinityTotal, // [瑙掕壊涓诲姩缁撴潫瀵硅瘽] 瀵煎嚭濂芥劅搴︾疮璁?      
+      sessionAffinityTotal, // [角色主动结束对话] 导出好感度累计
+      
       ambientCharacter, setAmbientCharacter,
       ambientText, setAmbientText,
       isAmbientLoading, setIsAmbientLoading,
@@ -566,9 +615,8 @@ export const useDialogueSystem = ({
       handleSend,
       handleRegenerate,
       handleEndDialogueGeneration,
-      handleEndDialogueGenerationWithMove, // [瑙掕壊绉诲姩绯荤粺] 瀵煎嚭绉诲姩鏃剁殑瀵硅瘽缁撴潫鍑芥暟
+      handleEndDialogueGenerationWithMove, // [角色移动系统] 导出移动时的对话结束函数
       handleFinalClose,
       generateAmbientLine
   };
 };
-

@@ -1,57 +1,60 @@
+
 import { CharacterSchedule } from '../types';
 
 export const CHARACTER_SCHEDULES: Record<string, CharacterSchedule> = {
-  'char_101': { // 鑾夎帀濞?    day: ['scen_1'],
+  'char_101': { // 莉莉娅
+    day: ['scen_1'],
     evening: ['scen_3'],
     night: ['scen_7', 'scen_8', 'scen_2']
   },
-  'char_102': { // 绫冲
+  'char_102': { // 米娜
     day: ['scen_3', 'scen_7', 'scen_8', 'scen_2'],
     evening: ['scen_3'],
     night: ['scen_3']
   },
-  'char_103': { // 娆ц嫢鎷?    day: ['scen_2', 'scen_4', 'scen_5','scen_6'],
+  'char_103': { // 欧若拉
+    day: ['scen_2', 'scen_4', 'scen_5','scen_6'],
     evening: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_2']
   },
-  'char_104': { // 鏈辫开鏂?    day: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
+  'char_104': { // 朱迪斯
+    day: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     evening: ['scen_3', 'scen_7', 'scen_8'],
     night: ['scen_3', 'scen_2']
   },
-  'char_105': { // 鑾插崕
+  'char_105': { // 莲华
     day: ['scen_4'],
     evening: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_4', 'scen_7', 'scen_2']
   },
-  'char_106': { // 鑹剧惓
+  'char_106': { // 艾琳
     day: ['scen_2','scen_4', 'scen_5','scen_6'],
     evening: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8']
   },
-  'char_107': { // 鑿叉礇
+  'char_107': { // 菲洛
     day: ['scen_2','scen_4', 'scen_5','scen_6'],
     evening: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8']
   },
-  'char_108': { // 鍗＄壒鐞冲
+  'char_108': { // 卡特琳娜
     day: ['scen_4', 'scen_5', 'scen_6'],
     evening: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_3', 'scen_7', 'scen_8', 'scen_2']
   },
-  'char_109': { // 鑾辨媺
+  'char_109': { // 莱拉
     day: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     evening: ['scen_2','scen_3', 'scen_4', ],
     night: ['scen_2','scen_3', 'scen_4', ]
   },
-  'char_110': { // 鐞夊崱
+  'char_110': { // 琉卡
     day: ['scen_2','scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     evening: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8'],
     night: ['scen_2','scen_3', 'scen_4', 'scen_5','scen_6','scen_7','scen_8']
   },
-  'char_111': { // 鍚夊
+  'char_111': { // 吉娜
     day: ['scen_2','scen_7','scen_8'],
     evening: ['scen_3'],
     night: ['scen_2','scen_3', 'scen_7','scen_8']
   }
 };
-

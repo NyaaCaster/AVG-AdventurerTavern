@@ -89,16 +89,6 @@ __mocks__
 .prettierrc*
 .editorconfig
 
-# Git hooks（构建时不需要）
-.githooks/
-.husky/
-
-# 编码检查脚本保留用于构建时修复
-# scripts/fix-encoding.js - 需要保留！
-scripts/check-encoding.js
-scripts/pre-push-check.sh
-scripts/pre-push-check.ps1
-
 # 开发配置
 docker-compose.dev.yml
 docker-compose.override.yml
@@ -122,6 +112,3 @@ data/*.sqlite
 *.backup
 *.bak
 *.old
-
-# 工作标准文档（已包含在 Doc/ 中，但明确排除）
-Doc/WorkStandard/

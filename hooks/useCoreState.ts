@@ -1,11 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { 
-  ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
+    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
 } from '../types';
 import { 
-  INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
-  INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-  INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
+    INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
+    INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
+    INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 
@@ -30,6 +31,7 @@ export const useCoreState = (initialSaveData?: any) => {
   });
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
+    // Calculate initial values based on facility levels
     const innLevel = INITIAL_SCENE_LEVELS['scen_1'] || 1;
     const roomLevel = INITIAL_SCENE_LEVELS['scen_2'] || 1;
     return {
@@ -40,18 +42,23 @@ export const useCoreState = (initialSaveData?: any) => {
   });
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
 
+  // Apply loaded data
   useEffect(() => {
       if (initialSaveData) {
           applyLoadedData(initialSaveData);
       }
   }, [initialSaveData]);
 
+  // Initialize character unlocks with default values
   useEffect(() => {
       const initialUnlocks: Record<string, CharacterUnlocks> = {};
       
+      // For each character in INITIAL_CHARACTER_LEVEL
       Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+          // Get character-specific initial unlocks or use all zeros
           const charSpecificUnlocks = INITIAL_CHARACTER_UNLOCKS[charId] || {};
           
+          // Create full unlock object with defaults
           initialUnlocks[charId] = {
               accept_battle_party: 0,
               accept_flirt_topic: 0,
@@ -69,7 +76,7 @@ export const useCoreState = (initialSaveData?: any) => {
               accept_bathing_together: 0,
               accept_player_massage: 0,
               accept_character_massage: 0,
-              ...charSpecificUnlocks
+              ...charSpecificUnlocks // Override with character-specific values
           };
       });
       
@@ -91,9 +98,12 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.tavernMenu) setTavernMenu(data.tavernMenu);
   };
 
+  // --- Handlers ---
+
   const handleUpdateTavernMenu = (type: 'foods' | 'drinks', index: number, itemId: string | null) => {
       setTavernMenu(prev => {
           const newList = [...prev[type]];
+          // Ensure array size
           while (newList.length <= index) newList.push(null);
           newList[index] = itemId;
           return { ...prev, [type]: newList };
@@ -163,6 +173,7 @@ export const useCoreState = (initialSaveData?: any) => {
           const newLevel = (newLevels[facilityId] || 0) + 1;
           newLevels[facilityId] = newLevel;
           
+          // Update related stats immediately with new level
           if (facilityId === 'scen_1') {
               setManagementStats(prevStats => ({
                   ...prevStats,
@@ -179,6 +190,7 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
+  // --- Cooking Handlers ---
   const handleAddRecipe = (newRecipe: UserRecipe) => {
       setUserRecipes(prev => [newRecipe, ...prev]);
       setFoodStock(prev => ({
@@ -223,27 +235,13 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(newInventory);
   };
 
-  const handleShopTransaction = (changes: { goldChange: number; inventoryChanges: Record<string, number> }) => {
-      const { goldChange, inventoryChanges } = changes;
-      setGold(prev => Math.min(MAX_GOLD, Math.max(0, prev + goldChange)));
-      setInventory(prev => {
-          const newInv = { ...prev };
-          Object.entries(inventoryChanges).forEach(([itemId, count]) => {
-              if (count <= 0) {
-                  delete newInv[itemId];
-              } else {
-                  newInv[itemId] = count;
-              }
-          });
-          return newInv;
-      });
-  };
-
+  // Debug Modifiers
   const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
   const updateInventoryItem = (itemId: string, newCount: number) => {
       setInventory(prev => ({ ...prev, [itemId]: newCount }));
   };
 
+  // Character unlock handlers
   const updateCharacterUnlock = (
       characterId: string,
       unlockKey: keyof CharacterUnlocks,
@@ -307,6 +305,7 @@ export const useCoreState = (initialSaveData?: any) => {
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
       
+      // Handlers
       handleManagementAction,
       handleUpgradeFacility,
       handleAddRecipe,
@@ -323,8 +322,6 @@ export const useCoreState = (initialSaveData?: any) => {
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,
       handleClearTavernMenu,
-      handleTavernSales,
-      handleShopTransaction
+      handleTavernSales
   };
 };
-

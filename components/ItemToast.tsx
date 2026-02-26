@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { ITEMS, ITEM_TAGS } from '../data/items';
 import { resolveImgPath } from '../utils/imagePath';
@@ -41,12 +42,12 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
       
       // Fallback based on category
       switch (item.category) {
-          case 'wpn': return '鈿旓笍';
-          case 'arm': return '馃洝锔?;
-          case 'itm': return '馃И';
-          case 'acs': return '馃拲';
-          case 'res': return '馃摝';
-          default: return '馃巵';
+          case 'wpn': return '⚔️';
+          case 'arm': return '🛡️';
+          case 'itm': return '🧪';
+          case 'acs': return '💍';
+          case 'res': return '📦';
+          default: return '🎁';
       }
   };
 
@@ -74,10 +75,10 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
 
       {/* Text Info */}
       <div className="flex flex-col">
-          <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">鑾峰緱閬撳叿</span>
+          <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">获得道具</span>
           <div className="flex items-baseline gap-2">
               <span className="text-[#f0e6d2] font-bold text-sm shadow-black text-shadow-sm">{item.name}</span>
-              <span className="text-amber-400 font-mono font-bold text-sm">脳{count}</span>
+              <span className="text-amber-400 font-mono font-bold text-sm">×{count}</span>
           </div>
       </div>
 
@@ -90,4 +91,3 @@ const ItemToast: React.FC<ItemToastProps> = ({ itemId, count, onComplete }) => {
 };
 
 export default ItemToast;
-

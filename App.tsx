@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GameState, GameSettings, ConfigTab } from './types';
 import GameScene, { GameSceneRef } from './components/GameScene';
@@ -5,7 +6,7 @@ import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
 import { setHDMode } from './utils/imagePath';
-import { loadGame } from './services/db';
+import { loadGame } from './services/db'; // Import loadGame
 
 const App: React.FC = () => {
   // 设置初始游戏状态
@@ -18,7 +19,7 @@ const App: React.FC = () => {
   // 当前登录用户ID
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   
-  // 当前存档槽位ID，0=自动存档，1-3=手动存档
+  // 当前存档槽位ID（0=自动存档，1-3=手动存档）
   const [currentSlotId, setCurrentSlotId] = useState<number>(0);
 
   // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
@@ -28,7 +29,7 @@ const App: React.FC = () => {
       return settings;
   });
 
-  // 保存从标题屏幕加载的数据
+  // State to hold data loaded from Title Screen
   const [initialSaveData, setInitialSaveData] = useState<any>(null);
 
   // --- 转场动画状态管理 ---
@@ -36,7 +37,7 @@ const App: React.FC = () => {
   const [transitionDuration, setTransitionDuration] = useState(0); // 动画持续时间(ms)
   const [isTransitioning, setIsTransitioning] = useState(false); // 是否正在转场中(阻挡点击)
 
-  // GameScene 引用，用于触发自动保存
+  // GameScene Ref for triggering auto-save
   const gameSceneRef = React.useRef<GameSceneRef>(null);
 
   // 场景切换处理函数 (核心逻辑)
@@ -50,7 +51,7 @@ const App: React.FC = () => {
 
     // 等待压黑动画完成
     setTimeout(() => {
-        // 2. 切换底层状态(此时屏幕全黑，用户看不到资源加载/替换过程)
+        // 2. 切换底层状态 (此时屏幕全黑，用户看不到资源加载/替换过程)
         setGameState(targetState);
 
         // 3. 渐显 (Fade In)
@@ -84,7 +85,7 @@ const App: React.FC = () => {
       try {
           const data = await loadGame(currentUserId, slotId);
           if (data) {
-              // 如果存档中有设置，则恢复设置
+              // Restore settings from save if available
               if (data.settings) {
                   handleUpdateSettings(data.settings);
               }
@@ -98,7 +99,7 @@ const App: React.FC = () => {
   };
 
   const handleStartNewGame = () => {
-      setInitialSaveData(null); // 确保全新开始
+      setInitialSaveData(null); // Ensure fresh start
       setCurrentSlotId(0); // 新游戏使用自动存档槽位
       handleSwitchScene(GameState.PLAYING, 1000, 2000);
   };
@@ -149,7 +150,7 @@ const App: React.FC = () => {
         <TitleScreen 
             onLogin={handleUserLogin}
             onStartGame={handleStartNewGame}
-            onLoadGame={handleTitleLoadGame}
+            onLoadGame={handleTitleLoadGame} // Pass the specific load handler
             onOpenConfig={() => handleOpenConfig(GameState.MENU, 'api')}
             volume={gameSettings.masterVolume}
             isMuted={gameSettings.isMuted}
@@ -166,9 +167,9 @@ const App: React.FC = () => {
                 currentSlotId={currentSlotId}
                 onBackToMenu={() => handleSwitchScene(GameState.MENU, 1000, 2000)}
                 onOpenSettings={(tab) => handleOpenConfig(GameState.PLAYING, tab)}
-                onSettingsChange={handleUpdateSettings}
+                onSettingsChange={handleUpdateSettings} // Pass handler for in-game loads
                 settings={gameSettings}
-                initialSaveData={initialSaveData}
+                initialSaveData={initialSaveData} // Pass loaded data
             />
         </div>
       )}

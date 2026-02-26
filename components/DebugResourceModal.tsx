@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ITEMS } from '../data/items';
 import { ItemData } from '../types';
@@ -53,7 +54,7 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
             <div className="flex items-center justify-between p-3 px-4 border-b border-slate-800 bg-[#1a1a1a] rounded-t-lg shrink-0">
                 <h3 className="text-base font-bold text-emerald-400 flex items-center gap-2">
                     <i className="fa-solid fa-screwdriver-wrench"></i>
-                    璧勬簮璋冩暣 (Debug)
+                    资源调整 (Debug)
                 </h3>
                 <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors">
                     <i className="fa-solid fa-xmark"></i>
@@ -64,7 +65,7 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
                 {/* Gold Row */}
                 <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded border border-yellow-500/20">
                     <div className="flex flex-col">
-                        <span className="text-yellow-500 font-bold text-base"><i className="fa-solid fa-coins mr-2"></i>璧勯噾 (Gold)</span>
+                        <span className="text-yellow-500 font-bold text-base"><i className="fa-solid fa-coins mr-2"></i>资金 (Gold)</span>
                         <span className="text-[10px] text-slate-500">Limit: {MAX_GOLD.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-6">
@@ -128,4 +129,3 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
 };
 
 export default ResourceDebugModal;
-

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getSaveSlots, GameSaveData } from '../services/db';
 import { resolveImgPath } from '../utils/imagePath';
@@ -5,9 +6,9 @@ import { resolveImgPath } from '../utils/imagePath';
 interface SaveLoadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'save' | 'load'; // 褰撳墠妯″紡
-  allowSwitchMode?: boolean; // 鏄惁鍏佽鍒囨崲妯″紡 (鏍囬鐢婚潰璁句负 false)
-  userId?: number; // 褰撳墠鐢ㄦ埛ID锛屽彲閫変互鍏煎鏈櫥褰曠姸鎬?姝ゆ椂涓嶆樉绀轰换浣曞瓨妗?
+  mode: 'save' | 'load'; // 当前模式
+  allowSwitchMode?: boolean; // 是否允许切换模式 (标题画面设为 false)
+  userId?: number; // 当前用户ID，可选以兼容未登录状态(此时不显示任何存档)
   onSave?: (slotId: number) => Promise<void>;
   onLoad: (slotId: number) => Promise<void>;
   onDelete?: (slotId: number) => Promise<void>;
@@ -31,7 +32,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     message: string;
   } | null>(null);
 
-  // 姣忔鎵撳紑鎴栧垏鎹㈡爣绛炬椂鍒锋柊鍒楄〃
+  // 每次打开或切换标签时刷新列表
   useEffect(() => {
     if (isOpen && userId !== undefined) {
       refreshSlots();
@@ -52,10 +53,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     return `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
   };
 
-  // 璁＄畻宸插叆浣忚鑹叉暟閲忥紙涓嶅寘鎷帺瀹惰嚜宸憋級
+  // 计算已入住角色数量（不包括玩家自己）
   const getCharacterCount = (data: GameSaveData) => {
     if (!data.characterStats) return 0;
-    // 鎺掗櫎鐜╁鑷繁锛屽彧缁熻 NPC 瑙掕壊
+    // 排除玩家自己，只统计 NPC 角色
     return Object.keys(data.characterStats).length;
   };
 
@@ -63,25 +64,25 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     const existing = getSlotData(slotId);
 
     if (activeTab === 'save') {
-      if (slotId === 0) return; // 鑷姩瀛樻。涓嶅彲鎵嬪姩瑕嗙洊
+      if (slotId === 0) return; // 自动存档不可手动覆盖
       
       if (existing) {
         setConfirmDialog({
           type: 'overwrite',
           slotId,
-          message: `纭畾瑕佽鐩?[瀛樻。 ${slotId}] 鍚楋紵\n鏃х殑杩涘害灏嗘棤娉曟壘鍥炪€俙
+          message: `确定要覆盖 [存档 ${slotId}] 吗？\n旧的进度将无法找回。`
         });
       } else {
-        // 鏂板瓨妗ｇ洿鎺ヤ繚瀛橈紝鏃犻渶纭锛堟垨鑰呬篃鍙互鍔狅級
+        // 新存档直接保存，无需确认（或者也可以加）
         doSave(slotId);
       }
     } else {
-      // Load 妯″紡
+      // Load 模式
       if (!existing) return;
       setConfirmDialog({
         type: 'load',
         slotId,
-        message: `纭畾瑕佽鍙?[${slotId === 0 ? '鑷姩瀛樻。' : `瀛樻。 ${slotId}`}] 鍚楋紵\n褰撳墠鏈繚瀛樼殑杩涘害灏嗕涪澶便€俙
+        message: `确定要读取 [${slotId === 0 ? '自动存档' : `存档 ${slotId}`}] 吗？\n当前未保存的进度将丢失。`
       });
     }
   };
@@ -91,7 +92,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     setConfirmDialog({
       type: 'delete',
       slotId,
-      message: `纭畾瑕佸垹闄?[瀛樻。 ${slotId}] 鍚楋紵\n姝ゆ搷浣滄棤娉曟挙閿€銆俙
+      message: `确定要删除 [存档 ${slotId}] 吗？\n此操作无法撤销。`
     });
   };
 
@@ -130,13 +131,13 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider flex items-center">
               <i className={`fa-solid ${activeTab === 'load' ? 'fa-folder-open' : 'fa-floppy-disk'} mr-2 md:mr-3`}></i>
-              {activeTab === 'load' ? '璇诲彇瀛樻。' : '淇濆瓨杩涘害'}
+              {activeTab === 'load' ? '读取存档' : '保存进度'}
             </h2>
           </div>
           <button 
             onClick={onClose}
             className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
-            title="鍏抽棴"
+            title="关闭"
           >
             <i className="fa-solid fa-xmark"></i>
           </button>
@@ -154,7 +155,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
               }`}
             >
               <i className={`fa-solid fa-folder-open ${activeTab === 'load' ? 'text-cyan-400' : 'opacity-70'}`}></i>
-              <span className="font-medium tracking-wide">璇绘。</span>
+              <span className="font-medium tracking-wide">读档</span>
             </button>
             <button
               onClick={() => setActiveTab('save')}
@@ -165,7 +166,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
               }`}
             >
               <i className={`fa-solid fa-floppy-disk ${activeTab === 'save' ? 'text-amber-400' : 'opacity-70'}`}></i>
-              <span className="font-medium tracking-wide">瀛樻。</span>
+              <span className="font-medium tracking-wide">存档</span>
             </button>
           </div>
         )}
@@ -178,7 +179,9 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
               const isAuto = slotId === 0;
               const isEmpty = !data;
               
-              // 鐘舵€佸垽鏂?              const isDisabled = activeTab === 'save' && isAuto; // 瀛樻。妯″紡涓嬶紝鑷姩瀛樻。浣嶄笉鍙€?              
+              // 状态判断
+              const isDisabled = activeTab === 'save' && isAuto; // 存档模式下，自动存档位不可选
+              
               return (
                 <div 
                   key={slotId}
@@ -203,7 +206,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                       <span className={`text-sm font-bold tracking-wide ${
                         isAuto ? 'text-cyan-400' : 'text-amber-500'
                       }`}>
-                        {isAuto ? '鑷姩瀛樻。' : `瀛樻。 ${slotId}`}
+                        {isAuto ? '自动存档' : `存档 ${slotId}`}
                       </span>
                     </div>
 
@@ -212,7 +215,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                       <button
                         onClick={(e) => handleDeleteClick(e, slotId)}
                         className="w-7 h-7 flex items-center justify-center rounded bg-red-900/50 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
-                        title="鍒犻櫎瀛樻。"
+                        title="删除存档"
                       >
                         <i className="fa-solid fa-trash-can text-xs"></i>
                       </button>
@@ -223,12 +226,12 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   {isEmpty ? (
                     <div className="flex items-center justify-center py-6 text-slate-600">
                       <i className="fa-solid fa-plus text-2xl mr-2 opacity-50"></i>
-                      <span className="font-medium tracking-wide text-sm">绌鸿褰?/span>
+                      <span className="font-medium tracking-wide text-sm">空记录</span>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <h3 className="text-base font-bold text-slate-100 tracking-wide truncate">
-                        {data.label || '鏃犳爣棰?}
+                        {data.label || '无标题'}
                       </h3>
                       
                       <div className="text-xs text-cyan-400 font-mono">
@@ -242,7 +245,8 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                         </span>
                         <span className="flex items-center gap-1.5">
                           <i className="fa-solid fa-users text-purple-400"></i>
-                          {getCharacterCount(data)} 浣嶈鑹?                        </span>
+                          {getCharacterCount(data)} 位角色
+                        </span>
                       </div>
                     </div>
                   )}
@@ -270,7 +274,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   onClick={() => setConfirmDialog(null)}
                   className="px-5 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-bold text-sm"
                 >
-                  鍙栨秷
+                  取消
                 </button>
                 <button
                   onClick={() => {
@@ -282,7 +286,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                     confirmDialog.type === 'delete' ? 'bg-red-700 hover:bg-red-600' : 'bg-amber-700 hover:bg-amber-600'
                   }`}
                 >
-                  纭畾
+                  确定
                 </button>
               </div>
             </div>
@@ -295,4 +299,3 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 };
 
 export default SaveLoadModal;
-

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
@@ -112,19 +113,19 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
       // Basic Validation
       if (!username || !password) {
-          setAuthError("璇疯緭鍏ョ敤鎴峰悕鍜屽瘑鐮?);
+          setAuthError("请输入用户名和密码");
           return;
       }
       
       const usernameRegex = /^[a-zA-Z0-9]+$/;
       if (!usernameRegex.test(username)) {
-          setAuthError("鐢ㄦ埛鍚嶅彧鍏佽瀛楁瘝鍜屾暟瀛?);
+          setAuthError("用户名只允许字母和数字");
           return;
       }
 
       if (authMode === 'REGISTER') {
           if (password !== confirmPassword) {
-              setAuthError("涓ゆ杈撳叆鐨勫瘑鐮佷笉涓€鑷?);
+              setAuthError("两次输入的密码不一致");
               return;
           }
           
@@ -335,7 +336,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                   ? 'bg-amber-500/20 border-amber-500/50 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' 
                   : 'bg-black/40 border-white/20 text-white/40 hover:text-white hover:border-white/40'
                 }`}
-                title={isPlaying ? "鏆傚仠 BGM" : "鎾斁 BGM"}
+                title={isPlaying ? "暂停 BGM" : "播放 BGM"}
               >
                 <i 
                   className={`fa-solid fa-music text-xl ${isPlaying ? 'animate-pulse' : ''}`}
@@ -370,7 +371,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                 <div className="mt-4 flex items-center gap-4">
                 <div className="h-0.5 w-16 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
                 <p className="text-white/90 text-xl md:text-2xl font-light tracking-[0.2em] text-shadow">
-                    鍐掗櫓鑰呰仛闆嗙殑閰掗
+                    冒险者聚集的酒馆
                 </p>
                 </div>
             </div>
@@ -385,7 +386,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                         className="text-slate-300/80 font-light tracking-[0.5em] text-lg md:text-xl select-none"
                         style={{ animation: 'breath 3s infinite ease-in-out' }}
                     >
-                        鐐瑰嚮灞忓箷杩涘叆娓告垙
+                        点击屏幕进入游戏
                     </span>
                 </div>
             )}
@@ -396,7 +397,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-[#f0e6d2] tracking-wider mb-2">
-                                {authMode === 'LOGIN' ? '鍐掗櫓鑰呯櫥褰? : '娉ㄥ唽鏂拌韩浠?}
+                                {authMode === 'LOGIN' ? '冒险者登录' : '注册新身份'}
                             </h2>
                             <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
                         </div>
@@ -405,7 +406,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                             <div>
                                 <input
                                     type="text"
-                                    placeholder="鐢ㄦ埛鍚?(瀛楁瘝/鏁板瓧)"
+                                    placeholder="用户名 (字母/数字)"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
@@ -414,7 +415,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                             <div>
                                 <input
                                     type="password"
-                                    placeholder="瀵嗙爜"
+                                    placeholder="密码"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
@@ -425,7 +426,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                 <div className="animate-fadeIn">
                                     <input
                                         type="password"
-                                        placeholder="纭瀵嗙爜"
+                                        placeholder="确认密码"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
@@ -443,7 +444,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                 type="submit"
                                 className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2"
                             >
-                                {authMode === 'LOGIN' ? '鐧?褰? : '娉?鍐?}
+                                {authMode === 'LOGIN' ? '登 录' : '注 册'}
                             </button>
                         </form>
 
@@ -457,7 +458,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                 }}
                                 className="text-slate-400 text-sm hover:text-amber-400 transition-colors underline underline-offset-4"
                             >
-                                {authMode === 'LOGIN' ? '杩樻病鏈夎处鍙凤紵鐐瑰嚮娉ㄥ唽' : '宸叉湁璐﹀彿锛熻繑鍥炵櫥褰?}
+                                {authMode === 'LOGIN' ? '还没有账号？点击注册' : '已有账号？返回登录'}
                             </button>
                         </div>
                     </div>
@@ -468,19 +469,19 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
             {titleState === 'MENU' && (
                 <div className="absolute bottom-20 right-0 flex flex-col items-end gap-1 w-[400px] md:w-[500px] pointer-events-auto animate-fadeIn">
                     <MenuButton 
-                    label="寮€濮嬫父鎴? 
+                    label="开始游戏" 
                     subLabel="New Game" 
                     color="cyan"
                     onClick={onStartGame} 
                     />
                     <MenuButton 
-                    label="杞藉叆杩涘害" 
+                    label="载入进度" 
                     subLabel="Load Game" 
                     color="purple"
                     onClick={() => setIsLoadModalOpen(true)} 
                     />
                     <MenuButton 
-                    label="绯荤粺璁剧疆" 
+                    label="系统设置" 
                     subLabel="Config" 
                     color="emerald"
                     onClick={onOpenConfig} 
@@ -490,7 +491,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
             {/* Bottom Footer */}
             <div className="absolute bottom-4 left-6 text-white/30 text-[10px] tracking-widest uppercase select-none pointer-events-auto">
-                Powered by <a href="https://github.com/NyaaCaster/AVG-AdventurerTavern" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500/50 transition-colors"><span className="text-amber-500/50">馃悎锔?/span>Nyaa</a> with Google AI Studio IN 2026
+                Powered by <a href="https://github.com/NyaaCaster/AVG-AdventurerTavern" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500/50 transition-colors"><span className="text-amber-500/50">🐈︎</span>Nyaa</a> with Google AI Studio IN 2026
             </div>
         </div>
 
@@ -574,4 +575,3 @@ const MenuButton: React.FC<MenuButtonProps> = ({ label, subLabel, onClick, color
 };
 
 export default TitleScreen;
-

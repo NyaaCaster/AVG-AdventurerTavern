@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings, ApiProvider, ConnectionStatus, ApiConfig, ConfigTab } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
@@ -10,7 +11,7 @@ interface ConfigScreenProps {
   currentUserId?: number | null; // Added prop
 }
 
-// 瀹氫箟 SVG 鍥炬爣缁勪欢锛屼娇鐢?img 鏍囩寮曞叆澶栭儴 SVG
+// 定义 SVG 图标组件，使用 img 标签引入外部 SVG
 const Icons = {
   Google: () => (
     <img src={resolveImgPath("img/svg/gemini-logo.svg")} className="w-5 h-5 object-contain" alt="Google Gemini" />
@@ -30,7 +31,7 @@ const Icons = {
 };
 
 const PROVIDER_OPTIONS: { id: ApiProvider; name: string; icon: React.ReactNode }[] = [
-  { id: 'openai_compatible', name: 'OpenAI 鍏煎寮?API', icon: <Icons.Ollama /> },
+  { id: 'openai_compatible', name: 'OpenAI 兼容式 API', icon: <Icons.Ollama /> },
   { id: 'google', name: 'Google AI Studio', icon: <Icons.Google /> },
   { id: 'deepseek', name: 'DeepSeek', icon: <Icons.DeepSeek /> },
   { id: 'openai', name: 'OpenAI GPT', icon: <Icons.OpenAI /> },
@@ -126,7 +127,7 @@ const TypewriterPreview: React.FC<{
   transparency: number;
 }> = ({ enabled, transparency }) => {
   const [text, setText] = useState('');
-  const fullText = "杩欐槸涓€娈甸瑙堟枃鏈紝鐢ㄤ簬灞曠ず鎵撳瓧鏈烘晥鏋溿€?;
+  const fullText = "这是一段预览文本，用于展示打字机效果。";
 
   useEffect(() => {
     let interval: any;
@@ -170,31 +171,34 @@ const TypewriterPreview: React.FC<{
 const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings, onBack, initialTab = 'dialogue', currentUserId }) => {
   const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
   
-  // 鐩戝惉 initialTab 鍙樺寲 (纭繚浠庝笉鍚屽叆鍙ｈ繘鍏ユ椂鑳芥纭垏鎹?
+  // 监听 initialTab 变化 (确保从不同入口进入时能正确切换)
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
   
-  // API 璁剧疆鐩稿叧鐨勬湰鍦扮姸鎬?  const [apiConfig, setApiConfig] = useState<ApiConfig>(settings.apiConfig);
+  // API 设置相关的本地状态
+  const [apiConfig, setApiConfig] = useState<ApiConfig>(settings.apiConfig);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isTestLoading, setIsTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
 
-  // 鎺у埗涓嬫媺鍒楄〃鐨勬樉绀?  const [showModelList, setShowModelList] = useState(false);
+  // 控制下拉列表的显示
+  const [showModelList, setShowModelList] = useState(false);
   const [showProviderList, setShowProviderList] = useState(false);
   
   const modelListRef = useRef<HTMLDivElement>(null);
   const providerListRef = useRef<HTMLDivElement>(null);
 
-  // 闅愯棌鍐呭鐨勭姸鎬?  const [isNSFWRevealed, setIsNSFWRevealed] = useState(false);
+  // 隐藏内容的状态
+  const [isNSFWRevealed, setIsNSFWRevealed] = useState(false);
   const [isDebugRevealed, setIsDebugRevealed] = useState(false);
 
-  // 鐐瑰嚮璁℃暟鍣?Refs
+  // 点击计数器 Refs
   const headerClickRef = useRef({ count: 0, startTime: 0 });
   const visualClickRef = useRef({ count: 0, startTime: 0 });
 
-  // 澶撮儴鏍囬鐐瑰嚮澶勭悊锛?0绉掑唴5娆＄偣鍑绘樉绀?NSFW 妯″紡
+  // 头部标题点击处理：10秒内5次点击显示 NSFW 模式
   const handleHeaderClick = () => {
     const now = Date.now();
     if (headerClickRef.current.count === 0 || now - headerClickRef.current.startTime > 10000) {
@@ -209,7 +213,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     }
   };
 
-  // 瑙嗚鏁堟灉鏍囬鐐瑰嚮澶勭悊锛?0绉掑唴5娆＄偣鍑绘樉绀?Debug 妯″紡
+  // 视觉效果标题点击处理：10秒内5次点击显示 Debug 模式
   const handleVisualTitleClick = () => {
     const now = Date.now();
     if (visualClickRef.current.count === 0 || now - visualClickRef.current.startTime > 10000) {
@@ -224,14 +228,15 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     }
   };
 
-  // 鍒濆鍖栬嚜鍔ㄨ繛鎺?  useEffect(() => {
+  // 初始化自动连接
+  useEffect(() => {
     if (activeTab === 'api' && apiConfig.autoConnect && apiConfig.apiKey) {
-        // 濡傛灉鏄嚜鍔ㄨ繛鎺ワ紝鎴戜滑灏濊瘯瑙﹀彂涓€娆♀€滈潤榛樷€濊繛鎺ラ€昏緫
+        // 如果是自动连接，我们尝试触发一次“静默”连接逻辑
         handleConnect(true);
     }
   }, [activeTab]);
 
-  // 鐐瑰嚮澶栭儴鍏抽棴涓嬫媺鍒楄〃
+  // 点击外部关闭下拉列表
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modelListRef.current && !modelListRef.current.contains(event.target as Node)) {
@@ -254,7 +259,8 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     setApiConfig(prev => ({ 
         ...prev, 
         provider,
-        // OpenAI 鍏煎妯″紡榛樿 grok-3锛屽叾浠栨ā寮忕疆绌虹瓑寰呮媺鍙?        model: provider === 'openai_compatible' ? 'grok-3' : '',
+        // OpenAI 兼容模式默认 grok-3，其他模式置空等待拉取
+        model: provider === 'openai_compatible' ? 'grok-3' : '',
         baseUrl: provider === 'openai_compatible' ? 'https://love.qinyan.icu/v1' : ''
     }));
     setConnectionStatus(ConnectionStatus.DISCONNECTED);
@@ -278,10 +284,10 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
             'Content-Type': 'application/json'
         };
 
-        // 缁熶竴浣跨敤 /models 绔偣鑾峰彇妯″瀷鍒楄〃
+        // 统一使用 /models 端点获取模型列表
         switch (apiConfig.provider) {
              case 'google':
-                 // 浣跨敤 Google 鐨?OpenAI 鍏煎妯″瀷绔偣
+                 // 使用 Google 的 OpenAI 兼容模型端点
                  endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/models';
                  break;
              case 'openai':
@@ -305,7 +311,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
 
-        // 缁熶竴瑙ｆ瀽 OpenAI 鏍煎紡鐨?{ data: [{ id: ... }] }
+        // 统一解析 OpenAI 格式的 { data: [{ id: ... }] }
         if (data && Array.isArray(data.data)) {
              models = data.data.map((m: any) => m.id).sort();
         }
@@ -313,7 +319,8 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
         setConnectionStatus(ConnectionStatus.CONNECTED);
         setAvailableModels(models);
 
-        // 濡傛灉鑾峰彇鍒颁簡鍒楄〃浣嗗綋鍓嶆病鏈夐€変腑鏈夋晥鍊硷紝鍒欓粯璁ら€変腑绗竴涓?        if (apiConfig.provider !== 'openai_compatible') {
+        // 如果获取到了列表但当前没有选中有效值，则默认选中第一个
+        if (apiConfig.provider !== 'openai_compatible') {
              if (models.length > 0 && !models.includes(apiConfig.model)) {
                  setApiConfig(prev => ({ ...prev, model: models[0] }));
              }
@@ -328,7 +335,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     } catch (error: any) {
         console.error("Connection failed:", error);
         setConnectionStatus(ConnectionStatus.ERROR);
-        setTestResult({ success: false, message: `杩炴帴澶辫触: ${error.message}` });
+        setTestResult({ success: false, message: `连接失败: ${error.message}` });
     }
   };
 
@@ -338,10 +345,10 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     setIsTestLoading(true);
     setTestResult(null);
 
-    // 鍙互鍦ㄨ繖閲屽鍔犵湡瀹炵殑鑱婂ぉ娴嬭瘯璇锋眰锛岀洰鍓嶅厛淇濇寔妯℃嫙
+    // 可以在这里增加真实的聊天测试请求，目前先保持模拟
     setTimeout(() => {
         setIsTestLoading(false);
-        setTestResult({ success: true, message: "娴嬭瘯鎴愬姛锛丄PI 鍝嶅簲姝ｅ父銆? });
+        setTestResult({ success: true, message: "测试成功！API 响应正常。" });
     }, 1000);
   };
 
@@ -351,7 +358,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
 
   return (
     <div className="relative w-full h-full bg-slate-950/70 backdrop-blur-sm text-slate-100 font-sans flex items-center justify-center animate-fadeIn">
-      {/* 妯℃€佹涓讳綋 */}
+      {/* 模态框主体 */}
       <div className="w-full max-w-5xl h-[90%] bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-xl relative z-10">
         
         {/* Navigation Sidebar (Vertical on Desktop, Horizontal Top on Mobile) */}
@@ -369,7 +376,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                 
                 <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider cursor-default flex items-center">
                     <i className="fa-solid fa-gear mr-2 md:mr-3"></i>
-                    <span>绯荤粺璁剧疆</span>
+                    <span>系统设置</span>
                     {/* Mobile UID display (Right of title) */}
                     {currentUserId !== null && (
                         <span className="md:hidden ml-2 text-[10px] text-slate-600 font-mono self-end pb-1">UID: {currentUserId}</span>
@@ -381,7 +388,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
             <button 
                 onClick={(e) => { e.stopPropagation(); onBack(); }} 
                 className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                title="鍏抽棴"
+                title="关闭"
             >
                 <i className="fa-solid fa-xmark"></i>
             </button>
@@ -389,16 +396,16 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           
           {/* Tabs Container */}
           <nav className="flex-none md:flex-1 overflow-x-auto md:overflow-y-auto p-2 md:p-4 flex flex-row md:flex-col gap-2 md:space-y-2 no-scrollbar">
-            <TabButton active={activeTab === 'dialogue'} onClick={() => setActiveTab('dialogue')} icon="fa-comment-dots" label="瀵硅瘽璁剧疆" />
-            <TabButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon="fa-plug" label="API 璁剧疆" />
-            <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="闊抽璁剧疆" />
+            <TabButton active={activeTab === 'dialogue'} onClick={() => setActiveTab('dialogue')} icon="fa-comment-dots" label="对话设置" />
+            <TabButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon="fa-plug" label="API 设置" />
+            <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="音频设置" />
           </nav>
 
           {/* Desktop Back Button (Bottom) */}
           <div className="hidden md:block p-4 border-t border-slate-800">
             <button onClick={onBack} className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium">
               <i className="fa-solid fa-arrow-left"></i>
-              杩斿洖
+              返回
             </button>
           </div>
         </div>
@@ -408,24 +415,24 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           
           {activeTab === 'dialogue' && (
             <div className="space-y-8 animate-fadeIn">
-              <SectionHeader title="鍩虹璁剧疆" subtitle="鑷畾涔夋父鎴忎腑鐨勭О鍛间笌鍚嶇О" />
+              <SectionHeader title="基础设置" subtitle="自定义游戏中的称呼与名称" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputGroup 
-                  label="涓昏鍚嶇О" desc="鍦ㄥ璇濅腑鏇挎崲 {{user}} 鐨勬枃鏈? value={settings.userName} icon="fa-user" placeholder="缃楀畨"
+                  label="主角名称" desc="在对话中替换 {{user}} 的文本" value={settings.userName} icon="fa-user" placeholder="罗安"
                   onChange={(val) => onUpdateSettings({...settings, userName: val})}
                 />
                 <InputGroup 
-                  label="鏃呭簵鍚嶇О" desc="鍦ㄥ璇濅腑鏇挎崲 {{home}} 鐨勬枃鏈? value={settings.innName} icon="fa-house-chimney" placeholder="澶滆幒浜?
+                  label="旅店名称" desc="在对话中替换 {{home}} 的文本" value={settings.innName} icon="fa-house-chimney" placeholder="夜莺亭"
                   onChange={(val) => onUpdateSettings({...settings, innName: val})}
                 />
               </div>
               
-              {/* 琛€缂樺叧绯昏缃?*/}
+              {/* 血缘关系设置 */}
               <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 mt-6">
                 <div>
-                  <h4 className="text-lg font-medium text-slate-200">涓庤帀鑾夊▍鐨勫叧绯?/h4>
+                  <h4 className="text-lg font-medium text-slate-200">与莉莉娅的关系</h4>
                   <p className="text-sm text-slate-400 mt-1">
-                    {settings.isBloodRelated ? '浜茬敓濮愬 - 鏈夎缂樺叧绯? : '涔夊 - 鏃犺缂樺叧绯?}
+                    {settings.isBloodRelated ? '亲生姐姐 - 有血缘关系' : '义姐 - 无血缘关系'}
                   </p>
                 </div>
                 <ToggleSwitch 
@@ -437,10 +444,10 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
               
               <div className="w-full h-px bg-slate-800 my-4" />
               
-              {/* 瑙嗚鏁堟灉 - Click trigger for Debug Mode */}
+              {/* 视觉效果 - Click trigger for Debug Mode */}
               <SectionHeader 
-                title="瑙嗚鏁堟灉" 
-                subtitle="璋冩暣鏂囨湰鏄剧ず鐨勫憟鐜版柟寮? 
+                title="视觉效果" 
+                subtitle="调整文本显示的呈现方式" 
                 onClick={handleVisualTitleClick}
                 className="cursor-default"
               />
@@ -448,16 +455,16 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30">
                   <div>
-                    <h4 className="text-lg font-medium text-slate-200">鎵撳瓧鏈烘晥鏋?/h4>
-                    <p className="text-sm text-slate-400 mt-1">寮€鍚悗鏂囧瓧閫愪釜鏄剧ず锛屽叧闂悗绔嬪嵆鏄剧ず銆?/p>
+                    <h4 className="text-lg font-medium text-slate-200">打字机效果</h4>
+                    <p className="text-sm text-slate-400 mt-1">开启后文字逐个显示，关闭后立即显示。</p>
                   </div>
                   <ToggleSwitch checked={settings.enableTypewriter} onChange={(checked) => onUpdateSettings({...settings, enableTypewriter: checked})} />
                 </div>
 
-                {/* 閫忔槑搴﹁缃?*/}
+                {/* 透明度设置 */}
                 <div className="p-4 bg-slate-800/40 rounded-lg border border-slate-700/30">
                    <div className="flex justify-between items-center mb-2">
-                       <label className="text-lg font-medium text-slate-200">鑱婂ぉ绐楀彛閫忔槑搴?/label>
+                       <label className="text-lg font-medium text-slate-200">聊天窗口透明度</label>
                        <span className="text-amber-500 font-mono font-bold">{settings.dialogueTransparency}%</span>
                    </div>
                    <input 
@@ -468,22 +475,22 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                      onChange={(e) => onUpdateSettings({...settings, dialogueTransparency: Number(e.target.value)})}
                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                    />
-                   <p className="text-sm text-slate-400 mt-2">璋冩暣瀵硅瘽妗嗚儗鏅殑涓嶉€忔槑搴︺€?/p>
+                   <p className="text-sm text-slate-400 mt-2">调整对话框背景的不透明度。</p>
                 </div>
 
                 <div className="mt-4 p-6 bg-[url('img/_Title.png')] bg-cover bg-center rounded-lg border border-slate-700/50 relative overflow-hidden">
                   <div className="absolute inset-0 bg-black/30"></div>
                   <div className="relative z-10">
-                      <div className="text-xs text-white/80 uppercase tracking-widest mb-3 font-bold shadow-black text-shadow-sm">鏁堟灉棰勮</div>
+                      <div className="text-xs text-white/80 uppercase tracking-widest mb-3 font-bold shadow-black text-shadow-sm">效果预览</div>
                       <TypewriterPreview enabled={settings.enableTypewriter} transparency={settings.dialogueTransparency} />
                   </div>
                 </div>
 
-                {/* 楂樻竻鍥剧墖妯″紡 */}
+                {/* 高清图片模式 */}
                 <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30">
                   <div>
-                    <h4 className="text-lg font-medium text-slate-200">楂樻竻鍥剧墖妯″紡</h4>
-                    <p className="text-sm text-slate-400 mt-1">鏀逛负楂樺垎杈ㄧ巼澶у昂瀵稿浘鐗囷紝娉ㄦ剰娴侀噺娑堣€椼€?/p>
+                    <h4 className="text-lg font-medium text-slate-200">高清图片模式</h4>
+                    <p className="text-sm text-slate-400 mt-1">改为高分辨率大尺寸图片，注意流量消耗。</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.enableHD} 
@@ -495,8 +502,8 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                 {isDebugRevealed && (
                     <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-yellow-600/50 animate-fadeIn">
                       <div>
-                        <h4 className="text-lg font-medium text-slate-200">Debug 妯″紡</h4>
-                        <p className="text-sm text-slate-400 mt-1">寮€鍚悗鏄剧ず寮€鍙戣€呰皟璇曞伐鍏枫€?/p>
+                        <h4 className="text-lg font-medium text-slate-200">Debug 模式</h4>
+                        <p className="text-sm text-slate-400 mt-1">开启后显示开发者调试工具。</p>
                       </div>
                       <ToggleSwitch 
                         checked={settings.enableDebug} 
@@ -506,12 +513,12 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                     </div>
                 )}
 
-                {/* NSFW 璁剧疆 - Hidden by default */}
+                {/* NSFW 设置 - Hidden by default */}
                 {isNSFWRevealed && (
                     <div className="flex items-center justify-between p-4 bg-slate-800/40 rounded-lg border border-slate-700/30 border-l-4 border-l-red-900/50 animate-fadeIn">
                       <div>
                         <h4 className="text-lg font-medium text-slate-200">NSFW</h4>
-                        <p className="text-sm text-slate-400 mt-1">寮€鍚悗瀵硅瘽娑堣€楃殑Token浼氬ぇ骞呭鍔犮€?/p>
+                        <p className="text-sm text-slate-400 mt-1">开启后对话消耗的Token会大幅增加。</p>
                       </div>
                       <ToggleSwitch 
                         checked={settings.enableNSFW} 
@@ -527,12 +534,12 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           {activeTab === 'api' && (
             <div className="space-y-8 animate-fadeIn">
               {/* ... (API settings content unchanged) ... */}
-              <SectionHeader title="杩炴帴璁剧疆" subtitle="閰嶇疆 LLM 鍚庣鏈嶅姟渚涘簲鍟? />
+              <SectionHeader title="连接设置" subtitle="配置 LLM 后端服务供应商" />
 
               <div className="space-y-6">
                 {/* Provider Selection - Custom Dropdown */}
                  <div className="group relative" ref={providerListRef}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">API 渚涘簲鍟?/label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">API 供应商</label>
                     <button
                         onClick={() => setShowProviderList(!showProviderList)}
                         className="w-full bg-slate-950/50 border border-slate-700 text-slate-100 rounded-lg pl-4 pr-4 py-3 text-left focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all flex items-center justify-between"
@@ -570,8 +577,8 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
 
                 {apiConfig.provider === 'openai_compatible' && (
                   <InputGroup
-                    label="API 绔偣 (Base URL)"
-                    desc="鍏煎 OpenAI 鏍煎紡鐨?API 鍦板潃"
+                    label="API 端点 (Base URL)"
+                    desc="兼容 OpenAI 格式的 API 地址"
                     value={apiConfig.baseUrl}
                     onChange={(val) => setApiConfig({...apiConfig, baseUrl: val})}
                     placeholder="https://love.qinyan.icu/v1"
@@ -580,7 +587,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                 )}
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-slate-300 mb-1">API 瀵嗛挜 (API-Key)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">API 密钥 (API-Key)</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <i className="fa-solid fa-key text-slate-500"></i>
@@ -606,11 +613,11 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                     }`}
                   >
                     {connectionStatus === ConnectionStatus.CONNECTING ? (
-                       <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> 杩炴帴涓?..</>
+                       <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> 连接中...</>
                     ) : connectionStatus === ConnectionStatus.CONNECTED ? (
-                       <><i className="fa-solid fa-check"/> 宸茶繛鎺?/>
+                       <><i className="fa-solid fa-check"/> 已连接</>
                     ) : (
-                       <><i className="fa-solid fa-plug"/> 杩炴帴</>
+                       <><i className="fa-solid fa-plug"/> 连接</>
                     )}
                   </button>
 
@@ -631,13 +638,13 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
               <div className="w-full h-px bg-slate-800 my-4" />
               
               {/* 
-                妯″瀷閫夋嫨鍣ㄥ尯鍩?
+                模型选择器区域 
               */}
               <div className="space-y-6" ref={modelListRef}>
                  <div className="group relative">
-                    <label className="block text-sm font-medium text-slate-300 mb-2">鑱婂ぉ妯″瀷</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">聊天模型</label>
                     
-                    {/* 鍖哄垎鏄剧ず閫昏緫锛歄penAI 鍏煎妯″紡鏄剧ず杈撳叆妗嗭紝鍏朵粬妯″紡鏄剧ず涓嬫媺鎸夐挳 */}
+                    {/* 区分显示逻辑：OpenAI 兼容模式显示输入框，其他模式显示下拉按钮 */}
                     {apiConfig.provider === 'openai_compatible' ? (
                         <div className="relative flex">
                           <input 
@@ -645,7 +652,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                               value={apiConfig.model}
                               onChange={(e) => setApiConfig({...apiConfig, model: e.target.value})}
                               onFocus={() => setShowModelList(true)}
-                              placeholder="渚嬪: grok-4"
+                              placeholder="例如: grok-4"
                               className="w-full bg-slate-950/50 border border-slate-700 text-slate-100 rounded-l-lg pl-4 pr-10 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono z-10"
                           />
                           <button
@@ -655,11 +662,11 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                               <i className={`fa-solid fa-chevron-${showModelList ? 'down' : 'up'} transition-transform duration-300`}></i>
                           </button>
 
-                           {/* 鑷畾涔夊悜涓婂睍寮€鐨勪笅鎷夊垪琛?*/}
+                           {/* 自定义向上展开的下拉列表 */}
                            {showModelList && (
                               <div className="absolute bottom-full left-0 w-full mb-2 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 flex flex-col max-h-[300px] overflow-y-auto animate-fadeIn">
                                   <div className="sticky top-0 bg-slate-950/90 backdrop-blur p-2 border-b border-slate-800 text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                      鍙敤妯″瀷 ({availableModels.length})
+                                      可用模型 ({availableModels.length})
                                   </div>
                                   {availableModels.length > 0 ? (
                                       availableModels.map(m => (
@@ -676,14 +683,14 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                                       ))
                                   ) : (
                                       <div className="p-4 text-center text-slate-500 text-sm">
-                                          {connectionStatus === ConnectionStatus.CONNECTED ? '鏈壘鍒版ā鍨? : '璇峰厛杩炴帴浠ヨ幏鍙栧垪琛?}
+                                          {connectionStatus === ConnectionStatus.CONNECTED ? '未找到模型' : '请先连接以获取列表'}
                                       </div>
                                   )}
                               </div>
                            )}
                         </div>
                     ) : (
-                        // 鍏朵粬渚涘簲鍟嗭細寮哄埗涓嬫媺閫夋嫨妯″紡
+                        // 其他供应商：强制下拉选择模式
                         <div className="relative w-full">
                            <button 
                               onClick={() => setShowModelList(!showModelList)}
@@ -691,16 +698,16 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                               className="w-full bg-slate-950/50 border border-slate-700 text-slate-100 rounded-lg pl-4 pr-10 py-3 text-left focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50 flex items-center justify-between"
                            >
                               <span className={apiConfig.model ? "text-slate-100" : "text-slate-500"}>
-                                  {apiConfig.model || (connectionStatus === ConnectionStatus.CONNECTED ? "璇烽€夋嫨妯″瀷..." : "璇峰厛杩炴帴浠ヨ幏鍙栨ā鍨嬪垪琛?)}
+                                  {apiConfig.model || (connectionStatus === ConnectionStatus.CONNECTED ? "请选择模型..." : "请先连接以获取模型列表")}
                               </span>
                               <i className={`fa-solid fa-chevron-${showModelList ? 'down' : 'up'} text-xs text-slate-500`}></i>
                            </button>
 
-                           {/* 鑷畾涔夊悜涓婂睍寮€鐨勪笅鎷夊垪琛?*/}
+                           {/* 自定义向上展开的下拉列表 */}
                            {showModelList && (
                               <div className="absolute bottom-full left-0 w-full mb-2 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 flex flex-col max-h-[300px] overflow-y-auto animate-fadeIn">
                                   <div className="sticky top-0 bg-slate-950/90 backdrop-blur p-2 border-b border-slate-800 text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                      鍙敤妯″瀷 ({availableModels.length})
+                                      可用模型 ({availableModels.length})
                                   </div>
                                   {availableModels.length > 0 ? (
                                       availableModels.map(m => (
@@ -717,7 +724,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                                       ))
                                   ) : (
                                       <div className="p-4 text-center text-slate-500 text-sm">
-                                          {connectionStatus === ConnectionStatus.CONNECTED ? '鏈壘鍒版ā鍨? : '璇峰厛杩炴帴浠ヨ幏鍙栧垪琛?}
+                                          {connectionStatus === ConnectionStatus.CONNECTED ? '未找到模型' : '请先连接以获取列表'}
                                       </div>
                                   )}
                               </div>
@@ -733,11 +740,11 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
                     >
                        {isTestLoading ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <i className="fa-solid fa-vial"></i>}
-                       娴嬭瘯娑堟伅
+                       测试消息
                     </button>
 
                     <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-400">鑷姩杩炴帴涓婃鏈嶅姟鍣?/span>
+                        <span className="text-sm text-slate-400">自动连接上次服务器</span>
                         <ToggleSwitch 
                            checked={apiConfig.autoConnect}
                            onChange={(v) => setApiConfig({...apiConfig, autoConnect: v})}
@@ -760,18 +767,18 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
 
           {activeTab === 'sound' && (
             <div className="space-y-8 animate-fadeIn">
-              <SectionHeader title="闊抽璁剧疆" subtitle="璋冩暣娓告垙闊抽噺涓庨煶鏁? />
+              <SectionHeader title="音频设置" subtitle="调整游戏音量与音效" />
               
               <div className="p-6 bg-slate-800/40 rounded-lg border border-slate-700/30 space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h4 className="text-lg font-medium text-slate-200">涓婚煶閲?/h4>
-                        <p className="text-sm text-slate-400 mt-1">鎺у埗鎵€鏈夎儗鏅煶涔愪笌闊虫晥鐨勯煶閲?/p>
+                        <h4 className="text-lg font-medium text-slate-200">主音量</h4>
+                        <p className="text-sm text-slate-400 mt-1">控制所有背景音乐与音效的音量</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-amber-500 font-mono font-bold w-8 text-right">{settings.masterVolume}%</span>
                         <ToggleSwitch checked={settings.isMuted} onChange={(v) => onUpdateSettings({...settings, isMuted: v})} />
-                        <span className="text-sm text-slate-400 font-medium">{settings.isMuted ? '闈欓煶' : '寮€鍚?}</span>
+                        <span className="text-sm text-slate-400 font-medium">{settings.isMuted ? '静音' : '开启'}</span>
                     </div>
                 </div>
 
@@ -801,4 +808,3 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
 };
 
 export default ConfigScreen;
-

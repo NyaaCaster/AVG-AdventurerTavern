@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ITEMS, ITEM_CATEGORIES, ITEM_TAGS } from '../data/items';
 import { ItemCategory, ItemQuality, ItemData } from '../types';
@@ -68,7 +69,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
       );
   };
 
-  // 娓叉煋绛夌骇/鍝佽川鏍囩
+  // 渲染等级/品质标签
   const renderRankBadge = (item: ItemData, isLarge = false) => {
       if (item.category === 'res') {
           return (
@@ -101,7 +102,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
             <button 
                 onClick={onClose}
                 className="absolute top-2 right-2 md:top-3 md:right-3 w-8 h-8 md:w-10 md:h-10 z-[60] flex items-center justify-center bg-[#382b26] border border-[#9b7a4c] rounded text-[#9b7a4c] hover:bg-[#4a3b32] hover:text-[#f0e6d2] transition-colors shadow-lg hover:shadow-amber-900/50"
-                title="鍏抽棴"
+                title="关闭"
             >
                 <i className="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -113,13 +114,13 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                 <div className="hidden md:flex items-center justify-center p-6 border-b border-[#9b7a4c]/30">
                     <h2 className="text-[#f0e6d2] font-bold text-xl tracking-widest uppercase flex items-center gap-2 drop-shadow-sm">
                         <i className="fa-solid fa-boxes-stacked text-[#9b7a4c]"></i>
-                        搴撳瓨鐩樻煡
+                        库存盘查
                     </h2>
                 </div>
 
                 {/* Mobile Header Title */}
                 <div className="md:hidden absolute top-0 left-0 p-3 z-10 pointer-events-none">
-                     <span className="text-[#f0e6d2] font-bold text-lg drop-shadow-md text-shadow-sm">搴撳瓨鐩樻煡</span>
+                     <span className="text-[#f0e6d2] font-bold text-lg drop-shadow-md text-shadow-sm">库存盘查</span>
                 </div>
 
                 {/* Tabs - Added top margin on mobile to clear title */}
@@ -161,7 +162,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                     {categoryItems.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-[#5c4d45] opacity-60 gap-4">
                             <i className="fa-solid fa-box-open text-6xl"></i>
-                            <span className="text-xl font-bold tracking-widest">璇ュ垎绫讳笅鏆傛棤閬撳叿</span>
+                            <span className="text-xl font-bold tracking-widest">该分类下暂无道具</span>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -181,10 +182,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                             />
                                         ) : (
                                             getTagIcon(item.tag) || (
-                                                item.category === 'wpn' ? '鈿旓笍' :
-                                                item.category === 'arm' ? '馃洝锔? :
-                                                item.category === 'itm' ? '馃И' :
-                                                item.category === 'acs' ? '馃拲' : '馃摝'
+                                                item.category === 'wpn' ? '⚔️' :
+                                                item.category === 'arm' ? '🛡️' :
+                                                item.category === 'itm' ? '🧪' :
+                                                item.category === 'acs' ? '💍' : '📦'
                                             )
                                         )}
                                     </div>
@@ -257,10 +258,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                 />
                             ) : (
                                 getTagIcon(selectedItem.tag) || (
-                                    selectedItem.category === 'wpn' ? '鈿旓笍' :
-                                    selectedItem.category === 'arm' ? '馃洝锔? :
-                                    selectedItem.category === 'itm' ? '馃И' :
-                                    selectedItem.category === 'acs' ? '馃拲' : '馃摝'
+                                    selectedItem.category === 'wpn' ? '⚔️' :
+                                    selectedItem.category === 'arm' ? '🛡️' :
+                                    selectedItem.category === 'itm' ? '🧪' :
+                                    selectedItem.category === 'acs' ? '💍' : '📦'
                                 )
                             )}
                         </div>
@@ -307,7 +308,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                         {/* Footer Info */}
                         <div className="flex justify-between items-center text-xs text-[#8c7b70] font-mono border-t border-[#d6cbb8] pt-3">
                             <span>ID: {selectedItem.id}</span>
-                            <span>鎸佹湁鏁伴噺: <strong className="text-[#2c241b] text-base">{inventory[selectedItem.id]}</strong> / {selectedItem.maxStack}</span>
+                            <span>持有数量: <strong className="text-[#2c241b] text-base">{inventory[selectedItem.id]}</strong> / {selectedItem.maxStack}</span>
                         </div>
                     </div>
                 </div>
@@ -318,4 +319,3 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
 };
 
 export default InventoryModal;
-

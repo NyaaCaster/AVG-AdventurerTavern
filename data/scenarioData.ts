@@ -1,3 +1,4 @@
+
 import { Character, CharacterImageConfig, CharacterUnlocks } from '../types';
 import { GLOBAL_AI_RULES } from './systemPrompts';
 import { formatUnlockStatusForAI, getDefaultUnlocks } from './unlockConditions';
@@ -80,10 +81,11 @@ export const generateSystemPrompt = (
   let dialogue = character.dialogueExamples;
   let processedUserInfo = userInfo;
 
-  // 澶勭悊 char_101 鐨勮缂樺叧绯绘浛鎹?  if (character.id === 'char_101') {
-    const relationship = isBloodRelated ? '浜茬敓濮愬' : '涔夊';
-    const hairDesc = isBloodRelated ? '鍜寋{user}}涓€鏍? : '';
-    const userRelationship = isBloodRelated ? '浜茬敓濮愬' : '涔夊';
+  // 处理 char_101 的血缘关系替换
+  if (character.id === 'char_101') {
+    const relationship = isBloodRelated ? '亲生姐姐' : '义姐';
+    const hairDesc = isBloodRelated ? '和{{user}}一样' : '';
+    const userRelationship = isBloodRelated ? '亲生姐姐' : '义姐';
     
     persona = persona
       .replace('{{relationship}}', relationship)
@@ -92,15 +94,15 @@ export const generateSystemPrompt = (
     processedUserInfo = processedUserInfo
       .replace('{{user_relationship}}', userRelationship);
   } else {
-    // 瀵逛簬鍏朵粬瑙掕壊锛岀Щ闄ゅ崰浣嶇
-    processedUserInfo = processedUserInfo.replace('{{user_relationship}}', '浜茬敓濮愬');
+    // 对于其他角色，移除占位符
+    processedUserInfo = processedUserInfo.replace('{{user_relationship}}', '亲生姐姐');
   }
 
   if (enableNSFW) {
       if (character.persona_nsfw) {
         let nsfwPersona = character.persona_nsfw;
         
-        // 澶勭悊 char_101 鐨勮缂樺叧绯?NSFW 鍐呭
+        // 处理 char_101 的血缘关系 NSFW 内容
         if (character.id === 'char_101') {
           const bloodRelatedNsfw = isBloodRelated 
             ? p101.PERSONA_NSFW_BLOOD_RELATED 
@@ -120,11 +122,11 @@ export const generateSystemPrompt = (
   const unlockStatusText = formatUnlockStatusForAI(unlocks);
   
   // Format current affinity
-  const affinityText = currentAffinity !== undefined ? `${currentAffinity}` : '鏈煡';
+  const affinityText = currentAffinity !== undefined ? `${currentAffinity}` : '未知';
   
   // Format character restrictions
   const restrictions = CHARACTER_UNLOCK_RESTRICTIONS[character.id];
-  let restrictionsText = '鏃犵壒娈婇檺鍒?;
+  let restrictionsText = '无特殊限制';
   if (restrictions && Object.keys(restrictions).length > 0) {
       restrictionsText = Object.entries(restrictions)
           .map(([key, reason]) => `- ${reason}`)
@@ -146,8 +148,10 @@ ${dialogue}
 
 ${processedUserInfo}
 
-[褰撳墠鎯呭]
-浣犳鍦?${innName}"鏃呭簵涓€?浣犳槸"${character.name}"銆?`;
+[当前情境]
+你正在"${innName}"旅店中。
+你是"${character.name}"。
+`;
 };
 
 export { USER_INFO_TEMPLATE };
@@ -166,4 +170,3 @@ export const CHARACTERS: Record<string, Character> = {
   'char_110': char_110,
   'char_111': char_111,
 };
-

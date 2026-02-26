@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ITEMS, ITEM_TAGS } from '../data/items';
 import { FOOD_RECIPES, FoodRecipe } from '../data/food-recipes';
@@ -21,7 +22,7 @@ interface CookingModalProps {
 }
 
 // ----------------------------------------------------------------------------
-// 杈呭姪缁勪欢锛氱礌鏉愰€夋嫨妲戒綅
+// 辅助组件：素材选择槽位
 // ----------------------------------------------------------------------------
 const MaterialSlot: React.FC<{
     label: string;
@@ -48,7 +49,7 @@ const MaterialSlot: React.FC<{
             {item ? (
                 <>
                     <div className="text-2xl md:text-3xl mb-1 mt-2 drop-shadow-sm">
-                        {ITEM_TAGS.find(t => t.id === item.tag)?.icon || '馃摝'}
+                        {ITEM_TAGS.find(t => t.id === item.tag)?.icon || '📦'}
                     </div>
                     <div className="text-xs font-bold text-[#382b26] text-center leading-tight line-clamp-2 px-1">
                         {item.name}
@@ -70,31 +71,36 @@ const MaterialSlot: React.FC<{
 };
 
 // ----------------------------------------------------------------------------
-// 涓荤粍浠?// ----------------------------------------------------------------------------
+// 主组件
+// ----------------------------------------------------------------------------
 const CookingModal: React.FC<CookingModalProps> = ({
   isOpen, onClose, inventory, userRecipes, foodStock,
   onAddRecipe, onConsumeIngredients, onCraftRecipe, onDeleteRecipe, onRenameRecipe, apiConfig
 }) => {
   const [activeTab, setActiveTab] = useState<'recipes' | 'develop'>('recipes');
   
-  // --- 寮€鍙戞ā寮忕姸鎬?---
-  // Slot 0 鏄?Main, 1-4 鏄?Subs
+  // --- 开发模式状态 ---
+  // Slot 0 是 Main, 1-4 是 Subs
   const [slots, setSlots] = useState<(string | null)[]>([null, null, null, null, null]);
-  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null); // 褰撳墠姝ｅ湪閫夋嫨鍝釜妲戒綅鐨勭礌鏉?  
-  // 棰勮/鍒朵綔鐘舵€?  const [previewData, setPreviewData] = useState<{
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null); // 当前正在选择哪个槽位的素材
+  
+  // 预览/制作状态
+  const [previewData, setPreviewData] = useState<{
       recipeTemplate: FoodRecipe;
       ingredients: string[];
       avgStar: number;
       price: number;
   } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false); // 鍒朵綔鍔ㄧ敾/API璇锋眰涓?
-  // --- 鑿滆氨妯″紡鐘舵€?---
-  const [craftingRecipeId, setCraftingRecipeId] = useState<string | null>(null); // 褰撳墠姝ｅ湪鍑嗗鐑归オ鐨勮彍璋盜D
+  const [isProcessing, setIsProcessing] = useState(false); // 制作动画/API请求中
+
+  // --- 菜谱模式状态 ---
+  const [craftingRecipeId, setCraftingRecipeId] = useState<string | null>(null); // 当前正在准备烹饪的菜谱ID
   const [craftCount, setCraftCount] = useState(1);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [tempName, setTempName] = useState("");
 
-  // 閲嶇疆鐘舵€?  useEffect(() => {
+  // 重置状态
+  useEffect(() => {
       if (isOpen) {
           setSlots([null, null, null, null, null]);
           setPreviewData(null);
@@ -104,12 +110,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
       }
   }, [isOpen]);
 
-  // --- 閫昏緫锛氬紑鍙戞ā寮?- 鍔ㄦ€佸簱瀛樿绠?---
-  // 璁＄畻鍦ㄩ€夋嫨鏌愪釜妲戒綅鏃讹紝鍒楄〃涓簲璇ユ樉绀虹殑鍓╀綑鏁伴噺
+  // --- 逻辑：开发模式 - 动态库存计算 ---
+  // 计算在选择某个槽位时，列表中应该显示的剩余数量
   const getAvailableInventory = (targetSlotIndex: number) => {
       const tempInv = { ...inventory };
       
-      // 閬嶅巻鎵€鏈夋Ы浣嶏紝鎵ｉ櫎闄ゅ綋鍓嶇洰鏍囨Ы浣嶄互澶栧凡閫変腑鐨勯亾鍏?      slots.forEach((itemId, idx) => {
+      // 遍历所有槽位，扣除除当前目标槽位以外已选中的道具
+      slots.forEach((itemId, idx) => {
           if (itemId && idx !== targetSlotIndex) {
               tempInv[itemId] = (tempInv[itemId] || 0) - 1;
           }
@@ -117,7 +124,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
       return tempInv;
   };
 
-  // --- 閫昏緫锛氬紑鍙戞ā寮?- 鍖归厤閫昏緫 ---
+  // --- 逻辑：开发模式 - 匹配逻辑 ---
   const handleAttemptDevelop = () => {
       const mainId = slots[0];
       if (!mainId) return;
@@ -128,42 +135,47 @@ const CookingModal: React.FC<CookingModalProps> = ({
       const subIds = slots.slice(1).filter(Boolean) as string[];
       const subItems = subIds.map(id => ITEMS[id]);
       
-      // 1. 鏀堕泦鎵€鏈?Tag
+      // 1. 收集所有 Tag
       const mainTag = mainItem.tag;
-      const subTags = subItems.map(i => i.tag).filter(Boolean) as string[]; // 鐢ㄦ埛鎻愪緵鐨勮緟鏂橳ags
+      const subTags = subItems.map(i => i.tag).filter(Boolean) as string[]; // 用户提供的辅料Tags
 
-      // 2. 绛涢€夌鍚堟潯浠剁殑椋熻氨
-      // 瑙勫垯锛歁ain Tag 蹇呴』鍖归厤銆?      // 瑙勫垯锛氶璋辫姹傜殑 other-res 蹇呴』琚敤鎴锋彁渚涚殑 subTags 瀹屽叏鍖呭惈 (鏈€灏忕粍鍚堝尮閰?
-      // 娉ㄦ剰锛氱敤鎴峰彲浠ユ彁渚涙洿澶氱礌鏉愶紝浣嗛璋辫姹傜殑蹇呴』閮芥湁
+      // 2. 筛选符合条件的食谱
+      // 规则：Main Tag 必须匹配。
+      // 规则：食谱要求的 other-res 必须被用户提供的 subTags 完全包含 (最小组合匹配)
+      // 注意：用户可以提供更多素材，但食谱要求的必须都有
       const matchedRecipes = FOOD_RECIPES.filter(recipe => {
-          // A. 妫€鏌ヤ富鏂?          if (recipe['main-res'] !== mainTag) return false;
+          // A. 检查主料
+          if (recipe['main-res'] !== mainTag) return false;
 
-          // B. 妫€鏌ヨ緟鏂?(User Input must contain all Recipe Requirements)
+          // B. 检查辅料 (User Input must contain all Recipe Requirements)
           const requiredTags = recipe['other-res'];
-          if (requiredTags.length === 0) return true; // 涓嶉渶瑕佽緟鏂欙紝蹇呭畾婊¤冻
+          if (requiredTags.length === 0) return true; // 不需要辅料，必定满足
 
-          // 鍒涘缓鐢ㄦ埛鎻愪緵鐨勮緟鏂橳ag鍓湰鐢ㄤ簬娑堣€楁鏌?          const providedPool = [...subTags];
+          // 创建用户提供的辅料Tag副本用于消耗检查
+          const providedPool = [...subTags];
           
-          // 妫€鏌ラ璋辫姹傜殑姣忎釜杈呮枡鏄惁閮借兘鍦ㄧ敤鎴锋彁渚涚殑绱犳潗涓壘鍒?          for (const reqTag of requiredTags) {
+          // 检查食谱要求的每个辅料是否都能在用户提供的素材中找到
+          for (const reqTag of requiredTags) {
               const idx = providedPool.indexOf(reqTag);
               if (idx !== -1) {
-                  providedPool.splice(idx, 1); // 娑堣€楁帀涓€涓尮閰嶉」
+                  providedPool.splice(idx, 1); // 消耗掉一个匹配项
               } else {
-                  return false; // 缂哄皯蹇呰杈呮枡
+                  return false; // 缺少必要辅料
               }
           }
           return true;
       });
 
       if (matchedRecipes.length === 0) {
-          alert("鏃犳硶鍒╃敤褰撳墠鐨勯鏉愮粍鍚堟€濊€冨嚭鏂扮殑椋熻氨...");
+          alert("无法利用当前的食材组合思考出新的食谱...");
           return;
       }
 
-      // 3. 闅忔満閫夋嫨涓€涓尮閰嶇殑椋熻氨
+      // 3. 随机选择一个匹配的食谱
       const selectedRecipe = matchedRecipes[Math.floor(Math.random() * matchedRecipes.length)];
 
-      // 4. 璁＄畻鏁板€?      const allIngredientIds = [mainId, ...subIds];
+      // 4. 计算数值
+      const allIngredientIds = [mainId, ...subIds];
       let totalStar = 0;
       let starSumPrice = 0;
 
@@ -178,7 +190,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
       const basePrice = getResValue(avgStar.toString());
       const finalPrice = basePrice + starSumPrice;
 
-      // 5. 璁剧疆棰勮鏁版嵁
+      // 5. 设置预览数据
       setPreviewData({
           recipeTemplate: selectedRecipe,
           ingredients: allIngredientIds,
@@ -187,12 +199,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
       });
   };
 
-  // --- 閫昏緫锛氬紑鍙戞ā寮?- 纭鍒朵綔 ---
+  // --- 逻辑：开发模式 - 确认制作 ---
   const handleRealCook = async () => {
       if (!previewData) return;
       setIsProcessing(true);
 
-      // 3绉掔瓑寰?      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 3秒等待
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       const { recipeTemplate, ingredients, avgStar, price } = previewData;
       
@@ -200,12 +213,12 @@ const CookingModal: React.FC<CookingModalProps> = ({
       let finalDesc = recipeTemplate.description;
 
       // LLM Generation
-      // 鍙湁 API Key 瀛樺湪鏃舵墠灏濊瘯鐢熸垚
+      // 只有 API Key 存在时才尝试生成
       if (apiConfig.apiKey) {
           try {
-              // 鑾峰彇椋熸潗鐨勭湡瀹炰腑鏂囧悕绉板垪琛ㄥ強鎻忚堪
+              // 获取食材的真实中文名称列表及描述
               const ingredientDetails = ingredients.map(id => ({
-                  name: ITEMS[id]?.name || "鏈煡椋熸潗",
+                  name: ITEMS[id]?.name || "未知食材",
                   description: ITEMS[id]?.description || ""
               }));
               
@@ -244,7 +257,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
       setActiveTab('recipes');
   };
 
-  // --- 閫昏緫锛氳彍璋辨ā寮?---
+  // --- 逻辑：菜谱模式 ---
   const getCraftableCount = (recipe: UserRecipe) => {
       const reqs: Record<string, number> = {};
       [recipe.mainResId, ...recipe.otherResIds].forEach(id => {
@@ -292,7 +305,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                 backgroundImage: 'linear-gradient(to bottom, #2c241b, #1a1512)'
             }}
         >
-            {/* Header / Tabs - 淇甯冨眬闂 */}
+            {/* Header / Tabs - 修复布局问题 */}
             <div className="bg-[#382b26] border-b border-[#9b7a4c]/50 py-3 px-4 flex justify-between items-center shadow-md shrink-0 relative z-10 gap-4">
                 <div className="flex-1 flex gap-2 md:gap-4 justify-center md:justify-start">
                     <button
@@ -305,7 +318,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         `}
                     >
                         <i className="fa-solid fa-book-open"></i> 
-                        <span className="text-sm md:text-lg font-bold tracking-widest whitespace-nowrap">鑿滆氨</span>
+                        <span className="text-sm md:text-lg font-bold tracking-widest whitespace-nowrap">菜谱</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('develop')}
@@ -317,7 +330,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         `}
                     >
                         <i className="fa-solid fa-flask"></i> 
-                        <span className="text-sm md:text-lg font-bold tracking-widest whitespace-nowrap">寮€鍙戞枡鐞?/span>
+                        <span className="text-sm md:text-lg font-bold tracking-widest whitespace-nowrap">开发料理</span>
                     </button>
                 </div>
                 
@@ -336,8 +349,8 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         {userRecipes.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-[#8c7b70] opacity-70 gap-4">
                                 <i className="fa-solid fa-book-open text-6xl"></i>
-                                <span className="text-xl font-bold">鏆傛棤宸蹭範寰楄彍璋?/span>
-                                <button onClick={() => setActiveTab('develop')} className="px-6 py-2 bg-[#9b7a4c] text-white rounded hover:bg-[#b45309] font-bold shadow transition-colors">鍘诲紑鍙戞柊鏂欑悊</button>
+                                <span className="text-xl font-bold">暂无已习得菜谱</span>
+                                <button onClick={() => setActiveTab('develop')} className="px-6 py-2 bg-[#9b7a4c] text-white rounded hover:bg-[#b45309] font-bold shadow transition-colors">去开发新料理</button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -356,13 +369,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); onDeleteRecipe(recipe.id); }}
                                                         className="absolute top-1 left-1 w-6 h-6 flex items-center justify-center bg-black/60 text-white/80 hover:text-red-400 hover:bg-black/80 rounded-full transition-all backdrop-blur-[2px] shadow-sm z-10"
-                                                        title="鍒犻櫎椋熻氨"
+                                                        title="删除食谱"
                                                     >
                                                         <i className="fa-solid fa-trash-can text-[10px]"></i>
                                                     </button>
                                                 </div>
                                                 <div className="text-xs font-bold text-[#8c7b70] bg-[#e8dfd1] px-2 py-0.5 rounded border border-[#d6cbb8] shadow-sm whitespace-nowrap">
-                                                    搴撳瓨: {foodStock[recipe.id] || 0}
+                                                    库存: {foodStock[recipe.id] || 0}
                                                 </div>
                                             </div>
 
@@ -422,7 +435,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
 
                                                 <div className="mt-auto flex justify-between items-end gap-2">
                                                     <div className="flex flex-col items-start bg-[#f5e6d3] px-2 py-1 rounded border border-[#e6dcc8] shrink-0">
-                                                        <span className="text-[10px] text-[#8c7b70] font-bold">浼扮畻鍞环</span>
+                                                        <span className="text-[10px] text-[#8c7b70] font-bold">估算售价</span>
                                                         <span className="text-sm font-bold text-[#b45309] leading-none whitespace-nowrap">{recipe.price} G</span>
                                                     </div>
                                                     
@@ -437,7 +450,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                             }`}
                                                         >
                                                             <i className="fa-solid fa-fire-burner"></i>
-                                                            鐑硅皟 ({craftable})
+                                                            烹调 ({craftable})
                                                         </button>
                                                     </div>
                                                 </div>
@@ -457,13 +470,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         <div className="flex-1 flex flex-col justify-center">
                             <h3 className="text-center font-bold text-[#5c4d45] mb-6 flex items-center justify-center gap-2">
                                 <i className="fa-solid fa-carrot text-orange-600"></i>
-                                閫夋嫨椋熸潗杩涜缁勫悎
+                                选择食材进行组合
                             </h3>
                             
                             <div className="flex flex-wrap md:flex-nowrap justify-center gap-4 mb-8">
                                 <div className="w-full md:w-32 flex-shrink-0">
                                     <MaterialSlot 
-                                        label="涓婚鏉?(Main)" 
+                                        label="主食材 (Main)" 
                                         itemId={slots[0]} 
                                         onClick={() => setActiveSlotIndex(0)} 
                                         onClear={(e) => { e.stopPropagation(); const s = [...slots]; s[0] = null; setSlots(s); }}
@@ -477,7 +490,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                     {[1, 2, 3, 4].map(idx => (
                                         <div key={idx} className="w-1/4 md:w-24">
                                             <MaterialSlot 
-                                                label={`杈呮枡 ${idx}`} 
+                                                label={`辅料 ${idx}`} 
                                                 itemId={slots[idx]} 
                                                 onClick={() => setActiveSlotIndex(idx)} 
                                                 onClear={(e) => { e.stopPropagation(); const s = [...slots]; s[idx] = null; setSlots(s); }}
@@ -499,7 +512,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                     `}
                                 >
                                     {slots[0] ? <i className="fa-solid fa-wand-magic-sparkles animate-pulse"></i> : <i className="fa-solid fa-ban"></i>}
-                                    灏濊瘯鍒朵綔
+                                    尝试制作
                                 </button>
                             </div>
                         </div>
@@ -513,7 +526,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                             <div className="flex justify-between items-center p-4 border-b border-[#d6cbb8] bg-[#f5f0e6]">
                                 <h3 className="font-bold text-[#382b26] flex items-center gap-2">
                                     <i className="fa-solid fa-basket-shopping"></i> 
-                                    閫夋嫨 {activeSlotIndex === 0 ? '涓婚鏉? : '杈呮枡'}
+                                    选择 {activeSlotIndex === 0 ? '主食材' : '辅料'}
                                 </h3>
                                 <button 
                                     onClick={() => setActiveSlotIndex(null)}
@@ -527,12 +540,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                     {Object.entries(getAvailableInventory(activeSlotIndex)).map(([id, count]) => {
                                         const item = ITEMS[id];
-                                        // 杩囨护鏉′欢锛氬繀椤绘槸绱犳潗(res)锛屼笖鏈夊墿浣欐暟閲?                                        if (item.category !== 'res' || (count as number) <= 0) return null;
+                                        // 过滤条件：必须是素材(res)，且有剩余数量
+                                        if (item.category !== 'res' || (count as number) <= 0) return null;
                                         
-                                        // 涓绘枡妲戒綅(slot 0)锛氳繃婊ゆ帀 non, drinks, spice, milk
+                                        // 主料槽位(slot 0)：过滤掉 non, drinks, spice, milk
                                         if (activeSlotIndex === 0 && ['non', 'drinks', 'spice', 'milk'].includes(item.tag)) return null;
                                         
-                                        // 杈呮枡妲戒綅(slot 1-4)锛氳繃婊ゆ帀 non, drinks
+                                        // 辅料槽位(slot 1-4)：过滤掉 non, drinks
                                         if (activeSlotIndex !== 0 && ['non', 'drinks'].includes(item.tag)) return null;
 
                                         return (
@@ -542,7 +556,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                     const newSlots = [...slots];
                                                     newSlots[activeSlotIndex] = id;
                                                     setSlots(newSlots);
-                                                    // 涓嶅叧闂獥鍙ｏ紝鍏佽鍙嶅鍒囨崲
+                                                    // 不关闭窗口，允许反复切换
                                                 }}
                                                 className={`
                                                     relative p-2 rounded border-2 flex flex-col items-center gap-1 transition-all
@@ -551,7 +565,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                         : 'bg-[#fcfaf7] border-[#d6cbb8] hover:border-[#9b7a4c]'}
                                                 `}
                                             >
-                                                <div className="text-2xl">{ITEM_TAGS.find(t=>t.id===item.tag)?.icon || '馃摝'}</div>
+                                                <div className="text-2xl">{ITEM_TAGS.find(t=>t.id===item.tag)?.icon || '📦'}</div>
                                                 <div className="text-xs font-bold text-[#382b26] line-clamp-1">{item.name}</div>
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-[10px] text-yellow-600"><i className="fa-solid fa-star"></i>{item.star}</span>
@@ -577,13 +591,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         {isProcessing ? (
                             <div className="text-center animate-pulse">
                                 <div className="text-6xl mb-4 text-[#9b7a4c]"><i className="fa-solid fa-fire-burner animate-bounce"></i></div>
-                                <h3 className="text-2xl font-bold tracking-widest">姝ｅ湪绮惧績鐑归オ涓?..</h3>
-                                <p className="text-sm text-[#8c7b70] mt-2">棣欐皵姝ｅ湪寮ユ极</p>
+                                <h3 className="text-2xl font-bold tracking-widest">正在精心烹饪中...</h3>
+                                <p className="text-sm text-[#8c7b70] mt-2">香气正在弥漫</p>
                             </div>
                         ) : (
                             <div className="w-full max-w-lg bg-[#fbf9f4] rounded-lg shadow-2xl overflow-hidden border-[3px] border-[#9b7a4c] m-4">
                                 <div className="bg-[#382b26] p-3 text-center border-b border-[#9b7a4c]">
-                                    <h3 className="text-[#f0e6d2] font-bold tracking-[0.2em]">鏂欑悊棰勮</h3>
+                                    <h3 className="text-[#f0e6d2] font-bold tracking-[0.2em]">料理预览</h3>
                                 </div>
                                 <div className="p-6 flex flex-col items-center text-[#382b26]">
                                     <div className="w-32 h-32 rounded-full border-4 border-[#d6cbb8] overflow-hidden mb-4 shadow-lg bg-[#e0d6c5]">
@@ -591,7 +605,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                     </div>
                                     
                                     <div className="text-center mb-4">
-                                        <div className="text-sm text-[#8c7b70] mb-1">浣跨敤绱犳潗</div>
+                                        <div className="text-sm text-[#8c7b70] mb-1">使用素材</div>
                                         <div className="flex flex-wrap justify-center gap-2">
                                             {previewData.ingredients.map((id, i) => (
                                                 <div key={i} className="flex items-center gap-1 bg-[#e8dfd1] px-2 py-1 rounded text-xs border border-[#d6cbb8]">
@@ -604,13 +618,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
 
                                     <div className="grid grid-cols-2 gap-4 w-full mb-6">
                                         <div className="bg-[#f5f0e6] p-3 rounded text-center border border-[#d6cbb8] flex flex-col justify-center">
-                                            <div className="text-xs text-[#8c7b70] font-bold uppercase mb-1">鍝佽川鏄熺骇</div>
+                                            <div className="text-xs text-[#8c7b70] font-bold uppercase mb-1">品质星级</div>
                                             <div className="text-yellow-500 font-bold text-lg leading-none">
                                                 {previewData.avgStar} <i className="fa-solid fa-star text-sm"></i>
                                             </div>
                                         </div>
                                         <div className="bg-[#f5f0e6] p-3 rounded text-center border border-[#d6cbb8] flex flex-col justify-center">
-                                            <div className="text-xs text-[#8c7b70] font-bold uppercase mb-1">浼扮畻鍞环</div>
+                                            <div className="text-xs text-[#8c7b70] font-bold uppercase mb-1">估算售价</div>
                                             <div className="text-[#b45309] font-bold text-lg leading-none">
                                                 {previewData.price} G
                                             </div>
@@ -622,13 +636,13 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                             onClick={() => setPreviewData(null)}
                                             className="flex-1 py-3 bg-[#e8dfd1] text-[#5c4d45] font-bold rounded hover:bg-[#d6cbb8]"
                                         >
-                                            鏀惧純
+                                            放弃
                                         </button>
                                         <button 
                                             onClick={handleRealCook}
                                             className="flex-1 py-3 bg-[#382b26] text-[#f0e6d2] font-bold rounded hover:bg-[#4a3b32] shadow-md"
                                         >
-                                            鍒朵綔
+                                            制作
                                         </button>
                                     </div>
                                 </div>
@@ -647,7 +661,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                         <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center animate-fadeIn px-4">
                             <div className="bg-[#fbf9f4] w-full max-w-sm rounded-lg shadow-2xl border-2 border-[#9b7a4c] overflow-hidden">
                                 <div className="bg-[#382b26] p-3 border-b border-[#9b7a4c] flex justify-between items-center">
-                                    <h3 className="text-[#f0e6d2] font-bold">鎵归噺鍒朵綔</h3>
+                                    <h3 className="text-[#f0e6d2] font-bold">批量制作</h3>
                                     <button onClick={() => setCraftingRecipeId(null)} className="text-[#8c7b70] hover:text-white"><i className="fa-solid fa-xmark"></i></button>
                                 </div>
                                 <div className="p-6 text-[#382b26]">
@@ -657,7 +671,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                         </div>
                                         <div>
                                             <div className="font-bold">{recipe.name}</div>
-                                            <div className="text-xs text-[#8c7b70]">鏈€澶у彲鍒朵綔: <span className="font-bold text-[#b45309]">{max}</span></div>
+                                            <div className="text-xs text-[#8c7b70]">最大可制作: <span className="font-bold text-[#b45309]">{max}</span></div>
                                         </div>
                                     </div>
 
@@ -674,7 +688,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                     </div>
 
                                     <div className="bg-[#f5f0e6] p-2 rounded mb-4 text-xs">
-                                        <div className="font-bold text-[#8c7b70] mb-1">绱犳潗娑堣€楅瑙?</div>
+                                        <div className="font-bold text-[#8c7b70] mb-1">素材消耗预览:</div>
                                         {[recipe.mainResId, ...recipe.otherResIds].map((id, i) => {
                                             // Count occurrences
                                             const list = [recipe.mainResId, ...recipe.otherResIds];
@@ -695,7 +709,8 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                         onClick={confirmCraft}
                                         className="w-full py-3 bg-[#b45309] text-white font-bold rounded hover:bg-[#d97706] shadow-md"
                                     >
-                                        寮€濮嬬児楗?                                    </button>
+                                        开始烹饪
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -709,4 +724,3 @@ const CookingModal: React.FC<CookingModalProps> = ({
 };
 
 export default CookingModal;
-

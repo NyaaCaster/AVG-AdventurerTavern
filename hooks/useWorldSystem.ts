@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { WorldState, SceneId } from '../types';
 import { calculateWorldState, calculateCharacterLocations, getSceneDisplayName } from '../utils/gameLogic';
@@ -21,7 +22,8 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
   });
   const [characterLocations, setCharacterLocations] = useState<Record<string, string>>(() => {
     if (initialData?.worldState) {
-        // 浣跨敤瀛樻。鐨勬椂闂磋绠椾綅缃?        return calculateCharacterLocations(initialData.worldState.period, initialData.worldState.dateStr, initialData.worldState.timeStr, sceneLevels);
+        // 使用存档的时间计算位置
+        return calculateCharacterLocations(initialData.worldState.period, initialData.worldState.dateStr, initialData.worldState.timeStr, sceneLevels);
     }
     const initialState = calculateWorldState(getSceneDisplayName('scen_1'));
     return calculateCharacterLocations(initialState.period, initialState.dateStr, initialState.timeStr, sceneLevels);
@@ -101,8 +103,9 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
     setTimeout(() => {
         setCurrentSceneId(sceneId);
         setSceneParams(params || {});
-        // [瑙掕壊绉诲姩绯荤粺] 淇濇寔寮哄埗瀹氫綅锛屼笉鍦ㄥ満鏅垏鎹㈡椂娓呴櫎
-        // setForcedLocations({}) 宸茬Щ闄わ紝璁╄鑹茬Щ鍔ㄦ寔缁敓鏁?        
+        // [角色移动系统] 保持强制定位，不在场景切换时清除
+        // setForcedLocations({}) 已移除，让角色移动持续生效
+        
         // Immediate State Update during blind spot
         const newSceneName = getSceneDisplayName(sceneId, params);
         const newState = calculateWorldState(newSceneName);
@@ -146,4 +149,3 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
       transitionOpacity
   };
 };
-

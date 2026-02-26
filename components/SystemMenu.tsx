@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ConfigTab } from '../types';
 
@@ -43,7 +44,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
           <button 
             onClick={() => setIsOpen(true)} 
             className={btnClass()} 
-            title="鑿滃崟"
+            title="菜单"
           >
             <i className="fa-solid fa-bars"></i>
           </button>
@@ -57,7 +58,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
              <button 
                 onClick={() => onOpenSettings()} 
                 className={btnClass()}
-                title="绯荤粺璁剧疆"
+                title="系统设置"
               >
                 <i className="fa-solid fa-gear"></i>
               </button>
@@ -66,7 +67,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
              <button 
                 onClick={() => setIsOpen(false)} 
                 className={btnClass()} 
-                title="鏀惰捣"
+                title="收起"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -75,7 +76,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
              <button 
                 onClick={() => { setIsOpen(false); onSaveGame?.(); }} 
                 className={btnClass()}
-                title="淇濆瓨杩涘害"
+                title="保存进度"
               >
                 <i className="fa-solid fa-floppy-disk"></i>
               </button>
@@ -84,7 +85,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
              <button 
                 onClick={() => { setIsOpen(false); onLoadGame?.(); }} 
                 className={btnClass()}
-                title="杞藉叆杩涘害"
+                title="载入进度"
               >
                 <i className="fa-solid fa-folder-open"></i>
               </button>
@@ -93,7 +94,7 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
              <button 
                 onClick={handleBackToMenuClick} 
                 className={btnClass()} 
-                title="杩斿洖鏍囬鐢婚潰"
+                title="返回标题画面"
               >
                 <i className="fa-solid fa-house"></i>
               </button>
@@ -120,20 +121,20 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
               <i className="fa-solid fa-circle-exclamation"></i>
             </div>
             <p className="text-slate-200 text-base mb-8 text-center leading-relaxed">
-              灏氭湭瀛樻。锛屾槸鍚︽斁寮冨綋鍓嶈繘搴﹁繑鍥炴爣棰樼敾闈紵
+              尚未存档，是否放弃当前进度返回标题画面？
             </p>
             <div className="flex gap-4 w-full justify-center">
               <button 
                 onClick={handleCancel}
                 className="bg-slate-800 text-slate-300 border border-slate-700 px-6 py-2.5 text-sm rounded-lg hover:bg-slate-700 hover:text-white transition-colors flex-1"
               >
-                鍙栨秷
+                取消
               </button>
               <button 
                 onClick={handleConfirm}
                 className="bg-amber-700 text-white px-6 py-2.5 font-bold rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:bg-amber-600 transition-colors flex-1"
               >
-                纭畾
+                确定
               </button>
             </div>
           </div>
@@ -144,4 +145,3 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
 };
 
 export default SystemMenu;
-

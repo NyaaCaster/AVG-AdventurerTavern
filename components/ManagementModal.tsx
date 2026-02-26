@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ManagementStats, RevenueLog } from '../types';
 
@@ -12,7 +13,8 @@ interface ManagementModalProps {
 
 type ActionType = 'sweep' | 'solicit' | 'chat';
 
-// 妯″潡绾у彉閲忥紝鐢ㄤ簬鍦ㄧ粍浠跺嵏杞藉悗淇濇寔灏忔椂鍐呯殑闅忔満鍊肩姸鎬?// 鍙湁鍒锋柊椤甸潰鎴栧皬鏃跺彉鏇存椂鎵嶄細閲嶇疆
+// 模块级变量，用于在组件卸载后保持小时内的随机值状态
+// 只有刷新页面或小时变更时才会重置
 const globalRandomState = {
     hour: -1,
     offsets: {
@@ -55,11 +57,12 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 杈呭姪鍑芥暟锛氭牴鎹被鍨嬪拰闅忔満鍋忕Щ閲忚绠楁暟鍊煎彉鍖?  const calculateChanges = (type: ActionType, randomVal: number): Partial<ManagementStats> => {
+  // 辅助函数：根据类型和随机偏移量计算数值变化
+  const calculateChanges = (type: ActionType, randomVal: number): Partial<ManagementStats> => {
       let changes: Partial<ManagementStats> = {};
       switch (type) {
           case 'sweep':
-              // 鎵櫎锛氭弧瓒冲害+3%銆侀泦瀹㈠姏-1%銆佸ソ璇勫害-1% (鍩烘暟)
+              // 扫除：满足度+3%、集客力-1%、好评度-1% (基数)
               changes = {
                   satisfaction: 3 + randomVal,
                   attraction: -1 + randomVal,
@@ -67,7 +70,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
               };
               break;
           case 'solicit':
-              // 鎻藉锛氭弧瓒冲害-1%銆侀泦瀹㈠姏+3%銆佸ソ璇勫害-1% (鍩烘暟)
+              // 揽客：满足度-1%、集客力+3%、好评度-1% (基数)
               changes = {
                   satisfaction: -1 + randomVal,
                   attraction: 3 + randomVal,
@@ -75,7 +78,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
               };
               break;
           case 'chat':
-              // 瀹㈣皥锛氭弧瓒冲害-1%銆侀泦瀹㈠姏-1%銆佸ソ璇勫害+3% (鍩烘暟)
+              // 客谈：满足度-1%、集客力-1%、好评度+3% (基数)
               changes = {
                   satisfaction: -1 + randomVal,
                   attraction: -1 + randomVal,
@@ -101,15 +104,16 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
   const handleReroll = () => {
       if (!confirmAction || currentGold < 10) return;
 
-      // 1. 鎵ｉ櫎 10G (浼犲叆绌哄璞¤〃绀轰笉淇敼鏃呭簵灞炴€э紝鍙蛋鎵ｈ垂閫昏緫)
+      // 1. 扣除 10G (传入空对象表示不修改旅店属性，只走扣费逻辑)
       if (onAction) {
           onAction(10, {});
       }
 
-      // 2. 閲嶆柊鐢熸垚璇ョ被鍨嬬殑闅忔満鏁板苟鏇存柊鍏ㄥ眬鐘舵€?      const newRandomVal = getRandomFloat();
+      // 2. 重新生成该类型的随机数并更新全局状态
+      const newRandomVal = getRandomFloat();
       globalRandomState.offsets[confirmAction.type] = newRandomVal;
 
-      // 3. 閲嶆柊璁＄畻棰勮
+      // 3. 重新计算预览
       const newChanges = calculateChanges(confirmAction.type, newRandomVal);
       
       setConfirmAction({
@@ -122,7 +126,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       if (confirmAction && onAction && currentGold >= confirmAction.cost) {
           setIsProcessing(true);
           
-          // 3绉掑姩鐢绘紨绀?          setTimeout(() => {
+          // 3秒动画演示
+          setTimeout(() => {
               onAction(confirmAction.cost, confirmAction.preview);
               setIsProcessing(false);
               setConfirmAction(null);
@@ -132,9 +137,9 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const getActionName = (type: ActionType) => {
       switch(type) {
-          case 'sweep': return '澶ф壂闄?;
-          case 'solicit': return '鍑洪棬鎻藉';
-          case 'chat': return '鎷涘緟瀹㈣皥';
+          case 'sweep': return '大扫除';
+          case 'solicit': return '出门揽客';
+          case 'chat': return '招待客谈';
       }
   };
 
@@ -180,7 +185,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             <button 
                 onClick={onClose}
                 className="absolute top-1.5 right-3 md:top-2 md:right-3 z-30 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-[#5c4d45] hover:text-[#b45309] transition-colors rounded-full hover:bg-[#d6cbb8]/50"
-                title="鍏抽棴"
+                title="关闭"
             >
                 <i className="fa-solid fa-xmark text-base md:text-lg"></i>
             </button>
@@ -199,7 +204,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 {/* Header - Very Compact */}
                 <div className="flex items-center justify-center pb-1 border-b border-[#9b7a4c]/30 mb-1.5 relative z-10 shrink-0">
                     <div className="text-center">
-                        <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em]">鏃呭簵璐︽湰</h2>
+                        <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em]">旅店账本</h2>
                     </div>
                 </div>
 
@@ -214,7 +219,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                         }`}
                     >
                         <i className="fa-solid fa-chart-pie"></i>
-                        鏃呭簵鐘跺喌
+                        旅店状况
                     </button>
                     <button 
                         onClick={() => setActiveTab('records')}
@@ -225,7 +230,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                         }`}
                     >
                         <i className="fa-solid fa-file-invoice-dollar"></i>
-                        钀ユ敹璁板綍
+                        营收记录
                     </button>
                 </div>
 
@@ -238,7 +243,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                             {/* Top Stats - Compact Grid */}
                             <div className="grid grid-cols-2 gap-2 md:gap-3 mb-2 shrink-0">
                                 <div className="bg-[#f5f0e6] p-1.5 md:p-2 rounded border border-[#d6cbb8] shadow-sm flex flex-col items-center justify-center">
-                                    <span className="text-[#8c7b70] text-[9px] md:text-[10px] font-bold uppercase mb-0.5 whitespace-nowrap">浣忓浜烘暟</span>
+                                    <span className="text-[#8c7b70] text-[9px] md:text-[10px] font-bold uppercase mb-0.5 whitespace-nowrap">住宿人数</span>
                                     <div className="flex items-baseline gap-1 text-[#382b26]">
                                         <span className="text-lg md:text-2xl font-black">{stats.occupancy}</span>
                                         <span className="text-[9px] md:text-xs text-[#8c7b70] font-medium">/ {stats.maxOccupancy}</span>
@@ -249,41 +254,41 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                                 </div>
 
                                 <div className="bg-[#f5f0e6] p-1.5 md:p-2 rounded border border-[#d6cbb8] shadow-sm flex flex-col items-center justify-center">
-                                    <span className="text-[#8c7b70] text-[9px] md:text-[10px] font-bold uppercase mb-0.5 whitespace-nowrap">瀹㈡埧浠锋牸</span>
+                                    <span className="text-[#8c7b70] text-[9px] md:text-[10px] font-bold uppercase mb-0.5 whitespace-nowrap">客房价格</span>
                                     <div className="flex items-baseline gap-1 text-[#382b26]">
                                         <span className="text-lg md:text-2xl font-black">{stats.roomPrice}</span>
                                         <span className="text-[10px] md:text-xs text-[#b45309] font-bold">G</span>
                                     </div>
-                                    <span className="text-[8px] md:text-[9px] text-[#8c7b70] mt-0.5 whitespace-nowrap">姣忎汉 / 姣忔櫄</span>
+                                    <span className="text-[8px] md:text-[9px] text-[#8c7b70] mt-0.5 whitespace-nowrap">每人 / 每晚</span>
                                 </div>
                             </div>
 
                             {/* Middle Bars - Compact */}
                             <div className="bg-[#fcfaf7]/60 p-2 rounded-lg border border-[#d6cbb8]/50 mb-auto shrink-0 flex flex-col justify-center">
-                                <StatBar label="婊¤冻搴? value={stats.satisfaction} color="bg-emerald-500" icon="fa-face-smile" />
-                                <StatBar label="闆嗗鍔? value={stats.attraction} color="bg-cyan-500" icon="fa-magnet" />
-                                <StatBar label="濂借瘎搴? value={stats.reputation} color="bg-rose-500" icon="fa-star" />
+                                <StatBar label="满足度" value={stats.satisfaction} color="bg-emerald-500" icon="fa-face-smile" />
+                                <StatBar label="集客力" value={stats.attraction} color="bg-cyan-500" icon="fa-magnet" />
+                                <StatBar label="好评度" value={stats.reputation} color="bg-rose-500" icon="fa-star" />
                             </div>
 
                             {/* Bottom Action Cards - Horizontal layout */}
                             <div className="flex flex-col md:grid md:grid-cols-3 gap-2 mt-2 pt-1 border-t border-[#d6cbb8]/30 shrink-0">
                                 <InternalActionCard 
                                     icon="fa-broom" 
-                                    label="鎵櫎" 
+                                    label="扫除" 
                                     colorClass="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200"
                                     iconColor="text-emerald-600"
                                     onClick={() => handleActionClick('sweep')}
                                 />
                                 <InternalActionCard 
                                     icon="fa-bullhorn" 
-                                    label="鎻藉" 
+                                    label="揽客" 
                                     colorClass="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200"
                                     iconColor="text-amber-600"
                                     onClick={() => handleActionClick('solicit')}
                                 />
                                 <InternalActionCard 
                                     icon="fa-comments" 
-                                    label="瀹㈣皥" 
+                                    label="客谈" 
                                     colorClass="bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-200"
                                     iconColor="text-cyan-600"
                                     onClick={() => handleActionClick('chat')}
@@ -298,17 +303,17 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                             <table className="w-full text-left border-collapse">
                                 <thead className="text-[9px] md:text-[10px] text-[#8c7b70] uppercase font-bold tracking-wider border-b border-[#9b7a4c]">
                                     <tr>
-                                        <th className="pb-1 pl-1 whitespace-nowrap">鏃ユ湡</th>
-                                        <th className="pb-1 whitespace-nowrap">鏃堕棿</th>
-                                        <th className="pb-1 whitespace-nowrap">绫诲瀷</th>
-                                        <th className="pb-1 text-right pr-2 whitespace-nowrap">閲戦</th>
+                                        <th className="pb-1 pl-1 whitespace-nowrap">日期</th>
+                                        <th className="pb-1 whitespace-nowrap">时间</th>
+                                        <th className="pb-1 whitespace-nowrap">类型</th>
+                                        <th className="pb-1 text-right pr-2 whitespace-nowrap">金额</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[10px] md:text-xs text-[#382b26]">
                                     {logs.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} className="py-6 text-center text-[#8c7b70] italic">
-                                                鏆傛棤钀ユ敹璁板綍
+                                                暂无营收记录
                                             </td>
                                         </tr>
                                     ) : (
@@ -319,11 +324,11 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                                                 <td className="py-1 md:py-1.5 whitespace-nowrap">
                                                     {log.type === 'accommodation' ? (
                                                         <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[8px] md:text-[9px] font-bold border border-indigo-200">
-                                                            <i className="fa-solid fa-bed"></i> <span className="hidden md:inline">浣忓</span>
+                                                            <i className="fa-solid fa-bed"></i> <span className="hidden md:inline">住宿</span>
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-amber-100 text-amber-800 text-[8px] md:text-[9px] font-bold border border-amber-200">
-                                                            <i className="fa-solid fa-beer-mug-empty"></i> <span className="hidden md:inline">閰掑満</span>
+                                                            <i className="fa-solid fa-beer-mug-empty"></i> <span className="hidden md:inline">酒场</span>
                                                         </span>
                                                     )}
                                                 </td>
@@ -338,7 +343,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                             
                             {logs.length >= 100 && (
                                 <div className="text-center text-[8px] md:text-[9px] text-[#8c7b70] mt-1.5 italic">
-                                    * 浠呮樉绀烘渶杩?100 鏉¤褰?                                </div>
+                                    * 仅显示最近 100 条记录
+                                </div>
                             )}
                         </div>
                     )}
@@ -366,7 +372,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                                     absolute right-0 top-0 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm transition-all
                                     ${currentGold >= 10 ? 'bg-[#382b26] text-amber-400 hover:bg-[#2c241b]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
                                 `}
-                                title={currentGold < 10 ? "璧勯噾涓嶈冻" : "閲嶇疆闅忔満鏁板€?(-10G)"}
+                                title={currentGold < 10 ? "资金不足" : "重置随机数值 (-10G)"}
                             >
                                 <i className="fa-solid fa-dice"></i>
                                 <span>10 G</span>
@@ -375,32 +381,32 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                         
                         <div className="space-y-1.5 md:space-y-2 mb-3 md:mb-4 text-xs md:text-sm">
                             <div className="flex justify-between items-center text-[#5c4d45]">
-                                <span>婊¤冻搴﹂娴?</span>
+                                <span>满足度预测:</span>
                                 <span className={confirmAction.preview.satisfaction! > 0 ? 'text-emerald-600 font-bold' : confirmAction.preview.satisfaction! < 0 ? 'text-red-600 font-bold' : ''}>
                                     {formatChange(confirmAction.preview.satisfaction)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-[#5c4d45]">
-                                <span>闆嗗鍔涢娴?</span>
+                                <span>集客力预测:</span>
                                 <span className={confirmAction.preview.attraction! > 0 ? 'text-emerald-600 font-bold' : confirmAction.preview.attraction! < 0 ? 'text-red-600 font-bold' : ''}>
                                     {formatChange(confirmAction.preview.attraction)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-[#5c4d45]">
-                                <span>濂借瘎搴﹂娴?</span>
+                                <span>好评度预测:</span>
                                 <span className={confirmAction.preview.reputation! > 0 ? 'text-emerald-600 font-bold' : confirmAction.preview.reputation! < 0 ? 'text-red-600 font-bold' : ''}>
                                     {formatChange(confirmAction.preview.reputation)}
                                 </span>
                             </div>
                             
                             <div className="mt-2 pt-2 border-t border-[#d6cbb8] flex justify-between items-center font-bold text-sm md:text-base">
-                                <span className="text-[#382b26]">鎵€闇€缁忚垂:</span>
+                                <span className="text-[#382b26]">所需经费:</span>
                                 <span className={currentGold < confirmAction.cost ? "text-red-600" : "text-amber-600"}>
                                     {confirmAction.cost} G
                                 </span>
                             </div>
                             {currentGold < confirmAction.cost && (
-                                <div className="text-center text-[10px] text-red-500 font-bold">璧勯噾涓嶈冻</div>
+                                <div className="text-center text-[10px] text-red-500 font-bold">资金不足</div>
                             )}
                         </div>
 
@@ -409,7 +415,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                                 onClick={() => setConfirmAction(null)}
                                 className="flex-1 py-1 md:py-1.5 bg-[#e8dfd1] hover:bg-[#d6cbb8] text-[#5c4d45] font-bold rounded transition-colors text-xs md:text-sm"
                             >
-                                鍙栨秷
+                                取消
                             </button>
                             <button 
                                 onClick={executeAction}
@@ -420,7 +426,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                                     : 'bg-[#382b26] hover:bg-[#2c241b] text-[#f0e6d2]'
                                 }`}
                             >
-                                鎵ц
+                                执行
                             </button>
                         </div>
                     </div>
@@ -432,10 +438,11 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#f5f0e6]/90 backdrop-blur-sm">
                     <div className="w-10 h-10 md:w-14 md:h-14 border-4 border-[#382b26] border-t-transparent rounded-full animate-spin mb-2 md:mb-3"></div>
                     <div className="text-base md:text-lg font-bold text-[#382b26] animate-pulse tracking-widest">
-                        姝ｅ湪鎵ц...
+                        正在执行...
                     </div>
                     <div className="mt-1 text-[10px] md:text-xs text-[#8c7b70] font-bold">
-                        鏇存柊鏃呭簵鏁版嵁涓?                    </div>
+                        更新旅店数据中
+                    </div>
                 </div>
             )}
         </div>
@@ -468,4 +475,3 @@ const InternalActionCard: React.FC<{
 );
 
 export default ManagementModal;
-

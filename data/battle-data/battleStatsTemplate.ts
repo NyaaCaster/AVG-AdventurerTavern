@@ -1,4 +1,4 @@
-xport interface BattleStats {
+export interface BattleStats {
   hp: number;
   mp: number;
   physicalAttack: number;
@@ -10,7 +10,8 @@ xport interface BattleStats {
 }
 
 export const battleStatsTemplate: BattleStats[] = [
-  // 1绾?  {
+  // 1级
+  {
     hp: 711,
     mp: 80,
     physicalAttack: 30,
@@ -20,7 +21,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 30,
     luck: 30
   },
-  // 2绾?  {
+  // 2级
+  {
     hp: 750,
     mp: 90,
     physicalAttack: 31,
@@ -30,7 +32,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 32,
     luck: 32
   },
-  // 3绾?  {
+  // 3级
+  {
     hp: 789,
     mp: 100,
     physicalAttack: 32,
@@ -40,7 +43,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 35,
     luck: 35
   },
-  // 4绾?  {
+  // 4级
+  {
     hp: 827,
     mp: 110,
     physicalAttack: 33,
@@ -50,7 +54,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 37,
     luck: 37
   },
-  // 5绾?  {
+  // 5级
+  {
     hp: 865,
     mp: 120,
     physicalAttack: 34,
@@ -60,7 +65,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 40,
     luck: 40
   },
-  // 6绾?  {
+  // 6级
+  {
     hp: 904,
     mp: 130,
     physicalAttack: 35,
@@ -70,7 +76,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 42,
     luck: 42
   },
-  // 7绾?  {
+  // 7级
+  {
     hp: 942,
     mp: 140,
     physicalAttack: 37,
@@ -80,7 +87,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 45,
     luck: 45
   },
-  // 8绾?  {
+  // 8级
+  {
     hp: 980,
     mp: 150,
     physicalAttack: 38,
@@ -90,7 +98,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 47,
     luck: 47
   },
-  // 9绾?  {
+  // 9级
+  {
     hp: 1018,
     mp: 160,
     physicalAttack: 39,
@@ -100,7 +109,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 50,
     luck: 50
   },
-  // 10绾?  {
+  // 10级
+  {
     hp: 1057,
     mp: 170,
     physicalAttack: 40,
@@ -110,7 +120,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 52,
     luck: 52
   },
-  // 11绾?  {
+  // 11级
+  {
     hp: 1095,
     mp: 180,
     physicalAttack: 42,
@@ -120,7 +131,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 55,
     luck: 55
   },
-  // 12绾?  {
+  // 12级
+  {
     hp: 1133,
     mp: 190,
     physicalAttack: 43,
@@ -130,7 +142,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 57,
     luck: 57
   },
-  // 13绾?  {
+  // 13级
+  {
     hp: 1171,
     mp: 200,
     physicalAttack: 44,
@@ -140,7 +153,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 60,
     luck: 60
   },
-  // 14绾?  {
+  // 14级
+  {
     hp: 1210,
     mp: 210,
     physicalAttack: 45,
@@ -150,7 +164,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 62,
     luck: 62
   },
-  // 15绾?  {
+  // 15级
+  {
     hp: 1248,
     mp: 220,
     physicalAttack: 46,
@@ -160,7 +175,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 65,
     luck: 65
   },
-  // 16绾?  {
+  // 16级
+  {
     hp: 1286,
     mp: 230,
     physicalAttack: 48,
@@ -170,7 +186,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 67,
     luck: 67
   },
-  // 17绾?  {
+  // 17级
+  {
     hp: 1324,
     mp: 240,
     physicalAttack: 49,
@@ -180,7 +197,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 70,
     luck: 70
   },
-  // 18绾?  {
+  // 18级
+  {
     hp: 1363,
     mp: 250,
     physicalAttack: 50,
@@ -190,7 +208,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 72,
     luck: 72
   },
-  // 19绾?  {
+  // 19级
+  {
     hp: 1401,
     mp: 260,
     physicalAttack: 51,
@@ -200,7 +219,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 75,
     luck: 75
   },
-  // 20绾?  {
+  // 20级
+  {
     hp: 1439,
     mp: 270,
     physicalAttack: 53,
@@ -210,7 +230,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 77,
     luck: 77
   },
-  // 21绾?  {
+  // 21级
+  {
     hp: 1478,
     mp: 280,
     physicalAttack: 54,
@@ -220,7 +241,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 80,
     luck: 80
   },
-  // 22绾?  {
+  // 22级
+  {
     hp: 1516,
     mp: 290,
     physicalAttack: 55,
@@ -230,7 +252,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 82,
     luck: 82
   },
-  // 23绾?  {
+  // 23级
+  {
     hp: 1554,
     mp: 300,
     physicalAttack: 56,
@@ -240,7 +263,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 85,
     luck: 85
   },
-  // 24绾?  {
+  // 24级
+  {
     hp: 1592,
     mp: 310,
     physicalAttack: 57,
@@ -250,7 +274,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 87,
     luck: 87
   },
-  // 25绾?  {
+  // 25级
+  {
     hp: 1631,
     mp: 320,
     physicalAttack: 59,
@@ -260,7 +285,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 90,
     luck: 90
   },
-  // 26绾?  {
+  // 26级
+  {
     hp: 1669,
     mp: 330,
     physicalAttack: 60,
@@ -270,7 +296,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 92,
     luck: 92
   },
-  // 27绾?  {
+  // 27级
+  {
     hp: 1707,
     mp: 340,
     physicalAttack: 61,
@@ -280,7 +307,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 95,
     luck: 95
   },
-  // 28绾?  {
+  // 28级
+  {
     hp: 1745,
     mp: 350,
     physicalAttack: 62,
@@ -290,7 +318,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 97,
     luck: 97
   },
-  // 29绾?  {
+  // 29级
+  {
     hp: 1784,
     mp: 360,
     physicalAttack: 64,
@@ -300,7 +329,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 100,
     luck: 100
   },
-  // 30绾?  {
+  // 30级
+  {
     hp: 1822,
     mp: 370,
     physicalAttack: 65,
@@ -310,7 +340,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 102,
     luck: 102
   },
-  // 31绾?  {
+  // 31级
+  {
     hp: 1860,
     mp: 380,
     physicalAttack: 66,
@@ -320,7 +351,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 105,
     luck: 105
   },
-  // 32绾?  {
+  // 32级
+  {
     hp: 1898,
     mp: 390,
     physicalAttack: 67,
@@ -330,7 +362,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 107,
     luck: 107
   },
-  // 33绾?  {
+  // 33级
+  {
     hp: 1937,
     mp: 400,
     physicalAttack: 68,
@@ -340,7 +373,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 110,
     luck: 110
   },
-  // 34绾?  {
+  // 34级
+  {
     hp: 1975,
     mp: 410,
     physicalAttack: 70,
@@ -350,7 +384,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 112,
     luck: 112
   },
-  // 35绾?  {
+  // 35级
+  {
     hp: 2013,
     mp: 420,
     physicalAttack: 71,
@@ -360,7 +395,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 115,
     luck: 115
   },
-  // 36绾?  {
+  // 36级
+  {
     hp: 2052,
     mp: 430,
     physicalAttack: 72,
@@ -370,7 +406,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 117,
     luck: 117
   },
-  // 37绾?  {
+  // 37级
+  {
     hp: 2090,
     mp: 440,
     physicalAttack: 73,
@@ -380,7 +417,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 120,
     luck: 120
   },
-  // 38绾?  {
+  // 38级
+  {
     hp: 2128,
     mp: 450,
     physicalAttack: 75,
@@ -390,7 +428,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 122,
     luck: 122
   },
-  // 39绾?  {
+  // 39级
+  {
     hp: 2166,
     mp: 460,
     physicalAttack: 76,
@@ -400,7 +439,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 125,
     luck: 125
   },
-  // 40绾?  {
+  // 40级
+  {
     hp: 2205,
     mp: 470,
     physicalAttack: 77,
@@ -410,7 +450,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 127,
     luck: 127
   },
-  // 41绾?  {
+  // 41级
+  {
     hp: 2243,
     mp: 480,
     physicalAttack: 78,
@@ -420,7 +461,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 130,
     luck: 130
   },
-  // 42绾?  {
+  // 42级
+  {
     hp: 2281,
     mp: 490,
     physicalAttack: 79,
@@ -430,7 +472,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 132,
     luck: 132
   },
-  // 43绾?  {
+  // 43级
+  {
     hp: 2319,
     mp: 500,
     physicalAttack: 81,
@@ -440,7 +483,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 135,
     luck: 135
   },
-  // 44绾?  {
+  // 44级
+  {
     hp: 2358,
     mp: 510,
     physicalAttack: 82,
@@ -450,7 +494,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 137,
     luck: 137
   },
-  // 45绾?  {
+  // 45级
+  {
     hp: 2396,
     mp: 520,
     physicalAttack: 83,
@@ -460,7 +505,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 140,
     luck: 140
   },
-  // 46绾?  {
+  // 46级
+  {
     hp: 2434,
     mp: 530,
     physicalAttack: 84,
@@ -470,7 +516,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 142,
     luck: 142
   },
-  // 47绾?  {
+  // 47级
+  {
     hp: 2472,
     mp: 540,
     physicalAttack: 86,
@@ -480,7 +527,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 145,
     luck: 145
   },
-  // 48绾?  {
+  // 48级
+  {
     hp: 2511,
     mp: 550,
     physicalAttack: 87,
@@ -490,7 +538,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 147,
     luck: 147
   },
-  // 49绾?  {
+  // 49级
+  {
     hp: 2549,
     mp: 560,
     physicalAttack: 88,
@@ -500,7 +549,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 150,
     luck: 150
   },
-  // 50绾?  {
+  // 50级
+  {
     hp: 2587,
     mp: 570,
     physicalAttack: 89,
@@ -510,7 +560,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 152,
     luck: 152
   },
-  // 51绾?  {
+  // 51级
+  {
     hp: 2625,
     mp: 580,
     physicalAttack: 90,
@@ -520,7 +571,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 155,
     luck: 155
   },
-  // 52绾?  {
+  // 52级
+  {
     hp: 2664,
     mp: 590,
     physicalAttack: 92,
@@ -530,7 +582,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 157,
     luck: 157
   },
-  // 53绾?  {
+  // 53级
+  {
     hp: 2702,
     mp: 600,
     physicalAttack: 93,
@@ -540,7 +593,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 160,
     luck: 160
   },
-  // 54绾?  {
+  // 54级
+  {
     hp: 2740,
     mp: 610,
     physicalAttack: 94,
@@ -550,7 +604,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 162,
     luck: 162
   },
-  // 55绾?  {
+  // 55级
+  {
     hp: 2779,
     mp: 620,
     physicalAttack: 95,
@@ -560,7 +615,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 165,
     luck: 165
   },
-  // 56绾?  {
+  // 56级
+  {
     hp: 2817,
     mp: 630,
     physicalAttack: 97,
@@ -570,7 +626,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 167,
     luck: 167
   },
-  // 57绾?  {
+  // 57级
+  {
     hp: 2855,
     mp: 640,
     physicalAttack: 98,
@@ -580,7 +637,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 170,
     luck: 170
   },
-  // 58绾?  {
+  // 58级
+  {
     hp: 2893,
     mp: 650,
     physicalAttack: 99,
@@ -590,7 +648,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 172,
     luck: 172
   },
-  // 59绾?  {
+  // 59级
+  {
     hp: 2932,
     mp: 660,
     physicalAttack: 100,
@@ -600,7 +659,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 175,
     luck: 175
   },
-  // 60绾?  {
+  // 60级
+  {
     hp: 2970,
     mp: 670,
     physicalAttack: 102,
@@ -610,7 +670,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 177,
     luck: 177
   },
-  // 61绾?  {
+  // 61级
+  {
     hp: 3008,
     mp: 680,
     physicalAttack: 103,
@@ -620,7 +681,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 180,
     luck: 180
   },
-  // 62绾?  {
+  // 62级
+  {
     hp: 3046,
     mp: 690,
     physicalAttack: 104,
@@ -630,7 +692,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 182,
     luck: 182
   },
-  // 63绾?  {
+  // 63级
+  {
     hp: 3085,
     mp: 700,
     physicalAttack: 105,
@@ -640,7 +703,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 185,
     luck: 185
   },
-  // 64绾?  {
+  // 64级
+  {
     hp: 3123,
     mp: 710,
     physicalAttack: 106,
@@ -650,7 +714,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 187,
     luck: 187
   },
-  // 65绾?  {
+  // 65级
+  {
     hp: 3161,
     mp: 720,
     physicalAttack: 108,
@@ -660,7 +725,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 190,
     luck: 190
   },
-  // 66绾?  {
+  // 66级
+  {
     hp: 3199,
     mp: 730,
     physicalAttack: 109,
@@ -670,7 +736,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 192,
     luck: 192
   },
-  // 67绾?  {
+  // 67级
+  {
     hp: 3238,
     mp: 740,
     physicalAttack: 110,
@@ -680,7 +747,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 195,
     luck: 195
   },
-  // 68绾?  {
+  // 68级
+  {
     hp: 3276,
     mp: 750,
     physicalAttack: 111,
@@ -690,7 +758,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 197,
     luck: 197
   },
-  // 69绾?  {
+  // 69级
+  {
     hp: 3314,
     mp: 760,
     physicalAttack: 113,
@@ -700,7 +769,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 200,
     luck: 200
   },
-  // 70绾?  {
+  // 70级
+  {
     hp: 3353,
     mp: 770,
     physicalAttack: 114,
@@ -710,7 +780,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 202,
     luck: 202
   },
-  // 71绾?  {
+  // 71级
+  {
     hp: 3391,
     mp: 780,
     physicalAttack: 115,
@@ -720,7 +791,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 205,
     luck: 205
   },
-  // 72绾?  {
+  // 72级
+  {
     hp: 3429,
     mp: 790,
     physicalAttack: 116,
@@ -730,7 +802,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 207,
     luck: 207
   },
-  // 73绾?  {
+  // 73级
+  {
     hp: 3467,
     mp: 800,
     physicalAttack: 117,
@@ -740,7 +813,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 210,
     luck: 210
   },
-  // 74绾?  {
+  // 74级
+  {
     hp: 3506,
     mp: 810,
     physicalAttack: 119,
@@ -750,7 +824,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 212,
     luck: 212
   },
-  // 75绾?  {
+  // 75级
+  {
     hp: 3544,
     mp: 820,
     physicalAttack: 120,
@@ -760,7 +835,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 215,
     luck: 215
   },
-  // 76绾?  {
+  // 76级
+  {
     hp: 3582,
     mp: 830,
     physicalAttack: 121,
@@ -770,7 +846,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 217,
     luck: 217
   },
-  // 77绾?  {
+  // 77级
+  {
     hp: 3620,
     mp: 840,
     physicalAttack: 122,
@@ -780,7 +857,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 220,
     luck: 220
   },
-  // 78绾?  {
+  // 78级
+  {
     hp: 3659,
     mp: 850,
     physicalAttack: 124,
@@ -790,7 +868,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 222,
     luck: 222
   },
-  // 79绾?  {
+  // 79级
+  {
     hp: 3697,
     mp: 860,
     physicalAttack: 125,
@@ -800,7 +879,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 225,
     luck: 225
   },
-  // 80绾?  {
+  // 80级
+  {
     hp: 3735,
     mp: 870,
     physicalAttack: 126,
@@ -810,7 +890,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 227,
     luck: 227
   },
-  // 81绾?  {
+  // 81级
+  {
     hp: 3773,
     mp: 880,
     physicalAttack: 127,
@@ -820,7 +901,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 230,
     luck: 230
   },
-  // 82绾?  {
+  // 82级
+  {
     hp: 3812,
     mp: 890,
     physicalAttack: 128,
@@ -830,7 +912,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 232,
     luck: 232
   },
-  // 83绾?  {
+  // 83级
+  {
     hp: 3850,
     mp: 900,
     physicalAttack: 130,
@@ -840,7 +923,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 235,
     luck: 235
   },
-  // 84绾?  {
+  // 84级
+  {
     hp: 3888,
     mp: 910,
     physicalAttack: 131,
@@ -850,7 +934,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 237,
     luck: 237
   },
-  // 85绾?  {
+  // 85级
+  {
     hp: 3927,
     mp: 920,
     physicalAttack: 132,
@@ -860,7 +945,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 240,
     luck: 240
   },
-  // 86绾?  {
+  // 86级
+  {
     hp: 3965,
     mp: 930,
     physicalAttack: 133,
@@ -870,7 +956,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 242,
     luck: 242
   },
-  // 87绾?  {
+  // 87级
+  {
     hp: 4003,
     mp: 940,
     physicalAttack: 135,
@@ -880,7 +967,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 245,
     luck: 245
   },
-  // 88绾?  {
+  // 88级
+  {
     hp: 4041,
     mp: 950,
     physicalAttack: 136,
@@ -890,7 +978,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 247,
     luck: 247
   },
-  // 89绾?  {
+  // 89级
+  {
     hp: 4080,
     mp: 960,
     physicalAttack: 137,
@@ -900,7 +989,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 250,
     luck: 250
   },
-  // 90绾?  {
+  // 90级
+  {
     hp: 4118,
     mp: 970,
     physicalAttack: 138,
@@ -910,7 +1000,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 252,
     luck: 252
   },
-  // 91绾?  {
+  // 91级
+  {
     hp: 4156,
     mp: 980,
     physicalAttack: 139,
@@ -920,7 +1011,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 255,
     luck: 255
   },
-  // 92绾?  {
+  // 92级
+  {
     hp: 4194,
     mp: 990,
     physicalAttack: 141,
@@ -930,7 +1022,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 257,
     luck: 257
   },
-  // 93绾?  {
+  // 93级
+  {
     hp: 4233,
     mp: 1000,
     physicalAttack: 142,
@@ -940,7 +1033,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 260,
     luck: 260
   },
-  // 94绾?  {
+  // 94级
+  {
     hp: 4271,
     mp: 1010,
     physicalAttack: 143,
@@ -950,7 +1044,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 262,
     luck: 262
   },
-  // 95绾?  {
+  // 95级
+  {
     hp: 4309,
     mp: 1020,
     physicalAttack: 144,
@@ -960,7 +1055,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 265,
     luck: 265
   },
-  // 96绾?  {
+  // 96级
+  {
     hp: 4347,
     mp: 1030,
     physicalAttack: 146,
@@ -970,7 +1066,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 267,
     luck: 267
   },
-  // 97绾?  {
+  // 97级
+  {
     hp: 4386,
     mp: 1040,
     physicalAttack: 147,
@@ -980,7 +1077,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 270,
     luck: 270
   },
-  // 98绾?  {
+  // 98级
+  {
     hp: 4424,
     mp: 1050,
     physicalAttack: 148,
@@ -990,7 +1088,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 272,
     luck: 272
   },
-  // 99绾?  {
+  // 99级
+  {
     hp: 4462,
     mp: 1060,
     physicalAttack: 149,
@@ -1000,7 +1099,8 @@ export const battleStatsTemplate: BattleStats[] = [
     agility: 275,
     luck: 275
   },
-  // 100绾?  {
+  // 100级
+  {
     hp: 4500,
     mp: 1070,
     physicalAttack: 150,
@@ -1011,4 +1111,3 @@ export const battleStatsTemplate: BattleStats[] = [
     luck: 277
   }
 ];
-

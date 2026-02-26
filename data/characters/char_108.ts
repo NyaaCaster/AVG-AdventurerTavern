@@ -1,11 +1,12 @@
+
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_108';
 
 export const char_108: Character = {
   id: 'char_108',
-  name: "鍗＄壒鐞冲",
-  role: "鑷崼鍥㈠コ鎴樺＋ / S绾у啋闄╄€?,
-  description: "S绾у啋闄╄€咃紝娓╂煍鍠勮壇銆佸鍙椾话鎱曠殑澶у濮愩€傚骞存潵涓€鐩翠綔涓烘潙搴勮嚜鍗洟鐨勫畧鎶よ€呫€傚洜蹇欎簬宸ヤ綔鑰岃涓鸿嚜宸遍敊杩囦簡璋堝璁哄珌鐨勫勾绾紝鍐呭績娓存湜鎭嬫儏銆?,
+  name: "卡特琳娜",
+  role: "自卫团女战士 / S级冒险者",
+  description: "S级冒险者，温柔善良、备受仰慕的大姐姐。多年来一直作为村庄自卫团的守护者。因忙于工作而认为自己错过了谈婚论嫁的年纪，内心渴望恋情。",
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [
@@ -13,4 +14,3 @@ export const char_108: Character = {
     { sceneId: 'scen_2', minLevel: 3 }
   ]
 };
-

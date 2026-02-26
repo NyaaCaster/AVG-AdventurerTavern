@@ -15,7 +15,6 @@ import ManagementModal from './ManagementModal';
 import ExpansionModal from './ExpansionModal'; 
 import CookingModal from './CookingModal'; 
 import TavernMenuModal from './TavernMenuModal';
-import ShopItemModal from './ShopItemModal';
 import DebugMenu from './DebugMenu';
 import DebugSchedulesModal from './DebugSchedulesModal';
 import DebugResourceModal from './DebugResourceModal';
@@ -74,8 +73,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isExpansionOpen, setIsExpansionOpen] = useState(false); 
   const [isCookingOpen, setIsCookingOpen] = useState(false);
   const [isTavernMenuOpen, setIsTavernMenuOpen] = useState(false);
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy');
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -106,9 +103,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   const handleCharacterMove = (charId: string, targetId: string) => {
       if (SCENE_NAMES[targetId as any]) {
-          const charName = CHARACTERS[charId]?.name || '瑙掕壊';
+          const charName = CHARACTERS[charId]?.name || '角色';
           const targetName = SCENE_NAMES[targetId as any];
-          setMoveNotification(`${charName} 灏嗗墠寰€ ${targetName}`);
+          setMoveNotification(`${charName} 将前往 ${targetName}`);
           setTimeout(() => setMoveNotification(null), 4000);
           
           // Apply forced location immediately logic is handled in final close or effect
@@ -174,7 +171,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           
           core.setManagementStats(prev => ({ ...prev, occupancy: newOccupancy }));
 
-          // 1. 浣忓缁撶畻 (8, 12, 20鐐?
+          // 1. 住宿结算 (8, 12, 20点)
           const accomHours = [8, 12, 20];
           if (accomHours.includes(currentHour)) {
               const amount = Math.floor(newOccupancy * stats.roomPrice * (stats.satisfaction / 100) * (stats.reputation / 100));
@@ -192,20 +189,21 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               }
           }
 
-          // 2. 閰掑満姣忓皬鏃剁粨绠?(鍌嶆櫄鍜屽鏅?
+          // 2. 酒场每小时结算 (傍晚和夜晚)
           if (world.worldState.period === 'evening' || world.worldState.period === 'night') {
               let totalTavernRevenue = 0;
               const soldFoods: Record<string, number> = {};
               const soldDrinks: Record<string, number> = {};
               
-              // 浣跨敤涓存椂搴撳瓨閬垮厤瓒呭崠
+              // 使用临时库存避免超卖
               const tempFoodStock = { ...core.foodStock };
               const tempDrinkStock = { ...core.inventory };
 
-              // 閿€鍞熀鏁帮細鍙楅泦瀹㈠姏褰卞搷 (0~5浠?灏忔椂)
+              // 销售基数：受集客力影响 (0~5份/小时)
               const baseSalesVolume = Math.max(1, Math.floor(5 * (stats.attraction / 100)));
 
-              // 澶勭悊椁愮偣閿€鍞?              core.tavernMenu.foods.forEach(recipeId => {
+              // 处理餐点销售
+              core.tavernMenu.foods.forEach(recipeId => {
                   if (!recipeId) return;
                   const stock = tempFoodStock[recipeId] || 0;
                   if (stock <= 0) return;
@@ -213,7 +211,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                   const recipe = core.userRecipes.find(r => r.id === recipeId);
                   if (!recipe) return;
 
-                  // 闅忔満閿€閲?                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  // 随机销量
+                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
                   if (sales > 0) {
                       soldFoods[recipeId] = (soldFoods[recipeId] || 0) + sales;
                       tempFoodStock[recipeId] -= sales;
@@ -221,7 +220,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                   }
               });
 
-              // 澶勭悊閰掓按閿€鍞?              core.tavernMenu.drinks.forEach(itemId => {
+              // 处理酒水销售
+              core.tavernMenu.drinks.forEach(itemId => {
                   if (!itemId) return;
                   const stock = tempDrinkStock[itemId] || 0;
                   if (stock <= 0) return;
@@ -229,11 +229,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                   const item = ITEMS[itemId];
                   if (!item) return;
 
-                  // 闅忔満閿€閲?                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  // 随机销量
+                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
                   if (sales > 0) {
                       soldDrinks[itemId] = (soldDrinks[itemId] || 0) + sales;
                       tempDrinkStock[itemId] -= sales;
-                      // 閰掓按鍞环锛氬熀鍑嗕环鍊?                      totalTavernRevenue += sales * getResValue(item.star);
+                      // 酒水售价：基准价值
+                      totalTavernRevenue += sales * getResValue(item.star);
                   }
               });
 
@@ -269,7 +271,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       for (let i = 2; i >= 0; i--) {
           const date = new Date(now);
           date.setDate(date.getDate() - i);
-          const dateStr = `${date.getMonth() + 1}鏈?{date.getDate()}鏃;
+          const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
           
           const events = [
               { hour: 6, type: 'tavern' as const },
@@ -339,7 +341,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     const findCharacterForScene = () => {
         if (world.currentSceneId === 'scen_2' && world.sceneParams?.target && world.sceneParams.target !== 'user') {
             const target = CHARACTERS[world.sceneParams.target];
-            // [瑙掕壊绉诲姩绯荤粺] 妫€鏌ヨ鑹叉槸鍚︾湡鐨勫湪杩欎釜鍦烘櫙
+            // [角色移动系统] 检查角色是否真的在这个场景
             const actualLocation = world.forcedLocations[target.id] || world.characterLocations[target.id];
             if (actualLocation === 'scen_2') {
                 return target;
@@ -351,11 +353,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             if (world.currentSceneId === 'scen_3') {
                 const mina = world.presentCharacters.find(c => c.id === 'char_102');
                 if (mina) {
-                    // [瑙掕壊绉诲姩绯荤粺] 纭 Mina 鐪熺殑鍦ㄩ厭鍦?                    const actualLocation = world.forcedLocations[mina.id] || world.characterLocations[mina.id];
+                    // [角色移动系统] 确认 Mina 真的在酒场
+                    const actualLocation = world.forcedLocations[mina.id] || world.characterLocations[mina.id];
                     if (actualLocation === 'scen_3') return mina;
                 }
             }
-            // [瑙掕壊绉诲姩绯荤粺] 杩囨护鎺夊凡缁忕Щ鍔ㄨ蛋鐨勮鑹?            const actuallyPresentChars = world.presentCharacters.filter(c => {
+            // [角色移动系统] 过滤掉已经移动走的角色
+            const actuallyPresentChars = world.presentCharacters.filter(c => {
                 const actualLocation = world.forcedLocations[c.id] || world.characterLocations[c.id];
                 return actualLocation === world.currentSceneId;
             });
@@ -379,7 +383,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         dialogue.setIsAmbientBathing(isBathing);
 
         if (isSleeping) {
-            dialogue.setAmbientText("zzz鈥︹€ZZ鈥︹€?);
+            dialogue.setAmbientText("zzz……ZZZ……");
             dialogue.setCurrentSprite(''); 
         } else {
             const ambientState = isBathing ? 'nude' : 'default';
@@ -404,19 +408,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     console.log(`Action triggered: ${action}`, param);
     if (action === 'cook') {
         setIsCookingOpen(true);
-    } else if (action === 'buy_item') {
-        setShopInitialTab('buy');
-        setIsShopOpen(true);
-    } else if (action === 'sell_item') {
-        setShopInitialTab('sell');
-        setIsShopOpen(true);
     }
   };
 
   const handleSaveGame = async (slotId: number) => {
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
-      // 淇濆瓨娓告垙鏁版嵁
+      // 保存游戏数据
       await saveGame(userId, slotId, label, {
           gold: core.gold,
           currentSceneId: world.currentSceneId,
@@ -433,7 +431,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           settings: settings
       });
       
-      // 濡傛灉鏄墜鍔ㄥ瓨妗ｏ紙slotId 1-3锛夛紝鍚屾鑱婂ぉ璁板繂
+      // 如果是手动存档（slotId 1-3），同步聊天记忆
       if (slotId >= 1 && slotId <= 3) {
           console.log(`[AI Memory] Syncing chat memory from slot 0 to slot ${slotId}`);
           await syncChatSlot(userId, 0, slotId);
@@ -448,7 +446,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           world.setCurrentSceneId(data.currentSceneId);
           world.setWorldState(data.worldState);
           world.setForcedLocations({});
-          // 绔嬪嵆鏇存柊瑙掕壊浣嶇疆锛岀‘淇漰resentCharacters璁＄畻姝ｇ‘
+          // 立即更新角色位置，确保presentCharacters计算正确
           const locs = calculateCharacterLocations(data.worldState.period, data.worldState.dateStr, data.worldState.timeStr, core.sceneLevels);
           world.setCharacterLocations(locs);
           // Restore settings
@@ -456,7 +454,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               onSettingsChange(data.settings);
           }
           
-          // 鐢ㄥ瓨妗ｇ殑瑙ｉ攣鐘舵€佽鐩栨暟鎹簱
+          // 用存档的解锁状态覆盖数据库
           if (data.characterUnlocks) {
               for (const [characterId, unlocks] of Object.entries(data.characterUnlocks)) {
                   await updateCharacterUnlocks(userId, slotId, characterId, unlocks);
@@ -466,7 +464,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           // Reset UI
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
-          // 閲嶇疆鐜閫昏緫鐘舵€?          dialogue.setAmbientCharacter(null);
+          // 重置环境逻辑状态
+          dialogue.setAmbientCharacter(null);
           dialogue.setAmbientText('');
           dialogue.setShowAmbientDialogue(false);
       }
@@ -498,22 +497,23 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const handleFinalCloseDialogue = () => {
       dialogue.handleFinalClose();
       
-      // [瑙掕壊绉诲姩绯荤粺] 瀵硅瘽缁撴潫鍚庯紝妫€鏌ヨ鑹叉槸鍚﹀凡绉诲姩
-      // 濡傛灉瑙掕壊宸茬粡绉诲姩鍒板叾浠栧満鏅紝娓呴櫎褰撳墠鍦烘櫙鐨?Ambient 鏄剧ず
+      // [角色移动系统] 对话结束后，检查角色是否已移动
+      // 如果角色已经移动到其他场景，清除当前场景的 Ambient 显示
       if (dialogue.activeCharacter) {
           const charId = dialogue.activeCharacter.id;
           const actualLocation = world.forcedLocations[charId] || world.characterLocations[charId];
           
           if (actualLocation !== world.currentSceneId) {
-              // 瑙掕壊宸茬粡涓嶅湪褰撳墠鍦烘櫙锛屾竻闄?Ambient
+              // 角色已经不在当前场景，清除 Ambient
               dialogue.setAmbientCharacter(null);
               dialogue.setAmbientText('');
               dialogue.setShowAmbientDialogue(false);
-              console.log(`[瑙掕壊绉诲姩绯荤粺] ${dialogue.activeCharacter.name} 宸茬Щ鍔ㄥ埌 ${SCENE_NAMES[actualLocation as any] || actualLocation}锛屾竻闄ゅ綋鍓嶅満鏅殑 Ambient 鏄剧ず`);
+              console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation as any] || actualLocation}，清除当前场景的 Ambient 显示`);
           }
       }
       
-      // 瀵硅瘽缁撴潫鏃惰Е鍙戣嚜鍔ㄥ瓨妗ｏ紙淇濆瓨瑙掕壊濂芥劅搴︾瓑鏁版嵁锛?      handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
+      // 对话结束时触发自动存档（保存角色好感度等数据）
+      handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
   };
 
   const currentSceneLevel = core.sceneLevels[world.currentSceneId] || (['scen_5','scen_6','scen_7','scen_8'].includes(world.currentSceneId) ? 0 : 1);
@@ -595,7 +595,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                   <AffinityToast 
                       key={notification.id}
                       change={notification.change}
-                      characterName={CHARACTERS[notification.charId]?.name || '瑙掕壊'}
+                      characterName={CHARACTERS[notification.charId]?.name || '角色'}
                       onComplete={() => setAffinityNotifications(prev => prev.filter(n => n.id !== notification.id))}
                   />
               ))}
@@ -747,20 +747,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onUpdateMenu={core.handleUpdateTavernMenu}
       />
 
-      <ShopItemModal
-          isOpen={isShopOpen}
-          onClose={() => setIsShopOpen(false)}
-          initialTab={shopInitialTab}
-          inventory={core.inventory}
-          currentGold={core.gold}
-          onTransaction={core.handleShopTransaction}
-      />
-
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
     </div>
   );
 });
 
 export default GameScene;
-
-

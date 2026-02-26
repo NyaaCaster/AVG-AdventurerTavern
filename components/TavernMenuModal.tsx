@@ -1,4 +1,4 @@
-mport React, { useState } from 'react';
+import React, { useState } from 'react';
 import { UserRecipe, TavernMenuState } from '../types';
 import { calculateTavernBonus } from '../data/facilityData';
 import { ITEMS, ITEM_TAGS } from '../data/items';
@@ -34,7 +34,7 @@ const MenuSlot: React.FC<{
             if (recipe) {
                 itemData = {
                     name: recipe.name,
-                    icon: '馃崨', // Fallback icon
+                    icon: '🍛', // Fallback icon
                     count: foodStock[itemId] || 0,
                     price: recipe.price,
                     imagePath: recipe.imagePath
@@ -45,7 +45,7 @@ const MenuSlot: React.FC<{
             if (item) {
                 itemData = {
                     name: item.name,
-                    icon: ITEM_TAGS.find(t => t.id === item.tag)?.icon || '馃嵑',
+                    icon: ITEM_TAGS.find(t => t.id === item.tag)?.icon || '🍺',
                     count: inventory[itemId] || 0,
                     price: getResValue(item.star) * 2, // Standard markup for drinks? Or just base value? Let's use base value * 1.5 as default markup for now, or just base value. Using getResValue directly for now.
                     // Actually let's use a simple multiplier for drinks since they are res items
@@ -101,7 +101,7 @@ const MenuSlot: React.FC<{
             ) : (
                 <div className="text-[#d6cbb8] text-2xl flex flex-col items-center gap-1">
                     <i className="fa-solid fa-plus"></i>
-                    <span className="text-[10px] font-bold">绌洪棽鏍忎綅</span>
+                    <span className="text-[10px] font-bold">空闲栏位</span>
                 </div>
             )}
         </div>
@@ -157,12 +157,12 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
             <div className="bg-[#382b26] border-b border-[#9b7a4c]/50 py-3 px-4 flex justify-between items-center shadow-md shrink-0 relative z-10">
                 <h2 className="text-[#f0e6d2] font-bold text-xl tracking-[0.2em] flex items-center gap-3">
                     <i className="fa-solid fa-utensils text-[#9b7a4c]"></i>
-                    椁愰ギ绠＄悊
+                    餐饮管理
                 </h2>
                 <div className="text-[#8c7b70] text-sm font-bold">
-                    閰掑満绛夌骇: <span className="text-[#b45309]">Lv.{tavernLevel}</span>
+                    酒场等级: <span className="text-[#b45309]">Lv.{tavernLevel}</span>
                     <span className="mx-2">|</span>
-                    鍙敤鏍忎綅: <span className="text-[#f0e6d2]">{maxSlots}</span>
+                    可用栏位: <span className="text-[#f0e6d2]">{maxSlots}</span>
                 </div>
                 <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-[#9b7a4c] hover:text-[#f0e6d2] transition-colors">
                     <i className="fa-solid fa-xmark text-lg"></i>
@@ -179,7 +179,7 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
                     <div className="bg-[#fcfaf7] p-4 rounded-lg border border-[#d6cbb8] shadow-sm">
                         <h3 className="text-[#382b26] font-bold text-lg mb-4 flex items-center gap-2 border-b border-[#d6cbb8] pb-2">
                             <i className="fa-solid fa-bowl-food text-[#b45309]"></i>
-                            椁愮偣鑿滃崟
+                            餐点菜单
                         </h3>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             {Array.from({ length: maxSlots }).map((_, i) => (
@@ -202,7 +202,7 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
                     <div className="bg-[#fcfaf7] p-4 rounded-lg border border-[#d6cbb8] shadow-sm">
                         <h3 className="text-[#382b26] font-bold text-lg mb-4 flex items-center gap-2 border-b border-[#d6cbb8] pb-2">
                             <i className="fa-solid fa-wine-glass text-[#b45309]"></i>
-                            閰掓按鑿滃崟
+                            酒水菜单
                         </h3>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             {Array.from({ length: maxSlots }).map((_, i) => (
@@ -231,7 +231,7 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
                         <div className="flex justify-between items-center p-4 border-b border-[#d6cbb8] bg-[#f5f0e6]">
                             <h3 className="font-bold text-[#382b26] flex items-center gap-2">
                                 <i className="fa-solid fa-basket-shopping"></i> 
-                                閫夋嫨涓婃灦{selectingSlot.type === 'foods' ? '椁愮偣' : '閰掓按'}
+                                选择上架{selectingSlot.type === 'foods' ? '餐点' : '酒水'}
                             </h3>
                             <button 
                                 onClick={() => setSelectingSlot(null)}
@@ -269,7 +269,7 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
                                             onClick={() => handleSelectItem(item.id)}
                                             className="relative p-2 rounded border-2 flex flex-col items-center gap-1 transition-all bg-[#fcfaf7] border-[#d6cbb8] hover:border-[#9b7a4c] group"
                                         >
-                                            <div className="text-3xl mb-1 mt-1">{ITEM_TAGS.find(t => t.id === item.tag)?.icon || '馃嵑'}</div>
+                                            <div className="text-3xl mb-1 mt-1">{ITEM_TAGS.find(t => t.id === item.tag)?.icon || '🍺'}</div>
                                             <div className="text-xs font-bold text-[#382b26] line-clamp-1">{item.name}</div>
                                             <div className="flex items-center gap-1 w-full justify-between px-1">
                                                 <span className="text-[10px] text-[#b45309] font-bold">{getResValue(item.star)}G</span>
@@ -281,7 +281,8 @@ const TavernMenuModal: React.FC<TavernMenuModalProps> = ({
 
                                 {(selectingSlot.type === 'foods' ? getAvailableItems('foods') : getAvailableItems('drinks')).length === 0 && (
                                     <div className="col-span-full text-center py-8 text-[#8c7b70] font-bold">
-                                        娌℃湁鍙笂鏋剁殑{selectingSlot.type === 'foods' ? '椁愮偣' : '閰掓按'}搴撳瓨銆?                                    </div>
+                                        没有可上架的{selectingSlot.type === 'foods' ? '餐点' : '酒水'}库存。
+                                    </div>
                                 )}
                             </div>
                         </div>

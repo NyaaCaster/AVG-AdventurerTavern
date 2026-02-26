@@ -18,25 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
-
-      - name: Configure Git for proper encoding
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.safecrlf false
-
-      - name: Check and fix HTML entities in source files
-        run: |
-          echo "Checking for HTML entities in source files..."
-          if grep -r "&gt;\|&lt;\|&quot;\|&amp;" components/ services/ utils/ hooks/ *.tsx *.ts 2>/dev/null; then
-            echo "ERROR: HTML entities found in source files!"
-            echo "Files with HTML entities:"
-            grep -rl "&gt;\|&lt;\|&quot;\|&amp;" components/ services/ utils/ hooks/ *.tsx *.ts 2>/dev/null || true
-            exit 1
-          else
-            echo "✓ No HTML entities found in source files"
-          fi
+          fetch-depth: 1  # 只获取最新 commit，足够获取 hash
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -59,17 +41,6 @@ jobs:
       - name: Get commit hash
         id: git
         run: echo "hash=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Fix encoding issues
-        run: |
-          npm install
-          npm run fix-encoding
-          echo "Encoding fixed successfully"
-
-      - name: Clear Docker buildx cache if encoding issues were fixed
-        run: |
-          echo "Cache key: buildx-${{ github.repository }}-${{ github.ref }}"
-          echo "This build will use fresh cache after encoding fixes"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

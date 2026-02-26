@@ -1,3 +1,4 @@
+
 import { useRef, useEffect } from 'react';
 import { GameSettings, SceneId } from '../types';
 import { SCENE_BGM } from '../data/resources/audioResources';
@@ -96,4 +97,3 @@ export const useGameAudio = (currentSceneId: SceneId, settings: GameSettings) =>
 
   return audioRef;
 };
-

@@ -1,12 +1,14 @@
-mport { CharacterUnlocks } from '../types';
+import { CharacterUnlocks } from '../types';
 
 /**
- * 灏嗚鑹茶В閿佺姸鎬佹牸寮忓寲涓哄彲璇荤殑鏂囨湰锛岀敤浜庢敞鍏ュ埌 AI 鎻愮ず璇嶄腑
- * @param unlocks 瑙掕壊鐨勮В閿佺姸鎬佸璞? * @returns 鏍煎紡鍖栫殑瑙ｉ攣鐘舵€佹枃鏈? */
+ * 将角色解锁状态格式化为可读的文本，用于注入到 AI 提示词中
+ * @param unlocks 角色的解锁状态对象
+ * @returns 格式化的解锁状态文本
+ */
 export function formatUnlockStatusForAI(unlocks: CharacterUnlocks): string {
     const statusLines = Object.entries(unlocks).map(([key, value]) => {
         const statusName = UNLOCK_STATUS_NAMES[key as keyof CharacterUnlocks];
-        const status = value === 1 ? '鉁?宸茶В閿? : '鉁?鏈В閿?;
+        const status = value === 1 ? '✓ 已解锁' : '✗ 未解锁';
         return `- ${statusName}: ${status}`;
     });
     
@@ -14,8 +16,9 @@ export function formatUnlockStatusForAI(unlocks: CharacterUnlocks): string {
 }
 
 /**
- * 鑾峰彇榛樿鐨勫叏閮ㄦ湭瑙ｉ攣鐘舵€侊紙鐢ㄤ簬瑙掕壊娌℃湁瑙ｉ攣璁板綍鏃讹級
- * @returns 鍏ㄩ儴鏈В閿佺殑鐘舵€佸璞? */
+ * 获取默认的全部未解锁状态（用于角色没有解锁记录时）
+ * @returns 全部未解锁的状态对象
+ */
 export function getDefaultUnlocks(): CharacterUnlocks {
     return {
         accept_battle_party: 0,
@@ -39,29 +42,31 @@ export function getDefaultUnlocks(): CharacterUnlocks {
 
 
 /**
- * 瑙ｉ攣鐘舵€佹樉绀哄悕绉版槧灏? * 鐢ㄤ簬 UI 鏄剧ず鍜?AI 鎻愮ず璇嶇敓鎴? */
+ * 解锁状态显示名称映射
+ * 用于 UI 显示和 AI 提示词生成
+ */
 export const UNLOCK_STATUS_NAMES: Record<keyof CharacterUnlocks, string> = {
-    accept_battle_party: '鎴樻枟缁勯槦',
-    accept_flirt_topic: '鏆ф槯璇濋',
-    accept_nsfw_topic: '鑹叉儏璇濋',
-    accept_physical_contact: '韬綋鎺ヨЕ',
-    accept_indirect_sexual: '闂存帴鎬ц涓?,
-    accept_become_lover: '鎴愪负鎭嬩汉',
-    accept_direct_sexual: '鐩存帴鎬ц涓?,
-    accept_sexual_partner: '鎴愪负鎬т即渚?,
-    accept_public_exposure: '鍏紑闇插嚭',
-    accept_public_sexual: '鍏紑鎬ц涓?,
-    accept_group_sexual: '澶氫汉鎬ц涓?,
-    accept_prostitution: '鍗栨槬',
-    accept_sexual_slavery: '鎬уゴ褰?,
-    accept_bathing_together: '鍏辨荡',
-    accept_player_massage: '鐜╁涓鸿鑹叉寜鎽?,
-    accept_character_massage: '瑙掕壊涓虹帺瀹舵寜鎽?
+    accept_battle_party: '战斗组队',
+    accept_flirt_topic: '暧昧话题',
+    accept_nsfw_topic: '色情话题',
+    accept_physical_contact: '身体接触',
+    accept_indirect_sexual: '间接性行为',
+    accept_become_lover: '成为恋人',
+    accept_direct_sexual: '直接性行为',
+    accept_sexual_partner: '成为性伴侣',
+    accept_public_exposure: '公开露出',
+    accept_public_sexual: '公开性行为',
+    accept_group_sexual: '多人性行为',
+    accept_prostitution: '卖春',
+    accept_sexual_slavery: '性奴役',
+    accept_bathing_together: '共浴',
+    accept_player_massage: '玩家为角色按摩',
+    accept_character_massage: '角色为玩家按摩'
 };
 
 /**
- * 瑙ｉ攣鏉′欢閰嶇疆
- * 瀹氫箟姣忎釜鐘舵€佽В閿佹墍闇€鐨勬渶浣庡ソ鎰熷害
+ * 解锁条件配置
+ * 定义每个状态解锁所需的最低好感度
  */
 export const UNLOCK_AFFINITY_REQUIREMENTS: Record<keyof CharacterUnlocks, number> = {
     accept_battle_party: 10,
@@ -83,34 +88,40 @@ export const UNLOCK_AFFINITY_REQUIREMENTS: Record<keyof CharacterUnlocks, number
 };
 
 /**
- * 瑙掕壊鐗规畩闄愬埗閰嶇疆
- * 瀹氫箟鏌愪簺瑙掕壊姘歌繙鏃犳硶瑙ｉ攣鐨勭姸鎬? */
+ * 角色特殊限制配置
+ * 定义某些角色永远无法解锁的状态
+ */
 export const CHARACTER_UNLOCK_RESTRICTIONS: Record<string, Partial<Record<keyof CharacterUnlocks, string>>> = {
-    // 鑾夎帀濞?- 闈炴垬鏂椾汉鍛?    'char_101': {
-        accept_battle_party: '鑾夎帀濞呮槸闈炴垬鏂椾汉鍛橈紝濂逛笉浼氬弬涓庝换浣曟垬鏂椼€?
+    // 莉莉娅 - 非战斗人员
+    'char_101': {
+        accept_battle_party: '莉莉娅是非战斗人员，她不会参与任何战斗。'
     },
-    // 绫冲 - 鍏锋湁姣佺伃鎬ф垬鏂楀姏
+    // 米娜 - 具有毁灭性战斗力
     'char_102': {
-        accept_battle_party: '绫冲鐨勬垬鏂楀姏杩囦簬寮哄ぇ锛屽ス涓嶄細鍔犲叆鏅€氱殑鎴樻枟闃熶紞銆?
+        accept_battle_party: '米娜的战斗力过于强大，她不会加入普通的战斗队伍。'
     },
-    // 娆ц嫢鎷?- 闃撮亾鍙楁硶鏈皝鍗帮紙浣嗗彲浠ヨ倹浜わ級
+    // 欧若拉 - 阴道受法术封印（但可以肛交）
     'char_103': {
-        // 娉ㄦ剰锛歝har_103 鍙互鎺ュ彈 accept_direct_sexual锛堥€氳繃鑲涗氦锛夛紝
-        // 鍙槸鍦ㄥ疄闄呮€ц涓轰腑涓嶈兘杩涜闃撮亾鎻掑叆
-        // 杩欎釜闄愬埗涓嶅湪瑙ｉ攣绯荤粺涓綋鐜帮紝鑰屾槸鍦ㄥ璇濅腑鐢?AI 鏍规嵁瑙掕壊璁惧畾澶勭悊
+        // 注意：char_103 可以接受 accept_direct_sexual（通过肛交），
+        // 只是在实际性行为中不能进行阴道插入
+        // 这个限制不在解锁系统中体现，而是在对话中由 AI 根据角色设定处理
     }
 };
 
 /**
- * 妫€鏌ヨ鑹叉槸鍚﹀彲浠ヨВ閿佹煇涓姸鎬? * @param characterId 瑙掕壊ID
- * @param unlockKey 瑙ｉ攣鐘舵€侀敭
- * @param currentAffinity 褰撳墠濂芥劅搴? * @returns 妫€鏌ョ粨鏋? */
+ * 检查角色是否可以解锁某个状态
+ * @param characterId 角色ID
+ * @param unlockKey 解锁状态键
+ * @param currentAffinity 当前好感度
+ * @returns 检查结果
+ */
 export function canAttemptUnlock(
     characterId: string,
     unlockKey: keyof CharacterUnlocks,
     currentAffinity: number
 ): { canAttempt: boolean; reason?: string } {
-    // 妫€鏌ヨ鑹茬壒娈婇檺鍒?    const restrictions = CHARACTER_UNLOCK_RESTRICTIONS[characterId];
+    // 检查角色特殊限制
+    const restrictions = CHARACTER_UNLOCK_RESTRICTIONS[characterId];
     if (restrictions && restrictions[unlockKey]) {
         return {
             canAttempt: false,
@@ -118,15 +129,14 @@ export function canAttemptUnlock(
         };
     }
     
-    // 妫€鏌ュソ鎰熷害瑕佹眰
+    // 检查好感度要求
     const requiredAffinity = UNLOCK_AFFINITY_REQUIREMENTS[unlockKey];
     if (currentAffinity < requiredAffinity) {
         return {
             canAttempt: false,
-            reason: `闇€瑕佸ソ鎰熷害 ${requiredAffinity}锛堝綋鍓?${currentAffinity}锛塦
+            reason: `需要好感度 ${requiredAffinity}（当前 ${currentAffinity}）`
         };
     }
     
     return { canAttempt: true };
 }
-

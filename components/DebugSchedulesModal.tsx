@@ -1,4 +1,4 @@
-mport React from 'react';
+import React from 'react';
 import { CHARACTERS } from '../data/scenarioData';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { SceneId } from '../types';
@@ -42,4 +42,3 @@ const DebugSchedulesModal: React.FC<DebugSchedulesModalProps> = ({ isOpen, onClo
 };
 
 export default DebugSchedulesModal;
-

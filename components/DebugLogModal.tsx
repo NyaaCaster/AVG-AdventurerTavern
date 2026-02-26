@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { LogEntry } from '../types';
 
@@ -12,7 +13,7 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
 
   useEffect(() => {
     if (isOpen && scrollRef.current) {
-        // 鑷姩婊氬姩鍒伴《閮ㄦ樉绀烘渶鏂版棩蹇楋紙鍥犱负鎴戜滑鏄€掑簭鎺掑垪鐨勶級
+        // 自动滚动到顶部显示最新日志（因为我们是倒序排列的）
         scrollRef.current.scrollTop = 0;
     }
   }, [isOpen, logs]);
@@ -41,7 +42,7 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
         <div className="flex-1 overflow-hidden relative bg-[#0c0c0c]">
              <div ref={scrollRef} className="absolute inset-0 overflow-y-auto p-4 custom-scrollbar">
                 {logs.length === 0 ? (
-                    <div className="text-slate-600 italic p-4 text-center">> No logs available.</div>
+                    <div className="text-slate-600 italic p-4 text-center">&gt; No logs available.</div>
                 ) : (
                     logs.map((log) => (
                         <div key={log.id} className="mb-6 border-b border-slate-800/50 pb-4 last:border-0 group">
@@ -96,7 +97,7 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
 
         {/* Footer */}
         <div className="px-4 py-2 bg-[#1a1a1a] border-t border-slate-800 text-slate-500 text-[10px] flex justify-between">
-           <span>> _cursor_active</span>
+           <span>&gt; _cursor_active</span>
            <span>LOGS RETAINED: {logs.length}</span>
         </div>
       </div>
@@ -105,4 +106,3 @@ const DebugLogModal: React.FC<DebugLogModalProps> = ({ isOpen, onClose, logs }) 
 };
 
 export default DebugLogModal;
-

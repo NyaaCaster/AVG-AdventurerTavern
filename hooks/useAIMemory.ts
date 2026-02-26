@@ -1,4 +1,4 @@
-mport { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { 
     getChatMessages, 
     addChatMessage, 
@@ -25,40 +25,46 @@ interface CharacterMemory {
 interface UseAIMemoryProps {
     userId: number;
     slotId: number;
-    apiConfig?: ApiConfig; // 鐢ㄤ簬鐢熸垚鎽樿
+    apiConfig?: ApiConfig; // 用于生成摘要
 }
 
-// 閰嶇疆甯搁噺
-const MAX_WORKING_MEMORY = 30;  // 宸ヤ綔璁板繂涓婇檺
-const SUMMARIZE_BATCH = 20;      // 姣忔鎬荤粨鐨勫璇濇暟閲?const SUMMARY_MAX_LENGTH = 150;  // 鎽樿鏈€澶у瓧鏁?
+// 配置常量
+const MAX_WORKING_MEMORY = 30;  // 工作记忆上限
+const SUMMARIZE_BATCH = 20;      // 每次总结的对话数量
+const SUMMARY_MAX_LENGTH = 150;  // 摘要最大字数
+
 /**
- * AI 璁板繂绯荤粺 Hook
- * 绠＄悊瑙掕壊鐨勭煭鏈熷璇濊蹇嗗拰闀挎湡鏍稿績璁板繂
+ * AI 记忆系统 Hook
+ * 管理角色的短期对话记忆和长期核心记忆
  */
 export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => {
     const [isLoadingMemory, setIsLoadingMemory] = useState(false);
     const [isSummarizing, setIsSummarizing] = useState(false);
     
-    // 鏈湴缂撳瓨锛屽噺灏戦噸澶嶆煡璇?    const memoryCache = useRef<{
+    // 本地缓存，减少重复查询
+    const memoryCache = useRef<{
         [key: string]: {
             data: any;
             timestamp: number;
         }
     }>({});
     
-    // 缂撳瓨鏈夋晥鏈燂紙姣锛?    const CACHE_TTL = 30000; // 30绉?
+    // 缓存有效期（毫秒）
+    const CACHE_TTL = 30000; // 30秒
+
     /**
-     * 缂撳瓨绠＄悊宸ュ叿鍑芥暟
+     * 缓存管理工具函数
      */
     const cacheManager = {
         /**
-         * 鐢熸垚缂撳瓨閿?         */
+         * 生成缓存键
+         */
         generateKey: (prefix: string, characterId: string) => {
             return `${prefix}_${userId}_${slotId}_${characterId}`;
         },
 
         /**
-         * 鑾峰彇缂撳瓨鏁版嵁
+         * 获取缓存数据
          */
         get: (key: string) => {
             const cached = memoryCache.current[key];
@@ -66,7 +72,8 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             
             const now = Date.now();
             if (now - cached.timestamp > CACHE_TTL) {
-                // 缂撳瓨杩囨湡锛屾竻闄?                delete memoryCache.current[key];
+                // 缓存过期，清除
+                delete memoryCache.current[key];
                 return null;
             }
             
@@ -74,7 +81,7 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         },
 
         /**
-         * 璁剧疆缂撳瓨鏁版嵁
+         * 设置缓存数据
          */
         set: (key: string, data: any) => {
             memoryCache.current[key] = {
@@ -84,23 +91,25 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         },
 
         /**
-         * 娓呴櫎缂撳瓨
+         * 清除缓存
          */
         clear: (characterId?: string) => {
             if (characterId) {
-                // 娓呴櫎鎸囧畾瑙掕壊鐨勭紦瀛?                Object.keys(memoryCache.current).forEach(key => {
+                // 清除指定角色的缓存
+                Object.keys(memoryCache.current).forEach(key => {
                     if (key.includes(`_${characterId}`)) {
                         delete memoryCache.current[key];
                     }
                 });
             } else {
-                // 娓呴櫎鎵€鏈夌紦瀛?                memoryCache.current = {};
+                // 清除所有缓存
+                memoryCache.current = {};
             }
         }
     };
 
     /**
-     * 甯﹂噸璇曟満鍒剁殑API璋冪敤
+     * 带重试机制的API调用
      */
     const retryApiCall = async <T>(apiCall: () => Promise<T>, maxRetries: number = 2, delay: number = 500): Promise<T | null> => {
         let lastError: any = null;
@@ -123,13 +132,15 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     };
 
     /**
-     * 鑾峰彇瑙掕壊鐨勫畬鏁磋蹇嗕笂涓嬫枃锛堢敤浜庢瀯寤?LLM Prompt锛?     */
+     * 获取角色的完整记忆上下文（用于构建 LLM Prompt）
+     */
     const getMemoryContext = useCallback(async (characterId: string): Promise<{
         recentMessages: ChatMessage[];
         coreMemories: CharacterMemory[];
         summaries: CharacterMemory[];
     }> => {
-        // 灏濊瘯浠庣紦瀛樿幏鍙?        const cacheKey = cacheManager.generateKey('context', characterId);
+        // 尝试从缓存获取
+        const cacheKey = cacheManager.generateKey('context', characterId);
         const cachedContext = cacheManager.get(cacheKey);
         if (cachedContext) {
             console.log('[AI Memory] Using cached memory context');
@@ -138,16 +149,17 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
 
         setIsLoadingMemory(true);
         try {
-            // 甯﹂噸璇曟満鍒剁殑骞惰鑾峰彇
+            // 带重试机制的并行获取
             const [messagesResult, memoriesResult] = await Promise.all([
-                retryApiCall(() => getChatMessages(userId, slotId, characterId, 15)), // 鑾峰彇鏈€杩?5鏉″璇?                retryApiCall(() => getCharacterMemories(userId, slotId, characterId))
+                retryApiCall(() => getChatMessages(userId, slotId, characterId, 15)), // 获取最近15条对话
+                retryApiCall(() => getCharacterMemories(userId, slotId, characterId))
             ]);
 
-            // 澶勭悊鍙兘鐨勭┖缁撴灉
+            // 处理可能的空结果
             const messages = messagesResult || [];
             const memories = memoriesResult || [];
 
-            // 鍒嗙被璁板繂
+            // 分类记忆
             const coreMemories = memories.filter(m => m.memory_type === 'core_fact');
             const summaries = memories.filter(m => m.memory_type === 'summary');
 
@@ -157,7 +169,7 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
                 summaries
             };
 
-            // 缂撳瓨缁撴灉
+            // 缓存结果
             cacheManager.set(cacheKey, result);
 
             return result;
@@ -174,7 +186,8 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     }, [userId, slotId]);
 
     /**
-     * 淇濆瓨涓€鏉″璇濊褰?     */
+     * 保存一条对话记录
+     */
     const saveMessage = useCallback(async (
         characterId: string,
         role: 'user' | 'assistant',
@@ -183,7 +196,7 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         try {
             const result = await retryApiCall(() => addChatMessage(userId, slotId, characterId, role, content));
             
-            // 娓呴櫎鐩稿叧缂撳瓨
+            // 清除相关缓存
             if (result !== null) {
                 cacheManager.clear(characterId);
                 console.log('[AI Memory] Cache cleared after saving message');
@@ -197,7 +210,8 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     }, [userId, slotId]);
 
     /**
-     * 淇濆瓨 AI 鎻愬彇鐨勬牳蹇冭蹇?     */
+     * 保存 AI 提取的核心记忆
+     */
     const saveMemories = useCallback(async (
         characterId: string,
         memories: string[],
@@ -208,7 +222,7 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         try {
             const result = await retryApiCall(() => addCharacterMemories(userId, slotId, characterId, memories, type));
             
-            // 娓呴櫎鐩稿叧缂撳瓨
+            // 清除相关缓存
             if (result !== null) {
                 cacheManager.clear(characterId);
                 console.log('[AI Memory] Cache cleared after saving memories');
@@ -222,7 +236,8 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     }, [userId, slotId]);
 
     /**
-     * 鏋勫缓澧炲己鐨?System Prompt锛堝寘鍚蹇嗕笂涓嬫枃锛?     */
+     * 构建增强的 System Prompt（包含记忆上下文）
+     */
     const buildEnhancedPrompt = useCallback((
         basePrompt: string,
         memoryContext: {
@@ -233,27 +248,28 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     ): string => {
         let enhancedPrompt = basePrompt;
 
-        // 娣诲姞鏍稿績璁板繂
+        // 添加核心记忆
         if (memoryContext.coreMemories.length > 0) {
             const factsText = memoryContext.coreMemories
                 .map(m => `- ${m.content}`)
                 .join('\n');
-            enhancedPrompt += `\n\n銆愪綘瀵圭帺瀹剁殑鏍稿績璁板繂銆慭n${factsText}`;
+            enhancedPrompt += `\n\n【你对玩家的核心记忆】\n${factsText}`;
         }
 
-        // 娣诲姞鍘嗗彶鎽樿
+        // 添加历史摘要
         if (memoryContext.summaries.length > 0) {
             const summariesText = memoryContext.summaries
                 .map(m => `- ${m.content}`)
                 .join('\n');
-            enhancedPrompt += `\n\n銆愯繃鍘荤殑鏁呬簨鎽樿銆慭n${summariesText}`;
+            enhancedPrompt += `\n\n【过去的故事摘要】\n${summariesText}`;
         }
 
         return enhancedPrompt;
     }, []);
 
     /**
-     * 鐢熸垚鍘嗗彶鎽樿锛堣皟鐢?LLM锛?     */
+     * 生成历史摘要（调用 LLM）
+     */
     const generateSummary = useCallback(async (
         oldSummary: string,
         messagesToSummarize: ChatMessage[]
@@ -264,31 +280,44 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         }
 
         const conversationText = messagesToSummarize
-            .map(m => `${m.role === 'user' ? '鐜╁' : 'AI'}: ${m.content}`)
+            .map(m => `${m.role === 'user' ? '玩家' : 'AI'}: ${m.content}`)
             .join('\n');
 
-        const summaryPrompt = `[绯荤粺鎸囦护]
-浣犳槸涓€涓笓涓氱殑璁板繂鏁寸悊鍔╂墜锛屾搮闀夸粠瀵硅瘽涓彁鍙栨牳蹇冧俊鎭苟鐢熸垚绠€娲佹槑浜嗙殑鎽樿銆?
-璇峰皢浠ヤ笅銆愭柊鍙戠敓鐨勫璇濄€戣瀺鍏ュ埌銆愬師鏈夌殑璁板繂鎽樿銆戜腑锛岀敓鎴愪竴涓柊鐨勭患鍚堟憳瑕併€?
-閲嶈瑕佹眰锛?1. 鏍稿績淇℃伅鎻愬彇锛氶噸鐐规彁鍙栦互涓嬪唴瀹?   - 鐜╁鐨勯噸瑕佸亸濂姐€佷範鎯拰鐗圭偣
-   - 瑙掕壊涓庣帺瀹朵箣闂寸殑绾﹀畾銆佹壙璇烘垨璁″垝
-   - 鎯呮劅鍙樺寲鍜屽叧绯诲彂灞?   - 褰卞搷娓告垙杩涚▼鐨勫叧閿簨浠?   - 瑙掕壊鐘舵€佺殑閲嶈鍙樺寲
+        const summaryPrompt = `[系统指令]
+你是一个专业的记忆整理助手，擅长从对话中提取核心信息并生成简洁明了的摘要。
 
-2. 鎽樿璐ㄩ噺瑕佹眰锛?   - 蹇呴』浣跨敤绗笁浜虹О瀹㈣鎻忚堪
-   - 璇█绠€娲佹槑浜嗭紝閫昏緫娓呮櫚
-   - 淇濇寔淇℃伅鐨勫噯纭€у拰瀹屾暣鎬?   - 蹇界暐鏃犲叧绱ц鐨勫瘨鏆勫拰閲嶅鍐呭
-   - 鎬诲瓧鏁颁弗鏍兼帶鍒跺湪 ${SUMMARY_MAX_LENGTH} 瀛椾互鍐咃紒
+请将以下【新发生的对话】融入到【原有的记忆摘要】中，生成一个新的综合摘要。
 
-3. 鏍煎紡瑕佹眰锛?   - 鍙緭鍑烘憳瑕佹枃鏈紝涓嶈娣诲姞浠讳綍鍓嶇紑鎴栬В閲?   - 涓嶈鍖呭惈瀵硅瘽鍘熸枃锛屽彧鍖呭惈鎻愮偧鍚庣殑淇℃伅
-   - 浣跨敤鑷劧娴佺晠鐨勪腑鏂囪〃杈?
-銆愬師鏈夎蹇嗘憳瑕併€?${oldSummary || "鏃?}
+重要要求：
+1. 核心信息提取：重点提取以下内容
+   - 玩家的重要偏好、习惯和特点
+   - 角色与玩家之间的约定、承诺或计划
+   - 情感变化和关系发展
+   - 影响游戏进程的关键事件
+   - 角色状态的重要变化
 
-銆愭柊鍙戠敓鐨勫璇濄€?${conversationText}
+2. 摘要质量要求：
+   - 必须使用第三人称客观描述
+   - 语言简洁明了，逻辑清晰
+   - 保持信息的准确性和完整性
+   - 忽略无关紧要的寒暄和重复内容
+   - 总字数严格控制在 ${SUMMARY_MAX_LENGTH} 字以内！
 
-璇疯緭鍑烘柊鐨勭患鍚堟憳瑕侊細`;
+3. 格式要求：
+   - 只输出摘要文本，不要添加任何前缀或解释
+   - 不要包含对话原文，只包含提炼后的信息
+   - 使用自然流畅的中文表达
+
+【原有记忆摘要】
+${oldSummary || "无"}
+
+【新发生的对话】
+${conversationText}
+
+请输出新的综合摘要：`;
 
         try {
-            // 浣跨敤涓存椂鐨?LLM 瀹炰緥锛岄伩鍏嶆薄鏌撲富瀵硅瘽鍘嗗彶
+            // 使用临时的 LLM 实例，避免污染主对话历史
             const response = await fetch(
                 apiConfig.provider === 'openai' ? 'https://api.openai.com/v1/chat/completions' :
                 apiConfig.provider === 'google' ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' :
@@ -303,9 +332,12 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
                     body: JSON.stringify({
                         model: apiConfig.model,
                         messages: [{ role: 'user', content: summaryPrompt }],
-                        temperature: 0.2, // 杩涗竴姝ラ檷浣庢俯搴︼紝鎻愰珮鎽樿鐨勪竴鑷存€у拰鍑嗙‘鎬?                        max_tokens: 300,
-                        top_p: 0.9, // 鎺у埗鐢熸垚鐨勫鏍锋€?                        frequency_penalty: 0.1, // 鍑忓皯閲嶅鍐呭
-                        presence_penalty: 0.1 // 榧撳姳鏂板唴瀹?                    })
+                        temperature: 0.2, // 进一步降低温度，提高摘要的一致性和准确性
+                        max_tokens: 300,
+                        top_p: 0.9, // 控制生成的多样性
+                        frequency_penalty: 0.1, // 减少重复内容
+                        presence_penalty: 0.1 // 鼓励新内容
+                    })
                 }
             );
 
@@ -316,10 +348,10 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             const data = await response.json();
             const summaryText = data.choices?.[0]?.message?.content || oldSummary;
             
-            // 娓呯悊鍙兘鐨?Markdown 鏍囪鍜屽浣欑殑绌虹櫧
+            // 清理可能的 Markdown 标记和多余的空白
             let cleanedSummary = summaryText.replace(/`{3}/g, '').trim();
             
-            // 纭繚鎽樿闀垮害绗﹀悎瑕佹眰
+            // 确保摘要长度符合要求
             if (cleanedSummary.length > SUMMARY_MAX_LENGTH) {
                 cleanedSummary = cleanedSummary.substring(0, SUMMARY_MAX_LENGTH).trim();
             }
@@ -327,16 +359,16 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             return cleanedSummary;
         } catch (error) {
             console.error('[AI Memory] Failed to generate summary:', error);
-            return oldSummary; // 澶辫触鏃惰繑鍥炴棫鎽樿
+            return oldSummary; // 失败时返回旧摘要
         }
     }, [apiConfig]);
 
     /**
-     * 瑙﹀彂鎽樿鍘嬬缉锛堝鏋滈渶瑕侊級
-     * 杩欐槸涓€涓悗鍙伴潤榛樻墽琛岀殑鍑芥暟锛屼笉闃诲 UI
+     * 触发摘要压缩（如果需要）
+     * 这是一个后台静默执行的函数，不阻塞 UI
      */
     const triggerSummaryIfNeeded = useCallback(async (characterId: string): Promise<void> => {
-        // 濡傛灉姝ｅ湪鎬荤粨涓紝璺宠繃
+        // 如果正在总结中，跳过
         if (isSummarizing) {
             console.log('[AI Memory] Already summarizing, skipping');
             return;
@@ -345,37 +377,41 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
         try {
             setIsSummarizing(true);
 
-            // 1. 鑾峰彇褰撳墠瑙掕壊鐨勬墍鏈夎亰澶╄褰?            const messages = await getChatMessages(userId, slotId, characterId, 100);
+            // 1. 获取当前角色的所有聊天记录
+            const messages = await getChatMessages(userId, slotId, characterId, 100);
             
-            // 2. 濡傛灉娑堟伅鏁伴噺鏈揪鍒伴槇鍊硷紝浠€涔堥兘涓嶅仛
+            // 2. 如果消息数量未达到阈值，什么都不做
             if (messages.length <= MAX_WORKING_MEMORY) {
                 return;
             }
 
-            console.log(`[AI Memory] 瑙﹀彂鎵归噺鎽樿鍘嬬缉锛屽綋鍓嶆秷鎭暟: ${messages.length}`);
+            console.log(`[AI Memory] 触发批量摘要压缩，当前消息数: ${messages.length}`);
 
-            // 3. 鍒囧壊锛氬彇鍑烘渶鑰佺殑 SUMMARIZE_BATCH 鏉″噯澶囨€荤粨
+            // 3. 切割：取出最老的 SUMMARIZE_BATCH 条准备总结
             const messagesToSummarize = messages.slice(0, SUMMARIZE_BATCH);
             const lastTimestampToSummarize = messagesToSummarize[SUMMARIZE_BATCH - 1].created_at;
 
-            // 4. 鑾峰彇鏃х殑鎽樿锛堝甫閲嶈瘯锛?            const memoriesResult = await retryApiCall(() => getCharacterMemories(userId, slotId, characterId));
+            // 4. 获取旧的摘要（带重试）
+            const memoriesResult = await retryApiCall(() => getCharacterMemories(userId, slotId, characterId));
             const memories = memoriesResult || [];
             const oldSummary = memories.find(m => m.memory_type === 'summary')?.content || "";
 
-            // 5. 鐢熸垚鏂版憳瑕?            const newSummary = await generateSummary(oldSummary, messagesToSummarize);
+            // 5. 生成新摘要
+            const newSummary = await generateSummary(oldSummary, messagesToSummarize);
 
-            // 6. 鏇存柊鏁版嵁搴擄紙甯﹂噸璇曪級
+            // 6. 更新数据库（带重试）
             await retryApiCall(() => updateCharacterSummary(userId, slotId, characterId, newSummary));
             
-            // 7. 鍒犻櫎宸茬粡鎬荤粨杩囩殑鍘熷瀵硅瘽锛堝甫閲嶈瘯锛?            await retryApiCall(() => deleteOldMessages(userId, slotId, characterId, lastTimestampToSummarize));
+            // 7. 删除已经总结过的原始对话（带重试）
+            await retryApiCall(() => deleteOldMessages(userId, slotId, characterId, lastTimestampToSummarize));
 
-            // 娓呴櫎鐩稿叧缂撳瓨
+            // 清除相关缓存
             cacheManager.clear(characterId);
-            console.log(`[AI Memory] 鎽樿鏇存柊鎴愬姛锛屽垹闄や簡 ${SUMMARIZE_BATCH} 鏉℃棫娑堟伅`);
-            console.log(`[AI Memory] 鏂版憳瑕? ${newSummary.substring(0, 50)}...`);
+            console.log(`[AI Memory] 摘要更新成功，删除了 ${SUMMARIZE_BATCH} 条旧消息`);
+            console.log(`[AI Memory] 新摘要: ${newSummary.substring(0, 50)}...`);
             console.log('[AI Memory] Cache cleared after summary update');
         } catch (error) {
-            console.error('[AI Memory] 鎽樿鐢熸垚澶辫触锛岀暀寰呬笅娆¤Е鍙?', error);
+            console.error('[AI Memory] 摘要生成失败，留待下次触发:', error);
         } finally {
             setIsSummarizing(false);
         }

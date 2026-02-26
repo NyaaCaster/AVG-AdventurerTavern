@@ -1,11 +1,12 @@
+
 import { GameSettings, ApiProvider } from '../types';
 
 const STORAGE_KEY = 'adventurer_tavern_settings';
-const SETTINGS_VERSION = 2; // 澧炲姞鐗堟湰鍙蜂互瑙﹀彂杩佺Щ
+const SETTINGS_VERSION = 2; // 增加版本号以触发迁移
 
 export const defaultSettings: GameSettings = {
-  userName: '缃楀畨',
-  innName: '澶滆幒浜?,
+  userName: '罗安',
+  innName: '夜莺亭',
   enableTypewriter: true,
   dialogueTransparency: 40,
   apiConfig: {
@@ -17,10 +18,11 @@ export const defaultSettings: GameSettings = {
   },
   masterVolume: 15,
   isMuted: false,
-  enableNSFW: false, // 榛樿鍏抽棴 NSFW
-  enableDebug: false, // 榛樿鍏抽棴 Debug
-  enableHD: false, // 榛樿鍏抽棴 HD 妯″紡
-  isBloodRelated: true // 榛樿涓轰翰鐢熷濮?};
+  enableNSFW: false, // 默认关闭 NSFW
+  enableDebug: false, // 默认关闭 Debug
+  enableHD: false, // 默认关闭 HD 模式
+  isBloodRelated: true // 默认为亲生姐姐
+};
 
 interface StoredSettings extends GameSettings {
   _version?: number;
@@ -32,15 +34,17 @@ export const loadSettings = (): GameSettings => {
     if (!stored) return defaultSettings;
     const parsed: StoredSettings = JSON.parse(stored);
     
-    // 妫€鏌ョ増鏈紝濡傛灉鐗堟湰涓嶅尮閰嶆垨涓嶅瓨鍦紝浣跨敤榛樿璁剧疆锛堜繚鐣?API 閰嶇疆锛?    if (!parsed._version || parsed._version < SETTINGS_VERSION) {
+    // 检查版本，如果版本不匹配或不存在，使用默认设置（保留 API 配置）
+    if (!parsed._version || parsed._version < SETTINGS_VERSION) {
       console.log(`[Settings] Migrating from version ${parsed._version || 0} to ${SETTINGS_VERSION}`);
       const migratedSettings = { ...defaultSettings };
-      // 淇濈暀鐢ㄦ埛鐨?API 閰嶇疆鍜岀敤鎴峰悕绛夊叧閿俊鎭?      if (parsed.apiConfig) {
+      // 保留用户的 API 配置和用户名等关键信息
+      if (parsed.apiConfig) {
         migratedSettings.apiConfig = { ...defaultSettings.apiConfig, ...parsed.apiConfig };
       }
       if (parsed.userName) migratedSettings.userName = parsed.userName;
       if (parsed.innName) migratedSettings.innName = parsed.innName;
-      // 淇濆瓨杩佺Щ鍚庣殑璁剧疆
+      // 保存迁移后的设置
       saveSettings(migratedSettings);
       return migratedSettings;
     }
@@ -83,4 +87,3 @@ export const saveSettings = (settings: GameSettings) => {
     console.error("Failed to save settings", e);
   }
 };
-

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { CHARACTERS } from '../data/scenarioData';
@@ -53,7 +54,8 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
         <div className="bg-[#382b26] border-b border-[#9b7a4c]/50 py-4 px-6 flex justify-between items-center shadow-md relative z-10 shrink-0">
             <h2 className="text-[#f0e6d2] font-bold text-xl tracking-[0.2em] flex items-center gap-3">
                 <i className="fa-solid fa-key text-[#9b7a4c]"></i>
-                瀹㈡埧閽ュ寵鏋?            </h2>
+                客房钥匙架
+            </h2>
             <button 
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-[#9b7a4c] hover:text-[#f0e6d2] transition-colors"
@@ -79,7 +81,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
                          <img src={resolveImgPath('img/face/1.png')} alt="User" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <span className="text-[#f0e6d2] font-bold text-sm md:text-base tracking-widest group-hover:text-amber-400 transition-colors bg-black/40 px-3 py-0.5 rounded-full border border-[#9b7a4c]/30">
-                        鑷
+                        自室
                     </span>
                 </div>
 
@@ -113,7 +115,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
                                             className="w-full h-full object-cover"
                                         />
                                         {/* Status Indicator (Optional) */}
-                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border border-black shadow-sm" title="鍏ヤ綇涓?></div>
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border border-black shadow-sm" title="入住中"></div>
                                     </div>
                                     <div className="mt-2 text-[#9b7a4c] text-xs font-bold bg-black/60 px-2 py-0.5 rounded tracking-wider truncate max-w-[90%] text-center">
                                         {char.name}
@@ -130,7 +132,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
                                         {room.roomNo}
                                     </div>
                                     <div className="text-[#3d3226] text-[10px] mt-1 font-bold uppercase tracking-widest opacity-60">
-                                        绌哄
+                                        空室
                                     </div>
                                 </>
                             )}
@@ -145,4 +147,3 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
 };
 
 export default RoomSelectionModal;
-
