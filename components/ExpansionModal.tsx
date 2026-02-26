@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SceneId } from '../types';
 import { FACILITY_DATA, UPGRADE_MATERIALS } from '../data/facilityData';
@@ -107,7 +106,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
         <div className="bg-[#382b26] border-b border-[#9b7a4c]/50 py-3 md:py-4 px-4 md:px-6 flex justify-between items-center shadow-md relative z-10 shrink-0">
             <h2 className="text-[#f0e6d2] font-bold text-lg md:text-xl tracking-[0.2em] flex items-center gap-2 md:gap-3">
                 <i className="fa-solid fa-hammer text-[#9b7a4c]"></i>
-                旅店扩建
+                鏃呭簵鎵╁缓
             </h2>
             
             {/* Resource Bar */}
@@ -160,7 +159,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                                 )}
                             </div>
                             {level === 0 && (
-                                <div className="text-[10px] italic opacity-70 relative z-10">未建设</div>
+                                <div className="text-[10px] italic opacity-70 relative z-10">鏈缓璁?/div>
                             )}
                             {info?.isCapReached && !info.isMaxed && (
                                 <div className="absolute right-1 bottom-1 text-[10px] text-red-900/50 font-bold uppercase rotate-[-5deg] border border-red-900/20 px-1">LOCKED</div>
@@ -182,14 +181,14 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                             <div>
                                 <h3 className="text-2xl md:text-3xl font-black text-[#2c241b] mb-1">{config.name}</h3>
                                 <div className="text-[#5c4d45] font-bold text-xs md:text-sm">
-                                    当前等级: <span className="text-[#b45309] text-lg md:text-xl font-mono mx-1">{upgradeInfo.currentLevel}</span> 
+                                    褰撳墠绛夌骇: <span className="text-[#b45309] text-lg md:text-xl font-mono mx-1">{upgradeInfo.currentLevel}</span> 
                                     <span className="text-[#8c7b70] text-xs">/ {config.maxLevel}</span>
                                 </div>
                             </div>
                             {upgradeInfo.currentLevel > 0 && (
                                 <div className="bg-[#f5f0e6] px-3 py-2 md:px-4 rounded border border-[#d6cbb8] shadow-sm max-w-[60%] flex flex-col items-end">
                                     <div className="text-[10px] text-[#8c7b70] font-black uppercase tracking-wider border-b border-[#d6cbb8] pb-0.5 mb-1">
-                                        当前效果
+                                        褰撳墠鏁堟灉
                                     </div>
                                     <div className="text-xs md:text-sm text-[#4a3b32] font-bold text-right leading-tight">
                                         {config.getEffectDescription(upgradeInfo.currentLevel)}
@@ -203,14 +202,14 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                             <div className="bg-[#f5f0e6] border border-[#d6cbb8] rounded-lg p-4 md:p-6 shadow-inner mb-4 md:mb-6 shrink-0">
                                 <h4 className="text-[#8c7b70] font-bold uppercase tracking-widest text-xs mb-2 md:mb-4 flex items-center flex-wrap gap-2">
                                     <span className="w-2 h-2 bg-[#9b7a4c] rounded-full"></span>
-                                    <span>下一等级预览 (Lv.{upgradeInfo.nextLevel})</span>
+                                    <span>涓嬩竴绛夌骇棰勮 (Lv.{upgradeInfo.nextLevel})</span>
                                     {requiredInnLevel !== null && (
                                         <span className={`ml-auto md:ml-2 text-[10px] md:text-xs normal-case px-2 py-0.5 rounded border ${
                                             innLevel >= requiredInnLevel 
                                                 ? 'text-emerald-700 bg-emerald-100 border-emerald-300' 
                                                 : 'text-red-700 bg-red-100 border-red-300'
                                         }`}>
-                                            需要柜台等级：Lv.{requiredInnLevel}
+                                            闇€瑕佹煖鍙扮瓑绾э細Lv.{requiredInnLevel}
                                         </span>
                                     )}
                                 </h4>
@@ -221,8 +220,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                             </div>
                         ) : (
                             <div className="flex-1 flex items-center justify-center text-[#9b7a4c]/50 font-black text-4xl md:text-5xl tracking-widest uppercase rotate-[-5deg]">
-                                已达最大等级
-                            </div>
+                                宸茶揪鏈€澶х瓑绾?                            </div>
                         )}
 
                         {/* Requirements & Action */}
@@ -231,7 +229,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
                                     {/* Gold Cost */}
                                     <div className={`p-2 md:p-3 rounded border ${canAffordGold ? 'bg-[#fffef8] border-[#d6cbb8]' : 'bg-red-50 border-red-200'}`}>
-                                        <div className="text-[10px] uppercase font-bold text-[#8c7b70] mb-1">所需金币</div>
+                                        <div className="text-[10px] uppercase font-bold text-[#8c7b70] mb-1">鎵€闇€閲戝竵</div>
                                         <div className={`font-mono font-bold text-base md:text-lg ${canAffordGold ? 'text-[#b45309]' : 'text-red-600'}`}>
                                             {upgradeInfo.costGold.toLocaleString()}
                                         </div>
@@ -259,7 +257,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                                 {upgradeInfo.isCapReached ? (
                                     <div className="bg-slate-200 border-2 border-slate-300 rounded-lg p-3 md:p-4 text-center text-slate-500 font-bold flex items-center justify-center gap-2 text-sm md:text-base">
                                         <i className="fa-solid fa-lock"></i>
-                                        <span>等级上限受限：需提升柜台等级</span>
+                                        <span>绛夌骇涓婇檺鍙楅檺锛氶渶鎻愬崌鏌滃彴绛夌骇</span>
                                     </div>
                                 ) : (
                                     <button
@@ -274,7 +272,7 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
                                         `}
                                     >
                                         <i className="fa-solid fa-hammer"></i>
-                                        {canUpgrade ? '立即扩建' : '资源不足'}
+                                        {canUpgrade ? '绔嬪嵆鎵╁缓' : '璧勬簮涓嶈冻'}
                                     </button>
                                 )}
                             </div>
@@ -289,3 +287,4 @@ const ExpansionModal: React.FC<ExpansionModalProps> = ({
 };
 
 export default ExpansionModal;
+

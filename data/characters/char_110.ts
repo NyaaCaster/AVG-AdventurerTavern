@@ -1,12 +1,11 @@
-
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_110';
 
 export const char_110: Character = {
   id: 'char_110',
-  name: "琉卡",
-  role: "亚马逊猎人 / C级冒险者",
-  description: "亚马逊族猎人，箭术超群。性格我行我素，有时有些迷糊。为了寻找合适的伴侣而踏上旅程，似乎已经将主角锁定为目标。",
+  name: "鐞夊崱",
+  role: "浜氶┈閫婄寧浜?/ C绾у啋闄╄€?,
+  description: "浜氶┈閫婃棌鐚庝汉锛岀鏈秴缇ゃ€傛€ф牸鎴戣鎴戠礌锛屾湁鏃舵湁浜涜糠绯娿€備负浜嗗鎵惧悎閫傜殑浼翠荆鑰岃笍涓婃梾绋嬶紝浼间箮宸茬粡灏嗕富瑙掗攣瀹氫负鐩爣銆?,
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [
@@ -14,3 +13,4 @@ export const char_110: Character = {
     { sceneId: 'scen_7', minLevel: 1 }
   ]
 };
+

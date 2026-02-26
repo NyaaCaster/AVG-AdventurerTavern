@@ -1,11 +1,11 @@
-
 /**
- * 前端全局配置文件
- * 用于配置 API 连接地址和其他全局参数
+ * 鍓嶇鍏ㄥ眬閰嶇疆鏂囦欢
+ * 鐢ㄤ簬閰嶇疆 API 杩炴帴鍦板潃鍜屽叾浠栧叏灞€鍙傛暟
  */
 export const AppConfig = {
-  // 后端 API 服务地址
-  // 本地开发通常为: 'http://localhost:3097/api'
-  // 远程部署请填写服务器的完整 URL
+  // 鍚庣 API 鏈嶅姟鍦板潃
+  // 鏈湴寮€鍙戦€氬父涓? 'http://localhost:3097/api'
+  // 杩滅▼閮ㄧ讲璇峰～鍐欐湇鍔″櫒鐨勫畬鏁?URL
   apiBaseUrl: 'https://h.hony-wen.com:3097/api',
 };
+

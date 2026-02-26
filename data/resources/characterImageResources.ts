@@ -1,4 +1,3 @@
-
 import { CharacterImageConfig } from '../../types';
 
 // Image data extracted from individual character files
@@ -668,3 +667,4 @@ export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
     }
   }
 };
+

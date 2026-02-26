@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
@@ -50,21 +49,21 @@ import { useDialogueSystem } from '../hooks/useDialogueSystem';
 interface GameSceneProps {
   userId: number; 
   currentSlotId: number;
-  onBackToMenu: () =&gt; void;
-  onOpenSettings: (tab?: ConfigTab) =&gt; void;
-  onSettingsChange: (newSettings: GameSettings) =&gt; void; 
+  onBackToMenu: () => void;
+  onOpenSettings: (tab?: ConfigTab) => void;
+  onSettingsChange: (newSettings: GameSettings) => void; 
   settings: GameSettings;
-  onLoadGame?: () =&gt; void;
+  onLoadGame?: () => void;
   initialSaveData?: any; 
 }
 
 export interface GameSceneRef {
-    saveGame: (slotId: number) =&gt; Promise&lt;void&gt;;
+    saveGame: (slotId: number) => Promise<void>;
 }
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
-const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) =&gt; {
+const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   // --- Hooks ---
   const core = useCoreState(initialSaveData);
   const world = useWorldSystem(core.sceneLevels, initialSaveData);
@@ -76,10 +75,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   const [isCookingOpen, setIsCookingOpen] = useState(false);
   const [isTavernMenuOpen, setIsTavernMenuOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
-  const [shopInitialTab, setShopInitialTab] = useState&lt;'buy' | 'sell'&gt;('buy');
+  const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy');
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
-  const [saveLoadMode, setSaveLoadMode] = useState&lt;'save' | 'load'&gt;('load');
+  const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
   
   const [isDebugMenuOpen, setIsDebugMenuOpen] = useState(false);
   const [isScheduleViewerOpen, setIsScheduleViewerOpen] = useState(false);
@@ -89,41 +88,41 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   const [isUIHidden, setIsUIHidden] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showDebugLog, setShowDebugLog] = useState(false);
-  const [itemNotifications, setItemNotifications] = useState&lt;{id: string, itemId: string, count: number}[]&gt;([]);
-  const [affinityNotifications, setAffinityNotifications] = useState&lt;{id: string, charId: string, change: number}[]&gt;([]);
-  const [moveNotification, setMoveNotification] = useState&lt;string | null&gt;(null);
-  const [connectionStatus, setConnectionStatus] = useState&lt;ConnectionState&gt;('connecting');
+  const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
+  const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
+  const [moveNotification, setMoveNotification] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
 
   // --- Dialogue System Setup ---
-  const handleItemsGained = (items: { id: string; count: number }[]) =&gt; {
+  const handleItemsGained = (items: { id: string; count: number }[]) => {
       core.handleAddItems(items);
-      const newNotifications = items.map(item =&gt; ({
+      const newNotifications = items.map(item => ({
           id: Date.now() + Math.random().toString(),
           itemId: item.id,
           count: item.count
       }));
-      setItemNotifications(prev =&gt; [...prev, ...newNotifications]);
+      setItemNotifications(prev => [...prev, ...newNotifications]);
   };
 
-  const handleCharacterMove = (charId: string, targetId: string) =&gt; {
+  const handleCharacterMove = (charId: string, targetId: string) => {
       if (SCENE_NAMES[targetId as any]) {
-          const charName = CHARACTERS[charId]?.name || '角色';
+          const charName = CHARACTERS[charId]?.name || '瑙掕壊';
           const targetName = SCENE_NAMES[targetId as any];
-          setMoveNotification(`${charName} 将前往 ${targetName}`);
-          setTimeout(() =&gt; setMoveNotification(null), 4000);
+          setMoveNotification(`${charName} 灏嗗墠寰€ ${targetName}`);
+          setTimeout(() => setMoveNotification(null), 4000);
           
           // Apply forced location immediately logic is handled in final close or effect
           // Here we set a pending state, but useWorldSystem handles forcedLocations.
           // Since the prompt requires movement, we set it directly in the hook
-          world.setForcedLocations(prev =&gt; ({ ...prev, [charId]: targetId }));
+          world.setForcedLocations(prev => ({ ...prev, [charId]: targetId }));
       }
   };
 
-  const handleAffinityChange = (charId: string, change: number) =&gt; {
+  const handleAffinityChange = (charId: string, change: number) => {
       if (change === 0) return;
       
       // Update character stats
-      core.setCharacterStats(prev =&gt; {
+      core.setCharacterStats(prev => {
           const current = prev[charId] || { level: 1, affinity: 0 };
           const newAffinity = Math.max(0, Math.min(100, current.affinity + change));
           return {
@@ -138,10 +137,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           charId,
           change
       };
-      setAffinityNotifications(prev =&gt; [...prev, newNotification]);
+      setAffinityNotifications(prev => [...prev, newNotification]);
   };
 
-  const handleUnlockUpdate = (charId: string, unlockKey: keyof import('../types').CharacterUnlocks) =&gt; {
+  const handleUnlockUpdate = (charId: string, unlockKey: keyof import('../types').CharacterUnlocks) => {
       console.log(`[GameScene] Updating unlock for ${charId}: ${unlockKey}`);
       core.updateCharacterUnlock(charId, unlockKey, 1);
   };
@@ -159,10 +158,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
       onUnlockUpdate: handleUnlockUpdate
   });
 
-  // --- Game Loop: Revenue &amp; Time ---
-  const lastSettlementHourRef = useRef&lt;number | null&gt;(null);
+  // --- Game Loop: Revenue & Time ---
+  const lastSettlementHourRef = useRef<number | null>(null);
 
-  useEffect(() =&gt; {
+  useEffect(() => {
       const currentHour = parseInt(world.worldState.timeStr.split(':')[0]);
       
       if (lastSettlementHourRef.current !== currentHour) {
@@ -173,14 +172,14 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           );
           const newOccupancy = Math.max(0, Math.min(stats.maxOccupancy, calculatedOccupancy));
           
-          core.setManagementStats(prev =&gt; ({ ...prev, occupancy: newOccupancy }));
+          core.setManagementStats(prev => ({ ...prev, occupancy: newOccupancy }));
 
-          // 1. 住宿结算 (8, 12, 20点)
+          // 1. 浣忓缁撶畻 (8, 12, 20鐐?
           const accomHours = [8, 12, 20];
           if (accomHours.includes(currentHour)) {
               const amount = Math.floor(newOccupancy * stats.roomPrice * (stats.satisfaction / 100) * (stats.reputation / 100));
-              if (amount &gt; 0) {
-                  core.setGold(g =&gt; g + amount);
+              if (amount > 0) {
+                  core.setGold(g => g + amount);
                   const newLog: RevenueLog = {
                       id: `log-${Date.now()}-accom`,
                       timestamp: Date.now(),
@@ -189,61 +188,56 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
                       type: 'accommodation',
                       amount
                   };
-                  core.setRevenueLogs(prev =&gt; [newLog, ...prev].slice(0, 100));
+                  core.setRevenueLogs(prev => [newLog, ...prev].slice(0, 100));
               }
           }
 
-          // 2. 酒场每小时结算 (傍晚和夜晚)
+          // 2. 閰掑満姣忓皬鏃剁粨绠?(鍌嶆櫄鍜屽鏅?
           if (world.worldState.period === 'evening' || world.worldState.period === 'night') {
               let totalTavernRevenue = 0;
-              const soldFoods: Record&lt;string, number&gt; = {};
-              const soldDrinks: Record&lt;string, number&gt; = {};
+              const soldFoods: Record<string, number> = {};
+              const soldDrinks: Record<string, number> = {};
               
-              // 使用临时库存避免超卖
+              // 浣跨敤涓存椂搴撳瓨閬垮厤瓒呭崠
               const tempFoodStock = { ...core.foodStock };
               const tempDrinkStock = { ...core.inventory };
 
-              // 销售基数：受集客力影响 (0~5份/小时)
+              // 閿€鍞熀鏁帮細鍙楅泦瀹㈠姏褰卞搷 (0~5浠?灏忔椂)
               const baseSalesVolume = Math.max(1, Math.floor(5 * (stats.attraction / 100)));
 
-              // 处理餐点销售
-              core.tavernMenu.foods.forEach(recipeId =&gt; {
+              // 澶勭悊椁愮偣閿€鍞?              core.tavernMenu.foods.forEach(recipeId => {
                   if (!recipeId) return;
                   const stock = tempFoodStock[recipeId] || 0;
-                  if (stock &lt;= 0) return;
+                  if (stock <= 0) return;
 
-                  const recipe = core.userRecipes.find(r =&gt; r.id === recipeId);
+                  const recipe = core.userRecipes.find(r => r.id === recipeId);
                   if (!recipe) return;
 
-                  // 随机销量
-                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
-                  if (sales &gt; 0) {
+                  // 闅忔満閿€閲?                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  if (sales > 0) {
                       soldFoods[recipeId] = (soldFoods[recipeId] || 0) + sales;
                       tempFoodStock[recipeId] -= sales;
                       totalTavernRevenue += sales * recipe.price;
                   }
               });
 
-              // 处理酒水销售
-              core.tavernMenu.drinks.forEach(itemId =&gt; {
+              // 澶勭悊閰掓按閿€鍞?              core.tavernMenu.drinks.forEach(itemId => {
                   if (!itemId) return;
                   const stock = tempDrinkStock[itemId] || 0;
-                  if (stock &lt;= 0) return;
+                  if (stock <= 0) return;
 
                   const item = ITEMS[itemId];
                   if (!item) return;
 
-                  // 随机销量
-                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
-                  if (sales &gt; 0) {
+                  // 闅忔満閿€閲?                  const sales = Math.min(stock, Math.floor(Math.random() * baseSalesVolume) + 1);
+                  if (sales > 0) {
                       soldDrinks[itemId] = (soldDrinks[itemId] || 0) + sales;
                       tempDrinkStock[itemId] -= sales;
-                      // 酒水售价：基准价值
-                      totalTavernRevenue += sales * getResValue(item.star);
+                      // 閰掓按鍞环锛氬熀鍑嗕环鍊?                      totalTavernRevenue += sales * getResValue(item.star);
                   }
               });
 
-              if (totalTavernRevenue &gt; 0) {
+              if (totalTavernRevenue > 0) {
                   core.handleTavernSales(totalTavernRevenue, soldFoods, soldDrinks);
                   const newLog: RevenueLog = {
                       id: `log-${Date.now()}-tavern`,
@@ -253,7 +247,7 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
                       type: 'tavern',
                       amount: totalTavernRevenue
                   };
-                  core.setRevenueLogs(prev =&gt; [newLog, ...prev].slice(0, 100));
+                  core.setRevenueLogs(prev => [newLog, ...prev].slice(0, 100));
               }
           }
           lastSettlementHourRef.current = currentHour;
@@ -261,10 +255,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   }, [world.worldState.timeStr]);
 
   // --- Initial Revenue Logs (Dummy Data) ---
-  useEffect(() =&gt; {
+  useEffect(() => {
       if (initialSaveData) return;
       // Only generate if empty
-      if (core.revenueLogs.length &gt; 0) return;
+      if (core.revenueLogs.length > 0) return;
 
       const initialLogs: RevenueLog[] = [];
       const now = new Date();
@@ -272,10 +266,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
       // Use actual initial stats from managementStats state
       const stats = core.managementStats;
       
-      for (let i = 2; i &gt;= 0; i--) {
+      for (let i = 2; i >= 0; i--) {
           const date = new Date(now);
           date.setDate(date.getDate() - i);
-          const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
+          const dateStr = `${date.getMonth() + 1}鏈?{date.getDate()}鏃;
           
           const events = [
               { hour: 6, type: 'tavern' as const },
@@ -284,8 +278,8 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
               { hour: 20, type: 'accommodation' as const }
           ];
 
-          events.forEach(event =&gt; {
-              if (i === 0 &amp;&amp; event.hour &gt; now.getHours()) return;
+          events.forEach(event => {
+              if (i === 0 && event.hour > now.getHours()) return;
               let amount = 0;
               if (event.type === 'accommodation') {
                   const occ = Math.floor(stats.occupancy * (0.8 + Math.random() * 0.4)); 
@@ -307,14 +301,14 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   }, [initialSaveData, core.managementStats]); // Run once on mount if no initial data
 
   // --- Connection Status Check ---
-  useEffect(() =&gt; {
+  useEffect(() => {
      setConnectionStatus(!settings.apiConfig.apiKey ? 'disconnected' : 'connected');
   }, [settings.apiConfig]);
 
   // --- Ambient Logic ---
-  const lastAmbientSceneRef = useRef&lt;string | null&gt;(null);
+  const lastAmbientSceneRef = useRef<string | null>(null);
 
-  useEffect(() =&gt; {
+  useEffect(() => {
     // 1. Handle Scene Transition (Reset)
     if (world.isSceneTransitioning) {
         dialogue.setAmbientCharacter(null);
@@ -342,10 +336,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
     lastAmbientSceneRef.current = world.currentSceneId;
     dialogue.setShowAmbientDialogue(true);
 
-    const findCharacterForScene = () =&gt; {
-        if (world.currentSceneId === 'scen_2' &amp;&amp; world.sceneParams?.target &amp;&amp; world.sceneParams.target !== 'user') {
+    const findCharacterForScene = () => {
+        if (world.currentSceneId === 'scen_2' && world.sceneParams?.target && world.sceneParams.target !== 'user') {
             const target = CHARACTERS[world.sceneParams.target];
-            // [角色移动系统] 检查角色是否真的在这个场景
+            // [瑙掕壊绉诲姩绯荤粺] 妫€鏌ヨ鑹叉槸鍚︾湡鐨勫湪杩欎釜鍦烘櫙
             const actualLocation = world.forcedLocations[target.id] || world.characterLocations[target.id];
             if (actualLocation === 'scen_2') {
                 return target;
@@ -353,17 +347,15 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
             return null;
         }
 
-        if (world.presentCharacters.length &gt; 0) {
+        if (world.presentCharacters.length > 0) {
             if (world.currentSceneId === 'scen_3') {
-                const mina = world.presentCharacters.find(c =&gt; c.id === 'char_102');
+                const mina = world.presentCharacters.find(c => c.id === 'char_102');
                 if (mina) {
-                    // [角色移动系统] 确认 Mina 真的在酒场
-                    const actualLocation = world.forcedLocations[mina.id] || world.characterLocations[mina.id];
+                    // [瑙掕壊绉诲姩绯荤粺] 纭 Mina 鐪熺殑鍦ㄩ厭鍦?                    const actualLocation = world.forcedLocations[mina.id] || world.characterLocations[mina.id];
                     if (actualLocation === 'scen_3') return mina;
                 }
             }
-            // [角色移动系统] 过滤掉已经移动走的角色
-            const actuallyPresentChars = world.presentCharacters.filter(c =&gt; {
+            // [瑙掕壊绉诲姩绯荤粺] 杩囨护鎺夊凡缁忕Щ鍔ㄨ蛋鐨勮鑹?            const actuallyPresentChars = world.presentCharacters.filter(c => {
                 const actualLocation = world.forcedLocations[c.id] || world.characterLocations[c.id];
                 return actualLocation === world.currentSceneId;
             });
@@ -380,21 +372,21 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
     
     if (char) {
         dialogue.setAmbientCharacter(char);
-        const isSleeping = world.currentSceneId === 'scen_2' &amp;&amp; world.worldState.period === 'night';
+        const isSleeping = world.currentSceneId === 'scen_2' && world.worldState.period === 'night';
         const isBathing = world.currentSceneId === 'scen_7';
 
         dialogue.setIsAmbientSleeping(isSleeping);
         dialogue.setIsAmbientBathing(isBathing);
 
         if (isSleeping) {
-            dialogue.setAmbientText("zzz……ZZZ……");
+            dialogue.setAmbientText("zzz鈥︹€ZZ鈥︹€?);
             dialogue.setCurrentSprite(''); 
         } else {
             const ambientState = isBathing ? 'nude' : 'default';
             const sprite = getCharacterSprite(char, ambientState, 'normal');
             dialogue.setCurrentSprite(sprite);
             
-            if (world.currentSceneId === 'scen_3' &amp;&amp; char.id !== 'char_102') {
+            if (world.currentSceneId === 'scen_3' && char.id !== 'char_102') {
                 dialogue.setAmbientText('');
             } else {
                 dialogue.generateAmbientLine(char, ambientState, world.currentSceneId);
@@ -408,7 +400,7 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   }, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
 
   // --- Actions ---
-  const handleAction = (action: string, param?: any) =&gt; {
+  const handleAction = (action: string, param?: any) => {
     console.log(`Action triggered: ${action}`, param);
     if (action === 'cook') {
         setIsCookingOpen(true);
@@ -421,10 +413,10 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
     }
   };
 
-  const handleSaveGame = async (slotId: number) =&gt; {
+  const handleSaveGame = async (slotId: number) => {
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
-      // 保存游戏数据
+      // 淇濆瓨娓告垙鏁版嵁
       await saveGame(userId, slotId, label, {
           gold: core.gold,
           currentSceneId: world.currentSceneId,
@@ -441,14 +433,14 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           settings: settings
       });
       
-      // 如果是手动存档（slotId 1-3），同步聊天记忆
-      if (slotId &gt;= 1 &amp;&amp; slotId &lt;= 3) {
+      // 濡傛灉鏄墜鍔ㄥ瓨妗ｏ紙slotId 1-3锛夛紝鍚屾鑱婂ぉ璁板繂
+      if (slotId >= 1 && slotId <= 3) {
           console.log(`[AI Memory] Syncing chat memory from slot 0 to slot ${slotId}`);
           await syncChatSlot(userId, 0, slotId);
       }
   };
 
-  const handleLoadGame = async (slotId: number) =&gt; {
+  const handleLoadGame = async (slotId: number) => {
       const data = await loadGame(userId, slotId);
       if (data) {
           core.applyLoadedData(data);
@@ -456,15 +448,15 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           world.setCurrentSceneId(data.currentSceneId);
           world.setWorldState(data.worldState);
           world.setForcedLocations({});
-          // 立即更新角色位置，确保presentCharacters计算正确
+          // 绔嬪嵆鏇存柊瑙掕壊浣嶇疆锛岀‘淇漰resentCharacters璁＄畻姝ｇ‘
           const locs = calculateCharacterLocations(data.worldState.period, data.worldState.dateStr, data.worldState.timeStr, core.sceneLevels);
           world.setCharacterLocations(locs);
           // Restore settings
-          if (data.settings &amp;&amp; onSettingsChange) {
+          if (data.settings && onSettingsChange) {
               onSettingsChange(data.settings);
           }
           
-          // 用存档的解锁状态覆盖数据库
+          // 鐢ㄥ瓨妗ｇ殑瑙ｉ攣鐘舵€佽鐩栨暟鎹簱
           if (data.characterUnlocks) {
               for (const [characterId, unlocks] of Object.entries(data.characterUnlocks)) {
                   await updateCharacterUnlocks(userId, slotId, characterId, unlocks);
@@ -474,56 +466,54 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           // Reset UI
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
-          // 重置环境逻辑状态
-          dialogue.setAmbientCharacter(null);
+          // 閲嶇疆鐜閫昏緫鐘舵€?          dialogue.setAmbientCharacter(null);
           dialogue.setAmbientText('');
           dialogue.setShowAmbientDialogue(false);
       }
   };
 
-  const handleDeleteSave = async (slotId: number) =&gt; {
+  const handleDeleteSave = async (slotId: number) => {
       await deleteGame(userId, slotId);
   };
 
-  useImperativeHandle(ref, () =&gt; ({
+  useImperativeHandle(ref, () => ({
       saveGame: handleSaveGame
   }));
 
   // Auto-Save
-  useEffect(() =&gt; {
-      const autoSaveInterval = setInterval(() =&gt; {
-          if (!dialogue.isDialogueMode &amp;&amp; !world.isSceneTransitioning) {
+  useEffect(() => {
+      const autoSaveInterval = setInterval(() => {
+          if (!dialogue.isDialogueMode && !world.isSceneTransitioning) {
               handleSaveGame(0);
           }
       }, 60000 * 5); 
-      return () =&gt; clearInterval(autoSaveInterval);
+      return () => clearInterval(autoSaveInterval);
   }, [dialogue.isDialogueMode, world.isSceneTransitioning, core.gold, world.worldState, core.inventory, userId]);
 
   // --- Rendering Helpers ---
-  const handleOpenDebug = () =&gt; {
+  const handleOpenDebug = () => {
       setIsDebugMenuOpen(!isDebugMenuOpen);
   };
 
-  const handleFinalCloseDialogue = () =&gt; {
+  const handleFinalCloseDialogue = () => {
       dialogue.handleFinalClose();
       
-      // [角色移动系统] 对话结束后，检查角色是否已移动
-      // 如果角色已经移动到其他场景，清除当前场景的 Ambient 显示
+      // [瑙掕壊绉诲姩绯荤粺] 瀵硅瘽缁撴潫鍚庯紝妫€鏌ヨ鑹叉槸鍚﹀凡绉诲姩
+      // 濡傛灉瑙掕壊宸茬粡绉诲姩鍒板叾浠栧満鏅紝娓呴櫎褰撳墠鍦烘櫙鐨?Ambient 鏄剧ず
       if (dialogue.activeCharacter) {
           const charId = dialogue.activeCharacter.id;
           const actualLocation = world.forcedLocations[charId] || world.characterLocations[charId];
           
           if (actualLocation !== world.currentSceneId) {
-              // 角色已经不在当前场景，清除 Ambient
+              // 瑙掕壊宸茬粡涓嶅湪褰撳墠鍦烘櫙锛屾竻闄?Ambient
               dialogue.setAmbientCharacter(null);
               dialogue.setAmbientText('');
               dialogue.setShowAmbientDialogue(false);
-              console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation as any] || actualLocation}，清除当前场景的 Ambient 显示`);
+              console.log(`[瑙掕壊绉诲姩绯荤粺] ${dialogue.activeCharacter.name} 宸茬Щ鍔ㄥ埌 ${SCENE_NAMES[actualLocation as any] || actualLocation}锛屾竻闄ゅ綋鍓嶅満鏅殑 Ambient 鏄剧ず`);
           }
       }
       
-      // 对话结束时触发自动存档（保存角色好感度等数据）
-      handleSaveGame(0).catch(err =&gt; console.error('Auto-save failed:', err));
+      // 瀵硅瘽缁撴潫鏃惰Е鍙戣嚜鍔ㄥ瓨妗ｏ紙淇濆瓨瑙掕壊濂芥劅搴︾瓑鏁版嵁锛?      handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
   };
 
   const currentSceneLevel = core.sceneLevels[world.currentSceneId] || (['scen_5','scen_6','scen_7','scen_8'].includes(world.currentSceneId) ? 0 : 1);
@@ -531,7 +521,7 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
   const currentStats = dialogue.activeCharacter ? (core.characterStats[dialogue.activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
   const ambientStats = dialogue.ambientCharacter ? (core.characterStats[dialogue.ambientCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
 
-  const renderScene = () =&gt; {
+  const renderScene = () => {
     const commonProps = {
         onNavigate: world.handleNavigate,
         onAction: handleAction,
@@ -549,123 +539,123 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
     };
 
     switch(world.currentSceneId) {
-        case 'scen_1': return &lt;Scen1 {...commonProps} onOpenManagement={() =&gt; setIsManagementOpen(true)} onOpenExpansion={() =&gt; setIsExpansionOpen(true)} /&gt;;
-        case 'scen_2': return &lt;Scen2 {...commonProps} /&gt;;
-        case 'scen_3': return &lt;Scen3 {...commonProps} onOpenTavernMenu={() =&gt; setIsTavernMenuOpen(true)} /&gt;;
-        case 'scen_4': return &lt;Scen4 {...commonProps} /&gt;;
-        case 'scen_5': return &lt;Scen5 {...commonProps} /&gt;;
-        case 'scen_6': return &lt;Scen6 {...commonProps} /&gt;;
-        case 'scen_7': return &lt;Scen7 {...commonProps} /&gt;;
-        case 'scen_8': return &lt;Scen8 {...commonProps} /&gt;;
-        case 'scen_9': return &lt;Scen9 {...commonProps} /&gt;;
-        case 'scen_10': return &lt;Scen10 {...commonProps} /&gt;;
-        default: return &lt;Scen1 {...commonProps} /&gt;;
+        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} />;
+        case 'scen_2': return <Scen2 {...commonProps} />;
+        case 'scen_3': return <Scen3 {...commonProps} onOpenTavernMenu={() => setIsTavernMenuOpen(true)} />;
+        case 'scen_4': return <Scen4 {...commonProps} />;
+        case 'scen_5': return <Scen5 {...commonProps} />;
+        case 'scen_6': return <Scen6 {...commonProps} />;
+        case 'scen_7': return <Scen7 {...commonProps} />;
+        case 'scen_8': return <Scen8 {...commonProps} />;
+        case 'scen_9': return <Scen9 {...commonProps} />;
+        case 'scen_10': return <Scen10 {...commonProps} />;
+        default: return <Scen1 {...commonProps} />;
     }
   };
 
   return (
-    &lt;div className="relative w-full h-full bg-black overflow-hidden" onClick={() =&gt; { if (isUIHidden) setIsUIHidden(false); }}&gt;
-      &lt;audio ref={audioRef} loop className="hidden" /&gt;
+    <div className="relative w-full h-full bg-black overflow-hidden" onClick={() => { if (isUIHidden) setIsUIHidden(false); }}>
+      <audio ref={audioRef} loop className="hidden" />
 
-      &lt;div className="absolute inset-0 bg-black z-[80] pointer-events-none transition-opacity ease-in-out duration-500" style={{ opacity: world.transitionOpacity }} /&gt;
+      <div className="absolute inset-0 bg-black z-[80] pointer-events-none transition-opacity ease-in-out duration-500" style={{ opacity: world.transitionOpacity }} />
 
-      &lt;div className="absolute inset-0 z-0"&gt;
-        &lt;img src={resolveImgPath(currentBgUrl)} alt="BG" className="w-full h-full object-cover transition-all duration-700" /&gt;
-        &lt;div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" /&gt;
-        &lt;div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" /&gt;
-      &lt;/div&gt;
+      <div className="absolute inset-0 z-0">
+        <img src={resolveImgPath(currentBgUrl)} alt="BG" className="w-full h-full object-cover transition-all duration-700" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10" />
+      </div>
 
-      &lt;div className={`absolute inset-0 z-10 flex items-end justify-center pointer-events-none transition-all duration-500 ${dialogue.isDialogueMode ? '-translate-y-[2%] opacity-100' : 'translate-y-10 opacity-0'}`}&gt;
-         {dialogue.isDialogueMode &amp;&amp; dialogue.currentSprite &amp;&amp; (
-            &lt;img src={resolveImgPath(dialogue.currentSprite)} alt="Sprite" className="h-[100%] md:h-[95%] object-contain drop-shadow-2xl" /&gt;
+      <div className={`absolute inset-0 z-10 flex items-end justify-center pointer-events-none transition-all duration-500 ${dialogue.isDialogueMode ? '-translate-y-[2%] opacity-100' : 'translate-y-10 opacity-0'}`}>
+         {dialogue.isDialogueMode && dialogue.currentSprite && (
+            <img src={resolveImgPath(dialogue.currentSprite)} alt="Sprite" className="h-[100%] md:h-[95%] object-contain drop-shadow-2xl" />
          )}
-      &lt;/div&gt;
+      </div>
 
-      &lt;div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!dialogue.isDialogueMode &amp;&amp; dialogue.ambientCharacter &amp;&amp; !dialogue.isAmbientSleeping &amp;&amp; !dialogue.isAmbientBathing) ? 'opacity-100' : 'opacity-0'}`}&gt;
-         {dialogue.ambientCharacter &amp;&amp; !dialogue.isAmbientSleeping &amp;&amp; dialogue.currentSprite &amp;&amp; (
-            &lt;div className="relative h-[95%] w-full"&gt;
-                &lt;img src={resolveImgPath(dialogue.currentSprite)} alt="Ambient Sprite" className="absolute bottom-0 left-[30%] transform -translate-x-1/2 h-full object-contain drop-shadow-xl filter brightness-95" /&gt;
-            &lt;/div&gt;
+      <div className={`absolute inset-0 z-10 flex items-end pointer-events-none transition-all duration-700 ${(!dialogue.isDialogueMode && dialogue.ambientCharacter && !dialogue.isAmbientSleeping && !dialogue.isAmbientBathing) ? 'opacity-100' : 'opacity-0'}`}>
+         {dialogue.ambientCharacter && !dialogue.isAmbientSleeping && dialogue.currentSprite && (
+            <div className="relative h-[95%] w-full">
+                <img src={resolveImgPath(dialogue.currentSprite)} alt="Ambient Sprite" className="absolute bottom-0 left-[30%] transform -translate-x-1/2 h-full object-contain drop-shadow-xl filter brightness-95" />
+            </div>
          )}
-      &lt;/div&gt;
+      </div>
 
-      &lt;div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}&gt;
-          &lt;GameEnvironmentWidget worldState={world.worldState} gold={core.gold} /&gt;
+      <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
+          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} />
 
-          &lt;div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none"&gt;
-              {itemNotifications.map(notification =&gt; (
-                  &lt;ItemToast 
+          <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
+              {itemNotifications.map(notification => (
+                  <ItemToast 
                       key={notification.id}
                       itemId={notification.itemId}
                       count={notification.count}
-                      onComplete={() =&gt; setItemNotifications(prev =&gt; prev.filter(n =&gt; n.id !== notification.id))}
-                  /&gt;
+                      onComplete={() => setItemNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
               ))}
-              {affinityNotifications.map(notification =&gt; (
-                  &lt;AffinityToast 
+              {affinityNotifications.map(notification => (
+                  <AffinityToast 
                       key={notification.id}
                       change={notification.change}
-                      characterName={CHARACTERS[notification.charId]?.name || '角色'}
-                      onComplete={() =&gt; setAffinityNotifications(prev =&gt; prev.filter(n =&gt; n.id !== notification.id))}
-                  /&gt;
+                      characterName={CHARACTERS[notification.charId]?.name || '瑙掕壊'}
+                      onComplete={() => setAffinityNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
               ))}
-          &lt;/div&gt;
+          </div>
 
-          {moveNotification &amp;&amp; (
-              &lt;div className="absolute bottom-[300px] left-4 z-[70] animate-fadeIn pointer-events-none"&gt;
-                  &lt;div className="bg-indigo-900/90 border-l-4 border-indigo-400 text-indigo-100 px-6 py-3 rounded-r shadow-2xl flex items-center gap-3 backdrop-blur-md"&gt;
-                      &lt;i className="fa-solid fa-shoe-prints text-indigo-300"&gt;&lt;/i&gt;
-                      &lt;span className="font-bold tracking-wider text-sm"&gt;{moveNotification}&lt;/span&gt;
-                  &lt;/div&gt;
-              &lt;/div&gt;
+          {moveNotification && (
+              <div className="absolute bottom-[300px] left-4 z-[70] animate-fadeIn pointer-events-none">
+                  <div className="bg-indigo-900/90 border-l-4 border-indigo-400 text-indigo-100 px-6 py-3 rounded-r shadow-2xl flex items-center gap-3 backdrop-blur-md">
+                      <i className="fa-solid fa-shoe-prints text-indigo-300"></i>
+                      <span className="font-bold tracking-wider text-sm">{moveNotification}</span>
+                  </div>
+              </div>
           )}
 
-          {dialogue.errorMessage &amp;&amp; (
-            &lt;div onClick={() =&gt; dialogue.setErrorMessage(null)} className="absolute top-24 left-1/2 transform -translate-x-1/2 z-[60] bg-red-900/90 border border-red-500/50 text-red-100 px-6 py-4 rounded pointer-events-auto cursor-pointer"&gt;
+          {dialogue.errorMessage && (
+            <div onClick={() => dialogue.setErrorMessage(null)} className="absolute top-24 left-1/2 transform -translate-x-1/2 z-[60] bg-red-900/90 border border-red-500/50 text-red-100 px-6 py-4 rounded pointer-events-auto cursor-pointer">
                 {dialogue.errorMessage}
-            &lt;/div&gt;
+            </div>
           )}
 
-          &lt;SystemMenu 
-            onLoadGame={() =&gt; { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 
-            onSaveGame={() =&gt; { setIsSaveLoadOpen(true); setSaveLoadMode('save'); }}
+          <SystemMenu 
+            onLoadGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 
+            onSaveGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('save'); }}
             onOpenSettings={onOpenSettings} 
             onBackToMenu={onBackToMenu} 
             onDebug={handleOpenDebug}
             showDebug={settings.enableDebug}
-          /&gt;
+          />
 
-          &lt;DebugMenu
+          <DebugMenu
             isOpen={isDebugMenuOpen}
-            onClose={() =&gt; setIsDebugMenuOpen(false)}
-            onOpenSchedules={() =&gt; setIsScheduleViewerOpen(true)}
-            onOpenResources={() =&gt; setIsResourceDebugOpen(true)}
-            onOpenUnlocks={() =&gt; setIsUnlocksDebugOpen(true)}
-          /&gt;
+            onClose={() => setIsDebugMenuOpen(false)}
+            onOpenSchedules={() => setIsScheduleViewerOpen(true)}
+            onOpenResources={() => setIsResourceDebugOpen(true)}
+            onOpenUnlocks={() => setIsUnlocksDebugOpen(true)}
+          />
 
-          &lt;DebugSchedulesModal
+          <DebugSchedulesModal
             isOpen={isScheduleViewerOpen}
-            onClose={() =&gt; setIsScheduleViewerOpen(false)}
+            onClose={() => setIsScheduleViewerOpen(false)}
             periodLabel={world.worldState.periodLabel}
             characterLocations={world.characterLocations}
-          /&gt;
+          />
 
-          &lt;DebugResourceModal
+          <DebugResourceModal
             isOpen={isResourceDebugOpen}
-            onClose={() =&gt; setIsResourceDebugOpen(false)}
+            onClose={() => setIsResourceDebugOpen(false)}
             gold={core.gold}
             inventory={core.inventory}
             onUpdateGold={core.updateGold}
             onUpdateInventory={core.updateInventoryItem}
-          /&gt;
+          />
 
-          &lt;DebugUnlocksModal
+          <DebugUnlocksModal
             isOpen={isUnlocksDebugOpen}
-            onClose={() =&gt; setIsUnlocksDebugOpen(false)}
+            onClose={() => setIsUnlocksDebugOpen(false)}
             characterUnlocks={core.characterUnlocks}
             characterStats={core.characterStats}
-            onUpdateCharacterAffinity={(charId, newAffinity) =&gt; {
-              core.setCharacterStats(prev =&gt; {
+            onUpdateCharacterAffinity={(charId, newAffinity) => {
+              core.setCharacterStats(prev => {
                 const current = prev[charId] || { level: 1, affinity: 0 };
                 return {
                   ...prev,
@@ -674,40 +664,40 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
               });
             }}
             onUpdateCharacterUnlock={core.updateCharacterUnlock}
-            onSaveGame={() =&gt; handleSaveGame(0)}
-          /&gt;
+            onSaveGame={() => handleSaveGame(0)}
+          />
 
-          &lt;div className="pointer-events-auto"&gt;
+          <div className="pointer-events-auto">
              {renderScene()}
-          &lt;/div&gt;
+          </div>
 
-          {!dialogue.isDialogueMode &amp;&amp; dialogue.ambientCharacter &amp;&amp; dialogue.ambientText &amp;&amp; dialogue.showAmbientDialogue &amp;&amp; (
-              &lt;div className="absolute bottom-4 w-full flex flex-col items-center pointer-events-auto z-40 animate-fadeIn"&gt;
-                  &lt;div className="relative w-full px-0 md:px-4 mb-2"&gt;
-                      &lt;DialogueBox 
+          {!dialogue.isDialogueMode && dialogue.ambientCharacter && dialogue.ambientText && dialogue.showAmbientDialogue && (
+              <div className="absolute bottom-4 w-full flex flex-col items-center pointer-events-auto z-40 animate-fadeIn">
+                  <div className="relative w-full px-0 md:px-4 mb-2">
+                      <DialogueBox 
                           speaker={dialogue.ambientCharacter.name}
                           text={dialogue.ambientText}
                           isTyping={true} 
                           typingEnabled={settings.enableTypewriter}
                           transparency={settings.dialogueTransparency}
-                          onHideUI={() =&gt; setIsUIHidden(true)}
-                          onClose={() =&gt; dialogue.setShowAmbientDialogue(false)} 
+                          onHideUI={() => setIsUIHidden(true)}
+                          onClose={() => dialogue.setShowAmbientDialogue(false)} 
                           level={ambientStats.level}
                           affinity={ambientStats.affinity}
-                      /&gt;
-                  &lt;/div&gt;
-              &lt;/div&gt;
+                      />
+                  </div>
+              </div>
           )}
 
-          {dialogue.isDialogueMode &amp;&amp; dialogue.activeCharacter &amp;&amp; (
-              &lt;ChatInterface 
+          {dialogue.isDialogueMode && dialogue.activeCharacter && (
+              <ChatInterface 
                  currentDialogue={dialogue.currentDialogue}
                  isTyping={dialogue.isTyping}
                  setIsTyping={dialogue.setIsTyping}
                  settings={settings}
-                 onHideUI={() =&gt; setIsUIHidden(true)}
-                 onShowHistory={() =&gt; setShowHistory(true)}
-                 onShowDebugLog={() =&gt; setShowDebugLog(true)} 
+                 onHideUI={() => setIsUIHidden(true)}
+                 onShowHistory={() => setShowHistory(true)}
+                 onShowDebugLog={() => setShowDebugLog(true)} 
                  inputText={dialogue.inputText}
                  setInputText={dialogue.setInputText}
                  handleSend={dialogue.handleSend}
@@ -722,19 +712,19 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
                  affinityChange={dialogue.lastAffinityChange}
                  sessionAffinityTotal={dialogue.sessionAffinityTotal}
                  clothingState={dialogue.clothingState}
-              /&gt;
+              />
           )}
-      &lt;/div&gt;
+      </div>
 
-      &lt;DialogueLogModal isOpen={showHistory} onClose={() =&gt; setShowHistory(false)} history={dialogue.history} /&gt;
-      &lt;DebugLogModal isOpen={showDebugLog} onClose={() =&gt; setShowDebugLog(false)} logs={dialogue.debugLogs} /&gt;
+      <DialogueLogModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={dialogue.history} />
+      <DebugLogModal isOpen={showDebugLog} onClose={() => setShowDebugLog(false)} logs={dialogue.debugLogs} />
 
-      &lt;ManagementModal isOpen={isManagementOpen} onClose={() =&gt; setIsManagementOpen(false)} stats={core.managementStats} logs={core.revenueLogs} onAction={core.handleManagementAction} currentGold={core.gold} /&gt;
-      &lt;ExpansionModal isOpen={isExpansionOpen} onClose={() =&gt; setIsExpansionOpen(false)} currentLevels={core.sceneLevels} inventory={core.inventory} gold={core.gold} onUpgrade={core.handleUpgradeFacility} /&gt;
+      <ManagementModal isOpen={isManagementOpen} onClose={() => setIsManagementOpen(false)} stats={core.managementStats} logs={core.revenueLogs} onAction={core.handleManagementAction} currentGold={core.gold} />
+      <ExpansionModal isOpen={isExpansionOpen} onClose={() => setIsExpansionOpen(false)} currentLevels={core.sceneLevels} inventory={core.inventory} gold={core.gold} onUpgrade={core.handleUpgradeFacility} />
       
-      &lt;CookingModal 
+      <CookingModal 
           isOpen={isCookingOpen}
-          onClose={() =&gt; setIsCookingOpen(false)}
+          onClose={() => setIsCookingOpen(false)}
           inventory={core.inventory} 
           userRecipes={core.userRecipes}
           foodStock={core.foodStock}
@@ -744,31 +734,33 @@ const GameScene = React.forwardRef&lt;GameSceneRef, GameSceneProps&gt;(({ userId
           onDeleteRecipe={core.handleDeleteRecipe}
           onRenameRecipe={core.handleRenameRecipe}
           apiConfig={settings.apiConfig}
-      /&gt;
+      />
 
-      &lt;TavernMenuModal
+      <TavernMenuModal
           isOpen={isTavernMenuOpen}
-          onClose={() =&gt; setIsTavernMenuOpen(false)}
+          onClose={() => setIsTavernMenuOpen(false)}
           inventory={core.inventory}
           userRecipes={core.userRecipes}
           foodStock={core.foodStock}
           tavernLevel={core.sceneLevels['scen_3'] || 1}
           tavernMenu={core.tavernMenu}
           onUpdateMenu={core.handleUpdateTavernMenu}
-      /&gt;
+      />
 
-      &lt;ShopItemModal
+      <ShopItemModal
           isOpen={isShopOpen}
-          onClose={() =&gt; setIsShopOpen(false)}
+          onClose={() => setIsShopOpen(false)}
           initialTab={shopInitialTab}
           inventory={core.inventory}
           currentGold={core.gold}
           onTransaction={core.handleShopTransaction}
-      /&gt;
+      />
 
-      &lt;SaveLoadModal isOpen={isSaveLoadOpen} onClose={() =&gt; setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} /&gt;
-    &lt;/div&gt;
+      <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
+    </div>
   );
 });
 
 export default GameScene;
+
+

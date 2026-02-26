@@ -1,11 +1,11 @@
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks } from '../types';
+mport { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks } from '../types';
 import { AppConfig } from '../config';
 
-// 配置服务器地址
-// 从 config.ts 中读取配置，方便统一管理
+// 閰嶇疆鏈嶅姟鍣ㄥ湴鍧€
+// 浠?config.ts 涓鍙栭厤缃紝鏂逛究缁熶竴绠＄悊
 const API_BASE_URL = AppConfig.apiBaseUrl;
 
-// --- 接口定义 ---
+// --- 鎺ュ彛瀹氫箟 ---
 
 export interface GameSaveData {
   id?: number;
@@ -20,13 +20,13 @@ export interface GameSaveData {
   characterStats?: Record<string, { level: number; affinity: number }>;
 }
 
-// --- API 辅助函数 ---
+// --- API 杈呭姪鍑芥暟 ---
 
 const apiCall = async (endpoint: string, body: any) => {
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
-            mode: 'cors', // 显式声明跨域模式
+            mode: 'cors', // 鏄惧紡澹版槑璺ㄥ煙妯″紡
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
@@ -36,11 +36,11 @@ const apiCall = async (endpoint: string, body: any) => {
         return await response.json();
     } catch (e) {
         console.error(`API Call Failed [${endpoint}]:`, e);
-        return { success: false, message: `无法连接到服务器 (${API_BASE_URL})。\n请检查:\n1. server/config.js 配置是否正确\n2. 后端服务是否运行` };
+        return { success: false, message: `鏃犳硶杩炴帴鍒版湇鍔″櫒 (${API_BASE_URL})銆俓n璇锋鏌?\n1. server/config.js 閰嶇疆鏄惁姝ｇ‘\n2. 鍚庣鏈嶅姟鏄惁杩愯` };
     }
 };
 
-// --- 用户认证服务 ---
+// --- 鐢ㄦ埛璁よ瘉鏈嶅姟 ---
 
 export const registerUser = async (username: string, password: string): Promise<{ success: boolean; message: string; uid?: number }> => {
     const res = await apiCall('/register', { username, password });
@@ -52,10 +52,10 @@ export const loginUser = async (username: string, password: string): Promise<{ s
     return res;
 };
 
-// --- 存档服务层函数 ---
+// --- 瀛樻。鏈嶅姟灞傚嚱鏁?---
 
 /**
- * 执行存档操作 (上传到服务器)
+ * 鎵ц瀛樻。鎿嶄綔 (涓婁紶鍒版湇鍔″櫒)
  */
 export const saveGame = async (
   userId: number,
@@ -80,17 +80,16 @@ export const saveGame = async (
         userId,
         slotId,
         label,
-        data // 直接发送整个对象
-    });
+        data // 鐩存帴鍙戦€佹暣涓璞?    });
     
     if (!res.success) {
         console.error("Save failed:", res.message);
-        alert("保存失败: " + (res.message || "服务器无响应"));
+        alert("淇濆瓨澶辫触: " + (res.message || "鏈嶅姟鍣ㄦ棤鍝嶅簲"));
     }
 };
 
 /**
- * 读取存档数据 (从服务器下载)
+ * 璇诲彇瀛樻。鏁版嵁 (浠庢湇鍔″櫒涓嬭浇)
  */
 export const loadGame = async (userId: number, slotId: number) => {
     const res = await apiCall('/load', { userId, slotId });
@@ -98,15 +97,14 @@ export const loadGame = async (userId: number, slotId: number) => {
     if (res.success && res.data) {
         return {
             ...res.data,
-            savedAt: Date.now() // 服务器若未返回时间，使用当前时间
+            savedAt: Date.now() // 鏈嶅姟鍣ㄨ嫢鏈繑鍥炴椂闂达紝浣跨敤褰撳墠鏃堕棿
         };
     }
     return null;
 };
 
 /**
- * 获取指定用户的所有存档槽位信息
- */
+ * 鑾峰彇鎸囧畾鐢ㄦ埛鐨勬墍鏈夊瓨妗ｆЫ浣嶄俊鎭? */
 export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
     const res = await apiCall('/slots', { userId });
     
@@ -126,24 +124,23 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
 };
 
 /**
- * 删除存档
+ * 鍒犻櫎瀛樻。
  */
 export const deleteGame = async (userId: number, slotId: number) => {
     await apiCall('/delete', { userId, slotId });
 };
 
 /**
- * 清除所有数据 (本地废弃)
+ * 娓呴櫎鎵€鏈夋暟鎹?(鏈湴搴熷純)
  */
 export const clearAllData = async () => {
     console.warn("clearAllData is deprecated in Cloud Mode");
 };
 
-// --- 角色解锁状态服务 ---
+// --- 瑙掕壊瑙ｉ攣鐘舵€佹湇鍔?---
 
 /**
- * 获取单个角色的解锁状态
- */
+ * 鑾峰彇鍗曚釜瑙掕壊鐨勮В閿佺姸鎬? */
 export const getCharacterUnlocks = async (
     userId: number,
     slotId: number,
@@ -164,8 +161,7 @@ export const getCharacterUnlocks = async (
 };
 
 /**
- * 更新角色解锁状态
- */
+ * 鏇存柊瑙掕壊瑙ｉ攣鐘舵€? */
 export const updateCharacterUnlocks = async (
     userId: number,
     slotId: number,
@@ -188,8 +184,7 @@ export const updateCharacterUnlocks = async (
 };
 
 /**
- * 批量获取所有角色的解锁状态
- */
+ * 鎵归噺鑾峰彇鎵€鏈夎鑹茬殑瑙ｉ攣鐘舵€? */
 export const getAllCharacterUnlocks = async (
     userId: number,
     slotId: number
@@ -207,11 +202,10 @@ export const getAllCharacterUnlocks = async (
     return {};
 };
 
-// --- AI 聊天记忆系统服务 ---
+// --- AI 鑱婂ぉ璁板繂绯荤粺鏈嶅姟 ---
 
 /**
- * 获取角色的聊天历史（短期工作记忆）
- */
+ * 鑾峰彇瑙掕壊鐨勮亰澶╁巻鍙诧紙鐭湡宸ヤ綔璁板繂锛? */
 export const getChatMessages = async (
     userId: number,
     slotId: number,
@@ -234,8 +228,7 @@ export const getChatMessages = async (
 };
 
 /**
- * 添加一条新的聊天记录
- */
+ * 娣诲姞涓€鏉℃柊鐨勮亰澶╄褰? */
 export const addChatMessage = async (
     userId: number,
     slotId: number,
@@ -260,8 +253,7 @@ export const addChatMessage = async (
 };
 
 /**
- * 获取角色的核心记忆（长期记忆）
- */
+ * 鑾峰彇瑙掕壊鐨勬牳蹇冭蹇嗭紙闀挎湡璁板繂锛? */
 export const getCharacterMemories = async (
     userId: number,
     slotId: number,
@@ -282,7 +274,7 @@ export const getCharacterMemories = async (
 };
 
 /**
- * 批量添加核心记忆
+ * 鎵归噺娣诲姞鏍稿績璁板繂
  */
 export const addCharacterMemories = async (
     userId: number,
@@ -308,8 +300,8 @@ export const addCharacterMemories = async (
 };
 
 /**
- * 同步存档槽位的聊天和记忆数据
- * 用于手动存档时，将当前对话环境复制到目标槽位
+ * 鍚屾瀛樻。妲戒綅鐨勮亰澶╁拰璁板繂鏁版嵁
+ * 鐢ㄤ簬鎵嬪姩瀛樻。鏃讹紝灏嗗綋鍓嶅璇濈幆澧冨鍒跺埌鐩爣妲戒綅
  */
 export const syncChatSlot = async (
     userId: number,
@@ -331,8 +323,7 @@ export const syncChatSlot = async (
 };
 
 /**
- * 更新角色的历史摘要（滚动更新）
- */
+ * 鏇存柊瑙掕壊鐨勫巻鍙叉憳瑕侊紙婊氬姩鏇存柊锛? */
 export const updateCharacterSummary = async (
     userId: number,
     slotId: number,
@@ -355,7 +346,7 @@ export const updateCharacterSummary = async (
 };
 
 /**
- * 删除已总结的旧对话记录
+ * 鍒犻櫎宸叉€荤粨鐨勬棫瀵硅瘽璁板綍
  */
 export const deleteOldMessages = async (
     userId: number,
@@ -377,3 +368,4 @@ export const deleteOldMessages = async (
     
     return true;
 };
+

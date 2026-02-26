@@ -13,10 +13,11 @@ export const ITEM_RES_SHOP: ShopItem[] = [
   { id: 'shop-003', resId: 'res-0301', price: 20 },
 ];
 
-export const getShopItemByResId = (resId: string) =&gt; {
-  return ITEM_RES_SHOP.find(item =&gt; item.resId === resId);
+export const getShopItemByResId = (resId: string) => {
+  return ITEM_RES_SHOP.find(item => item.resId === resId);
 };
 
-export const getShopItemById = (id: string) =&gt; {
-  return ITEM_RES_SHOP.find(item =&gt; item.id === id);
+export const getShopItemById = (id: string) => {
+  return ITEM_RES_SHOP.find(item => item.id === id);
 };
+

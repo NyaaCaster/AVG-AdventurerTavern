@@ -1,4 +1,3 @@
-
 import { SceneId } from '../../types';
 
 export const SCENE_BGM: Record<SceneId, string> = {
@@ -13,3 +12,4 @@ export const SCENE_BGM: Record<SceneId, string> = {
   'scen_9': 'audio/bgm/bgm_scen_9.ogg',
   'scen_10': 'audio/bgm/bgm_scen_10.ogg'
 };
+

@@ -1,16 +1,14 @@
-
 import { Character, ApiConfig, LogEntry } from "../types";
 
 export interface AIResponse {
   text: string;
   emotion: string;
   clothing?: string;
-  move_to?: string; // 角色移动指令
+  move_to?: string; // 瑙掕壊绉诲姩鎸囦护
   items?: { id: string; count: number }[];
-  affinity_change?: number; // 好感度变化 (-5 到 +5)
-  unlock_request?: string; // 角色解锁请求
-  update_memory?: string[]; // AI 提取的核心记忆（长期记忆）
-  usage?: {
+  affinity_change?: number; // 濂芥劅搴﹀彉鍖?(-5 鍒?+5)
+  unlock_request?: string; // 瑙掕壊瑙ｉ攣璇锋眰
+  update_memory?: string[]; // AI 鎻愬彇鐨勬牳蹇冭蹇嗭紙闀挎湡璁板繂锛?  usage?: {
       prompt_tokens: number;
       completion_tokens: number;
       total_tokens: number;
@@ -212,34 +210,29 @@ export class LlmService {
   }
 
   /**
-   * 生成料理名称和描述
-   */
+   * 鐢熸垚鏂欑悊鍚嶇О鍜屾弿杩?   */
   async generateFoodLore(ingredients: { name: string; description: string }[], cookingMethod: string, config: ApiConfig): Promise<{ name: string; description: string }> {
       this.config = { ...config };
       
       if (!this.config.apiKey) throw new Error("API Key missing");
       
-      const ingredientsInfo = ingredients.map(i => `- ${i.name} (特性: ${i.description})`).join('\n');
+      const ingredientsInfo = ingredients.map(i => `- ${i.name} (鐗规€? ${i.description})`).join('\n');
 
       const prompt = `
-你是一位异世界酒馆的创意主厨。
-请根据以下素材列表和烹饪方法，设计一道充满幻想风格的料理。
-请务必结合【素材名称】、【素材描述】和【烹饪方法】来理解食材的特性（如口感、味道、来源等）和料理的做法，确保生成的料理名称和描述符合常识与逻辑。
-例如：如果是肉类素材且烹饪方法是"烤肉"，应生成烤肉类料理；如果是面粉且烹饪方法是"蛋糕"，应生成蛋糕类甜点。切勿出现素材、烹饪方法与料理类型严重冲突的情况（如全是肉类且方法是"炖肉"却做成慕斯）。
+浣犳槸涓€浣嶅紓涓栫晫閰掗鐨勫垱鎰忎富鍘ㄣ€?璇锋牴鎹互涓嬬礌鏉愬垪琛ㄥ拰鐑归オ鏂规硶锛岃璁′竴閬撳厖婊″够鎯抽鏍肩殑鏂欑悊銆?璇峰姟蹇呯粨鍚堛€愮礌鏉愬悕绉般€戙€併€愮礌鏉愭弿杩般€戝拰銆愮児楗柟娉曘€戞潵鐞嗚В椋熸潗鐨勭壒鎬э紙濡傚彛鎰熴€佸懗閬撱€佹潵婧愮瓑锛夊拰鏂欑悊鐨勫仛娉曪紝纭繚鐢熸垚鐨勬枡鐞嗗悕绉板拰鎻忚堪绗﹀悎甯歌瘑涓庨€昏緫銆?渚嬪锛氬鏋滄槸鑲夌被绱犳潗涓旂児楗柟娉曟槸"鐑よ倝"锛屽簲鐢熸垚鐑よ倝绫绘枡鐞嗭紱濡傛灉鏄潰绮変笖鐑归オ鏂规硶鏄?铔嬬硶"锛屽簲鐢熸垚铔嬬硶绫荤敎鐐广€傚垏鍕垮嚭鐜扮礌鏉愩€佺児楗柟娉曚笌鏂欑悊绫诲瀷涓ラ噸鍐茬獊鐨勬儏鍐碉紙濡傚叏鏄倝绫讳笖鏂规硶鏄?鐐栬倝"鍗村仛鎴愭厱鏂級銆?
+鐑归オ鏂规硶: ${cookingMethod}
 
-烹饪方法: ${cookingMethod}
-
-素材列表:
+绱犳潗鍒楄〃:
 ${ingredientsInfo}
 
-请严格以 JSON 格式输出，包含以下字段：
-- name: 料理名称 (中文，不超过10个字，富有趣味性，必须体现素材特色和烹饪方法)
-- description: 料理描述 (中文，50字以内，描述口感和特色，需要反映出素材描述中的要素和烹饪方法)
+璇蜂弗鏍间互 JSON 鏍煎紡杈撳嚭锛屽寘鍚互涓嬪瓧娈碉細
+- name: 鏂欑悊鍚嶇О (涓枃锛屼笉瓒呰繃10涓瓧锛屽瘜鏈夎叮鍛虫€э紝蹇呴』浣撶幇绱犳潗鐗硅壊鍜岀児楗柟娉?
+- description: 鏂欑悊鎻忚堪 (涓枃锛?0瀛椾互鍐咃紝鎻忚堪鍙ｆ劅鍜岀壒鑹诧紝闇€瑕佸弽鏄犲嚭绱犳潗鎻忚堪涓殑瑕佺礌鍜岀児楗柟娉?
 
-示例:
+绀轰緥:
 {
-  "name": "火焰史莱姆冻",
-  "description": "虽然外表红通通的，入口却是冰凉的果冻口感，随后在喉咙深处爆发出一股暖意，非常神奇。"
+  "name": "鐏劙鍙茶幈濮嗗喕",
+  "description": "铏界劧澶栬〃绾㈤€氶€氱殑锛屽叆鍙ｅ嵈鏄啺鍑夌殑鏋滃喕鍙ｆ劅锛岄殢鍚庡湪鍠夊挋娣卞鐖嗗彂鍑轰竴鑲℃殩鎰忥紝闈炲父绁炲銆?
 }
 `;
 
@@ -309,14 +302,14 @@ ${ingredientsInfo}
               console.warn("JSON parse failed, falling back to raw text", jsonStr);
               // Fallback: Try to heuristically extract info if JSON fails
               return {
-                  name: "未知料理",
-                  description: content.substring(0, 50).replace(/\n/g, ' ') || "看起来可以吃。"
+                  name: "鏈煡鏂欑悊",
+                  description: content.substring(0, 50).replace(/\n/g, ' ') || "鐪嬭捣鏉ュ彲浠ュ悆銆?
               };
           }
           
           return {
-              name: json.name || "未知料理",
-              description: json.description || "看起来可以吃。"
+              name: json.name || "鏈煡鏂欑悊",
+              description: json.description || "鐪嬭捣鏉ュ彲浠ュ悆銆?
           };
 
       } catch (e) {
@@ -361,3 +354,4 @@ ${ingredientsInfo}
 }
 
 export const llmService = new LlmService();
+

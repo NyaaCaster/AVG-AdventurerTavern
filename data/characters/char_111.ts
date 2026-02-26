@@ -1,12 +1,11 @@
-
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_111';
 
 export const char_111: Character = {
   id: 'char_111',
-  name: "吉娜",
-  role: "人族技师 / 工匠",
-  description: "大大咧咧的机械工匠，技术高超但生活粗糙。经常被误认为是男性，实则拥有丰满的身材。在旅店旁搭建了工坊，喜欢对同性进行性骚扰。",
+  name: "鍚夊",
+  role: "浜烘棌鎶€甯?/ 宸ュ尃",
+  description: "澶уぇ鍜у挧鐨勬満姊板伐鍖狅紝鎶€鏈珮瓒呬絾鐢熸椿绮楃硻銆傜粡甯歌璇涓烘槸鐢锋€э紝瀹炲垯鎷ユ湁涓版弧鐨勮韩鏉愩€傚湪鏃呭簵鏃佹惌寤轰簡宸ュ潑锛屽枩娆㈠鍚屾€ц繘琛屾€ч獨鎵般€?,
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [
@@ -14,3 +13,4 @@ export const char_111: Character = {
     { sceneId: 'scen_8', minLevel: 2 }
   ]
 };
+

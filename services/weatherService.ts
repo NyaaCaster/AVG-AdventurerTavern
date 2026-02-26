@@ -1,4 +1,3 @@
-
 import { QWEATHER_CONFIG } from '../data/qweatherConfig';
 
 interface WeatherCache {
@@ -23,29 +22,29 @@ const getLocation = (): Promise<string> => {
   return new Promise((resolve) => {
     // Check if geolocation is supported
     if (!navigator.geolocation) {
-      console.warn(`[Weather] ❌ Geolocation API not supported by browser`);
-      console.log(`[Weather] 📍 Using default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
+      console.warn(`[Weather] 鉂?Geolocation API not supported by browser`);
+      console.log(`[Weather] 馃搷 Using default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
       resolve(QWEATHER_CONFIG.DEFAULT_LOCATION);
       return;
     }
 
     // Check if running on HTTPS (required for geolocation)
     if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-      console.warn(`[Weather] ⚠️ Geolocation requires HTTPS. Current protocol: ${window.location.protocol}`);
-      console.log(`[Weather] 📍 Using default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
+      console.warn(`[Weather] 鈿狅笍 Geolocation requires HTTPS. Current protocol: ${window.location.protocol}`);
+      console.log(`[Weather] 馃搷 Using default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
       resolve(QWEATHER_CONFIG.DEFAULT_LOCATION);
       return;
     }
 
-    console.log('[Weather] 🌍 Requesting device location...');
+    console.log('[Weather] 馃實 Requesting device location...');
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = position.coords.latitude.toFixed(2);
         const lon = position.coords.longitude.toFixed(2);
         const coords = `${lon},${lat}`;
-        console.log(`[Weather] ✅ Device location obtained: ${coords}`);
-        console.log(`[Weather] 📊 Accuracy: ${position.coords.accuracy.toFixed(0)}m`);
+        console.log(`[Weather] 鉁?Device location obtained: ${coords}`);
+        console.log(`[Weather] 馃搳 Accuracy: ${position.coords.accuracy.toFixed(0)}m`);
         resolve(coords);
       },
       (error) => {
@@ -53,19 +52,19 @@ const getLocation = (): Promise<string> => {
         let errorMsg = '';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMsg = '❌ User denied geolocation permission';
+            errorMsg = '鉂?User denied geolocation permission';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMsg = '❌ Location information unavailable';
+            errorMsg = '鉂?Location information unavailable';
             break;
           case error.TIMEOUT:
-            errorMsg = '❌ Geolocation request timed out';
+            errorMsg = '鉂?Geolocation request timed out';
             break;
           default:
-            errorMsg = `❌ Unknown geolocation error (code: ${error.code})`;
+            errorMsg = `鉂?Unknown geolocation error (code: ${error.code})`;
         }
         console.warn(`[Weather] ${errorMsg}:`, error.message);
-        console.log(`[Weather] 📍 Falling back to default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
+        console.log(`[Weather] 馃搷 Falling back to default location: ${QWEATHER_CONFIG.DEFAULT_LOCATION}`);
         resolve(QWEATHER_CONFIG.DEFAULT_LOCATION);
       },
       { 
@@ -107,12 +106,12 @@ export const fetchWeatherData = async () => {
   // 2. Fetch Fresh Data
   try {
     const location = await getLocation();
-    console.log(`[Weather] 🌤️ Fetching weather data for location: ${location}`);
+    console.log(`[Weather] 馃尋锔?Fetching weather data for location: ${location}`);
 
     // Ensure HOST doesn't have protocol prefix if user added it by mistake, ensuring consistent URL construction
     const cleanHost = QWEATHER_CONFIG.HOST.replace(/^https?:\/\//, '');
     const url = `https://${cleanHost}/v7/weather/now?location=${location}`;
-    console.log(`[Weather] 🔗 API URL: ${url.replace(QWEATHER_CONFIG.KEY, '***')}`);
+    console.log(`[Weather] 馃敆 API URL: ${url.replace(QWEATHER_CONFIG.KEY, '***')}`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -131,7 +130,7 @@ export const fetchWeatherData = async () => {
         throw new Error(`Weather API returned code: ${data.code}`);
     }
 
-    console.log(`[Weather] ✅ Weather data received: ${data.now.text}, ${data.now.temp}°C`);
+    console.log(`[Weather] 鉁?Weather data received: ${data.now.text}, ${data.now.temp}掳C`);
 
     // 3. Save to Cache
     const cacheData: WeatherCache = {
@@ -140,7 +139,7 @@ export const fetchWeatherData = async () => {
       data: data
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-    console.log(`[Weather] 💾 Cached for hour: ${currentHour}`);
+    console.log(`[Weather] 馃捑 Cached for hour: ${currentHour}`);
 
     return {
         text: data.now.text,
@@ -153,3 +152,4 @@ export const fetchWeatherData = async () => {
     return null; // Return null to indicate failure (UI should keep using simulated or previous state)
   }
 };
+

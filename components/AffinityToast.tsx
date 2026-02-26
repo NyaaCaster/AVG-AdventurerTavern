@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+mport React, { useEffect, useState } from 'react';
 
 interface AffinityToastProps {
   change: number;
@@ -59,8 +59,7 @@ const AffinityToast: React.FC<AffinityToastProps> = ({ change, characterName, on
       {/* Text Info */}
       <div className="flex flex-col">
         <span className={`text-[10px] ${textColor} font-bold uppercase tracking-wider`}>
-          好感度变化
-        </span>
+          濂芥劅搴﹀彉鍖?        </span>
         <div className="flex items-baseline gap-2">
           <span className="text-[#f0e6d2] font-bold text-sm shadow-black text-shadow-sm">
             {characterName}

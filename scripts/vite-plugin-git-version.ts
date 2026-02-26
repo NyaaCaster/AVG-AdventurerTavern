@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+mport { execSync } from 'child_process';
 import type { Plugin } from 'vite';
 
 /**
@@ -10,12 +10,12 @@ export function gitVersionPlugin(): Plugin {
     config() {
       let commitHash = 'unknown';
       
-      // 优先使用环境变量（Docker 构建时传入）
+      // 浼樺厛浣跨敤鐜鍙橀噺锛圖ocker 鏋勫缓鏃朵紶鍏ワ級
       if (process.env.GIT_COMMIT_HASH) {
         commitHash = process.env.GIT_COMMIT_HASH;
         console.log(`[Git Version] Using commit hash from env: ${commitHash}`);
       } else {
-        // 尝试从 Git 获取
+        // 灏濊瘯浠?Git 鑾峰彇
         try {
           commitHash = execSync('git rev-parse --short=7 HEAD')
             .toString()
@@ -35,3 +35,4 @@ export function gitVersionPlugin(): Plugin {
     },
   };
 }
+

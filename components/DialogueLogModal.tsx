@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { DialogueEntry } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
@@ -20,24 +19,23 @@ const formatTime = (timestamp: number): string => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
-// 简单的格式化函数，与 DialogueBox 保持一致
-const formatLogContent = (content: string) => {
+// 绠€鍗曠殑鏍煎紡鍖栧嚱鏁帮紝涓?DialogueBox 淇濇寔涓€鑷?const formatLogContent = (content: string) => {
     if (!content) return "";
     let html = content
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(/&/g, "&")
+      .replace(/</g, "<")
+      .replace(/>/g, ">");
 
-    // 括号内容样式化 (暗金色 + 斜体)
-    html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-amber-500 font-medium">$1</span>');
+    // 鎷彿鍐呭鏍峰紡鍖?(鏆楅噾鑹?+ 鏂滀綋)
+    html = html.replace(/(\([^\)]*?\)|锛圼^\锛塢*?锛?/g, '<span class="italic text-amber-500 font-medium">$1</span>');
 
-    // Markdown 粗体
+    // Markdown 绮椾綋
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    // Markdown 斜体
+    // Markdown 鏂滀綋
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // 换行
+    // 鎹㈣
     html = html.replace(/\n/g, '<br/>');
 
     return html;
@@ -63,7 +61,7 @@ const DialogueLogModal: React.FC<DialogueLogModalProps> = ({ isOpen, onClose, hi
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#9b7a4c]/30 bg-slate-950/50">
           <h2 className="text-xl font-bold text-[#f0e6d2] flex items-center gap-2">
             <i className="fa-solid fa-book-open text-[#9b7a4c]"></i>
-            对话记录
+            瀵硅瘽璁板綍
           </h2>
           <button 
             onClick={onClose}
@@ -80,7 +78,7 @@ const DialogueLogModal: React.FC<DialogueLogModalProps> = ({ isOpen, onClose, hi
         >
           {history.length === 0 ? (
             <div className="h-full flex items-center justify-center text-slate-500 italic">
-              暂无对话记录...
+              鏆傛棤瀵硅瘽璁板綍...
             </div>
           ) : (
             history.map((entry, index) => (
@@ -139,3 +137,4 @@ const DialogueLogModal: React.FC<DialogueLogModalProps> = ({ isOpen, onClose, hi
 };
 
 export default DialogueLogModal;
+

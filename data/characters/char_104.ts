@@ -1,12 +1,11 @@
-
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_104';
 
 export const char_104: Character = {
   id: 'char_104',
-  name: "朱迪斯",
-  role: "暴力修女 / B级冒险者",
-  description: "性格火爆的修女，精通火器枪械，喜欢以猛烈射击清扫敌人。酗酒嗜赌，言行粗暴，穿着被自行改造得非常暴露的修女服。虽然品行不端，但精通神圣系魔法。",
+  name: "鏈辫开鏂?,
+  role: "鏆村姏淇コ / B绾у啋闄╄€?,
+  description: "鎬ф牸鐏垎鐨勪慨濂筹紝绮鹃€氱伀鍣ㄦ灙姊帮紝鍠滄浠ョ寷鐑堝皠鍑绘竻鎵晫浜恒€傞厳閰掑棞璧岋紝瑷€琛岀矖鏆达紝绌跨潃琚嚜琛屾敼閫犲緱闈炲父鏆撮湶鐨勪慨濂虫湇銆傝櫧鐒跺搧琛屼笉绔紝浣嗙簿閫氱鍦ｇ郴榄旀硶銆?,
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
   appearanceConditions: [
@@ -14,3 +13,4 @@ export const char_104: Character = {
     { sceneId: 'scen_2', minLevel: 3 }
   ]
 };
+

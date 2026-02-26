@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
@@ -16,8 +15,8 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
       
       {!showMoveMenu ? (
         <>
-            <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setShowMoveMenu(true)} subLabel="Move" />
-            <SceneActionBtn label="休息" icon="fa-chair" onClick={() => onAction('rest')} />
+            <SceneActionBtn label="搴楀唴绉诲姩" icon="fa-shoe-prints" onClick={() => setShowMoveMenu(true)} subLabel="Move" />
+            <SceneActionBtn label="浼戞伅" icon="fa-chair" onClick={() => onAction('rest')} />
             
             <div className="h-px w-32 bg-white/10 my-2"></div>
 
@@ -26,23 +25,23 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                     {settings.enableNSFW && (
                         <>
                             <SceneActionBtn 
-                                label={`为${char.name}按摩`} 
+                                label={`涓?{char.name}鎸夋懇`} 
                                 icon="fa-hands" 
                                 onClick={() => onEnterDialogue(char.id, 'massage_give_passionate')} 
                                 disabled={!(characterUnlocks[char.id]?.accept_player_massage)} 
-                                subLabel={!(characterUnlocks[char.id]?.accept_player_massage) ? `未获得${char.name}许可` : ""} 
+                                subLabel={!(characterUnlocks[char.id]?.accept_player_massage) ? `鏈幏寰?{char.name}璁稿彲` : ""} 
                             />
                             <SceneActionBtn 
-                                label={`请${char.name}按摩`} 
+                                label={`璇?{char.name}鎸夋懇`} 
                                 icon="fa-hand-sparkles" 
                                 onClick={() => onEnterDialogue(char.id, 'massage_receive_passionate')} 
                                 disabled={!(characterUnlocks[char.id]?.accept_character_massage)} 
-                                subLabel={!(characterUnlocks[char.id]?.accept_character_massage) ? `未获得${char.name}许可` : ""} 
+                                subLabel={!(characterUnlocks[char.id]?.accept_character_massage) ? `鏈幏寰?{char.name}璁稿彲` : ""} 
                             />
                         </>
                     )}
                     <SceneActionBtn 
-                        label={`与${char.name}对话`} 
+                        label={`涓?{char.name}瀵硅瘽`} 
                         icon="fa-comments" 
                         variant="primary"
                         onClick={() => onEnterDialogue(char.id, 'chat')} 
@@ -53,18 +52,18 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
         </>
       ) : (
         <>
-           <SceneActionBtn label="返回上级" icon="fa-arrow-turn-up" onClick={() => setShowMoveMenu(false)} variant="special" />
+           <SceneActionBtn label="杩斿洖涓婄骇" icon="fa-arrow-turn-up" onClick={() => setShowMoveMenu(false)} variant="special" />
            <div className="h-2"></div>
-           <SceneActionBtn label="返回柜台" icon="fa-arrow-left" onClick={() => onNavigate('scen_1')} />
-           <SceneActionBtn label="酒场" icon="fa-beer-mug-empty" onClick={() => onNavigate('scen_3')} />
-           <SceneActionBtn label="训练场" icon="fa-dumbbell" onClick={() => onNavigate('scen_4')} />
-           {(sceneLevels['scen_5'] || 0) > 0 && <SceneActionBtn label="武器店" icon="fa-hammer" onClick={() => onNavigate('scen_5')} />}
-           {(sceneLevels['scen_6'] || 0) > 0 && <SceneActionBtn label="防具店" icon="fa-shield-halved" onClick={() => onNavigate('scen_6')} />}
-           {(sceneLevels['scen_7'] || 0) > 0 && <SceneActionBtn label="温泉" icon="fa-hot-tub-person" onClick={() => onNavigate('scen_7')} />}
+           <SceneActionBtn label="杩斿洖鏌滃彴" icon="fa-arrow-left" onClick={() => onNavigate('scen_1')} />
+           <SceneActionBtn label="閰掑満" icon="fa-beer-mug-empty" onClick={() => onNavigate('scen_3')} />
+           <SceneActionBtn label="璁粌鍦? icon="fa-dumbbell" onClick={() => onNavigate('scen_4')} />
+           {(sceneLevels['scen_5'] || 0) > 0 && <SceneActionBtn label="姝﹀櫒搴? icon="fa-hammer" onClick={() => onNavigate('scen_5')} />}
+           {(sceneLevels['scen_6'] || 0) > 0 && <SceneActionBtn label="闃插叿搴? icon="fa-shield-halved" onClick={() => onNavigate('scen_6')} />}
+           {(sceneLevels['scen_7'] || 0) > 0 && <SceneActionBtn label="娓╂硥" icon="fa-hot-tub-person" onClick={() => onNavigate('scen_7')} />}
            {/* Current Scene: Massage Room (scen_8) - Omitted */}
-           <SceneActionBtn label="库房" icon="fa-boxes-stacked" onClick={() => onNavigate('scen_9')} />
+           <SceneActionBtn label="搴撴埧" icon="fa-boxes-stacked" onClick={() => onNavigate('scen_9')} />
            {showPropShop && (
-             <SceneActionBtn label="道具店" icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
+             <SceneActionBtn label="閬撳叿搴? icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
            )}
         </>
       )}
@@ -73,3 +72,4 @@ const Scen8: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
 };
 
 export default Scen8;
+

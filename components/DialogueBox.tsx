@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 
@@ -11,12 +10,11 @@ interface DialogueBoxProps {
   transparency?: number;
   onHideUI?: () => void;
   onShowHistory?: () => void;
-  onShowDebugLog?: () => void; // 新增
-  onEndDialogue?: () => void; // 用于 Chat 模式：结束对话（触发告别）
-  onClose?: () => void;       // 用于 Ambient 模式：单纯关闭对话框
+  onShowDebugLog?: () => void; // 鏂板
+  onEndDialogue?: () => void; // 鐢ㄤ簬 Chat 妯″紡锛氱粨鏉熷璇濓紙瑙﹀彂鍛婂埆锛?  onClose?: () => void;       // 鐢ㄤ簬 Ambient 妯″紡锛氬崟绾叧闂璇濇
   level?: number;
   affinity?: number;
-  affinityChange?: number; // 新增：好感度变化值，用于触发动画
+  affinityChange?: number; // 鏂板锛氬ソ鎰熷害鍙樺寲鍊硷紝鐢ㄤ簬瑙﹀彂鍔ㄧ敾
 }
 
 const DialogueBox: React.FC<DialogueBoxProps> = ({ 
@@ -43,8 +41,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const prevAffinityRef = useRef(affinity);
   const onCompleteRef = useRef(onComplete);
 
-  // 保持 onComplete 引用最新
-  useEffect(() => {
+  // 淇濇寔 onComplete 寮曠敤鏈€鏂?  useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
@@ -71,14 +68,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     return () => clearInterval(interval);
   }, [text, isTyping, typingEnabled]);
 
-  // 文本更新时自动滚动到底部
+  // 鏂囨湰鏇存柊鏃惰嚜鍔ㄦ粴鍔ㄥ埌搴曢儴
   useEffect(() => {
     if (textContentRef.current) {
       textContentRef.current.scrollTop = textContentRef.current.scrollHeight;
     }
   }, [displayedText]);
 
-  // 监听好感度变化并触发动画
+  // 鐩戝惉濂芥劅搴﹀彉鍖栧苟瑙﹀彂鍔ㄧ敾
   useEffect(() => {
     if (affinityChange && affinityChange !== 0) {
       setChangeValue(affinityChange);
@@ -95,36 +92,33 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     }
   }, [affinityChange]);
 
-  // 更新前一个好感度值
-  useEffect(() => {
+  // 鏇存柊鍓嶄竴涓ソ鎰熷害鍊?  useEffect(() => {
     prevAffinityRef.current = affinity;
   }, [affinity]);
 
   const alpha = transparency / 100;
 
-  // 格式化文本：支持 Markdown 和特定样式
-  const formatContent = (content: string) => {
+  // 鏍煎紡鍖栨枃鏈細鏀寔 Markdown 鍜岀壒瀹氭牱寮?  const formatContent = (content: string) => {
       if (!content) return "";
       
-      // 1. 转义 HTML 字符，防止 XSS
+      // 1. 杞箟 HTML 瀛楃锛岄槻姝?XSS
       let html = content
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">");
 
-      // 2. 括号内容样式化
-      // 匹配中文括号（）或英文括号()，使用非贪婪匹配
-      // 以前是暗金色文字，现在改为：黑色字体 + 暗金色阴影 + 斜体
-      html = html.replace(/(\([^\)]*?\)|（[^\）]*?）)/g, '<span class="italic text-black font-medium text-shadow-gold">$1</span>');
+      // 2. 鎷彿鍐呭鏍峰紡鍖?      // 鍖归厤涓枃鎷彿锛堬級鎴栬嫳鏂囨嫭鍙?)锛屼娇鐢ㄩ潪璐┆鍖归厤
+      // 浠ュ墠鏄殫閲戣壊鏂囧瓧锛岀幇鍦ㄦ敼涓猴細榛戣壊瀛椾綋 + 鏆楅噾鑹查槾褰?+ 鏂滀綋
+      html = html.replace(/(\([^\)]*?\)|锛圼^\锛塢*?锛?/g, '<span class="italic text-black font-medium text-shadow-gold">$1</span>');
 
-      // 3. Markdown 粗体 **text**
+      // 3. Markdown 绮椾綋 **text**
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       
-      // 4. Markdown 斜体 *text*
-      // 注意：需在处理完粗体后进行，以免混淆
+      // 4. Markdown 鏂滀綋 *text*
+      // 娉ㄦ剰锛氶渶鍦ㄥ鐞嗗畬绮椾綋鍚庤繘琛岋紝浠ュ厤娣锋穯
       html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-      // 5. 换行处理
+      // 5. 鎹㈣澶勭悊
       html = html.replace(/\n/g, '<br/>');
 
       return html;
@@ -204,7 +198,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                             isHeartAnimating ? 'scale-110 font-extrabold' : ''
                         }`}>{affinity}</span>
                         
-                        {/* 好感度变化指示器 */}
+                        {/* 濂芥劅搴﹀彉鍖栨寚绀哄櫒 */}
                         {showChangeIndicator && changeValue !== 0 && (
                             <span className={`
                                 absolute -top-6 left-1/2 transform -translate-x-1/2
@@ -240,7 +234,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
          {/* Decorative inner border */}
          <div className="absolute inset-2 border border-[#e8dfd1]/20 rounded-[inherit] pointer-events-none"></div>
          
-         {/* 注入滚动条和文字阴影样式 */}
+         {/* 娉ㄥ叆婊氬姩鏉″拰鏂囧瓧闃村奖鏍峰紡 */}
          <style>{`
             .dialogue-scrollbar::-webkit-scrollbar {
                 width: 6px;
@@ -255,17 +249,17 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             .dialogue-scrollbar::-webkit-scrollbar-thumb:hover {
                 background: rgba(155, 122, 76, 0.5);
             }
-            /* 暗色光晕/阴影效果，增强在浅色背景上的立体感 */
+            /* 鏆楄壊鍏夋檿/闃村奖鏁堟灉锛屽寮哄湪娴呰壊鑳屾櫙涓婄殑绔嬩綋鎰?*/
             .text-shadow-halo {
                 text-shadow: 
                 0 2px 4px rgba(0, 0, 0, 0.2),
                 0 1px 2px rgba(0, 0, 0, 0.1);
             }
-            /* 括号文本专用：暗金色阴影 */
+            /* 鎷彿鏂囨湰涓撶敤锛氭殫閲戣壊闃村奖 */
             .text-shadow-gold {
                 text-shadow: 0 0 5px rgba(180, 83, 9, 0.5), 0 0 1px rgba(146, 64, 14, 0.3);
             }
-            /* 好感度变化指示器动画 */
+            /* 濂芥劅搴﹀彉鍖栨寚绀哄櫒鍔ㄧ敾 */
             @keyframes fadeInUp {
                 0% {
                     opacity: 0;
@@ -291,9 +285,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
              <button
                 onClick={onEndDialogue}
                 className="absolute top-1 right-4 z-50 text-[#9b7a4c] hover:text-red-500 transition-colors py-2 px-3 rounded-full hover:bg-red-500/10 group flex items-center gap-2 text-shadow-halo"
-                title="结束对话"
+                title="缁撴潫瀵硅瘽"
              >
-                 <span className="hidden md:inline text-xs font-bold tracking-widest">结束对话</span>
+                 <span className="hidden md:inline text-xs font-bold tracking-widest">缁撴潫瀵硅瘽</span>
                  <i className="fa-solid fa-right-from-bracket text-lg group-hover:scale-110 transition-transform"></i>
              </button>
          )}
@@ -303,7 +297,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
              <button
                 onClick={onClose}
                 className="absolute top-1 right-4 z-50 text-slate-400 hover:text-slate-600 transition-colors py-2 px-3 rounded-full hover:bg-slate-500/10 group flex items-center gap-2 text-shadow-halo"
-                title="关闭对话框"
+                title="鍏抽棴瀵硅瘽妗?
              >
                  <i className="fa-solid fa-xmark text-lg group-hover:scale-110 transition-transform"></i>
              </button>
@@ -318,7 +312,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                  /* Reduced max-height on mobile: max-h-[6rem] (mobile) vs max-h-[8.5rem] (desktop) */
                  className="text-base md:text-lg font-bold leading-relaxed text-[#1a1512] tracking-wide select-text cursor-default max-h-[6rem] md:max-h-[8.5rem] overflow-y-auto pr-2 dialogue-scrollbar text-shadow-halo scroll-smooth"
              >
-                 {/* 使用 dangerouslySetInnerHTML 渲染格式化后的 HTML */}
+                 {/* 浣跨敤 dangerouslySetInnerHTML 娓叉煋鏍煎紡鍖栧悗鐨?HTML */}
                  <span dangerouslySetInnerHTML={{ __html: formatContent(displayedText) }} />
                  {isTyping && typingEnabled && (
                     <span className="inline-block w-2.5 h-6 bg-amber-800/40 ml-1 animate-pulse align-text-bottom" />
@@ -328,9 +322,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
          {/* Bottom Menu Bar */}
          <div className="absolute bottom-0 left-0 w-full h-10 md:h-11 z-20">
-            {/* 调整布局为 justify-between 以便左右分布 */}
+            {/* 璋冩暣甯冨眬涓?justify-between 浠ヤ究宸﹀彸鍒嗗竷 */}
             <div className="absolute inset-0 flex items-center justify-between px-6 md:px-10">
-                {/* 左侧：运行日志 */}
+                {/* 宸︿晶锛氳繍琛屾棩蹇?*/}
                 <div className="flex items-center">
                     {onShowDebugLog && (
                         <button 
@@ -338,12 +332,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                           className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
                         >
                             <i className={`fa-solid fa-terminal group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">运行日志</span>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">杩愯鏃ュ織</span>
                         </button>
                     )}
                 </div>
 
-                {/* 右侧：隐藏UI 和 对话记录 */}
+                {/* 鍙充晶锛氶殣钘廢I 鍜?瀵硅瘽璁板綍 */}
                 <div className="flex items-center gap-4 md:gap-6">
                     {onHideUI && (
                         <button 
@@ -351,7 +345,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                           className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
                         >
                             <i className={`fa-solid fa-eye-slash group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">隐藏UI</span>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">闅愯棌UI</span>
                         </button>
                     )}
                     
@@ -361,7 +355,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                           className="group flex items-center gap-1.5 text-[10px] md:text-xs font-black text-[#9b7a4c] hover:text-[#b59666] transition-all uppercase tracking-widest drop-shadow-sm text-shadow-halo"
                         >
                             <i className={`fa-solid fa-book group-hover:scale-110 transition-transform text-[#9b7a4c] group-hover:text-[#b59666]`}></i>
-                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">对话记录</span>
+                            <span className="hidden md:inline group-hover:underline decoration-[#9b7a4c]/50 underline-offset-4">瀵硅瘽璁板綍</span>
                         </button>
                     )}
                 </div>
@@ -373,3 +367,4 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 };
 
 export default DialogueBox;
+

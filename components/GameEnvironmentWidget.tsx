@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { WorldState } from '../types';
 import WeatherIcon from './WeatherIcon';
@@ -69,8 +68,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
                     <div className="flex items-center gap-2 mb-0.5">
                         {temp && (
                             <span className="text-base font-bold text-slate-700 tabular-nums">
-                                {temp}℃
-                            </span>
+                                {temp}鈩?                            </span>
                         )}
                         <div className={`w-6 h-6 ${weatherColor} drop-shadow-sm`}>
                             <WeatherIcon code={weatherCode} />
@@ -85,7 +83,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
             <div className="bg-gradient-to-r from-black/60 to-transparent px-3 py-1 flex items-center gap-4 min-w-[160px]">
                  <div className="flex items-center gap-1.5 opacity-80">
                     <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
-                    <span className="text-[10px] text-amber-500/80 font-bold tracking-widest">资金</span>
+                    <span className="text-[10px] text-amber-500/80 font-bold tracking-widest">璧勯噾</span>
                  </div>
                  <div className="flex items-baseline gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm">
                     <span className="text-lg tracking-wide leading-none">{displayGold}</span>
@@ -99,3 +97,4 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 };
 
 export default GameEnvironmentWidget;
+

@@ -1,12 +1,12 @@
-
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_103';
 
 export const char_103: Character = {
   id: 'char_103',
-  name: "欧若拉",
-  role: "皇女 / 冒险者",
-  description: "第107代皇帝第三皇女。因被勇者悔婚而恼羞成怒追至乡下，隐瞒身份体验冒险者生活。天真烂漫，好奇心旺盛，拥有强大的魔法天赋但不谙世事。",
+  name: "娆ц嫢鎷?,
+  role: "鐨囧コ / 鍐掗櫓鑰?,
+  description: "绗?07浠ｇ殗甯濈涓夌殗濂炽€傚洜琚媷鑰呮倲濠氳€屾伡缇炴垚鎬掕拷鑷充埂涓嬶紝闅愮瀿韬唤浣撻獙鍐掗櫓鑰呯敓娲汇€傚ぉ鐪熺儌婕紝濂藉蹇冩椇鐩涳紝鎷ユ湁寮哄ぇ鐨勯瓟娉曞ぉ璧嬩絾涓嶈皺涓栦簨銆?,
   persona: PERSONA,
   dialogueExamples: DIALOGUE
 };
+

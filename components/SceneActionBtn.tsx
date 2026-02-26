@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 interface SceneActionBtnProps {
@@ -18,45 +17,40 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
   variant = 'default',
   disabled = false
 }) => {
-  // 状态管理：检测是否为移动端，以及移动端的展开状态
-  const [isMobile, setIsMobile] = useState(false);
+  // 鐘舵€佺鐞嗭細妫€娴嬫槸鍚︿负绉诲姩绔紝浠ュ強绉诲姩绔殑灞曞紑鐘舵€?  const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // 监听屏幕尺寸变化
+  // 鐩戝惉灞忓箷灏哄鍙樺寲
   useEffect(() => {
     const checkMobile = () => {
-      // 使用 768px 作为移动端/桌面端分界线 (Tailwind md)
+      // 浣跨敤 768px 浣滀负绉诲姩绔?妗岄潰绔垎鐣岀嚎 (Tailwind md)
       setIsMobile(window.innerWidth < 768);
     };
     
-    // 初始化检查
-    checkMobile();
+    // 鍒濆鍖栨鏌?    checkMobile();
     
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const handleClick = (e: React.MouseEvent) => {
-    // 电脑/平板模式：检查 disabled 后直接触发
-    if (!isMobile) {
+    // 鐢佃剳/骞虫澘妯″紡锛氭鏌?disabled 鍚庣洿鎺ヨЕ鍙?    if (!isMobile) {
       if (disabled) return;
       onClick();
       return;
     }
 
-    // 手机模式：
-    // 如果是收缩状态，第一次点击总是允许展开（无论是否 disabled）
-    if (!isExpanded) {
+    // 鎵嬫満妯″紡锛?    // 濡傛灉鏄敹缂╃姸鎬侊紝绗竴娆＄偣鍑绘€绘槸鍏佽灞曞紑锛堟棤璁烘槸鍚?disabled锛?    if (!isExpanded) {
       setIsExpanded(true);
       return;
     }
 
-    // 如果已经展开，则检查 disabled 状态后触发动作
+    // 濡傛灉宸茬粡灞曞紑锛屽垯妫€鏌?disabled 鐘舵€佸悗瑙﹀彂鍔ㄤ綔
     if (disabled) return;
     onClick();
   };
 
-  // 手机模式下的鼠标悬停逻辑
+  // 鎵嬫満妯″紡涓嬬殑榧犳爣鎮仠閫昏緫
   const handleMouseEnter = () => {
     if (isMobile) setIsExpanded(true);
   };
@@ -81,14 +75,13 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
      }
   };
 
-  // 计算动态样式
-  // Desktop: 始终 w-64
-  // Mobile: 收缩时 w-14 (图标宽度), 展开时 w-64
+  // 璁＄畻鍔ㄦ€佹牱寮?  // Desktop: 濮嬬粓 w-64
+  // Mobile: 鏀剁缉鏃?w-14 (鍥炬爣瀹藉害), 灞曞紑鏃?w-64
   const widthClass = !isMobile 
     ? 'w-64' 
     : (isExpanded ? 'w-64' : 'w-14');
 
-  // 内容显隐控制
+  // 鍐呭鏄鹃殣鎺у埗
   const isContentVisible = !isMobile || isExpanded;
 
   return (
@@ -108,21 +101,21 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
     >
       <div className={`flex items-center h-full ${isContentVisible ? 'justify-between px-5' : 'justify-center px-0'}`}>
         
-        {/* 左侧：图标与文字 */}
+        {/* 宸︿晶锛氬浘鏍囦笌鏂囧瓧 */}
         <div className={`flex flex-col flex-1 overflow-hidden whitespace-nowrap ${isContentVisible ? '' : 'items-center'}`}>
            <span className={`text-sm md:text-base font-bold tracking-wide ${variant === 'primary' ? 'text-cyan-100' : 'text-[#f0e6d2]'} group-hover:text-white transition-colors flex items-center ${isContentVisible ? '' : 'justify-center w-full'}`}>
-             {/* 图标：始终显示，但在收缩模式下居中 */}
+             {/* 鍥炬爣锛氬缁堟樉绀猴紝浣嗗湪鏀剁缉妯″紡涓嬪眳涓?*/}
              {icon && (
                 <i className={`fa-solid ${icon} text-center opacity-80 w-5 transition-all duration-300 ${isContentVisible ? 'mr-2' : 'mr-0 text-lg'}`}></i>
              )}
              
-             {/* 按钮文字：仅在展开时显示 */}
+             {/* 鎸夐挳鏂囧瓧锛氫粎鍦ㄥ睍寮€鏃舵樉绀?*/}
              <span className={`transition-opacity duration-300 ${isContentVisible ? 'opacity-100' : 'opacity-0 w-0'}`}>
                {label}
              </span>
            </span>
 
-           {/* 子标题：仅在展开时显示 */}
+           {/* 瀛愭爣棰橈細浠呭湪灞曞紑鏃舵樉绀?*/}
            {subLabel && (
              <span className={`text-[10px] text-slate-400 uppercase tracking-widest mt-0.5 ml-7 group-hover:text-slate-300 transition-opacity duration-300 ${isContentVisible ? 'opacity-100' : 'opacity-0 hidden'}`}>
                {subLabel}
@@ -130,7 +123,7 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
            )}
         </div>
 
-        {/* 右侧箭头：仅在展开时显示 */}
+        {/* 鍙充晶绠ご锛氫粎鍦ㄥ睍寮€鏃舵樉绀?*/}
         <i className={`fa-solid fa-caret-right text-white/20 group-hover:text-amber-400 group-hover:translate-x-1 transition-all duration-300 ${isContentVisible ? 'opacity-100' : 'opacity-0 w-0'}`}></i>
       </div>
     </button>
@@ -138,3 +131,4 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
 };
 
 export default SceneActionBtn;
+

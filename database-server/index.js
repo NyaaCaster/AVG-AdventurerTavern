@@ -1,4 +1,4 @@
-const express = require('express');
+onst express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -6,16 +6,16 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
-const config = require('./config'); // 引入配置文件
+const config = require('./config'); // 寮曞叆閰嶇疆鏂囦欢
 
 const app = express();
 const PORT = config.PORT;
 
 // Middleware
-// 使用配置文件中的 CORS 设置
+// 浣跨敤閰嶇疆鏂囦欢涓殑 CORS 璁剧疆
 app.use(cors(config.CORS_CONFIG));
 
-app.use(bodyParser.json({ limit: '50mb' })); // 增加限制以支持大存档
+app.use(bodyParser.json({ limit: '50mb' })); // 澧炲姞闄愬埗浠ユ敮鎸佸ぇ瀛樻。
 
 // Request Logger
 app.use((req, res, next) => {
@@ -24,8 +24,7 @@ app.use((req, res, next) => {
 });
 
 // Database Setup
-// 使用配置文件中的数据库路径
-const db = new sqlite3.Database(config.DB_PATH, (err) => {
+// 浣跨敤閰嶇疆鏂囦欢涓殑鏁版嵁搴撹矾寰?const db = new sqlite3.Database(config.DB_PATH, (err) => {
     if (err) {
         console.error('Could not connect to database at ' + config.DB_PATH, err);
     } else {
@@ -35,15 +34,14 @@ const db = new sqlite3.Database(config.DB_PATH, (err) => {
 
 // Init Tables
 db.serialize(() => {
-    // 用户表
-    db.run(`CREATE TABLE IF NOT EXISTS users (
+    // 鐢ㄦ埛琛?    db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
         created_at INTEGER
     )`);
 
-    // 存档表 (简化结构，直接存储 JSON 字符串)
+    // 瀛樻。琛?(绠€鍖栫粨鏋勶紝鐩存帴瀛樺偍 JSON 瀛楃涓?
     db.run(`CREATE TABLE IF NOT EXISTS saves (
         user_id INTEGER,
         slot_id INTEGER,
@@ -53,7 +51,7 @@ db.serialize(() => {
         PRIMARY KEY (user_id, slot_id)
     )`);
 
-    // 角色状态解锁表
+    // 瑙掕壊鐘舵€佽В閿佽〃
     db.run(`CREATE TABLE IF NOT EXISTS character_unlocks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -80,15 +78,15 @@ db.serialize(() => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
-    // 为角色状态表创建索引以提高查询性能
+    // 涓鸿鑹茬姸鎬佽〃鍒涘缓绱㈠紩浠ユ彁楂樻煡璇㈡€ц兘
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_user_slot 
             ON character_unlocks(user_id, slot_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_character 
             ON character_unlocks(character_id)`);
 
-    // ----------------- 新增：AI 聊天系统数据表 -----------------
+    // ----------------- 鏂板锛欰I 鑱婂ぉ绯荤粺鏁版嵁琛?-----------------
 
-    // 对话历史表 (短期工作记忆)
+    // 瀵硅瘽鍘嗗彶琛?(鐭湡宸ヤ綔璁板繂)
     db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -100,7 +98,7 @@ db.serialize(() => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
-    // 长期记忆表 (核心事实与摘要)
+    // 闀挎湡璁板繂琛?(鏍稿績浜嬪疄涓庢憳瑕?
     db.run(`CREATE TABLE IF NOT EXISTS character_memories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -112,7 +110,7 @@ db.serialize(() => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
-    // 为聊天和记忆表创建索引以提高查询性能
+    // 涓鸿亰澶╁拰璁板繂琛ㄥ垱寤虹储寮曚互鎻愰珮鏌ヨ鎬ц兘
     db.run(`CREATE INDEX IF NOT EXISTS idx_chat_messages 
             ON chat_messages(user_id, slot_id, character_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_memories 
@@ -121,16 +119,15 @@ db.serialize(() => {
 
 // API Routes
 
-// 健康检查和状态端点 (GET请求，可通过浏览器直接访问)
+// 鍋ュ悍妫€鏌ュ拰鐘舵€佺鐐?(GET璇锋眰锛屽彲閫氳繃娴忚鍣ㄧ洿鎺ヨ闂?
 app.get('/api/health', (req, res) => {
     const startTime = Date.now();
     
-    // 测试数据库连接
-    db.get("SELECT COUNT(*) as userCount FROM users", [], (err, userRow) => {
+    // 娴嬭瘯鏁版嵁搴撹繛鎺?    db.get("SELECT COUNT(*) as userCount FROM users", [], (err, userRow) => {
         if (err) {
             return res.status(500).json({
                 status: 'error',
-                message: '数据库连接失败',
+                message: '鏁版嵁搴撹繛鎺ュけ璐?,
                 error: err.message,
                 timestamp: new Date().toISOString()
             });
@@ -140,7 +137,7 @@ app.get('/api/health', (req, res) => {
             if (err2) {
                 return res.status(500).json({
                     status: 'error',
-                    message: '数据库查询失败',
+                    message: '鏁版嵁搴撴煡璇㈠け璐?,
                     error: err2.message,
                     timestamp: new Date().toISOString()
                 });
@@ -150,7 +147,7 @@ app.get('/api/health', (req, res) => {
             
             res.json({
                 status: 'ok',
-                message: '后端服务运行正常',
+                message: '鍚庣鏈嶅姟杩愯姝ｅ父',
                 service: 'AdventurerTavern Backend',
                 version: '1.0.0',
                 database: {
@@ -174,19 +171,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// 根路径重定向到健康检查
-app.get('/', (req, res) => {
+// 鏍硅矾寰勯噸瀹氬悜鍒板仴搴锋鏌?app.get('/', (req, res) => {
     res.redirect('/api/health');
 });
 
-// 1. 注册
+// 1. 娉ㄥ唽
 app.post('/api/register', (req, res) => {
     const { username, password } = req.body;
     const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
     stmt.run(username, password, Date.now(), function(err) {
         if (err) {
             if (err.message.includes('UNIQUE constraint failed')) {
-                return res.json({ success: false, message: '用户名已存在' });
+                return res.json({ success: false, message: '鐢ㄦ埛鍚嶅凡瀛樺湪' });
             }
             return res.json({ success: false, message: err.message });
         }
@@ -195,25 +191,25 @@ app.post('/api/register', (req, res) => {
     stmt.finalize();
 });
 
-// 2. 登录
+// 2. 鐧诲綍
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.get("SELECT id, password FROM users WHERE username = ?", [username], (err, row) => {
-        if (err) return res.json({ success: false, message: '服务器错误' });
-        if (!row) return res.json({ success: false, message: '用户名不存在' });
-        if (row.password !== password) return res.json({ success: false, message: '密码错误' });
+        if (err) return res.json({ success: false, message: '鏈嶅姟鍣ㄩ敊璇? });
+        if (!row) return res.json({ success: false, message: '鐢ㄦ埛鍚嶄笉瀛樺湪' });
+        if (row.password !== password) return res.json({ success: false, message: '瀵嗙爜閿欒' });
         
         res.json({ success: true, uid: row.id });
     });
 });
 
-// 3. 上传存档 (Save)
+// 3. 涓婁紶瀛樻。 (Save)
 app.post('/api/save', (req, res) => {
     const { userId, slotId, label, data } = req.body;
     const dataStr = JSON.stringify(data);
     const timestamp = Date.now();
 
-    // 使用 INSERT OR REPLACE 实现"存在即更新，不存在即插入"
+    // 浣跨敤 INSERT OR REPLACE 瀹炵幇"瀛樺湪鍗虫洿鏂帮紝涓嶅瓨鍦ㄥ嵆鎻掑叆"
     const stmt = db.prepare(`
         INSERT OR REPLACE INTO saves (user_id, slot_id, label, data, updated_at)
         VALUES (?, ?, ?, ?, ?)
@@ -226,7 +222,7 @@ app.post('/api/save', (req, res) => {
     stmt.finalize();
 });
 
-// 4. 下载存档 (Load)
+// 4. 涓嬭浇瀛樻。 (Load)
 app.post('/api/load', (req, res) => {
     const { userId, slotId } = req.body;
     db.get("SELECT data FROM saves WHERE user_id = ? AND slot_id = ?", [userId, slotId], (err, row) => {
@@ -237,12 +233,12 @@ app.post('/api/load', (req, res) => {
             const data = JSON.parse(row.data);
             res.json({ success: true, data });
         } catch (e) {
-            res.json({ success: false, message: "存档损坏" });
+            res.json({ success: false, message: "瀛樻。鎹熷潖" });
         }
     });
 });
 
-// 5. 获取存档列表
+// 5. 鑾峰彇瀛樻。鍒楄〃
 app.post('/api/slots', (req, res) => {
     const { userId } = req.body;
     db.all("SELECT slot_id, label, data, updated_at FROM saves WHERE user_id = ?", [userId], (err, rows) => {
@@ -261,14 +257,13 @@ app.post('/api/slots', (req, res) => {
                     characterStats: data.characterStats || {}
                 };
             } catch (e) {
-                // 如果解析失败，返回默认值
-                return {
+                // 濡傛灉瑙ｆ瀽澶辫触锛岃繑鍥為粯璁ゅ€?                return {
                     slotId: row.slot_id,
                     label: row.label,
                     savedAt: row.updated_at,
                     gold: 0,
                     currentSceneId: '',
-                    worldState: { dateStr: '', timeStr: '', sceneName: '数据损坏' },
+                    worldState: { dateStr: '', timeStr: '', sceneName: '鏁版嵁鎹熷潖' },
                     characterStats: {}
                 };
             }
@@ -277,15 +272,14 @@ app.post('/api/slots', (req, res) => {
     });
 });
 
-// 6. 删除存档
+// 6. 鍒犻櫎瀛樻。
 app.post('/api/delete', (req, res) => {
     const { userId, slotId } = req.body;
     const stmt = db.prepare("DELETE FROM saves WHERE user_id = ? AND slot_id = ?");
     stmt.run(userId, slotId, function(err) {
         if (err) return res.json({ success: false, message: err.message });
         
-        // 级联删除相关联的聊天和记忆数据
-        const stmtChats = db.prepare("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?");
+        // 绾ц仈鍒犻櫎鐩稿叧鑱旂殑鑱婂ぉ鍜岃蹇嗘暟鎹?        const stmtChats = db.prepare("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?");
         stmtChats.run(userId, slotId);
         stmtChats.finalize();
         
@@ -298,9 +292,9 @@ app.post('/api/delete', (req, res) => {
     stmt.finalize();
 });
 
-// ----------------- 新增：AI 记忆与聊天系统 API -----------------
+// ----------------- 鏂板锛欰I 璁板繂涓庤亰澶╃郴缁?API -----------------
 
-// 6.1 获取角色聊天历史 (短期记忆)
+// 6.1 鑾峰彇瑙掕壊鑱婂ぉ鍘嗗彶 (鐭湡璁板繂)
 app.post('/api/chat/messages/get', (req, res) => {
     const { userId, slotId, characterId, limit = 20 } = req.body;
     db.all(
@@ -315,7 +309,7 @@ app.post('/api/chat/messages/get', (req, res) => {
     );
 });
 
-// 6.2 记录一条新对话
+// 6.2 璁板綍涓€鏉℃柊瀵硅瘽
 app.post('/api/chat/messages/add', (req, res) => {
     const { userId, slotId, characterId, role, content } = req.body;
     const stmt = db.prepare(`INSERT INTO chat_messages (user_id, slot_id, character_id, role, content, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
@@ -326,7 +320,7 @@ app.post('/api/chat/messages/add', (req, res) => {
     stmt.finalize();
 });
 
-// 6.3 获取角色核心记忆 (长期记忆)
+// 6.3 鑾峰彇瑙掕壊鏍稿績璁板繂 (闀挎湡璁板繂)
 app.post('/api/chat/memories/get', (req, res) => {
     const { userId, slotId, characterId } = req.body;
     db.all(
@@ -341,7 +335,7 @@ app.post('/api/chat/memories/get', (req, res) => {
     );
 });
 
-// 6.4 批量添加核心记忆
+// 6.4 鎵归噺娣诲姞鏍稿績璁板繂
 app.post('/api/chat/memories/add_batch', (req, res) => {
     const { userId, slotId, characterId, memories, type = 'core_fact' } = req.body;
     if (!memories || !Array.isArray(memories) || memories.length === 0) {
@@ -364,7 +358,7 @@ app.post('/api/chat/memories/add_batch', (req, res) => {
     stmt.finalize();
 });
 
-// 6.5 存档时同步复制对话和记忆 (解决读档覆盖/时空错乱问题)
+// 6.5 瀛樻。鏃跺悓姝ュ鍒跺璇濆拰璁板繂 (瑙ｅ喅璇绘。瑕嗙洊/鏃剁┖閿欎贡闂)
 app.post('/api/chat/sync_slot', (req, res) => {
     const { userId, sourceSlotId, targetSlotId } = req.body;
     
@@ -391,17 +385,17 @@ app.post('/api/chat/sync_slot', (req, res) => {
     });
 });
 
-// 6.6 更新角色的历史摘要 (滚动更新)
+// 6.6 鏇存柊瑙掕壊鐨勫巻鍙叉憳瑕?(婊氬姩鏇存柊)
 app.post('/api/chat/summary/update', (req, res) => {
     const { userId, slotId, characterId, summaryText } = req.body;
     
     if (!userId || slotId === undefined || !characterId || !summaryText) {
-        return res.json({ success: false, message: '缺少必需参数' });
+        return res.json({ success: false, message: '缂哄皯蹇呴渶鍙傛暟' });
     }
 
     const now = Date.now();
 
-    // 先尝试更新现有的 summary
+    // 鍏堝皾璇曟洿鏂扮幇鏈夌殑 summary
     db.run(
         `UPDATE character_memories 
          SET content = ?, created_at = ? 
@@ -410,30 +404,29 @@ app.post('/api/chat/summary/update', (req, res) => {
         function(err) {
             if (err) return res.status(500).json({ success: false, message: err.message });
             
-            // 如果没有更新任何行，说明还没有 summary，需要插入
-            if (this.changes === 0) {
+            // 濡傛灉娌℃湁鏇存柊浠讳綍琛岋紝璇存槑杩樻病鏈?summary锛岄渶瑕佹彃鍏?            if (this.changes === 0) {
                 const stmt = db.prepare(
                     `INSERT INTO character_memories (user_id, slot_id, character_id, memory_type, content, created_at) 
                      VALUES (?, ?, ?, 'summary', ?, ?)`
                 );
                 stmt.run(userId, slotId, characterId, summaryText, now, function(err) {
                     if (err) return res.status(500).json({ success: false, message: err.message });
-                    res.json({ success: true, message: '摘要已创建' });
+                    res.json({ success: true, message: '鎽樿宸插垱寤? });
                 });
                 stmt.finalize();
             } else {
-                res.json({ success: true, message: '摘要已更新' });
+                res.json({ success: true, message: '鎽樿宸叉洿鏂? });
             }
         }
     );
 });
 
-// 6.7 删除已总结的旧对话记录
+// 6.7 鍒犻櫎宸叉€荤粨鐨勬棫瀵硅瘽璁板綍
 app.post('/api/chat/messages/delete_old', (req, res) => {
     const { userId, slotId, characterId, beforeTimestamp } = req.body;
     
     if (!userId || slotId === undefined || !characterId || !beforeTimestamp) {
-        return res.json({ success: false, message: '缺少必需参数' });
+        return res.json({ success: false, message: '缂哄皯蹇呴渶鍙傛暟' });
     }
 
     db.run(
@@ -447,16 +440,15 @@ app.post('/api/chat/messages/delete_old', (req, res) => {
     );
 });
 
-// --- 角色解锁状态 API ---
+// --- 瑙掕壊瑙ｉ攣鐘舵€?API ---
 
-// 7. 获取单个角色的解锁状态
-app.post('/api/character_unlocks/get', (req, res) => {
+// 7. 鑾峰彇鍗曚釜瑙掕壊鐨勮В閿佺姸鎬?app.post('/api/character_unlocks/get', (req, res) => {
     const { userId, slotId, characterId } = req.body;
     
     if (!userId || slotId === undefined || !characterId) {
         return res.json({ 
             success: false, 
-            message: '缺少必需参数: userId, slotId, characterId' 
+            message: '缂哄皯蹇呴渶鍙傛暟: userId, slotId, characterId' 
         });
     }
     
@@ -485,7 +477,7 @@ app.post('/api/character_unlocks/get', (req, res) => {
             if (err) {
                 return res.status(500).json({ 
                     success: false, 
-                    message: '数据库查询错误: ' + err.message 
+                    message: '鏁版嵁搴撴煡璇㈤敊璇? ' + err.message 
                 });
             }
             
@@ -518,21 +510,20 @@ app.post('/api/character_unlocks/get', (req, res) => {
     );
 });
 
-// 8. 更新角色解锁状态
-app.post('/api/character_unlocks/update', (req, res) => {
+// 8. 鏇存柊瑙掕壊瑙ｉ攣鐘舵€?app.post('/api/character_unlocks/update', (req, res) => {
     const { userId, slotId, characterId, unlocks } = req.body;
     
     if (!userId || slotId === undefined || !characterId || !unlocks) {
         return res.json({ 
             success: false, 
-            message: '缺少必需参数: userId, slotId, characterId, unlocks' 
+            message: '缂哄皯蹇呴渶鍙傛暟: userId, slotId, characterId, unlocks' 
         });
     }
     
     if (typeof unlocks !== 'object') {
         return res.json({ 
             success: false, 
-            message: 'unlocks 必须是对象' 
+            message: 'unlocks 蹇呴』鏄璞? 
         });
     }
     
@@ -566,7 +557,7 @@ app.post('/api/character_unlocks/update', (req, res) => {
             if (value !== 0 && value !== 1) {
                 return res.json({ 
                     success: false, 
-                    message: `字段 ${field} 的值必须是 0 或 1` 
+                    message: `瀛楁 ${field} 鐨勫€煎繀椤绘槸 0 鎴?1` 
                 });
             }
             updateFields.push(`${field} = ?`);
@@ -577,7 +568,7 @@ app.post('/api/character_unlocks/update', (req, res) => {
     if (updateFields.length === 0) {
         return res.json({ 
             success: false, 
-            message: '没有有效的更新字段' 
+            message: '娌℃湁鏈夋晥鐨勬洿鏂板瓧娈? 
         });
     }
     
@@ -596,7 +587,7 @@ app.post('/api/character_unlocks/update', (req, res) => {
         if (err) {
             return res.status(500).json({ 
                 success: false, 
-                message: '更新失败: ' + err.message 
+                message: '鏇存柊澶辫触: ' + err.message 
             });
         }
         
@@ -622,25 +613,24 @@ app.post('/api/character_unlocks/update', (req, res) => {
                 if (err) {
                     return res.status(500).json({ 
                         success: false, 
-                        message: '插入失败: ' + err.message 
+                        message: '鎻掑叆澶辫触: ' + err.message 
                     });
                 }
-                res.json({ success: true, message: '解锁状态已创建' });
+                res.json({ success: true, message: '瑙ｉ攣鐘舵€佸凡鍒涘缓' });
             });
         } else {
-            res.json({ success: true, message: '解锁状态已更新' });
+            res.json({ success: true, message: '瑙ｉ攣鐘舵€佸凡鏇存柊' });
         }
     });
 });
 
-// 9. 批量获取所有角色的解锁状态
-app.post('/api/character_unlocks/get_all', (req, res) => {
+// 9. 鎵归噺鑾峰彇鎵€鏈夎鑹茬殑瑙ｉ攣鐘舵€?app.post('/api/character_unlocks/get_all', (req, res) => {
     const { userId, slotId } = req.body;
     
     if (!userId || slotId === undefined) {
         return res.json({ 
             success: false, 
-            message: '缺少必需参数: userId, slotId' 
+            message: '缂哄皯蹇呴渶鍙傛暟: userId, slotId' 
         });
     }
     
@@ -670,7 +660,7 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
             if (err) {
                 return res.status(500).json({ 
                     success: false, 
-                    message: '数据库查询错误: ' + err.message 
+                    message: '鏁版嵁搴撴煡璇㈤敊璇? ' + err.message 
                 });
             }
             
@@ -686,7 +676,7 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
     );
 });
 
-// 创建服务器 (支持 HTTPS)
+// 鍒涘缓鏈嶅姟鍣?(鏀寔 HTTPS)
 let server;
 
 if (config.HTTPS_ENABLED) {
@@ -702,14 +692,14 @@ if (config.HTTPS_ENABLED) {
                 console.log(`HTTPS Server running on https://localhost:${PORT}`);
             });
         } else {
-            console.warn('SSL证书文件不存在，回退到HTTP模式');
+            console.warn('SSL璇佷功鏂囦欢涓嶅瓨鍦紝鍥為€€鍒癏TTP妯″紡');
             server = http.createServer(app);
             server.listen(PORT, () => {
                 console.log(`HTTP Server running on http://localhost:${PORT}`);
             });
         }
     } catch (err) {
-        console.error('HTTPS启动失败，回退到HTTP模式:', err.message);
+        console.error('HTTPS鍚姩澶辫触锛屽洖閫€鍒癏TTP妯″紡:', err.message);
         server = http.createServer(app);
         server.listen(PORT, () => {
             console.log(`HTTP Server running on http://localhost:${PORT}`);

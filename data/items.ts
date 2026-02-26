@@ -1,4 +1,3 @@
-
 import { ItemData } from '../types';
 import { ITEMS_RES } from './item-res';
 import { ITEMS_ITM } from './item-itm';
@@ -13,3 +12,4 @@ export const ITEMS: Record<string, ItemData> = {
   ...ITEMS_SPC,
   ...ITEMS_EQUIP
 };
+

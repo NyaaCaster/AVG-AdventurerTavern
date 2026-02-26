@@ -1,4 +1,3 @@
-
 import { WorldState, SceneId, Character, ClothingState } from '../types';
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
@@ -6,47 +5,43 @@ import { SCENE_NAMES } from './gameConstants';
 
 export const calculateWorldState = (currentSceneName: string): WorldState => {
   const now = new Date();
-  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const days = ['鍛ㄦ棩', '鍛ㄤ竴', '鍛ㄤ簩', '鍛ㄤ笁', '鍛ㄥ洓', '鍛ㄤ簲', '鍛ㄥ叚'];
   const h = now.getHours();
   
   let period: 'day' | 'evening' | 'night' = 'night';
-  let periodLabel = "夜晚";
-  // 模拟天气代码（降级方案）- 实际天气由 weatherService 通过 QWeather API 获取并覆盖
-  let weatherCode = "150"; // 晴（夜间）
-  let weather = "晴朗的夜晚";
+  let periodLabel = "澶滄櫄";
+  // 妯℃嫙澶╂皵浠ｇ爜锛堥檷绾ф柟妗堬級- 瀹為檯澶╂皵鐢?weatherService 閫氳繃 QWeather API 鑾峰彇骞惰鐩?  let weatherCode = "150"; // 鏅达紙澶滈棿锛?  let weather = "鏅存湕鐨勫鏅?;
 
   if (h >= 6 && h < 17) {
       period = 'day';
-      periodLabel = "日间";
-      weatherCode = "100"; // 晴（白天）
-      weather = "晴朗的白天";
+      periodLabel = "鏃ラ棿";
+      weatherCode = "100"; // 鏅达紙鐧藉ぉ锛?      weather = "鏅存湕鐨勭櫧澶?;
   } else if (h >= 17 && h < 20) {
       period = 'evening';
-      periodLabel = "傍晚";
-      weatherCode = "150"; // 晴（夜间）
-      weather = "日落时分的傍晚";
+      periodLabel = "鍌嶆櫄";
+      weatherCode = "150"; // 鏅达紙澶滈棿锛?      weather = "鏃ヨ惤鏃跺垎鐨勫倣鏅?;
   }
 
   return {
-      dateStr: `${now.getMonth() + 1}月${now.getDate()}日`,
+      dateStr: `${now.getMonth() + 1}鏈?{now.getDate()}鏃,
       weekDay: days[now.getDay()],
       timeStr: `${h.toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
       period,
       periodLabel,
       weatherCode,
       weather,
-      temp: undefined, // 气温由 weatherService 提供
+      temp: undefined, // 姘旀俯鐢?weatherService 鎻愪緵
       sceneName: currentSceneName
   };
 };
 
 export const getSceneDisplayName = (sceneId: SceneId, params?: any): string => {
     if (sceneId === 'scen_2') {
-        if (params?.target === 'user') return '我的房间';
-        if (params?.target && CHARACTERS[params.target]) return `${CHARACTERS[params.target].name}的房间`;
-        return '客房';
+        if (params?.target === 'user') return '鎴戠殑鎴块棿';
+        if (params?.target && CHARACTERS[params.target]) return `${CHARACTERS[params.target].name}鐨勬埧闂碻;
+        return '瀹㈡埧';
     }
-    return SCENE_NAMES[sceneId] || '未知区域';
+    return SCENE_NAMES[sceneId] || '鏈煡鍖哄煙';
 };
 
 export const getCharacterSprite = (character: Character, state: ClothingState, emotion: string): string => {
@@ -121,8 +116,7 @@ export const calculateCharacterLocations = (period: 'day'|'evening'|'night', dat
             const validScenes = possibleScenes.filter(sid => {
                 if (sid === 'scen_2') return true;
                 
-                // 检查场景等级，只允许等级≥1的场景
-                const sceneLevel = sceneLevels[sid] || 0;
+                // 妫€鏌ュ満鏅瓑绾э紝鍙厑璁哥瓑绾р墺1鐨勫満鏅?                const sceneLevel = sceneLevels[sid] || 0;
                 if (sceneLevel < 1) return false;
                 
                 if (sid === 'scen_3') {
@@ -161,3 +155,4 @@ export const calculateCharacterLocations = (period: 'day'|'evening'|'night', dat
 
     return mapping;
 };
+
