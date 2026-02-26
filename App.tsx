@@ -5,70 +5,74 @@ import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
 import { setHDMode } from './utils/imagePath';
-import { loadGame } from './services/db'; // Import loadGame
+import { loadGame } from './services/db';
 
 const App: React.FC = () => {
-  // 璁剧疆鍒濆娓告垙鐘舵€?  const [gameState, setGameState] = useState<GameState>(GameState.MENU);
-  // 璁板綍杩涘叆璁剧疆鍓嶇殑鐘舵€侊紝鐢ㄤ簬"杩斿洖"鍔熻兘
+  // 设置初始游戏状态
+  const [gameState, setGameState] = useState<GameState>(GameState.MENU);
+  // 记录进入设置前的状态，用于"返回"功能
   const [previousGameState, setPreviousGameState] = useState<GameState>(GameState.MENU);
-  // 璁板綍璁剧疆鐣岄潰鍒濆鍖栨椂搴旈€変腑鐨勬爣绛鹃〉
+  // 记录设置界面初始化时应选中的标签页
   const [configInitialTab, setConfigInitialTab] = useState<ConfigTab>('dialogue');
 
-  // 褰撳墠鐧诲綍鐢ㄦ埛ID
+  // 当前登录用户ID
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   
-  // 褰撳墠瀛樻。妲戒綅ID锛?=鑷姩瀛樻。锛?-3=鎵嬪姩瀛樻。锛?  const [currentSlotId, setCurrentSlotId] = useState<number>(0);
+  // 当前存档槽位ID，0=自动存档，1-3=手动存档
+  const [currentSlotId, setCurrentSlotId] = useState<number>(0);
 
-  // 娓告垙璁剧疆鐘舵€侊紝鍒濆鍖栨椂浠庢湰鍦板瓨鍌ㄥ姞杞斤紝骞剁珛鍗冲簲鐢?HD 妯″紡璁剧疆
+  // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
   const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
       const settings = loadSettings();
       setHDMode(settings.enableHD);
       return settings;
   });
 
-  // State to hold data loaded from Title Screen
+  // 保存从标题屏幕加载的数据
   const [initialSaveData, setInitialSaveData] = useState<any>(null);
 
-  // --- 杞満鍔ㄧ敾鐘舵€佺鐞?---
-  const [overlayOpacity, setOverlayOpacity] = useState(0); // 0: 閫忔槑, 1: 鍏ㄩ粦
-  const [transitionDuration, setTransitionDuration] = useState(0); // 鍔ㄧ敾鎸佺画鏃堕棿(ms)
-  const [isTransitioning, setIsTransitioning] = useState(false); // 鏄惁姝ｅ湪杞満涓?闃绘尅鐐瑰嚮)
+  // --- 转场动画状态管理 ---
+  const [overlayOpacity, setOverlayOpacity] = useState(0); // 0: 透明, 1: 全黑
+  const [transitionDuration, setTransitionDuration] = useState(0); // 动画持续时间(ms)
+  const [isTransitioning, setIsTransitioning] = useState(false); // 是否正在转场中(阻挡点击)
 
-  // GameScene Ref for triggering auto-save
+  // GameScene 引用，用于触发自动保存
   const gameSceneRef = React.useRef<GameSceneRef>(null);
 
-  // 鍦烘櫙鍒囨崲澶勭悊鍑芥暟 (鏍稿績閫昏緫)
+  // 场景切换处理函数 (核心逻辑)
   const handleSwitchScene = (targetState: GameState, fadeOutMs: number = 1000, fadeInMs: number = 2000) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
 
-    // 1. 鍘嬮粦 (Fade Out)
+    // 1. 压黑 (Fade Out)
     setTransitionDuration(fadeOutMs);
     setOverlayOpacity(1);
 
-    // 绛夊緟鍘嬮粦鍔ㄧ敾瀹屾垚
+    // 等待压黑动画完成
     setTimeout(() => {
-        // 2. 鍒囨崲搴曞眰鐘舵€?(姝ゆ椂灞忓箷鍏ㄩ粦锛岀敤鎴风湅涓嶅埌璧勬簮鍔犺浇/鏇挎崲杩囩▼)
+        // 2. 切换底层状态(此时屏幕全黑，用户看不到资源加载/替换过程)
         setGameState(targetState);
 
-        // 3. 娓愭樉 (Fade In)
-        // 绋嶅井寤惰繜涓€甯э紝纭繚 React 瀹屾垚浜嗙粍浠剁殑鍗歌浇鍜屾寕杞?        requestAnimationFrame(() => {
-            // 璁剧疆鏂扮殑杩囨浮鏃堕棿
+        // 3. 渐显 (Fade In)
+        // 稍微延迟一帧，确保 React 完成了组件的卸载和挂载
+        requestAnimationFrame(() => {
+            // 设置新的过渡时间
             setTransitionDuration(fadeInMs);
             setOverlayOpacity(0);
             
-            // 绛夊緟娓愭樉鍔ㄧ敾瀹屾垚锛屾仮澶嶄氦浜?            setTimeout(() => {
+            // 等待渐显动画完成，恢复交互
+            setTimeout(() => {
                 setIsTransitioning(false);
             }, fadeInMs);
         });
     }, fadeOutMs);
   };
 
-  // 褰撹缃彉鏇存椂锛屼繚瀛樺埌鏈湴骞跺簲鐢ㄥ壇浣滅敤
+  // 当设置变更时，保存到本地并应用副作用
   const handleUpdateSettings = (newSettings: GameSettings) => {
     setGameSettings(newSettings);
     saveSettings(newSettings);
-    setHDMode(newSettings.enableHD); // 鏇存柊鍥剧墖瑙ｆ瀽妯″紡
+    setHDMode(newSettings.enableHD); // 更新图片解析模式
   };
 
   const handleUserLogin = (uid: number) => {
@@ -80,12 +84,12 @@ const App: React.FC = () => {
       try {
           const data = await loadGame(currentUserId, slotId);
           if (data) {
-              // Restore settings from save if available
+              // 如果存档中有设置，则恢复设置
               if (data.settings) {
                   handleUpdateSettings(data.settings);
               }
               setInitialSaveData(data);
-              setCurrentSlotId(slotId); // 璁板綍褰撳墠妲戒綅
+              setCurrentSlotId(slotId); // 记录当前槽位
               handleSwitchScene(GameState.PLAYING, 1000, 2000);
           }
       } catch (e) {
@@ -94,50 +98,58 @@ const App: React.FC = () => {
   };
 
   const handleStartNewGame = () => {
-      setInitialSaveData(null); // Ensure fresh start
-      setCurrentSlotId(0); // 鏂版父鎴忎娇鐢ㄨ嚜鍔ㄥ瓨妗ｆЫ浣?      handleSwitchScene(GameState.PLAYING, 1000, 2000);
+      setInitialSaveData(null); // 确保全新开始
+      setCurrentSlotId(0); // 新游戏使用自动存档槽位
+      handleSwitchScene(GameState.PLAYING, 1000, 2000);
   };
 
-  // 杩涘叆璁剧疆鐣岄潰鐨勫鐞嗗嚱鏁?  const handleOpenConfig = (fromState: GameState, tab: ConfigTab = 'dialogue') => {
+  // 进入设置界面的处理函数
+  const handleOpenConfig = (fromState: GameState, tab: ConfigTab = 'dialogue') => {
     setPreviousGameState(fromState);
     setConfigInitialTab(tab);
-    // 鐩存帴鍒囨崲鐘舵€侊紝浣跨敤 ConfigScreen 缁勪欢鑷韩鐨勫姩鐢伙紙绫讳技 DialogueLogModal锛?    setGameState(GameState.CONFIG);
+    // 直接切换状态，使用 ConfigScreen 组件自身的动画（类似 DialogueLogModal）
+    setGameState(GameState.CONFIG);
   };
   
-  // 浠庤缃晫闈㈣繑鍥?  const handleBackFromConfig = () => {
-     // 鐩存帴鍒囨崲鍥炲師鏉ョ殑鐘舵€?     setGameState(previousGameState);
+  // 从设置界面返回
+  const handleBackFromConfig = () => {
+     // 直接切换回原来的状态
+     setGameState(previousGameState);
 
-     // 濡傛灉鏄粠娓告垙涓繘鍏ヨ缃苟杩斿洖锛屽垯瑙﹀彂鑷姩淇濆瓨锛堜繚瀛樿缃拰褰撳墠杩涘害锛?     if (previousGameState === GameState.PLAYING && gameSceneRef.current) {
+     // 如果是从游戏中进入设置并返回，则触发自动保存（保存设置和当前进度）
+     if (previousGameState === GameState.PLAYING && gameSceneRef.current) {
          gameSceneRef.current.saveGame(0);
      }
   };
 
-  // 鍒ゆ柇鍚勫眰鏄惁搴旇鏄剧ず
-  // 鑿滃崟灞傦細褰撳墠鏄彍鍗曪紝鎴栬€呭綋鍓嶆槸閰嶇疆涓斿墠涓€涓姸鎬佹槸鑿滃崟
+  // 判断各层是否应该显示
+  // 菜单层：当前是菜单，或者当前是配置且前一个状态是菜单
   const showMenu = gameState === GameState.MENU || (gameState === GameState.CONFIG && previousGameState === GameState.MENU);
-  // 娓告垙灞傦細褰撳墠鏄父鎴忥紝鎴栬€呭綋鍓嶆槸閰嶇疆涓斿墠涓€涓姸鎬佹槸娓告垙
+  // 游戏层：当前是游戏，或者当前是配置且前一个状态是游戏
   const showGame = gameState === GameState.PLAYING || (gameState === GameState.CONFIG && previousGameState === GameState.PLAYING);
 
   return (
     <div 
         className="relative w-full bg-slate-950 overflow-hidden font-sans selection:bg-cyan-500/30"
-        style={{ height: '100dvh' }} // 浣跨敤 100dvh 閫傞厤绉诲姩绔姩鎬佽鍙?    >
+        style={{ height: '100dvh' }} // 使用 100dvh 适配移动端动态视口
+    >
       
-      {/* 鍏ㄥ眬杞満閬僵灞?*/}
+      {/* 全局转场遮罩层 */}
       <div 
         className="absolute inset-0 bg-black z-[9999] pointer-events-none transition-opacity ease-in-out"
         style={{ 
             opacity: overlayOpacity,
             transitionDuration: `${transitionDuration}ms`,
-            pointerEvents: isTransitioning ? 'auto' : 'none' // 杞満鏃堕樆鎸＄偣鍑?        }}
+            pointerEvents: isTransitioning ? 'auto' : 'none' // 转场时阻挡点击
+        }}
       />
 
-      {/* 鏍囬鐣岄潰 */}
+      {/* 标题界面 */}
       {showMenu && (
         <TitleScreen 
             onLogin={handleUserLogin}
             onStartGame={handleStartNewGame}
-            onLoadGame={handleTitleLoadGame} // Pass the specific load handler
+            onLoadGame={handleTitleLoadGame}
             onOpenConfig={() => handleOpenConfig(GameState.MENU, 'api')}
             volume={gameSettings.masterVolume}
             isMuted={gameSettings.isMuted}
@@ -145,7 +157,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* 娓告垙杩涜灞?*/}
+      {/* 游戏进行层 */}
       {showGame && currentUserId !== null && (
         <div className="absolute inset-0 z-0 w-full h-full">
             <GameScene 
@@ -154,14 +166,14 @@ const App: React.FC = () => {
                 currentSlotId={currentSlotId}
                 onBackToMenu={() => handleSwitchScene(GameState.MENU, 1000, 2000)}
                 onOpenSettings={(tab) => handleOpenConfig(GameState.PLAYING, tab)}
-                onSettingsChange={handleUpdateSettings} // Pass handler for in-game loads
+                onSettingsChange={handleUpdateSettings}
                 settings={gameSettings}
-                initialSaveData={initialSaveData} // Pass loaded data
+                initialSaveData={initialSaveData}
             />
         </div>
       )}
 
-      {/* 閰嶇疆灞?- 瑕嗙洊鍦ㄩ《灞?*/}
+      {/* 配置层 - 覆盖在顶层 */}
       {gameState === GameState.CONFIG && (
         <div className="absolute inset-0 z-[100]">
             <ConfigScreen 
@@ -178,4 +190,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
