@@ -10,9 +10,13 @@
 
 ## 🚀 快速开始
 
-```bash
-# 使用 Docker（推荐）
-docker run -d -p 3098:80 -p 3096:443 honywen/adv-tavern
+```powershell
+# 拉取最新镜像并重启（推荐）
+# Windows PowerShell
+.\update-and-restart.ps1
+
+# Linux / macOS
+bash update-and-restart.sh
 
 # 访问游戏
 http://localhost:3098   # HTTP

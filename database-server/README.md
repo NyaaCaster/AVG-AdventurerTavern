@@ -13,7 +13,11 @@ cp /path/to/your.crt SSL/
 # 2. 修改 config.js 中的证书路径（如需要）
 
 # 3. 构建并启动
-docker-compose up -d --build
+# Windows PowerShell
+.\rebuild-and-restart.ps1
+
+# Linux / macOS
+bash rebuild-and-restart.sh
 
 # 4. 验证服务
 curl http://localhost:3097/api/health
