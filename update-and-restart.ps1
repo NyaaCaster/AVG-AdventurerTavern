@@ -11,4 +11,7 @@ docker compose down
 Write-Host "`nStarting Docker containers..." -ForegroundColor Cyan
 docker compose up -d --pull never
 
+Write-Host "`nCleaning up old honywen/adv-tavern images..." -ForegroundColor Cyan
+docker images --filter "dangling=true" --format "{{.Repository}}:{{.ID}}" | Where-Object { $_ -like "honywen/adv-tavern:*" } | ForEach-Object { docker rmi $_.Split(':')[1] }
+
 Write-Host "`nDone!" -ForegroundColor Green
