@@ -282,12 +282,12 @@ export interface CartItem {
 
 export interface ShopItemModalProps {
   isOpen: boolean;
-  onClose: () =&gt; void;
+  onClose: () => void;
   initialTab?: ShopTab;
-  inventory: Record&lt;string, number&gt;;
+  inventory: Record<string, number>;
   currentGold: number;
   onTransaction?: (changes: {
     goldChange: number;
-    inventoryChanges: Record&lt;string, number&gt;;
+    inventoryChanges: Record<string, number>;
   }) =&gt; void;
 }
