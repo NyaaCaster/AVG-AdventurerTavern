@@ -269,17 +269,17 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
         {/* 外框装饰 */}
         <div className="absolute inset-0 border-[6px] md:border-[8px] border-[#382b26] rounded-r-xl pointer-events-none z-10 border-l-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.3)]" />
 
-        {/* 关闭按钮 */}
+        {/* 关闭按钮：定位在左侧内容区右上角，避免与购物车侧栏重叠 */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 z-30 w-7 h-7 flex items-center justify-center text-[#9b7a4c] hover:text-[#f0e6d2] transition-colors rounded-full hover:bg-[#382b26]"
+                    className="absolute top-2 right-[calc(16rem+0.5rem)] lg:right-[calc(18rem+0.5rem)] z-30 w-7 h-7 flex items-center justify-center text-[#5c4d45] hover:text-[#b45309] transition-colors rounded-full hover:bg-[#d6cbb8]/50"
           title="关闭"
         >
           <i className="fa-solid fa-xmark text-base" />
         </button>
 
         {/* ── 主内容区 ── */}
-        <div className="flex-1 flex flex-col pl-5 md:pl-8 pr-2 md:pr-3 pt-3 pb-0 relative w-full min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col pl-5 md:pl-8 pr-2 md:pr-3 pt-3 pb-2 relative w-full min-h-0 overflow-hidden">
 
           {/* 账本横线背景 */}
           <div className="absolute inset-0 pointer-events-none opacity-10"
