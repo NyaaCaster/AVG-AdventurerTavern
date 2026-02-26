@@ -11,9 +11,9 @@ export interface ShopResItem {
 }
 
 export const ITEM_RES_SHOP: ShopResItem[] = [
-  { id: 'shop-res-0101', resId: 'res-0101', price: 20 },
-  { id: 'shop-res-0201', resId: 'res-0201', price: 20 },
-  { id: 'shop-res-0301', resId: 'res-0301', price: 20 },
+  { id: 'shop-res-0101', resId: 'res-0001', price: 20 },
+  { id: 'shop-res-0201', resId: 'res-0002', price: 20 },
+  { id: 'shop-res-0301', resId: 'res-0003', price: 20 },
 ];
 
 export const getShopItemByResId = (resId: string) => {
