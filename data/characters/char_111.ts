@@ -1,4 +1,4 @@
-
+﻿
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_111';
 
@@ -9,8 +9,4 @@ export const char_111: Character = {
   description: "大大咧咧的机械工匠，技术高超但生活粗糙。经常被误认为是男性，实则拥有丰满的身材。在旅店旁搭建了工坊，喜欢对同性进行性骚扰。",
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
-  appearanceConditions: [
-    { sceneId: 'scen_5', minLevel: 1 },
-    { sceneId: 'scen_8', minLevel: 2 }
-  ]
 };

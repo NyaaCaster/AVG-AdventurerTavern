@@ -56,13 +56,13 @@ export const INITIAL_CHARACTER_AFFINITY: Record<string, number> = {
   'char_111': 1, // 吉娜
 };
 
-export const INITIAL_GOLD = 100000;
+export const INITIAL_GOLD = 100000; // 原：5000
 export const MAX_GOLD = 999999; // 金币上限
 
 export const INITIAL_INVENTORY: Record<string, number> = {
-    'res-0001': 1500, // 灵木
-    'res-0002': 1500, // 幻皮
-    'res-0003': 1500, // 魔晶石
+    'res-0001': 99, // 灵木，原：15
+    'res-0002': 99, // 幻皮，原：15
+    'res-0003': 99, // 魔晶石，原：15
     'res-0101': 99, // 狂暴兔肉
     'res-0201': 99, // 青菜
     'res-0301': 99, // 发光菌伞
@@ -77,8 +77,27 @@ export const INITIAL_INVENTORY: Record<string, number> = {
     'wpn-102': 1, // 铁剑
     'arm-201': 1, // 皮甲Lv1
     'spc-00': 1, // 「莫比乌斯」
-    'spc-05': 2, // 棉绳
+    // 'spc-05': 2, // 棉绳
 };
+
+/**
+ * 游戏开始时已入住旅店的角色列表
+ * 不在此列表中的角色视为「缺席」，房间显示为空室
+ */
+export const INITIAL_CHECKED_IN_CHARACTERS: string[] = [
+  'char_1', // {{user}} - 玩家角色
+  'char_101', // 莉莉娅
+  'char_102', // 米娜
+  'char_103', // 欧若拉
+  // 'char_104', // 朱迪斯
+  // 'char_105', // 莲华
+  // 'char_106', // 艾琳
+  // 'char_107', // 菲洛
+  // 'char_109', // 莱拉
+  // 'char_108', // 卡特琳娜
+  // 'char_110', // 琉卡
+  // 'char_111', // 吉娜
+];
 
 // 旅店管理初始数据（不包含由设施等级计算的值）
 export const INITIAL_MANAGEMENT_STATS = {

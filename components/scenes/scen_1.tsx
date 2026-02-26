@@ -9,7 +9,7 @@ interface Scen1Props extends SceneProps {
     onOpenExpansion?: () => void;
 }
 
-const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, sceneLevels }) => {
+const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, sceneLevels, checkedInCharacters }) => {
   const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management'>('main');
   const [showRoomSelection, setShowRoomSelection] = useState(false);
 
@@ -98,6 +98,7 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
         isOpen={showRoomSelection} 
         onClose={() => setShowRoomSelection(false)} 
         onNavigate={onNavigate}
+        checkedInCharacters={checkedInCharacters || []}
       />
     </>
   );

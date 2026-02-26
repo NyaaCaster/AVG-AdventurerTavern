@@ -23,6 +23,9 @@ import SaveLoadModal from './SaveLoadModal';
 import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
+import RoomCheckInToast from './RoomCheckInToast';
+import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
+import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
 import { getResValue } from '../data/item-value-table';
@@ -90,6 +93,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [showDebugLog, setShowDebugLog] = useState(false);
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
   const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
+  const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(INITIAL_CHECKED_IN_CHARACTERS);
+  const [checkInNotifications, setCheckInNotifications] = useState<{id: string, charId: string}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
 
@@ -404,6 +409,20 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   }, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
 
   // --- 场景动作处理 ---
+  const handleUpgradeFacility = (facilityId: SceneId, costGold: number, costMatIds: string[], costMatCount: number) => {
+      const newLevels = { ...core.sceneLevels, [facilityId]: (core.sceneLevels[facilityId] || 0) + 1 };
+      const eligible = getEligibleCheckInCharacters(newLevels);
+      const newlyCheckedIn = eligible.filter(id => !checkedInCharacters.includes(id));
+      if (newlyCheckedIn.length > 0) {
+          setCheckedInCharacters(prev => [...prev, ...newlyCheckedIn]);
+          setCheckInNotifications(prev => [
+              ...prev,
+              ...newlyCheckedIn.map(charId => ({ id: Date.now() + Math.random().toString(), charId }))
+]);
+      }
+      core.handleUpgradeFacility(facilityId, costGold, costMatIds, costMatCount);
+  };
+
   const handleAction = (action: string, param?: any) => {
     console.log(`[动作] ${action}`, param);
     if (action === 'cook') {
@@ -533,6 +552,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         presentCharacters: world.presentCharacters, 
         inventory: core.inventory,
         sceneLevels: core.sceneLevels,
+        checkedInCharacters,
         characterUnlocks: core.characterUnlocks,
         userRecipes: core.userRecipes,
         foodStock: core.foodStock
@@ -598,6 +618,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                       change={notification.change}
                       characterName={CHARACTERS[notification.charId]?.name || '角色'}
                       onComplete={() => setAffinityNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
+              ))}
+              {checkInNotifications.map(notification => (
+                  <RoomCheckInToast
+                      key={notification.id}
+                      characterName={CHARACTERS[notification.charId]?.name || '新住客'}
+                      avatarUrl={CHARACTERS[notification.charId]?.avatarUrl}
+                      onComplete={() => setCheckInNotifications(prev => prev.filter(n => n.id !== notification.id))}
                   />
               ))}
           </div>
@@ -721,7 +749,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       <DebugLogModal isOpen={showDebugLog} onClose={() => setShowDebugLog(false)} logs={dialogue.debugLogs} />
 
       <ManagementModal isOpen={isManagementOpen} onClose={() => setIsManagementOpen(false)} stats={core.managementStats} logs={core.revenueLogs} onAction={core.handleManagementAction} currentGold={core.gold} />
-      <ExpansionModal isOpen={isExpansionOpen} onClose={() => setIsExpansionOpen(false)} currentLevels={core.sceneLevels} inventory={core.inventory} gold={core.gold} onUpgrade={core.handleUpgradeFacility} />
+      <ExpansionModal isOpen={isExpansionOpen} onClose={() => setIsExpansionOpen(false)} currentLevels={core.sceneLevels} inventory={core.inventory} gold={core.gold} onUpgrade={handleUpgradeFacility} />
       
       <CookingModal 
           isOpen={isCookingOpen}

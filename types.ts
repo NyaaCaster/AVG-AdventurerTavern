@@ -59,12 +59,6 @@ export interface CharacterSchedule {
   night?: SceneId[];
 }
 
-// 新增：角色出现条件定义
-export interface AppearanceCondition {
-  sceneId: SceneId;
-  minLevel: number;
-}
-
 // 新增：衣着状态定义
 export type ClothingState = 'default' | 'nude' | 'bondage' | string;
 
@@ -99,7 +93,6 @@ export interface Character {
   // imageConfig 已移除，改用 centralized config management
   // 系统规则数据
   schedule?: CharacterSchedule;
-  appearanceConditions?: AppearanceCondition[];
 }
 
 export interface DialogueEntry {
@@ -191,6 +184,7 @@ export interface SceneProps {
   inventory: Record<string, number>; // 新增：当前持有的道具列表 {itemId: count}
   onOpenManagement?: () => void; // 新增：打开管理界面回调
   sceneLevels: Record<string, number>; // 新增：场景等级信息
+    checkedInCharacters?: string[]; // 已入住角色列表
   characterUnlocks: Record<string, CharacterUnlocks>; // 新增：角色解锁状态
   // 烹饪系统相关
   onOpenCooking?: () => void;

@@ -3,10 +3,12 @@ import React from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { CHARACTERS } from '../data/scenarioData';
 
+
 interface RoomSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (sceneId: string, params?: any) => void;
+  checkedInCharacters: string[];
 }
 
 const ROOM_MAPPING = [
@@ -23,10 +25,9 @@ const ROOM_MAPPING = [
   { roomNo: '111', charId: 'char_111' },
 ];
 
-// Temporarily absent characters as per requirement
-const ABSENT_CHARACTERS = ['char_108', 'char_110', 'char_111'];
 
-const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose, onNavigate }) => {
+
+const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose, onNavigate, checkedInCharacters }) => {
   if (!isOpen) return null;
 
   const handleRoomClick = (charId?: string) => {
@@ -88,7 +89,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
                 {/* Guest Rooms */}
                 {ROOM_MAPPING.map(room => {
                     const char = CHARACTERS[room.charId];
-                    const isAbsent = ABSENT_CHARACTERS.includes(room.charId);
+                    const isAbsent = !checkedInCharacters.includes(room.charId);
                     const isOccupied = char && !isAbsent;
 
                     return (

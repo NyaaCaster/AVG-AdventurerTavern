@@ -1,4 +1,4 @@
-
+﻿
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_106';
 
@@ -9,7 +9,4 @@ export const char_106: Character = {
   description: "皇女欧若拉的贴身侍卫，高傲的贵族骑士，被称为「战场冰姬」。对皇女赖在乡下感到苦恼。拥有卓越的战斗技术，不擅长处理感情，对萌生的情感容易感到困惑。",
   persona: PERSONA,
   dialogueExamples: DIALOGUE,
-  appearanceConditions: [
-    { sceneId: 'scen_5', minLevel: 3 }
-  ]
 };
