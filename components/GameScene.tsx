@@ -603,7 +603,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
           <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} />
 
-          <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[70] pointer-events-none">
+          <div className="absolute bottom-[200px] left-4 flex flex-col gap-2 z-[110] pointer-events-none">
               {itemNotifications.map(notification => (
                   <ItemToast 
                       key={notification.id}

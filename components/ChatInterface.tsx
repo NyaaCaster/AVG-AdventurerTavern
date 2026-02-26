@@ -88,7 +88,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {isEnding && !isTyping && (
           <div 
             onClick={handleFinalClose}
-            className="fixed inset-0 z-[100] cursor-pointer pointer-events-auto"
+            className="fixed inset-0 z-[120] cursor-pointer pointer-events-auto"
             title="点击屏幕任意位置退出"
           >
              {/* 提示文本颜色加深以适应浅色背景，位置下调以和菜单按钮对齐 */}
