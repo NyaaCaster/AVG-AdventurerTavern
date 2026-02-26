@@ -41,15 +41,10 @@ COPY scripts/ ./scripts/
 # Copy root source files
 COPY *.tsx *.ts *.html ./
 
-# Verify file encoding (check for HTML entities)
-RUN echo "Checking for HTML entities..." && \
-    if find . -name "*.tsx" -o -name "*.ts" | xargs grep -l "&gt;\|&lt;\|&quot;\|&amp;" 2>/dev/null; then \
-        echo "ERROR: HTML entities found in source files!"; \
-        find . -name "*.tsx" -o -name "*.ts" | xargs grep -n "&gt;\|&lt;\|&quot;\|&amp;" 2>/dev/null || true; \
-        exit 1; \
-    else \
-        echo "✓ No HTML entities found"; \
-    fi
+# Fix HTML entity encoding issues before build
+RUN echo "Fixing HTML entity encoding..." && \
+    node scripts/fix-encoding.js && \
+    echo "✓ Encoding fixed"
 
 # Build frontend
 RUN npm run build && \

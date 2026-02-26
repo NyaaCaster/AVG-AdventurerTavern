@@ -1,0 +1,15 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running encoding check..."
+npm run check-encoding
+
+if [ $? -ne 0 ]; then
+  echo "❌ Encoding issues detected!"
+  echo "Running automatic fix..."
+  npm run fix-encoding
+  echo "✅ Encoding fixed. Please review changes and commit again."
+  exit 1
+fi
+
+echo "✅ No encoding issues found"

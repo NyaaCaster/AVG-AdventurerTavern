@@ -60,6 +60,12 @@ jobs:
         id: git
         run: echo "hash=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
+      - name: Fix encoding issues
+        run: |
+          npm install
+          npm run fix-encoding
+          echo "Encoding fixed successfully"
+
       - name: Clear Docker buildx cache if encoding issues were fixed
         run: |
           echo "Cache key: buildx-${{ github.repository }}-${{ github.ref }}"
