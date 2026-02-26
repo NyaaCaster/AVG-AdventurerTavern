@@ -35,7 +35,7 @@ COPY data/ ./data/
 COPY scripts/ ./scripts/
 
 # Copy root source files
-COPY *.tsx *.ts *.html ./
+COPY *.tsx *.ts *.html *.css ./
 
 # Build frontend
 RUN npm run build && \
