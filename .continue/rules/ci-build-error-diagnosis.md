@@ -1,6 +1,5 @@
 ---
 alwaysApply: false
-description: 当用户需要诊断 GitHub Actions CI 构建失败时使用。读取 job-error.log、构建相关文件，结合最近提交变更，定位错误根因。
 ---
 
 # CI 构建错误诊断 Agent
