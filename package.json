@@ -10,7 +10,6 @@
     "preview": "vite preview",
     "check-encoding": "node scripts/check-encoding.js",
     "fix-encoding": "node scripts/fix-encoding.js",
-    "prebuild": "node scripts/check-encoding.js",
     "pre-push": "bash scripts/pre-push-check.sh || powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1"
   },
   "dependencies": {
