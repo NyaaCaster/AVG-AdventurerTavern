@@ -1,0 +1,16 @@
+#!/bin/sh
+# Pre-commit hook to check for HTML entities in source files
+
+echo "Checking for HTML entities in source files..."
+
+# Check staged files for HTML entities
+if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | xargs grep -l '&gt;\|&lt;\|&quot;\|&amp;' 2>/dev/null; then
+    echo "ERROR: HTML entities found in staged files!"
+    echo "Please fix the following files:"
+    git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | xargs grep -l '&gt;\|&lt;\|&quot;\|&amp;' 2>/dev/null
+    exit 1
+fi
+
+echo "✓ No HTML entities found"
+exit 0
+</contents>

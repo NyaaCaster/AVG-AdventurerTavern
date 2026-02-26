@@ -1,5 +1,5 @@
-# 自动检测文本文件并规范化行尾
-* text=auto
+# Auto detect text files and normalize line endings
+* text=auto eol=lf
 
 # Shell 脚本使用 LF
 *.sh text eol=lf
@@ -11,18 +11,18 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# 源代码文件使用 LF
-*.js text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
-*.jsx text eol=lf
-*.json text eol=lf
-*.css text eol=lf
-*.scss text eol=lf
-*.html text eol=lf
-*.md text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
+# Source code files use LF and UTF-8
+*.js text eol=lf working-tree-encoding=UTF-8
+*.ts text eol=lf working-tree-encoding=UTF-8
+*.tsx text eol=lf working-tree-encoding=UTF-8
+*.jsx text eol=lf working-tree-encoding=UTF-8
+*.json text eol=lf working-tree-encoding=UTF-8
+*.css text eol=lf working-tree-encoding=UTF-8
+*.scss text eol=lf working-tree-encoding=UTF-8
+*.html text eol=lf working-tree-encoding=UTF-8
+*.md text eol=lf working-tree-encoding=UTF-8
+*.yml text eol=lf working-tree-encoding=UTF-8
+*.yaml text eol=lf working-tree-encoding=UTF-8
 
 # Docker 文件使用 LF
 Dockerfile* text eol=lf

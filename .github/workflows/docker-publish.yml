@@ -18,7 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1  # 只获取最新 commit，足够获取 hash
+          fetch-depth: 1
+
+      - name: Configure Git for proper encoding
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.safecrlf false
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
