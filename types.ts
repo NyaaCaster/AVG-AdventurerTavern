@@ -289,5 +289,5 @@ export interface ShopItemModalProps {
   onTransaction?: (changes: {
     goldChange: number;
     inventoryChanges: Record<string, number>;
-  }) =&gt; void;
+  }) => void;
 }
