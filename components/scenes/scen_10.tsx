@@ -1,9 +1,13 @@
 
 import React, { useState } from 'react';
-import { SceneProps } from '../../types';
+import { SceneProps, ShopTab } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 
-const Scen10: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, onAction, sceneLevels }) => {
+interface Scen10Props extends SceneProps {
+  onOpenShop: (tab: ShopTab) => void;
+}
+
+const Scen10: React.FC<Scen10Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, sceneLevels, onOpenShop }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -14,8 +18,8 @@ const Scen10: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisib
       {!showMoveMenu ? (
         <>
             <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setShowMoveMenu(true)} subLabel="Move" />
-            <SceneActionBtn label="道具购入" icon="fa-bag-shopping" onClick={() => onAction('buy_item')} />
-            <SceneActionBtn label="素材出售" icon="fa-coins" onClick={() => onAction('sell_item')} />
+            <SceneActionBtn label="道具购入" icon="fa-bag-shopping" onClick={() => onOpenShop('buy')} />
+            <SceneActionBtn label="素材出售" icon="fa-coins" onClick={() => onOpenShop('sell')} />
         </>
       ) : (
         <>

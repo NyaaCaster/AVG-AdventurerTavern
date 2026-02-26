@@ -1,4 +1,4 @@
-
+﻿
 export enum GameState {
   LOADING = 'LOADING',
   MENU = 'MENU',
@@ -269,4 +269,25 @@ export interface RevenueLog {
   timeStr: string;   // 显示时间 (如 08:00)
   type: RevenueType;
   amount: number;
+}
+
+// --- 商店系统类型定义 ---
+export type ShopTab = 'buy' | 'sell';
+
+export interface CartItem {
+  itemId: string;
+  quantity: number;
+  price: number;
+}
+
+export interface ShopItemModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialTab?: ShopTab;
+  inventory: Record<string, number>;
+  currentGold: number;
+  onTransaction?: (changes: {
+    goldChange: number;
+    inventoryChanges: Record<string, number>;
+  }) => void;
 }

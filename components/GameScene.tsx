@@ -20,6 +20,7 @@ import DebugSchedulesModal from './DebugSchedulesModal';
 import DebugResourceModal from './DebugResourceModal';
 import DebugUnlocksModal from './DebugUnlocksModal';
 import SaveLoadModal from './SaveLoadModal'; 
+import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import { CHARACTERS } from '../data/scenarioData';
@@ -63,16 +64,18 @@ export interface GameSceneRef {
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
-  // --- Hooks ---
+  // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
   const world = useWorldSystem(core.sceneLevels, initialSaveData);
   const audioRef = useGameAudio(world.currentSceneId, settings);
   
-  // --- UI Local State ---
+  // --- UI 本地状态 ---
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isExpansionOpen, setIsExpansionOpen] = useState(false); 
   const [isCookingOpen, setIsCookingOpen] = useState(false);
   const [isTavernMenuOpen, setIsTavernMenuOpen] = useState(false);
+  const [isShopOpen, setIsShopOpen] = useState(false);
+  const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy'); // 记录从哪个页签打开商店
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -90,7 +93,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
 
-  // --- Dialogue System Setup ---
+  // --- 对话系统事件处理 ---
   const handleItemsGained = (items: { id: string; count: number }[]) => {
       core.handleAddItems(items);
       const newNotifications = items.map(item => ({
@@ -108,9 +111,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           setMoveNotification(`${charName} 将前往 ${targetName}`);
           setTimeout(() => setMoveNotification(null), 4000);
           
-          // Apply forced location immediately logic is handled in final close or effect
-          // Here we set a pending state, but useWorldSystem handles forcedLocations.
-          // Since the prompt requires movement, we set it directly in the hook
+          // 立即写入强制位置，useWorldSystem 会在下次渲染时更新 presentCharacters
           world.setForcedLocations(prev => ({ ...prev, [charId]: targetId }));
       }
   };
@@ -118,7 +119,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const handleAffinityChange = (charId: string, change: number) => {
       if (change === 0) return;
       
-      // Update character stats
+      // 更新角色好感度数值
       core.setCharacterStats(prev => {
           const current = prev[charId] || { level: 1, affinity: 0 };
           const newAffinity = Math.max(0, Math.min(100, current.affinity + change));
@@ -128,7 +129,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           };
       });
 
-      // Show notification
+      // 显示好感度变化通知
       const newNotification = {
           id: Date.now() + Math.random().toString(),
           charId,
@@ -155,7 +156,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       onUnlockUpdate: handleUnlockUpdate
   });
 
-  // --- Game Loop: Revenue & Time ---
+  // --- 游戏循环：收入结算与时间推进 ---
   const lastSettlementHourRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -163,7 +164,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       
       if (lastSettlementHourRef.current !== currentHour) {
           const stats = core.managementStats;
-          // Recalculate Occupancy
+                    // 重新计算当前住宿人数
           const calculatedOccupancy = Math.floor(
              stats.maxOccupancy * (stats.attraction / 100) * (stats.satisfaction / 100)
           );
@@ -256,16 +257,16 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       }
   }, [world.worldState.timeStr]);
 
-  // --- Initial Revenue Logs (Dummy Data) ---
+  // --- 初始收入记录（仅首次启动时生成示例数据）---
   useEffect(() => {
       if (initialSaveData) return;
-      // Only generate if empty
+      // 已有记录则跳过
       if (core.revenueLogs.length > 0) return;
 
       const initialLogs: RevenueLog[] = [];
       const now = new Date();
       
-      // Use actual initial stats from managementStats state
+      // 使用当前旅店属性作为基准
       const stats = core.managementStats;
       
       for (let i = 2; i >= 0; i--) {
@@ -300,18 +301,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           });
       }
       core.setRevenueLogs(initialLogs.reverse()); 
-  }, [initialSaveData, core.managementStats]); // Run once on mount if no initial data
+  }, [initialSaveData, core.managementStats]); // 仅在首次挂载且无存档时执行
 
-  // --- Connection Status Check ---
+  // --- API 连接状态检测 ---
   useEffect(() => {
      setConnectionStatus(!settings.apiConfig.apiKey ? 'disconnected' : 'connected');
   }, [settings.apiConfig]);
 
-  // --- Ambient Logic ---
+  // --- 环境角色逻辑（场景内随机台词）---
   const lastAmbientSceneRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // 1. Handle Scene Transition (Reset)
+    // 1. 场景切换中：重置所有环境状态
     if (world.isSceneTransitioning) {
         dialogue.setAmbientCharacter(null);
         dialogue.setAmbientText('');
@@ -322,19 +323,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         return;
     }
 
-    // 2. Handle Dialogue Mode (Pause)
+    // 2. 对话模式中：暂停环境逻辑
     if (dialogue.isDialogueMode) {
         return;
     }
 
-    // 3. Check if already initialized for this scene visit
-    // If we are in the same scene and have initialized, restore visibility if needed but don't re-roll
+    // 3. 同一场景已初始化：恢复显示但不重新抽取角色
     if (lastAmbientSceneRef.current === world.currentSceneId) {
         if (!dialogue.showAmbientDialogue) dialogue.setShowAmbientDialogue(true);
         return;
     }
 
-    // 4. Initialize for new scene entry
+    // 4. 进入新场景：初始化环境角色
     lastAmbientSceneRef.current = world.currentSceneId;
     dialogue.setShowAmbientDialogue(true);
 
@@ -403,9 +403,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     }
   }, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
 
-  // --- Actions ---
+  // --- 场景动作处理 ---
   const handleAction = (action: string, param?: any) => {
-    console.log(`Action triggered: ${action}`, param);
+    console.log(`[动作] ${action}`, param);
     if (action === 'cook') {
         setIsCookingOpen(true);
     }
@@ -442,14 +442,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       const data = await loadGame(userId, slotId);
       if (data) {
           core.applyLoadedData(data);
-          // Restore world state
+          // 恢复世界状态
           world.setCurrentSceneId(data.currentSceneId);
           world.setWorldState(data.worldState);
           world.setForcedLocations({});
           // 立即更新角色位置，确保presentCharacters计算正确
           const locs = calculateCharacterLocations(data.worldState.period, data.worldState.dateStr, data.worldState.timeStr, core.sceneLevels);
           world.setCharacterLocations(locs);
-          // Restore settings
+          // 恢复设置
           if (data.settings && onSettingsChange) {
               onSettingsChange(data.settings);
           }
@@ -461,7 +461,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               }
           }
           
-          // Reset UI
+          // 重置 UI 状态
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
           // 重置环境逻辑状态
@@ -479,7 +479,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       saveGame: handleSaveGame
   }));
 
-  // Auto-Save
+  // --- 自动存档（每5分钟，非对话/非切换场景时触发）---
   useEffect(() => {
       const autoSaveInterval = setInterval(() => {
           if (!dialogue.isDialogueMode && !world.isSceneTransitioning) {
@@ -489,7 +489,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       return () => clearInterval(autoSaveInterval);
   }, [dialogue.isDialogueMode, world.isSceneTransitioning, core.gold, world.worldState, core.inventory, userId]);
 
-  // --- Rendering Helpers ---
+  // --- 渲染辅助函数 ---
   const handleOpenDebug = () => {
       setIsDebugMenuOpen(!isDebugMenuOpen);
   };
@@ -548,7 +548,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         case 'scen_7': return <Scen7 {...commonProps} />;
         case 'scen_8': return <Scen8 {...commonProps} />;
         case 'scen_9': return <Scen9 {...commonProps} />;
-        case 'scen_10': return <Scen10 {...commonProps} />;
+        // onOpenShop: 'buy' = 道具购入页签，'sell' = 素材出售页签
+        case 'scen_10': return <Scen10 {...commonProps} onOpenShop={(tab) => { setShopInitialTab(tab); setIsShopOpen(true); }} />;
         default: return <Scen1 {...commonProps} />;
     }
   };
@@ -748,6 +749,26 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       />
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
+
+      {/*
+        ShopItemModal - 道具商店
+        - goldChange 为差值（负=花费，正=收入），需加上当前金币换算为绝对值传给 updateGold
+        - inventoryChanges 已是绝对数量，直接传给 updateInventoryItem
+        - 若需新增其他商店，复用此组件并传入不同数据源即可
+      */}
+      <ShopItemModal
+        isOpen={isShopOpen}
+        onClose={() => setIsShopOpen(false)}
+        initialTab={shopInitialTab}
+        inventory={core.inventory}
+        currentGold={core.gold}
+        onTransaction={({ goldChange, inventoryChanges }) => {
+          core.updateGold(core.gold + goldChange);
+          Object.entries(inventoryChanges).forEach(([id, count]) => {
+            core.updateInventoryItem(id, count);
+          });
+        }}
+      />
     </div>
   );
 });
