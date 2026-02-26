@@ -17,7 +17,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ShopItemModalProps, ShopTab, ItemData, CartItem } from '../types';
 import { ITEMS_RES } from '../data/item-res';
-import { ITEM_RES_SHOP } from '../data/item-res-shop';
+import { ITEM_RES_SHOP, getShopItemPrice } from '../data/item-res-shop';
 import { getResValue } from '../data/item-value-table';
 import { ITEM_TAGS } from '../data/item-type';
 
@@ -320,6 +320,7 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
               {activeTab === 'buy' && buyItems.map(({ shopItem, item }) => {
                 const cartItem = cart[shopItem.resId];
                 const holdCount = inventory[shopItem.resId] || 0;
+                const actualPrice = getShopItemPrice(shopItem);
                 return (
                   <div key={shopItem.id} className="bg-[#f5f0e6] border border-[#d6cbb8] p-2 md:p-3 rounded-lg shadow-sm hover:shadow-md hover:border-[#9b7a4c] transition-all group">
                     <div className="flex gap-2">
@@ -331,14 +332,14 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
                         </div>
                         <p className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5">{item.description}</p>
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-[#b45309] font-mono text-xs md:text-sm">{shopItem.price} G</span>
+                          <span className="font-bold text-[#b45309] font-mono text-xs md:text-sm">{actualPrice} G</span>
                           <div className="flex items-center gap-0.5 md:gap-1">
                             <button onClick={() => removeFromCart(shopItem.resId)} disabled={!cartItem}
                               className={`w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center font-bold text-xs transition-all ${
                                 cartItem ? 'bg-[#382b26] text-[#f0e6d2] hover:bg-[#2c241b]' : 'bg-[#d6cbb8] text-[#8c7b70] cursor-not-allowed'
                               }`}>-</button>
                             <span className="w-5 md:w-7 text-center font-bold text-[#382b26] text-xs">{cartItem?.quantity || 0}</span>
-                            <button onClick={() => addToCart(shopItem.resId, shopItem.price)}
+                            <button onClick={() => addToCart(shopItem.resId, actualPrice)}
                               className="w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center font-bold text-xs bg-[#9b7a4c] text-[#1a1512] hover:bg-[#b45309] transition-all">+</button>
                           </div>
                         </div>
