@@ -18,6 +18,8 @@ export interface GameSaveData {
   worldState: WorldState;
   managementStats?: ManagementStats;
   characterStats?: Record<string, { level: number; affinity: number }>;
+  checkedInCharacters?: string[];
+  sceneLevels?: Record<string, number>;
 }
 
 // --- API 辅助函数 ---
@@ -121,7 +123,9 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             gold: s.gold || 0,
             currentSceneId: s.currentSceneId || '',
             worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
-            characterStats: s.characterStats || {}
+            characterStats: s.characterStats || {},
+            checkedInCharacters: s.checkedInCharacters,
+            sceneLevels: s.sceneLevels
         }));
     }
     return [];
