@@ -69,7 +69,15 @@ type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
   // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
-  const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(INITIAL_CHECKED_IN_CHARACTERS);
+  const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(() => {
+    // 初始化时若有存档数据，立即补全入住角色列表
+    if (initialSaveData) {
+      const savedCheckedIn: string[] = initialSaveData.checkedInCharacters ?? INITIAL_CHECKED_IN_CHARACTERS;
+      const eligibleFromLevels = getEligibleCheckInCharacters(initialSaveData.sceneLevels ?? {});
+      return Array.from(new Set([...savedCheckedIn, ...eligibleFromLevels]));
+    }
+    return INITIAL_CHECKED_IN_CHARACTERS;
+  });
   const world = useWorldSystem(core.sceneLevels, initialSaveData, checkedInCharacters);
   const audioRef = useGameAudio(world.currentSceneId, settings);
   
