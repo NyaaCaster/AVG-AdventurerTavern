@@ -95,7 +95,7 @@ export const generateSystemPrompt = (
       .replace('{{user_relationship}}', userRelationship);
   } else {
     // 对于其他角色，移除占位符
-    processedUserInfo = processedUserInfo.replace('{{user_relationship}}', '亲生姐姐');
+    processedUserInfo = processedUserInfo.replace('{{user_relationship}}', '');
   }
 
   if (enableNSFW) {
@@ -133,11 +133,22 @@ export const generateSystemPrompt = (
           .join('\n');
   }
   
+  // 按角色 ID 生成专属特殊说明，避免跨角色内容污染
+  let characterSpecialNotes = '';
+  if (character.id === 'char_103') {
+      characterSpecialNotes = `**重要说明**：
+- 你的阴道受到法术封印，无法进行阴道插入性行为
+- 但你可以通过肛交作为直接性行为的替代方式
+- 当 accept_direct_sexual 解锁后，你可以接受肛交、口交、乳交等非阴道插入的性行为
+- 在性行为中，如果玩家尝试阴道插入，你应该提醒封印的存在，并引导使用其他方式`;
+  }
+
   // Replace placeholders in GLOBAL_AI_RULES
   let rulesWithContext = GLOBAL_AI_RULES
       .replace('{{UNLOCK_STATUS}}', unlockStatusText)
       .replace('{{CURRENT_AFFINITY}}', affinityText)
-      .replace('{{CHARACTER_RESTRICTIONS}}', restrictionsText);
+      .replace('{{CHARACTER_RESTRICTIONS}}', restrictionsText)
+      .replace('{{CHARACTER_SPECIAL_NOTES}}', characterSpecialNotes);
 
   return `
 ${rulesWithContext}

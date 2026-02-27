@@ -29,7 +29,7 @@ import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
 import { getResValue } from '../data/item-value-table';
-import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId } from '../types';
+import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
 
@@ -117,10 +117,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       setItemNotifications(prev => [...prev, ...newNotifications]);
   };
 
-  const handleCharacterMove = (charId: string, targetId: string) => {
-      if (SCENE_NAMES[targetId as any]) {
+      const handleCharacterMove = (charId: string, targetId: SceneId) => {
+        if (SCENE_NAMES[targetId]) {
           const charName = CHARACTERS[charId]?.name || '角色';
-          const targetName = SCENE_NAMES[targetId as any];
+          const targetName = SCENE_NAMES[targetId];
           setMoveNotification(`${charName} 将前往 ${targetName}`);
           setTimeout(() => setMoveNotification(null), 4000);
           
@@ -485,7 +485,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           // 用存档的解锁状态覆盖数据库
           if (data.characterUnlocks) {
               for (const [characterId, unlocks] of Object.entries(data.characterUnlocks)) {
-                  await updateCharacterUnlocks(userId, slotId, characterId, unlocks);
+                  await updateCharacterUnlocks(userId, slotId, characterId, unlocks as Partial<CharacterUnlocks>);
               }
           }
           
@@ -543,7 +543,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               dialogue.setAmbientCharacter(null);
               dialogue.setAmbientText('');
               dialogue.setShowAmbientDialogue(false);
-              console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation as any] || actualLocation}，清除当前场景的 Ambient 显示`);
+              console.log(`[角色移动系统] ${dialogue.activeCharacter.name} 已移动到 ${SCENE_NAMES[actualLocation as SceneId] || actualLocation}，清除当前场景的 Ambient 显示`);
           }
       }
       
@@ -685,7 +685,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             isOpen={isScheduleViewerOpen}
             onClose={() => setIsScheduleViewerOpen(false)}
             periodLabel={world.worldState.periodLabel}
-            characterLocations={world.characterLocations}
+            characterLocations={world.characterLocations as Record<string, SceneId>}
           />
 
           <DebugResourceModal

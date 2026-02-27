@@ -56,6 +56,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   };
 
   // 计算已入住角色数量（不包括玩家自己 char_1）
+  // 与 GameScene.tsx 读档逻辑保持一致：savedCheckedIn 优先，兼容旧存档（无此字段时用 INITIAL 兜底）
   const getCharacterCount = (data: GameSaveData) => {
     const savedCheckedIn: string[] = data.checkedInCharacters ?? INITIAL_CHECKED_IN_CHARACTERS;
     const eligibleFromLevels = getEligibleCheckInCharacters(data.sceneLevels ?? {});

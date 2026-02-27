@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { 
-    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks 
+    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks, SceneId 
 } from '../types';
 import { llmService } from '../services/llmService';
 import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
@@ -19,7 +19,7 @@ interface UseDialogueSystemProps {
     userId: number;
     currentSlotId: number;
     onItemsGained: (items: { id: string; count: number }[]) => void;
-    onCharacterMove: (charId: string, targetId: string) => void;
+    onCharacterMove: (charId: string, targetId: SceneId) => void;
     onAffinityChange: (charId: string, change: number) => void;
     onUnlockUpdate: (charId: string, unlockKey: keyof CharacterUnlocks) => void;
 }
@@ -245,13 +245,14 @@ export const useDialogueSystem = ({
           }
       }
 
-      if (response.move_to) {
-          onCharacterMove(activeCharacter.id, response.move_to);
+            if (response.move_to) {
+          const moveTarget = response.move_to;
+          onCharacterMove(activeCharacter.id, moveTarget);
           // [角色移动系统] 当角色决定移动场景时，主动结束对话
-          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
+          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，主动结束对话`);
           // 延迟触发，让当前消息显示完毕
           setTimeout(() => {
-              handleEndDialogueGenerationWithMove(response.move_to);
+              handleEndDialogueGenerationWithMove(moveTarget);
           }, 1000);
       }
 
@@ -348,15 +349,16 @@ export const useDialogueSystem = ({
                 }
             }
 
-            if (response.move_to) {
-                onCharacterMove(activeCharacter.id, response.move_to);
-                // [角色移动系统] 当角色决定移动场景时，主动结束对话
-                console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${response.move_to}，主动结束对话`);
-                // 延迟触发，让当前消息显示完毕
-                setTimeout(() => {
-                    handleEndDialogueGenerationWithMove(response.move_to);
-                }, 1000);
-            }
+                  if (response.move_to) {
+          const moveTarget = response.move_to;
+          onCharacterMove(activeCharacter.id, moveTarget);
+          // [角色移动系统] 当角色决定移动场景时，主动结束对话
+          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，主动结束对话`);
+          // 延迟触发，让当前消息显示完毕
+          setTimeout(() => {
+              handleEndDialogueGenerationWithMove(moveTarget);
+          }, 1000);
+      }
 
             // Handle unlock request
             if (response.unlock_request && activeCharacter) {
@@ -474,11 +476,11 @@ export const useDialogueSystem = ({
     }
   };
 
-  const handleEndDialogueGenerationWithMove = async (targetSceneId: string) => {
+  const handleEndDialogueGenerationWithMove = async (targetSceneId: SceneId) => {
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
     const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
-    const targetSceneName = SCENE_NAMES[targetSceneId as any] || '未知场景';
+    const targetSceneName = SCENE_NAMES[targetSceneId] || '未知场景';
     setIsLoading(true);
 
     try {
@@ -525,13 +527,15 @@ export const useDialogueSystem = ({
     }
   };
 
-  const handleFinalClose = () => {
+    const handleFinalClose = () => {
       setIsDialogueMode(false);
       setIsDialogueEnding(false);
       setActiveCharacter(null);
       setClothingState('default');
       // [角色主动结束对话] 重置好感度累计
       setSessionAffinityTotal(0);
+      // 清理 llmService，防止残留上一个角色的上下文
+      llmService.reset();
   };
 
   const generateAmbientLine = async (char: Character, state: ClothingState, sceneId: string) => {
@@ -542,41 +546,82 @@ export const useDialogueSystem = ({
 
       setIsAmbientLoading(true);
       try {
-          // 加载角色记忆以增强环境台词的连续性
+          // 加载角色记忆（有 character_id 隔离，安全）
           const memoryContext = await aiMemory.getMemoryContext(char.id);
-          
-          await initLLM(char);
-          
-          const stats = characterStats[char.id] || { level: 1, affinity: 0 };
-          let prompt = "";
 
+          const stats = characterStats[char.id] || { level: 1, affinity: 0 };
+          const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
+          const dynamicUserInfo = USER_INFO_TEMPLATE
+              .replace(/{{user}}/g, settings.userName)
+              .replace(/{{home}}/g, settings.innName);
+
+          // 构建角色专属 system prompt，不调用 initLLM，避免污染全局 llmService
+          let baseSystemPrompt = generateSystemPrompt(
+              char, dynamicUserInfo, settings.innName,
+              settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated
+          );
+          baseSystemPrompt = baseSystemPrompt
+              .replace(/{{user}}/g, settings.userName)
+              .replace(/{{home}}/g, settings.innName);
+          const enhancedSystemPrompt = aiMemory.buildEnhancedPrompt(baseSystemPrompt, memoryContext);
+
+          let userPrompt = "";
           if (sceneId === 'scen_7') {
-              prompt = `
-[系统指令: 此消息仅生成环境氛围台词]
-你现在正在温泉里泡澡，非常放松。
-你没有注意到玩家(${settings.userName})的到来，正在自言自语。
-请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。
-不要与玩家对话，不要使用第二人称。
-`;
+              userPrompt = `[系统指令: 此消息仅生成环境氛围台词]\n你现在正在温泉里泡澡，非常放松。\n你没有注意到玩家(${settings.userName})的到来，正在自言自语。\n请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。\n不要与玩家对话，不要使用第二人称。`;
           } else {
-              prompt = `
-[系统指令: 此消息仅生成环境氛围台词]
-你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。
-玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。
-当前你对玩家的好感度为: ${stats.affinity}。
-请根据你的性格、当前时间、地点和心情，生成一句简短的“闲聊”或“自言自语”。
-或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。
-`;
+              userPrompt = `[系统指令: 此消息仅生成环境氛围台词]\n你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。\n玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。\n当前你对玩家的好感度为: ${stats.affinity}。\n请根据你的性格、当前时间、地点和心情，生成一句简短的"闲聊"或"自言自语"。\n或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。`;
           }
 
-          // 增强 prompt，加入角色记忆上下文
-          const enhancedPrompt = aiMemory.buildEnhancedPrompt(prompt, memoryContext);
-          const response = await llmService.sendMessage(enhancedPrompt);
-          let text = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+          // 直接发起一次性 API 请求，完全不触碰全局 llmService，杜绝角色窜台
+          const cfg = settings.apiConfig;
+          let ambientEndpoint = "";
+          switch (cfg.provider) {
+              case 'google':   ambientEndpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'; break;
+              case 'openai':   ambientEndpoint = 'https://api.openai.com/v1/chat/completions'; break;
+              case 'deepseek': ambientEndpoint = 'https://api.deepseek.com/chat/completions'; break;
+              default:         ambientEndpoint = `${(cfg.baseUrl || '').replace(/\/$/, '')}/chat/completions`;
+          }
+
+          const ambientPayload: any = {
+              model: cfg.model,
+              messages: [
+                  {
+                      role: 'system',
+                      content: enhancedSystemPrompt + "\n\nIMPORTANT: Respond strictly in valid JSON format with keys 'text', 'emotion'. Do not use Markdown code blocks."
+                  },
+                  { role: 'user', content: userPrompt }
+              ],
+              temperature: 0.9
+          };
+          if (cfg.provider === 'openai' || cfg.provider === 'google') {
+              ambientPayload.response_format = { type: "json_object" };
+          }
+
+          const ambientRes = await fetch(ambientEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` },
+              body: JSON.stringify(ambientPayload)
+          });
+          if (!ambientRes.ok) throw new Error(`Ambient API Error: ${ambientRes.status}`);
+
+          const ambientData = await ambientRes.json();
+          const raw = ambientData.choices?.[0]?.message?.content || '{"text":"......","emotion":"normal"}';
+
+          let parsed: { text?: string; emotion?: string } = {};
+          try {
+              const clean = raw.replace(/`{3}json/g, '').replace(/`{3}/g, '').trim();
+              const si = clean.indexOf('{');
+              const ei = clean.lastIndexOf('}');
+              parsed = JSON.parse(si !== -1 && ei !== -1 ? clean.substring(si, ei + 1) : clean);
+          } catch { parsed = { text: raw, emotion: 'normal' }; }
+
+          const text = (parsed.text || raw)
+              .replace(/{{user}}/g, settings.userName)
+              .replace(/{{home}}/g, settings.innName);
           setAmbientText(text);
-          
-          if (response.emotion) {
-              const sprite = getCharacterSprite(char, state, response.emotion);
+
+          if (parsed.emotion) {
+              const sprite = getCharacterSprite(char, state, parsed.emotion);
               setCurrentSprite(sprite);
           }
 

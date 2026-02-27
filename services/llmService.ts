@@ -5,7 +5,7 @@ export interface AIResponse {
   text: string;
   emotion: string;
   clothing?: string;
-  move_to?: string; // 角色移动指令
+  move_to?: import('../types').SceneId; // 角色移动指令
   items?: { id: string; count: number }[];
   affinity_change?: number; // 好感度变化 (-5 到 +5)
   unlock_request?: string; // 角色解锁请求
@@ -26,6 +26,7 @@ export class LlmService {
   private history: ChatMessage[] = [];
   private systemInstruction: string = "";
   private config: ApiConfig | null = null;
+  private currentCharacterId: string | null = null; // 当前持有对话的角色ID
   
   private logs: LogEntry[] = [];
   private logSubscribers: ((logs: LogEntry[]) => void)[] = [];
@@ -36,6 +37,7 @@ export class LlmService {
     this.config = { ...config }; // Create a copy
     this.history = [];
     this.systemInstruction = systemPrompt;
+    this.currentCharacterId = character.id;
     
     const safeConfig = { ...this.config };
     if (safeConfig.apiKey) {
@@ -68,6 +70,16 @@ export class LlmService {
 
   private notifySubscribers() {
     this.logSubscribers.forEach(cb => cb(this.logs));
+  }
+
+  getCurrentCharacterId(): string | null {
+    return this.currentCharacterId;
+  }
+
+  reset() {
+    this.history = [];
+    this.systemInstruction = '';
+    this.currentCharacterId = null;
   }
 
   async sendMessage(message: string): Promise<AIResponse> {
