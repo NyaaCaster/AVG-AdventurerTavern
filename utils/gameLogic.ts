@@ -133,17 +133,7 @@ export const calculateCharacterLocations = (period: 'day'|'evening'|'night', dat
                 return (sceneOccupancy[sid] || 0) === 0;
             });
 
-            const qualifiedScenes = validScenes.filter(sid => {
-                if (char.appearanceConditions) {
-                    for (const cond of char.appearanceConditions) {
-                        if (cond.sceneId === sid) {
-                            const sceneLevel = sceneLevels[sid] || 0; 
-                            if (sceneLevel < cond.minLevel) return false;
-                        }
-                    }
-                }
-                return true;
-            });
+            const qualifiedScenes = validScenes;
 
             if (qualifiedScenes.length > 0) {
                 const index = Math.floor(seededRandom(seed + charId.charCodeAt(0)) * qualifiedScenes.length);

@@ -21,6 +21,7 @@ import DebugResourceModal from './DebugResourceModal';
 import DebugUnlocksModal from './DebugUnlocksModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
+import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import RoomCheckInToast from './RoomCheckInToast';
@@ -43,6 +44,9 @@ import Scen7 from './scenes/scen_7';
 import Scen8 from './scenes/scen_8';
 import Scen9 from './scenes/scen_9';
 import Scen10 from './scenes/scen_10';
+import ScenTown from './scenes/scen_town';
+import ScenGuild from './scenes/scen_guild';
+import ScenMarket from './scenes/scen_market';
 
 import { useCoreState } from '../hooks/useCoreState';
 import { useWorldSystem } from '../hooks/useWorldSystem';
@@ -88,6 +92,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isTavernMenuOpen, setIsTavernMenuOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy'); // 记录从哪个页签打开商店
+  const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -436,6 +441,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     if (action === 'cook') {
         setIsCookingOpen(true);
     }
+    if (action === 'open_food_shop') {
+        setIsFoodShopOpen(true);
+    }
   };
 
   const handleSaveGame = async (slotId: number) => {
@@ -586,6 +594,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         case 'scen_9': return <Scen9 {...commonProps} />;
         // onOpenShop: 'buy' = 道具购入页签，'sell' = 素材出售页签
         case 'scen_10': return <Scen10 {...commonProps} onOpenShop={(tab) => { setShopInitialTab(tab); setIsShopOpen(true); }} />;
+        // --- 额外场景组（非旅店设施，不可升级）---
+        case 'scen_town': return <ScenTown {...commonProps} />;
+        case 'scen_guild': return <ScenGuild {...commonProps} />;
+        case 'scen_market': return <ScenMarket {...commonProps} />;
         default: return <Scen1 {...commonProps} />;
     }
   };
@@ -796,6 +808,21 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       />
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
+
+      {/* ShopResModal - 市集食材店（scen_market 使用）*/}
+      <ShopResModal
+        isOpen={isFoodShopOpen}
+        onClose={() => setIsFoodShopOpen(false)}
+        inventory={core.inventory}
+        currentGold={core.gold}
+        onTransaction={({ goldChange, inventoryChanges }) => {
+          core.updateGold(core.gold + goldChange);
+          Object.entries(inventoryChanges).forEach(([id, count]) => {
+            core.updateInventoryItem(id, count as number);
+          });
+        }}
+      />
+
 
       {/*
         ShopItemModal - 道具商店

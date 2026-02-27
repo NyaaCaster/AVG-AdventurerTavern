@@ -10,7 +10,7 @@ interface Scen1Props extends SceneProps {
 }
 
 const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, sceneLevels, checkedInCharacters }) => {
-  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management'>('main');
+  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management' | 'outing'>('main');
   const [showRoomSelection, setShowRoomSelection] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -40,7 +40,8 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
               subLabel="Guest Rooms" 
             />
             <SceneActionBtn label="队伍管理" icon="fa-users" onClick={() => {}} subLabel="Party" />
-            
+            <SceneActionBtn label="外出" icon="fa-person-walking" onClick={() => setMenuLayer('outing')} subLabel="Go Out" />
+
             <div className="h-px w-32 bg-white/10 my-2"></div>
             
             {presentCharacters.map(char => (
@@ -70,6 +71,16 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
              {showPropShop && (
                <SceneActionBtn label="道具店" icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
              )}
+          </>
+        )}
+
+        {menuLayer === 'outing' && (
+          <>
+            <SceneActionBtn label="返回上级" icon="fa-arrow-turn-up" onClick={() => setMenuLayer('main')} variant="special" />
+            <div className="h-2"></div>
+            <SceneActionBtn label="小镇" icon="fa-store" onClick={() => onNavigate('scen_town')} />
+            <SceneActionBtn label="冒险者公会" icon="fa-shield-halved" onClick={() => onNavigate('scen_guild')} />
+            <SceneActionBtn label="市集" icon="fa-basket-shopping" onClick={() => onNavigate('scen_market')} />
           </>
         )}
 

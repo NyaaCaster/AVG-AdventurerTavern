@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
 } from '../types';
+import { getDefaultUnlocks } from '../data/unlockConditions';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
@@ -250,21 +251,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setCharacterUnlocks(prev => ({
           ...prev,
           [characterId]: {
-              ...(prev[characterId] || {
-                  accept_battle_party: 0,
-                  accept_flirt_topic: 0,
-                  accept_nsfw_topic: 0,
-                  accept_physical_contact: 0,
-                  accept_indirect_sexual: 0,
-                  accept_become_lover: 0,
-                  accept_direct_sexual: 0,
-                  accept_sexual_partner: 0,
-                  accept_public_exposure: 0,
-                  accept_public_sexual: 0,
-                  accept_group_sexual: 0,
-                  accept_prostitution: 0,
-                  accept_sexual_slavery: 0
-              }),
+              ...(prev[characterId] || getDefaultUnlocks()),
               [unlockKey]: value
           }
       }));
@@ -274,21 +261,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setCharacterUnlocks(prev => ({
           ...prev,
           [characterId]: {
-              ...(prev[characterId] || {
-                  accept_battle_party: 0,
-                  accept_flirt_topic: 0,
-                  accept_nsfw_topic: 0,
-                  accept_physical_contact: 0,
-                  accept_indirect_sexual: 0,
-                  accept_become_lover: 0,
-                  accept_direct_sexual: 0,
-                  accept_sexual_partner: 0,
-                  accept_public_exposure: 0,
-                  accept_public_sexual: 0,
-                  accept_group_sexual: 0,
-                  accept_prostitution: 0,
-                  accept_sexual_slavery: 0
-              }),
+              ...(prev[characterId] || getDefaultUnlocks()),
               ...unlocks
           }
       }));

@@ -55,6 +55,16 @@ export const getSceneBackground = (sceneId: SceneId, period: WorldState['period'
     case 'scen_10': // 道具店
       return `${basePath}/bg_scen_10.png`;
 
+    // --- 额外场景组（非旅店设施，不可升级）---
+    case 'scen_town': // 小镇
+      return `img/bg/other_scen/bg_town_${p}.png`;
+
+    case 'scen_guild': // 冒险者公会（不区分时段）
+      return `img/bg/other_scen/bg_adventurer-guild.png`;
+
+    case 'scen_market': // 市集
+      return `img/bg/other_scen/bg_market_${p}.png`;
+
     default:
       // 默认回退
       return `${basePath}/scen_1/bg_scen_1_lv1_day.png`;

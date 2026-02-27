@@ -11,5 +11,9 @@ export const SCENE_BGM: Record<SceneId, string> = {
   'scen_7': 'audio/bgm/bgm_scen_7.ogg',
   'scen_8': 'audio/bgm/bgm_scen_8.ogg',
   'scen_9': 'audio/bgm/bgm_scen_9.ogg',
-  'scen_10': 'audio/bgm/bgm_scen_10.ogg'
+  'scen_10': 'audio/bgm/bgm_scen_10.ogg',
+  // --- 额外场景组（非旅店设施，BGM 待补充）---
+  'scen_town': 'audio/bgm/_title.ogg', // 暂用标题 BGM
+  'scen_guild': 'audio/bgm/bgm_event_001.ogg', // 暂用冒险者公会事件 BGM
+  'scen_market': 'audio/bgm/_title.ogg', // 暂用标题 BGM
 };

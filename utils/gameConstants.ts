@@ -10,7 +10,11 @@ export const SCENE_NAMES: Record<SceneId, string> = {
   'scen_7': '温泉',
   'scen_8': '按摩室',
   'scen_9': '库房',
-  'scen_10': '道具店'
+  'scen_10': '道具店',
+  // --- 额外场景组（非旅店设施，不可升级）---
+  'scen_town': '小镇',
+  'scen_guild': '冒险者公会',
+  'scen_market': '市集',
 };
 
 export const INITIAL_SCENE_LEVELS: Record<string, number> = {
@@ -63,15 +67,15 @@ export const INITIAL_INVENTORY: Record<string, number> = {
     'res-0001': 99, // 灵木，原：15
     'res-0002': 99, // 幻皮，原：15
     'res-0003': 99, // 魔晶石，原：15
-    'res-0101': 99, // 狂暴兔肉
-    'res-0201': 99, // 青菜
-    'res-0301': 99, // 发光菌伞
-    'res-0401': 99, // 面粉
-    'res-0501': 99, // 渡鸦蛋
-    'res-0601': 99, // 牛奶
-    'res-0701': 99, // 啤酒
-    'res-0801': 99, // 史莱姆凝胶
-    'res-0901': 99, // 木灵的胡椒
+    'res-0101': 10, // 肉干
+    'res-0201': 10, // 白萝卜
+    'res-0301': 10, // 草菇
+    'res-0401': 10, // 面粉
+    'res-0501': 10, // 鸡蛋
+    'res-0601': 10, // 牛奶
+    'res-0701': 30, // 啤酒
+    'res-0801': 10, // 果胶
+    'res-0901': 10, // 盐
     'itm-01': 5, // 治疗药·小
     'itm-07': 1, // 精灵粉尘
     'wpn-102': 1, // 铁剑

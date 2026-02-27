@@ -50,7 +50,11 @@ export type SceneId =
   | 'scen_7'  // 温泉
   | 'scen_8'  // 按摩室
   | 'scen_9'  // 库房
-  | 'scen_10'; // 道具店
+  | 'scen_10' // 道具店
+  // --- 额外场景组（非旅店设施，不可升级）---
+  | 'scen_town'   // 小镇
+  | 'scen_guild'  // 冒险者公会
+  | 'scen_market'; // 市集
 
 // 新增：角色日程表定义
 export interface CharacterSchedule {
