@@ -118,6 +118,9 @@ const PROMPT_MOVEMENT = `
   - scen_8: 按摩室
   - scen_9: 库房
   - scen_10: 道具店
+  - scen_town: 小镇
+  - scen_guild: 冒险者公会
+  - scen_market: 市集
 
 - 触发条件：当{{user}}建议或命令角色前往上述某个场景，并且角色**明确同意**时。
 - 输出格式：在JSON中包含 "move_to": "场景ID" 字段。

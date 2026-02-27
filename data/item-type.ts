@@ -30,7 +30,7 @@ export const ITEM_TAGS: ItemTagInfo[] = [
   { id: 'flour', name: '面粉', icon: '🌾' },  // 4
   { id: 'bread', name: '面包', icon: '🍞' },  // 14
   { id: 'rice', name: '米', icon: '🍚' },  // 15
-  { id: 'bean', name: '豆类', icon: '🫘' },  // 16
+  { id: 'bean', name: '豆类', icon: '🌽' },  // 16
   { id: 'egg', name: '蛋类', icon: '🥚' },  // 5
   { id: 'milk', name: '奶', icon: '🍼' },  // 6
   { id: 'dairy', name: '乳制品', icon: '🧀' },  // 21
