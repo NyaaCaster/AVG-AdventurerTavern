@@ -4,7 +4,7 @@ import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 import InventoryModal from '../InventoryModal';
 
-const Scen9: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, settings, worldState, inventory, sceneLevels }) => {
+const Scen9: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, settings, worldState, inventory, sceneLevels, presentCharacters }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
 
@@ -21,7 +21,19 @@ const Scen9: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisibl
             <>
                 <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setShowMoveMenu(true)} subLabel="Move" />
                 <SceneActionBtn label="盘查库存" icon="fa-clipboard-list" onClick={() => setShowInventory(true)} subLabel="Inventory" />
-                {/* 可以在这里添加隐秘对话选项 */}
+
+                <div className="h-px w-32 bg-white/10 my-2"></div>
+
+                {presentCharacters.map(char => (
+                    <React.Fragment key={char.id}>
+                        <SceneActionBtn
+                            label={`与${char.name}对话`}
+                            icon="fa-comments"
+                            variant="primary"
+                            onClick={() => onEnterDialogue(char.id, 'chat')}
+                        />
+</React.Fragment>
+                ))}
             </>
         ) : (
             <>

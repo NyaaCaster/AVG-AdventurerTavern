@@ -7,7 +7,7 @@ interface Scen10Props extends SceneProps {
   onOpenShop: (tab: ShopTab) => void;
 }
 
-const Scen10: React.FC<Scen10Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, sceneLevels, onOpenShop }) => {
+const Scen10: React.FC<Scen10Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, sceneLevels, onOpenShop, presentCharacters }) => {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -20,6 +20,19 @@ const Scen10: React.FC<Scen10Props> = ({ onNavigate, onEnterDialogue, isMenuVisi
             <SceneActionBtn label="店内移动" icon="fa-shoe-prints" onClick={() => setShowMoveMenu(true)} subLabel="Move" />
             <SceneActionBtn label="道具购入" icon="fa-bag-shopping" onClick={() => onOpenShop('buy')} />
             <SceneActionBtn label="素材出售" icon="fa-coins" onClick={() => onOpenShop('sell')} />
+
+            <div className="h-px w-32 bg-white/10 my-2"></div>
+
+            {presentCharacters.map(char => (
+                <React.Fragment key={char.id}>
+                    <SceneActionBtn
+                        label={`与${char.name}对话`}
+                        icon="fa-comments"
+                        variant="primary"
+                        onClick={() => onEnterDialogue(char.id, 'chat')}
+                    />
+                </React.Fragment>
+            ))}
         </>
       ) : (
         <>
