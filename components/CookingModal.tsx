@@ -540,14 +540,14 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                     {Object.entries(getAvailableInventory(activeSlotIndex)).map(([id, count]) => {
                                         const item = ITEMS[id];
-                                        // 过滤条件：必须是素材(res)，且有剩余数量
-                                        if (item.category !== 'res' || (count as number) <= 0) return null;
+                                        // 过滤条件：道具必须存在、必须是素材(res)，且有剩余数量
+                                        if (!item || item.category !== 'res' || (count as number) <= 0) return null;
                                         
                                         // 主料槽位(slot 0)：过滤掉 non, drinks, spice, milk
-                                        if (activeSlotIndex === 0 && ['non', 'drinks', 'spice', 'milk'].includes(item.tag)) return null;
+                                        if (activeSlotIndex === 0 && ['non', 'drinks', 'spice', 'milk'].includes(item.tag ?? '')) return null;
                                         
                                         // 辅料槽位(slot 1-4)：过滤掉 non, drinks
-                                        if (activeSlotIndex !== 0 && ['non', 'drinks'].includes(item.tag)) return null;
+                                        if (activeSlotIndex !== 0 && ['non', 'drinks'].includes(item.tag ?? '')) return null;
 
                                         return (
                                             <button
@@ -565,7 +565,7 @@ const CookingModal: React.FC<CookingModalProps> = ({
                                                         : 'bg-[#fcfaf7] border-[#d6cbb8] hover:border-[#9b7a4c]'}
                                                 `}
                                             >
-                                                <div className="text-2xl">{ITEM_TAGS.find(t=>t.id===item.tag)?.icon || '📦'}</div>
+                                                <div className="text-2xl">{ITEM_TAGS.find(t=>t.id===(item.tag ?? ''))?.icon || '📦'}</div>
                                                 <div className="text-xs font-bold text-[#382b26] line-clamp-1">{item.name}</div>
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-[10px] text-yellow-600"><i className="fa-solid fa-star"></i>{item.star}</span>
