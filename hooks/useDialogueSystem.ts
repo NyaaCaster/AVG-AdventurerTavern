@@ -117,10 +117,17 @@ export const useDialogueSystem = ({
     
     const stats = characterStats[characterId] || { level: 1, affinity: 0 };
     
-    if (settings.apiConfig.apiKey) {
+        if (settings.apiConfig.apiKey) {
         setIsLoading(true);
         try {
             await initLLM(char);
+
+            // [角色移动系统] 检查核心记忆中是否有关于移动到当前场景的约定
+            const memoryContextForInit = await aiMemory.getMemoryContext(char.id);
+            const moveRelatedMemory = memoryContextForInit.coreMemories.find(m =>
+                m.content.includes(worldState.sceneName) &&
+                (m.content.includes('前往') || m.content.includes('同意') || m.content.includes('邀请'))
+            );
             
             let contextPrompt = `
 [系统指令: 此消息不显示给玩家，仅作为剧情生成指令]
@@ -129,6 +136,13 @@ export const useDialogueSystem = ({
 当前你对玩家的好感度为: ${stats.affinity} (0-100)。
 你的衣着状态是: ${nextClothingState === 'nude' ? '裸体/未穿衣' : '日常装束'}。
 `;
+            // [角色移动系统] 如果有移动约定，追加背景提示
+            if (moveRelatedMemory) {
+                contextPrompt += `
+[重要背景] ${moveRelatedMemory.content}。
+你是主动来到这里等待玩家的，这次相遇在你的预期之内，请表现出符合约定背景的自然反应，不要表现出惊讶或疑惑。
+`;
+            }
             
             // 添加间接性行为的生成内容要素
             if (actionType === 'bath_together_passionate' || actionType === 'massage_receive_passionate') {
@@ -509,6 +523,15 @@ export const useDialogueSystem = ({
              displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
         }
 
+                // [角色移动系统] 将告别语保存到记忆数据库
+        await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
+
+        // [角色移动系统] 主动写入核心记忆，记录本次移动约定
+        // 这样角色在目标场景与玩家重新开始对话时，能清楚地记得「我们是约好一起来这里的」
+        const moveMemory = `${worldState.periodLabel}，${settings.userName}邀请我前往${targetSceneName}，我同意并已前往该场景等待`;
+        await aiMemory.saveMemories(activeCharacter.id, [moveMemory], 'core_fact');
+        console.log(`[角色移动系统] 已将移动记忆写入数据库: ${moveMemory}`);
+
         setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
         setHistory(prev => [...prev, { 
             speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
@@ -565,8 +588,18 @@ export const useDialogueSystem = ({
               .replace(/{{home}}/g, settings.innName);
           const enhancedSystemPrompt = aiMemory.buildEnhancedPrompt(baseSystemPrompt, memoryContext);
 
+                    // [角色移动系统] 检查核心记忆中是否有关于移动到当前场景的约定
+          const moveRelatedMemory = memoryContext.coreMemories.find(m =>
+              m.content.includes(worldState.sceneName) &&
+              (m.content.includes('前往') || m.content.includes('同意') || m.content.includes('邀请'))
+          );
+          const hasMoveContext = !!moveRelatedMemory;
+
           let userPrompt = "";
-          if (sceneId === 'scen_7') {
+          if (hasMoveContext) {
+              // 有移动约定时，无论哪个场景都生成符合约定语境的台词
+              userPrompt = `[系统指令: 此消息仅生成环境氛围台词]\n你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】。\n重要背景：${moveRelatedMemory!.content}，你是按照约定来到这里的，知道${settings.userName}会来找你。\n${settings.userName}刚刚进入场景，请用符合你性格的方式打招呼，体现出你们之间已有约定的亲切感。\n不要表现出惊讶，不要说"你怎么来了"之类的话，而是自然地迎接对方。`;
+          } else if (sceneId === 'scen_7') {
               userPrompt = `[系统指令: 此消息仅生成环境氛围台词]\n你现在正在温泉里泡澡，非常放松。\n你没有注意到玩家(${settings.userName})的到来，正在自言自语。\n请结合当前的舒适环境，生成一句简短的、符合你性格的自言自语。\n不要与玩家对话，不要使用第二人称。`;
           } else {
               userPrompt = `[系统指令: 此消息仅生成环境氛围台词]\n你目前身处【${worldState.sceneName}】，时间是【${worldState.periodLabel}】，天气【${worldState.weather}】。\n玩家(${settings.userName})刚刚进入这个场景，但还没有和你搭话。\n当前你对玩家的好感度为: ${stats.affinity}。\n请根据你的性格、当前时间、地点和心情，生成一句简短的"闲聊"或"自言自语"。\n或者是注意到玩家进来后的一句简单的招呼（如果是外向性格）。`;
