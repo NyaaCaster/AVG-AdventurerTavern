@@ -258,7 +258,9 @@ app.post('/api/slots', (req, res) => {
                     gold: data.gold || 0,
                     currentSceneId: data.currentSceneId || '',
                     worldState: data.worldState || { dateStr: '', timeStr: '', sceneName: '' },
-                    characterStats: data.characterStats || {}
+                    characterStats: data.characterStats || {},
+                    checkedInCharacters: data.checkedInCharacters,
+                    sceneLevels: data.sceneLevels
                 };
             } catch (e) {
                 // 如果解析失败，返回默认值
@@ -269,7 +271,9 @@ app.post('/api/slots', (req, res) => {
                     gold: 0,
                     currentSceneId: '',
                     worldState: { dateStr: '', timeStr: '', sceneName: '数据损坏' },
-                    characterStats: {}
+                    characterStats: {},
+                    checkedInCharacters: undefined,
+                    sceneLevels: undefined
                 };
             }
         });
