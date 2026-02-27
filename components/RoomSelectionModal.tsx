@@ -2,12 +2,13 @@
 import React from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { CHARACTERS } from '../data/scenarioData';
+import { SceneId } from '../types';
 
 
 interface RoomSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (sceneId: string, params?: any) => void;
+  onNavigate: (sceneId: SceneId, params?: any) => void;
   checkedInCharacters: string[];
 }
 
