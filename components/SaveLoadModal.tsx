@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSaveSlots, GameSaveData } from '../services/db';
+import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
+import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { resolveImgPath } from '../utils/imagePath';
 
 interface SaveLoadModalProps {
@@ -53,11 +55,12 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     return `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
   };
 
-  // 计算已入住角色数量（不包括玩家自己）
+  // 计算已入住角色数量（不包括玩家自己 char_1）
   const getCharacterCount = (data: GameSaveData) => {
-    if (!data.characterStats) return 0;
-    // 排除玩家自己，只统计 NPC 角色
-    return Object.keys(data.characterStats).length;
+    const savedCheckedIn: string[] = data.checkedInCharacters ?? INITIAL_CHECKED_IN_CHARACTERS;
+    const eligibleFromLevels = getEligibleCheckInCharacters(data.sceneLevels ?? {});
+    const merged = Array.from(new Set([...INITIAL_CHECKED_IN_CHARACTERS, ...savedCheckedIn, ...eligibleFromLevels]));
+    return merged.filter(id => id !== 'char_1').length;
   };
 
   const handleSlotClick = (slotId: number) => {
@@ -244,7 +247,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                           {data.gold?.toLocaleString() || 0} G
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <i className="fa-solid fa-users text-purple-400"></i>
+                          <i className="fa-solid fa-venus text-purple-400"></i>
                           {getCharacterCount(data)} 位角色
                         </span>
                       </div>
