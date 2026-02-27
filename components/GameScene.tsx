@@ -447,6 +447,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           userRecipes: core.userRecipes,
           foodStock: core.foodStock,
           tavernMenu: core.tavernMenu,
+          checkedInCharacters,
           settings: settings
       });
       
@@ -480,6 +481,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               }
           }
           
+          // 恢复入住角色列表：合并存档数据 + 根据当前场景等级补全符合条件的角色
+          // 兼容旧存档（无 checkedInCharacters 字段）及版本更新后条件已满足但未触发的情况
+          const savedCheckedIn: string[] = data.checkedInCharacters ?? INITIAL_CHECKED_IN_CHARACTERS;
+          const eligibleFromLevels = getEligibleCheckInCharacters(data.sceneLevels ?? {});
+          const mergedCheckedIn = Array.from(new Set([...savedCheckedIn, ...eligibleFromLevels]));
+          setCheckedInCharacters(mergedCheckedIn);
+
           // 重置 UI 状态
           dialogue.setIsDialogueMode(false);
           dialogue.setHistory([]);
@@ -796,7 +804,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onTransaction={({ goldChange, inventoryChanges }) => {
           core.updateGold(core.gold + goldChange);
           Object.entries(inventoryChanges).forEach(([id, count]) => {
-            core.updateInventoryItem(id, count);
+            core.updateInventoryItem(id, count as number);
           });
         }}
       />

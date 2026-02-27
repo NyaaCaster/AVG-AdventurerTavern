@@ -73,7 +73,9 @@ export const saveGame = async (
     revenueLogs: RevenueLog[];
     userRecipes?: UserRecipe[];
     foodStock?: Record<string, number>;
-    settings?: GameSettings; // Add settings to save data
+    tavernMenu?: import('../types').TavernMenuState;
+    checkedInCharacters?: string[];
+    settings?: GameSettings;
   }
 ) => {
     const res = await apiCall('/save', {
