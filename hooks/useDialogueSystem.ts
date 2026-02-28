@@ -83,8 +83,8 @@ export const useDialogueSystem = ({
     const memoryContext = await aiMemory.getMemoryContext(char.id);
     const enhancedPrompt = aiMemory.buildEnhancedPrompt(systemPrompt, memoryContext);
     
-    // 添加 update_memory 字段的说明
-    const memoryInstruction = `\n\n【记忆提取指令】\n"update_memory": [可选] 字符串数组。如果你在对话中得知了关于玩家的重要信息、喜好、约定或承诺，请将它们作为简短的事实提取出来。\n例如：["玩家喜欢喝麦酒", "约定了明天一起去温泉"]。如果没有重要信息，请不要输出此字段。`;
+        // 添加 update_memory 字段的说明
+    const memoryInstruction = `\n\n【记忆提取指令】\n"update_memory": [可选] 字符串数组。在每轮对话后，主动检查是否发生了以下事件，有则必须提取：\n\n最高优先级（必须记录，不可遗漏）：\n- 任何形式的性行为（口交、手交、性交、肛交等），须记录发生的场景、时间和双方情感状态\n- 亲密里程碑：初吻、第一次拥抱、第一次爱抚、第一次裸体相处等\n- 关系确立：成为恋人、成为性伴侣、特殊身份约定等\n\n普通优先级（重要时记录）：\n- 玩家的重要偏好或习惯，例如："${settings.userName}喜欢喝麦酒"\n- 双方的约定或承诺，例如："约定明天一起去温泉"\n- 影响关系发展的关键对话\n\n记录格式：使用第一人称，包含时间和场景背景。\n示例："在客房夜晚，我与${settings.userName}发生了第一次性行为，双方都很珍视"\n示例："在温泉，我与${settings.userName}初吻，气氛温柔亲密"\n\n如果本轮对话没有上述重要事件，请不要输出此字段。`;
     
     const fullPrompt = `${enhancedPrompt}${memoryInstruction}\n\n${dynamicUserInfo}`;
     
@@ -208,10 +208,24 @@ export const useDialogueSystem = ({
       await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
       await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
       
-      // 如果 AI 提取了新的核心记忆，保存到数据库
+            // 如果 AI 提取了新的核心记忆，保存到数据库
       if (response.update_memory && response.update_memory.length > 0) {
           console.log('[AI Memory] Extracted memories:', response.update_memory);
           await aiMemory.saveMemories(activeCharacter.id, response.update_memory, 'core_fact');
+      }
+
+      // [亲密行为记忆] 当衣着变为 nude 且好感度为正时，主动强制写入亲密事件记忆
+      // 防止 AI 漏提取性行为/亲密行为这类关键事件
+      const newClothingFromResponse = response.clothing?.toLowerCase();
+      const isIntimacyOccurred = newClothingFromResponse === 'nude' || clothingState === 'nude';
+      const hasPositiveAffinity = response.affinity_change && response.affinity_change > 0;
+      if (isIntimacyOccurred && hasPositiveAffinity && settings.enableNSFW) {
+          const alreadyCaptured = response.update_memory && response.update_memory.length > 0;
+          if (!alreadyCaptured) {
+              const intimacyMemory = `${worldState.periodLabel}，在${worldState.sceneName}，我与${settings.userName}发生了亲密互动（好感度+${response.affinity_change}）`;
+              await aiMemory.saveMemories(activeCharacter.id, [intimacyMemory], 'core_fact');
+              console.log('[AI Memory] 主动写入亲密行为记忆:', intimacyMemory);
+          }
       }
       
       // 静默触发摘要压缩（不阻塞 UI）
