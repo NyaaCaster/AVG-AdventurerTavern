@@ -119,7 +119,7 @@ export const generateSystemPrompt = (
 
   // Format unlock status for AI
   const unlocks = characterUnlocks || getDefaultUnlocks();
-  const unlockStatusText = formatUnlockStatusForAI(unlocks);
+  const unlockStatusText = formatUnlockStatusForAI(unlocks, currentAffinity);
   
   // Format current affinity
   const affinityText = currentAffinity !== undefined ? `${currentAffinity}` : '未知';

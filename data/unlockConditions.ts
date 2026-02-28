@@ -5,11 +5,18 @@ import { CharacterUnlocks } from '../types';
  * @param unlocks 角色的解锁状态对象
  * @returns 格式化的解锁状态文本
  */
-export function formatUnlockStatusForAI(unlocks: CharacterUnlocks): string {
+export function formatUnlockStatusForAI(unlocks: CharacterUnlocks, currentAffinity?: number): string {
     const statusLines = Object.entries(unlocks).map(([key, value]) => {
         const statusName = UNLOCK_STATUS_NAMES[key as keyof CharacterUnlocks];
-        const status = value === 1 ? '✓ 已解锁' : '✗ 未解锁';
-        return `- ${statusName}: ${status}`;
+        if (value === 1) {
+            return `- ${statusName}: ✓ 已解锁`;
+        } else {
+            const required = UNLOCK_AFFINITY_REQUIREMENTS[key as keyof CharacterUnlocks];
+            if (currentAffinity !== undefined && currentAffinity < required) {
+                return `- ${statusName}: ✗ 未解锁（需要好感度 ${required}，当前 ${currentAffinity}，条件不足，禁止解锁）`;
+            }
+            return `- ${statusName}: ✗ 未解锁（需要好感度 ${required}）`;
+        }
     });
     
     return statusLines.join('\n');
