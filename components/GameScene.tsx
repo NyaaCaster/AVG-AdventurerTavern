@@ -120,6 +120,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           count: item.count
       }));
       setItemNotifications(prev => [...prev, ...newNotifications]);
+      // 获得道具后立即触发自动存档，防止道具丢失
+      handleSaveGame(0).catch(err => console.error('Auto-save after item gain failed:', err));
   };
 
       const handleCharacterMove = (charId: string, targetId: SceneId) => {
