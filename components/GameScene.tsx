@@ -21,6 +21,7 @@ import DebugResourceModal from './DebugResourceModal';
 import DebugUnlocksModal from './DebugUnlocksModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
+import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
@@ -93,6 +94,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy'); // 记录从哪个页签打开商店
   const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
+  const [isRestModalOpen, setIsRestModalOpen] = useState(false);
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -445,6 +447,12 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     }
     if (action === 'open_food_shop') {
         setIsFoodShopOpen(true);
+    }
+    if (action === 'rest') {
+        // 先触发自动存档，再弹出第四面壁提示
+        handleSaveGame(0)
+            .catch(err => console.error('Auto-save on rest failed:', err))
+            .finally(() => setIsRestModalOpen(true));
     }
   };
 
@@ -810,6 +818,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       />
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
+      <RestModal isOpen={isRestModalOpen} onClose={() => setIsRestModalOpen(false)} />
 
       {/* ShopResModal - 市集食材店（scen_market 使用）*/}
       <ShopResModal
