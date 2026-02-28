@@ -316,6 +316,16 @@ AVG-AdventurerTavern/
 感谢所有团队成员的倾力支持！
 
 ---
+## 🎵 音乐引用
+スタジオVR
+SOUND AIRYLUVS様
+Prismatic Tone様
+ユーフルカ様
+PeriTune様
+ポケットサウンド様
+戦え女の子 Re:play 五百崎せれんver.
+
+---
 
 ## 🤝 贡献指南
 
