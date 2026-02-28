@@ -131,13 +131,15 @@ export const useWorldSystem = (sceneLevels: Record<string, number>, initialData?
   const presentCharacters = useMemo(() => Object.values(CHARACTERS).filter(char => {
       // 未入住的角色不出现在任何场景
       if (checkedInCharacters && !checkedInCharacters.includes(char.id)) return false;
+      // 合并 forcedLocations 与 characterLocations，forcedLocations 优先
+      const effectiveLocation = forcedLocations[char.id] ?? characterLocations[char.id];
       if (currentSceneId === 'scen_2') {
           if (sceneParams?.target === 'user') return false; 
-          if (sceneParams?.target) return char.id === sceneParams.target && characterLocations[char.id] === 'scen_2';
+          if (sceneParams?.target) return char.id === sceneParams.target && effectiveLocation === 'scen_2';
           return false; 
       }
-      return characterLocations[char.id] === currentSceneId;
-  }), [currentSceneId, sceneParams, characterLocations, checkedInCharacters]);
+      return effectiveLocation === currentSceneId;
+  }), [currentSceneId, sceneParams, characterLocations, forcedLocations, checkedInCharacters]);
 
   return {
       currentSceneId, setCurrentSceneId,
