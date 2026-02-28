@@ -204,7 +204,7 @@ export const useDialogueSystem = ({
       const response = await llmService.sendMessage(enrichedMessage);
       const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
       
-      // 保存用户消息和 AI 回复到聊天记录
+            // 保存用户消息和 AI 回复到聊天记录
       await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
       await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
       
@@ -218,13 +218,21 @@ export const useDialogueSystem = ({
       aiMemory.triggerSummaryIfNeeded(activeCharacter.id).catch(err => {
           console.error('[AI Memory] Summary trigger failed:', err);
       });
-      
-      setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
-      
+
+      // [角色移动系统] 检测到移动指令，跳过正常回复直接进入告别流程
+      if (response.move_to) {
+          const moveTarget = response.move_to;
+          onCharacterMove(activeCharacter.id, moveTarget);
+          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，直接进入告别流程`);
+          handleEndDialogueGenerationWithMove(moveTarget);
+          return;
+      }
+
       if (response.items && response.items.length > 0) {
           onItemsGained(response.items);
       }
 
+      let shouldTriggerAngryEnd = false;
       if (response.affinity_change && activeCharacter) {
           // [好感度上限] 检查是否已达到正面好感度累计上限
           const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
@@ -239,13 +247,10 @@ export const useDialogueSystem = ({
               const newTotal = sessionAffinityTotal + response.affinity_change;
               setSessionAffinityTotal(newTotal);
               
-              // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
+              // 如果累计好感度变化 <= -10 且不在 bondage 状态，标记触发愤怒结束
               if (newTotal <= -10 && clothingState !== 'bondage') {
-                  console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
-                  // 延迟触发，让当前消息显示完毕
-                  setTimeout(() => {
-                      handleEndDialogueGeneration();
-                  }, 1000);
+                  console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 直接进入告别流程`);
+                  shouldTriggerAngryEnd = true;
               }
           } else {
               console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
@@ -259,16 +264,13 @@ export const useDialogueSystem = ({
           }
       }
 
-            if (response.move_to) {
-          const moveTarget = response.move_to;
-          onCharacterMove(activeCharacter.id, moveTarget);
-          // [角色移动系统] 当角色决定移动场景时，主动结束对话
-          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，主动结束对话`);
-          // 延迟触发，让当前消息显示完毕
-          setTimeout(() => {
-              handleEndDialogueGenerationWithMove(moveTarget);
-          }, 1000);
+      // [角色主动结束对话] 跳过正常回复直接进入愤怒告别流程
+      if (shouldTriggerAngryEnd) {
+          handleEndDialogueGeneration();
+          return;
       }
+
+      setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
 
       // Handle unlock request
       if (response.unlock_request && activeCharacter) {
@@ -331,6 +333,16 @@ export const useDialogueSystem = ({
             
             if (response.items && response.items.length > 0) onItemsGained(response.items);
 
+                        // [角色移动系统] 检测到移动指令，跳过正常回复直接进入告别流程
+            if (response.move_to) {
+                const moveTarget = response.move_to;
+                onCharacterMove(activeCharacter.id, moveTarget);
+                console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，直接进入告别流程`);
+                handleEndDialogueGenerationWithMove(moveTarget);
+                return;
+            }
+
+            let shouldTriggerAngryEnd = false;
             if (response.affinity_change && activeCharacter) {
                 // [好感度上限] 检查是否已达到正面好感度累计上限
                 const shouldApplyChange = response.affinity_change < 0 || sessionAffinityTotal < 10;
@@ -344,12 +356,9 @@ export const useDialogueSystem = ({
                     const newTotal = sessionAffinityTotal + response.affinity_change;
                     setSessionAffinityTotal(newTotal);
                     
-                    // 如果累计好感度变化 <= -10 且不在 bondage 状态，角色主动结束对话
                     if (newTotal <= -10 && clothingState !== 'bondage') {
-                        console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 触发强制结束`);
-                        setTimeout(() => {
-                            handleEndDialogueGeneration();
-                        }, 1000);
+                        console.log(`[角色主动结束对话] 好感度累计: ${newTotal}, 直接进入告别流程`);
+                        shouldTriggerAngryEnd = true;
                     }
                 } else {
                     console.log(`[好感度上限] 当前累计: ${sessionAffinityTotal}, 忽略正面变化: +${response.affinity_change}`);
@@ -363,16 +372,11 @@ export const useDialogueSystem = ({
                 }
             }
 
-                  if (response.move_to) {
-          const moveTarget = response.move_to;
-          onCharacterMove(activeCharacter.id, moveTarget);
-          // [角色移动系统] 当角色决定移动场景时，主动结束对话
-          console.log(`[角色移动系统] ${activeCharacter.name} 决定移动到 ${moveTarget}，主动结束对话`);
-          // 延迟触发，让当前消息显示完毕
-          setTimeout(() => {
-              handleEndDialogueGenerationWithMove(moveTarget);
-          }, 1000);
-      }
+            // [角色主动结束对话] 跳过正常回复直接进入愤怒告别流程
+            if (shouldTriggerAngryEnd) {
+                handleEndDialogueGeneration();
+                return;
+            }
 
             // Handle unlock request
             if (response.unlock_request && activeCharacter) {
@@ -457,7 +461,7 @@ export const useDialogueSystem = ({
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;
         }
-        let displayText = '';
+                let displayText = '';
         let tokensUsed = 0;
 
         if (settings.apiConfig.apiKey) {
@@ -471,6 +475,9 @@ export const useDialogueSystem = ({
         } else {
              displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 下次见。`;
         }
+
+        // [角色主动结束对话] 将告别语保存到记忆数据库
+        await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
 
         setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
         setHistory(prev => [...prev, { 

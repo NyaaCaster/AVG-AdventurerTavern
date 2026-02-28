@@ -84,19 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <>
-      {/* 如果处于结束状态，显示全屏点击层，点击任意位置退出 */}
-      {isEnding && !isTyping && (
-          <div 
-            onClick={handleFinalClose}
-            className="fixed inset-0 z-[120] cursor-pointer pointer-events-auto"
-            title="点击屏幕任意位置退出"
-          >
-             {/* 提示文本颜色加深以适应浅色背景，位置下调以和菜单按钮对齐 */}
-             <div className="absolute bottom-11 left-1/2 transform -translate-x-1/2 text-amber-900/70 font-bold text-sm animate-pulse tracking-[0.2em] select-none drop-shadow-sm">
-                - 点击任意位置离开 -
-             </div>
-          </div>
-      )}
+
 
       {/* 
          Bottom Container:
@@ -127,7 +115,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           />
         </div>
 
-        {/* 用户输入栏位于对话框下方 - 结束时不显示 */}
+        {/* 用户输入栏位于对话框下方 - 结束时显示退出按钮 */}
+        {isEnding && !isTyping && (
+          <div className="w-full max-w-4xl px-4 z-50 animate-fadeIn">
+            <button
+              onClick={handleFinalClose}
+              className="w-full py-2.5 bg-amber-900/30 hover:bg-amber-800/50 text-amber-200 hover:text-white border border-amber-700/30 rounded-lg transition-colors shadow-lg font-bold tracking-widest text-sm flex items-center justify-center gap-2 backdrop-blur-md"
+            >
+              <i className="fa-solid fa-right-from-bracket"></i>
+              退出对话
+            </button>
+          </div>
+        )}
         {!isEnding && (
           <div className="w-full max-w-4xl px-4 z-50 animate-fadeIn">
             <div className="relative group flex items-center">
