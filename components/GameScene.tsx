@@ -24,6 +24,7 @@ import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
 import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import QuestBoardModal from './QuestBoardModal';
+import SanityDashboardModal from './SanityDashboardModal';
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import RoomCheckInToast from './RoomCheckInToast';
@@ -94,6 +95,7 @@ interface GameSceneProps {
   settings: GameSettings;
   onLoadGame?: () => void;
   initialSaveData?: any; 
+  sanityBalance: number;
 }
 
 export interface GameSceneRef {
@@ -102,7 +104,7 @@ export interface GameSceneRef {
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
-const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData }, ref) => {
+const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData, sanityBalance }, ref) => {
   // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
   const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(() => {
@@ -127,6 +129,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
   const [isRestModalOpen, setIsRestModalOpen] = useState(false);
   const [isQuestBoardOpen, setIsQuestBoardOpen] = useState(false);
+  const [isSanityDashboardOpen, setIsSanityDashboardOpen] = useState(false);
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
@@ -756,7 +759,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       </div>
 
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
-          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} />
+          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} sanity={sanityBalance} onClickSanity={() => setIsSanityDashboardOpen(true)} />
 
           <SystemMenu 
             onLoadGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 
@@ -961,6 +964,12 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             core.updateInventoryItem(id, count as number);
           });
         }}
+      />
+
+      <SanityDashboardModal 
+          isOpen={isSanityDashboardOpen} 
+          onClose={() => setIsSanityDashboardOpen(false)} 
+          userId={userId} 
       />
     </div>
   );

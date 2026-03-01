@@ -63,6 +63,10 @@ export const INITIAL_CHARACTER_AFFINITY: Record<string, number> = {
 export const INITIAL_GOLD = 100000; // 原：5000
 export const MAX_GOLD = 999999; // 金币上限
 
+// --- 理智系统常量（账号级货币，不随存档变更）---
+export const INITIAL_SANITY = 10000; // 理智初始值（新账号默认赠送）
+// 理智无最大值限制，作为充值货币由服务端余额决定上限
+
 export const INITIAL_INVENTORY: Record<string, number> = {
     'res-0001': 99, // 灵木，原：15
     'res-0002': 99, // 幻皮，原：15

@@ -1,4 +1,4 @@
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap } from '../types';
+﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -362,30 +362,29 @@ export const updateCharacterSummary = async (
 };
 
 // --- 理智账本服务 ---
+// --- 理智账本类型配置 ---
 
 /**
- * 理智消耗类型（amount 为负值）
- * 新增消耗类型：在此联合类型末尾追加即可，无需改动数据库或后端
- *
- * 当前已定义：
- *   'ai_memory'   - 对话记忆写入（amount = 本条消息字符数，观测期原始数据）
- *   'ai_summary'  - 摘要压缩（amount = 被压缩的所有消息字符数合计，观测期原始数据）
+ * 理智消耗类型配置
+ * 用于客户端显示和类型约束
  */
-export type SanityConsumeType =
-    | 'ai_memory'       // 对话记忆写入
-    | 'ai_summary'      // 摘要压缩
-    | (string & {});    // 保留扩展：允许传任意字符串，同时保留上方类型的自动补全
+export const SANITY_CONSUME_TYPES = {
+    ai_memory: '对话记忆',
+    ai_summary: '摘要压缩',
+} as const;
+
+export type SanityConsumeType = keyof typeof SANITY_CONSUME_TYPES | (string & {});
 
 /**
- * 理智充值/收入类型（amount 为正值）
- * 新增收入类型：在此联合类型末尾追加即可，无需改动数据库或后端
- *
- * 当前已定义：
- *   'recharge'    - 用户付费充值
+ * 理智充值类型配置
+ * 用于客户端显示和类型约束
  */
-export type SanityRechargeType =
-    | 'recharge'        // 用户付费充值
-    | (string & {});    // 保留扩展
+export const SANITY_RECHARGE_TYPES = {
+    register: '注册赠送',
+    recharge: '付费充值',
+} as const;
+
+export type SanityRechargeType = keyof typeof SANITY_RECHARGE_TYPES | (string & {});
 
 /** 账本单条记录（查询返回） */
 export interface SanityRecord {
@@ -485,4 +484,42 @@ export const deleteOldMessages = async (
     }
     
     return true;
+};
+
+/**
+ * 获取理智面板概况
+ */
+export const getSanityDashboard = async (userId: number): Promise<{ todayRequests: number; todayConsumed: number; chartData: { date: string; amount: number }[] } | null> => {
+    const res = await apiCall('/sanity/dashboard', { userId });
+    if (res.success) {
+        return {
+            todayRequests: res.todayRequests,
+            todayConsumed: res.todayConsumed,
+            chartData: res.chartData
+        };
+    }
+    return null;
+};
+
+/**
+ * 获取理智分页明细
+ */
+export const getSanityRecords = async (
+    userId: number,
+    page: number = 1,
+    pageSize: number = 10,
+    category?: 'all' | 'consume' | 'recharge',
+    startTime?: number,
+    endTime?: number
+): Promise<{ total: number; records: SanityRecord[] } | null> => {
+    const body: any = { userId, page, pageSize };
+    if (category && category !== 'all') body.category = category;
+    if (startTime) body.startTime = startTime;
+    if (endTime) body.endTime = endTime;
+
+    const res = await apiCall('/sanity/admin/records', body);
+    if (res.success) {
+        return { total: res.total, records: res.records };
+    }
+    return null;
 };

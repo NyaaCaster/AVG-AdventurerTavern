@@ -1,0 +1,341 @@
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { 
+    getSanityBalance, 
+    getSanityDashboard, 
+    getSanityRecords, 
+    SanityRecord, 
+    SANITY_CONSUME_TYPES, 
+    SANITY_RECHARGE_TYPES 
+} from '../services/db';
+
+type TabType = 'overview' | 'records' | 'quota';
+type FilterCategory = 'all' | 'consume' | 'recharge';
+
+interface Props {
+    isOpen: boolean;
+    onClose: () => void;
+    userId: number;
+}
+
+const SanityIcon: React.FC<{className?: string}> = ({className = "w-6 h-6 text-cyan-400"}) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
+      <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
+    </svg>
+);
+
+const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
+    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [balance, setBalance] = useState<number>(0);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // 总览数据
+    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayConsumed: 0, chartData: [] });
+
+    // 记录数据
+    const [records, setRecords] = useState<SanityRecord[]>([]);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
+    const [dateFilter, setDateFilter] = useState<string>(''); // YYYY-MM-DD
+
+    useEffect(() => {
+        if (isOpen && userId) {
+            fetchBalance();
+            if (activeTab === 'overview') {
+                fetchOverview();
+            } else if (activeTab === 'records') {
+                fetchRecords(1);
+            }
+        }
+    }, [isOpen, activeTab, userId]);
+
+    const fetchBalance = async () => {
+        const res = await getSanityBalance(userId, 1);
+        if (res) setBalance(res.balance);
+    };
+
+    const fetchOverview = async () => {
+        setIsLoading(true);
+        const data = await getSanityDashboard(userId);
+        if (data) setOverviewData(data);
+        setIsLoading(false);
+    };
+
+    const fetchRecords = async (page: number) => {
+        setIsLoading(true);
+        let startTimestamp: number | undefined = undefined;
+        let endTimestamp: number | undefined = undefined;
+        if (dateFilter) {
+            const [y, m, d] = dateFilter.split('-');
+            startTimestamp = new Date(parseInt(y), parseInt(m)-1, parseInt(d)).getTime();
+            endTimestamp = startTimestamp + 24 * 60 * 60 * 1000 - 1; // 到当天的最后一毫秒
+        }
+
+        const res = await getSanityRecords(userId, page, 10, categoryFilter, startTimestamp, endTimestamp);
+        if (res) {
+            setRecords(res.records);
+            setTotalRecords(res.total);
+            setCurrentPage(page);
+        }
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        if (isOpen && activeTab === 'records') {
+            fetchRecords(1);
+        }
+    }, [categoryFilter, dateFilter]);
+
+    if (!isOpen) return null;
+
+    const totalPages = Math.ceil(totalRecords / 10);
+
+    const renderOverview = () => {
+        // 计算Y轴最大值，为了图表美观，向上取整到10的倍数
+        const maxAmount = Math.max(...overviewData.chartData.map(d => d.amount), 10);
+        let yAxisMax = Math.ceil(maxAmount / 10) * 10;
+        if (yAxisMax > 100) {
+            yAxisMax = Math.ceil(maxAmount / 100) * 100;
+        }
+
+        return (
+            <div className="flex flex-col gap-6">
+                {/* 介绍区块 */}
+                <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg p-5 flex flex-col items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <SanityIcon className="w-10 h-10 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]" />
+                        <span className="text-3xl font-mono font-bold text-slate-100 tracking-wider">{balance.toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm text-slate-400 text-center leading-relaxed max-w-lg">
+                        <span className="text-cyan-400 font-bold">理智</span> 是基于账号的特殊货币，不会随 <span className="text-amber-500 font-bold">存档/读档</span> 功能回滚。<br />
+                        <span className="text-cyan-400 font-bold">理智</span> 用于支付 Nyaa 设计的多头式长期记忆管理方案的 API 开销，<br />
+                        用于维护角色的特定永久化记忆。<br />
+                        <span className="text-cyan-400 font-bold">理智</span> 也用于支付游戏中的各类 <span className="text-purple-400 font-bold">偷懒</span> 费用，请适度使用。
+                    </p>
+                </div>
+
+                {/* 统计区块 */}
+                <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg p-5">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-slate-200 border-l-4 border-cyan-500 pl-3">综合统计</h3>
+                        <div className="flex gap-6 text-sm">
+                            <div className="flex flex-col items-end">
+                                <span className="text-slate-400">今日消耗</span>
+                                <span className="text-cyan-400 font-mono font-bold text-lg">{overviewData.todayConsumed.toLocaleString()}</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <span className="text-slate-400">今日请求</span>
+                                <span className="text-indigo-400 font-mono font-bold text-lg">{overviewData.todayRequests} 次</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 柱状图 */}
+                    <div className="h-48 flex items-end justify-between pt-6 pr-4 pl-8 border-b border-l border-slate-700/50 relative mt-4">
+                        {/* Y轴刻度 */}
+                        <div className="absolute left-1 bottom-0 h-full flex flex-col justify-between text-[10px] text-slate-500 font-mono pb-6 pt-6">
+                            <span>{yAxisMax}</span>
+                            <span>{yAxisMax / 2}</span>
+                            <span>0</span>
+                        </div>
+
+                        {overviewData.chartData.map((d, i) => {
+                            const heightPercent = (d.amount / yAxisMax) * 100;
+                            return (
+                                <div key={i} className="flex flex-col items-center justify-end h-full w-10 sm:w-12 group">
+                                    <div 
+                                        className="relative w-6 sm:w-8 bg-cyan-600/50 hover:bg-cyan-400 transition-all rounded-t-sm flex items-end justify-center group-hover:shadow-[0_0_15px_rgba(34,211,238,0.5)]" 
+                                        style={{ height: `${Math.max(1, heightPercent)}%` }}
+                                    >
+                                        <span className="absolute -top-6 text-[10px] font-mono text-cyan-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {d.amount}
+                                        </span>
+                                    </div>
+                                    <span className="absolute -bottom-6 text-[10px] text-slate-500 font-mono">{d.date}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderRecords = () => {
+        return (
+            <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4 bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                    <div className="flex gap-2">
+                        {['all', 'consume', 'recharge'].map(t => (
+                            <button 
+                                key={t} 
+                                onClick={() => setCategoryFilter(t as FilterCategory)}
+                                className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${categoryFilter === t ? 'bg-cyan-600/50 text-cyan-300 ring-1 ring-cyan-500/50' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'}`}
+                            >
+                                {t === 'all' ? '全部' : t === 'consume' ? '消耗' : '充值'}
+                            </button>
+                        ))}
+                    </div>
+                    <input 
+                        type="date" 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 text-sm"
+                    />
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                    {isLoading ? (
+                        <div className="text-center py-10 text-cyan-500/50 animate-pulse flex flex-col items-center">
+                            <SanityIcon className="w-12 h-12 mb-4" />
+                            <span className="text-sm font-mono tracking-widest">正在加载记录...</span>
+                        </div>
+                    ) : records.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500 font-mono text-sm">暂无记录</div>
+                    ) : (
+                        records.map(r => {
+                            const isConsume = r.amount < 0;
+                            // 匹配类型名称
+                            const typeObj = isConsume ? SANITY_CONSUME_TYPES : SANITY_RECHARGE_TYPES;
+                            const displayName = typeObj[r.type as keyof typeof typeObj] || r.type;
+                            
+                            const date = new Date(r.created_at);
+                            const y = date.getFullYear();
+                            const m = String(date.getMonth() + 1).padStart(2, '0');
+                            const d = String(date.getDate()).padStart(2, '0');
+                            const h = String(date.getHours()).padStart(2, '0');
+                            const min = String(date.getMinutes()).padStart(2, '0');
+                            const s = String(date.getSeconds()).padStart(2, '0');
+                            const dateStr = `${y}-${m}-${d} ${h}:${min}:${s}`;
+                            
+                            return (
+                                <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/40 p-3 md:p-4 rounded-md border border-slate-700/30 hover:border-slate-600/50 transition-colors">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-xs px-2 py-0.5 rounded font-bold tracking-wider ${isConsume ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700/50' : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'}`}>
+                                                {displayName}
+                                            </span>
+                                            <span className="text-xs text-slate-400 font-mono">{dateStr}</span>
+                                        </div>
+                                        {r.description && <span className="text-xs text-slate-500 pl-1">{r.description}</span>}
+                                    </div>
+                                    <span className={`text-lg font-mono font-bold self-end sm:self-auto ${isConsume ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                                        {isConsume ? '' : '+'}{r.amount}
+                                    </span>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-700/50">
+                    <button 
+                        disabled={currentPage === 1 || isLoading}
+                        onClick={() => fetchRecords(currentPage - 1)}
+                        className="px-4 py-2 bg-slate-800 text-slate-300 text-sm font-bold rounded disabled:opacity-30 hover:bg-slate-700 transition-colors"
+                    >
+                        <i className="fa-solid fa-chevron-left mr-2"></i>上一页
+                    </button>
+                    <span className="text-slate-400 font-mono text-sm">{currentPage} / {totalPages || 1}</span>
+                    <button 
+                        disabled={currentPage >= totalPages || isLoading}
+                        onClick={() => fetchRecords(currentPage + 1)}
+                        className="px-4 py-2 bg-slate-800 text-slate-300 text-sm font-bold rounded disabled:opacity-30 hover:bg-slate-700 transition-colors"
+                    >
+                        下一页<i className="fa-solid fa-chevron-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderQuota = () => {
+        return (
+            <div className="flex flex-col gap-6 items-center pt-8">
+                <div className="flex flex-col items-center gap-2 mb-4">
+                    <span className="text-slate-500 font-bold uppercase tracking-widest text-xs">当前余额</span>
+                    <div className="flex items-center gap-3">
+                        <SanityIcon className="w-8 h-8 text-cyan-400" />
+                        <span className="text-4xl md:text-5xl font-mono font-black text-slate-100 tracking-wider drop-shadow-lg">
+                            {balance.toLocaleString()}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="w-full max-w-md bg-slate-900/80 border border-slate-700/50 rounded-lg p-6 flex flex-col gap-5 shadow-xl">
+                    <h3 className="text-slate-200 font-bold border-l-4 border-cyan-500 pl-3">兑换额度</h3>
+                    <p className="text-sm text-slate-400 leading-relaxed">
+                        使用兑换码进行充值，兑换成功后额度将直接进入账户余额。
+                    </p>
+                    <input 
+                        type="text" 
+                        placeholder="请输入兑换码..." 
+                        className="bg-slate-950 border border-slate-800 text-cyan-100 px-4 py-3 rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500/50 font-mono tracking-[0.2em] text-center uppercase"
+                        disabled
+                    />
+                    <div className="flex gap-4 mt-2">
+                        <button disabled className="flex-1 bg-slate-800 text-slate-500 font-bold py-3 rounded-md opacity-60 cursor-not-allowed uppercase tracking-widest text-sm border border-slate-700">
+                            获取兑换码
+                        </button>
+                        <button disabled className="flex-1 bg-cyan-900/40 text-cyan-600 font-bold py-3 rounded-md opacity-60 cursor-not-allowed uppercase tracking-widest text-sm border border-cyan-900">
+                            兑换
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-[95vw] md:w-[85vw] max-w-3xl bg-slate-950 border border-slate-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-[85vh] md:h-[75vh] max-h-[800px]">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 md:p-5 border-b border-slate-800 bg-slate-900/50 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-md bg-cyan-950/50 border border-cyan-800/50 flex items-center justify-center">
+                            <SanityIcon className="w-6 h-6 text-cyan-400 drop-shadow-md" />
+                        </div>
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-200 tracking-wider">理智记录</h2>
+                    </div>
+                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-900/80 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white transition-all hover:rotate-90">
+                        <i className="fa-solid fa-times"></i>
+                    </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex border-b border-slate-800 bg-slate-900/30 px-2 sm:px-4 shrink-0 overflow-x-auto no-scrollbar">
+                    {[ 
+                        { id: 'overview', label: '总览', icon: 'fa-chart-bar' }, 
+                        { id: 'records', label: '记录', icon: 'fa-list-ul' }, 
+                        { id: 'quota', label: '额度', icon: 'fa-wallet' } 
+                    ].map(tab => (
+                        <button 
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as TabType)}
+                            className={`flex items-center gap-2 px-6 py-4 font-bold tracking-widest text-sm relative transition-colors whitespace-nowrap ${
+                                activeTab === tab.id ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+                            }`}
+                        >
+                            <i className={`fa-solid ${tab.icon} ${activeTab === tab.id ? 'opacity-100' : 'opacity-50'}`}></i>
+                            {tab.label}
+                            {activeTab === tab.id && (
+                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 shadow-[0_-2px_8px_rgba(34,211,238,0.5)]" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-b from-slate-950/50 to-slate-900/20 custom-scrollbar">
+                    {activeTab === 'overview' && renderOverview()}
+                    {activeTab === 'records' && renderRecords()}
+                    {activeTab === 'quota' && renderQuota()}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SanityDashboardModal;

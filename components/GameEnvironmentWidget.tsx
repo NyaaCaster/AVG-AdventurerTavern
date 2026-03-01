@@ -6,9 +6,11 @@ import WeatherIcon from './WeatherIcon';
 interface GameEnvironmentWidgetProps {
   worldState: WorldState;
   gold: number;
+  sanity?: number; // 添加可选理智值
+  onClickSanity?: () => void; // 点击理智栏回调
 }
 
-const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldState, gold }) => {
+const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldState, gold, sanity = 10000, onClickSanity }) => {
   const { dateStr, weekDay, timeStr, period, periodLabel, weatherCode, temp, sceneName } = worldState;
   let colorClass = "text-indigo-600";
   let weatherColor = "text-slate-400";
@@ -23,6 +25,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 
   // Format gold with max limit 999,999,999
   const displayGold = Math.min(gold, 999999999).toLocaleString();
+  const displaySanity = sanity.toLocaleString();
 
   return (
     <div className="absolute top-8 left-8 z-40 flex flex-col gap-1 select-none pointer-events-none">
@@ -80,17 +83,37 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
             </div>
         </div>
 
-        {/* Bottom Section: Gold Display */}
+        {/* Bottom Section: Gold & Sanity Display */}
         <div className="pl-6 mt-0.5">
-            <div className="bg-gradient-to-r from-black/60 to-transparent px-3 py-1 flex items-center gap-4 min-w-[160px]">
-                 <div className="flex items-center gap-1.5 opacity-80">
-                    <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
-                    <span className="text-[10px] text-amber-500/80 font-bold tracking-widest">资金</span>
-                 </div>
-                 <div className="flex items-baseline gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm">
-                    <span className="text-lg tracking-wide leading-none">{displayGold}</span>
-                    <span className="text-xs text-amber-500">G</span>
-                 </div>
+            <div className="bg-gradient-to-r from-black/60 to-transparent px-3 py-1 flex flex-col gap-1 min-w-[160px]">
+                {/* Gold */}
+                <div className="flex items-center justify-between gap-4">
+                     <div className="flex items-center gap-1.5 opacity-80">
+                        <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
+                        <span className="text-[10px] text-amber-500/80 font-bold tracking-widest">资金</span>
+                     </div>
+                     <div className="flex items-baseline justify-end gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm flex-1">
+                        <span className="text-lg tracking-wide leading-none">{displayGold}</span>
+                        <span className="text-xs text-amber-500">G</span>
+                     </div>
+                </div>
+
+                {/* Sanity */}
+                <div 
+                    className="group flex items-center justify-between gap-4 cursor-pointer hover:bg-white/10 rounded-sm px-1 -mx-1 transition-colors pointer-events-auto"
+                    onClick={onClickSanity}
+                >
+                     <div className="flex items-center gap-1.5 opacity-80">
+                        <svg className="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
+                          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
+                        </svg>
+                        <span className="text-[10px] text-cyan-400/80 font-bold tracking-widest group-hover:text-cyan-300">理智</span>
+                     </div>
+                     <div className="flex items-baseline justify-end gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm flex-1">
+                        <span className="text-lg tracking-wide leading-none group-hover:text-white">{displaySanity}</span>
+                     </div>
+                </div>
             </div>
         </div>
 

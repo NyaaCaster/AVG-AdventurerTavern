@@ -225,7 +225,17 @@ app.post('/api/register', (req, res) => {
             }
             return res.json({ success: false, message: err.message });
         }
-        res.json({ success: true, uid: this.lastID });
+        const newUid = this.lastID;
+        // 新账号注册时，赠送初始理智 10000
+        const initStmt = db.prepare(
+            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+             VALUES (?, 'recharge', 10000, '新账号注册赠送', ?, ?)`
+        );
+        initStmt.run(newUid, getClientIp(req), Date.now(), function(initErr) {
+            if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
+        });
+        initStmt.finalize();
+        res.json({ success: true, uid: newUid });
     });
     stmt.finalize();
 });
@@ -587,15 +597,79 @@ app.post('/api/sanity/balance', (req, res) => {
     );
 });
 
-// S-4. 管理端：全量明细查询（支持按 type / 时间范围过滤，分页）
+// S-4. 用户面板概况：获取今日汇总和7天图表
+app.post('/api/sanity/dashboard', (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.json({ success: false, message: '缺少 userId' });
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const sevenDaysAgo = todayStart - 6 * 24 * 60 * 60 * 1000;
+
+    // 1. 今日消耗总量和次数 (amount < 0)
+    db.get(
+        `SELECT COUNT(*) AS todayRequests, COALESCE(SUM(amount), 0) AS todayConsumed
+         FROM sanity_ledger
+         WHERE user_id = ? AND amount < 0 AND created_at >= ?`,
+        [userId, todayStart],
+        (err, todayRow) => {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+
+            // 2. 过去7天图表数据 (按天分组)
+            db.all(
+                `SELECT 
+                    date(created_at / 1000, 'unixepoch', 'localtime') AS dateStr,
+                    COALESCE(SUM(ABS(amount)), 0) AS dailyConsumed
+                 FROM sanity_ledger
+                 WHERE user_id = ? AND amount < 0 AND created_at >= ?
+                 GROUP BY dateStr
+                 ORDER BY dateStr ASC`,
+                [userId, sevenDaysAgo],
+                (err2, chartRows) => {
+                    if (err2) return res.status(500).json({ success: false, message: err2.message });
+
+                    // 补齐 7 天的数据
+                    const chartMap = {};
+                    chartRows.forEach(row => {
+                        const mmdd = row.dateStr.substring(5);
+                        chartMap[mmdd] = row.dailyConsumed;
+                    });
+
+                    const chartData = [];
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(todayStart - i * 24 * 60 * 60 * 1000);
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const key = `${mm}-${dd}`;
+                        chartData.push({
+                            date: key,
+                            amount: chartMap[key] || 0
+                        });
+                    }
+
+                    res.json({
+                        success: true,
+                        todayRequests: todayRow.todayRequests,
+                        todayConsumed: Math.abs(todayRow.todayConsumed),
+                        chartData
+                    });
+                }
+            );
+        }
+    );
+});
+
+// S-5. 管理/用户端：全量明细查询（支持分类/时间范围，分页）
 app.post('/api/sanity/admin/records', (req, res) => {
-    const { userId, type, startTime, endTime, page = 1, pageSize = 50 } = req.body;
+    const { userId, type, category, startTime, endTime, page = 1, pageSize = 50 } = req.body;
 
     const conditions = [];
     const params = [];
 
     if (userId)    { conditions.push('user_id = ?');       params.push(userId); }
     if (type)      { conditions.push('type = ?');           params.push(type); }
+    if (category === 'consume')  { conditions.push('amount < 0'); }
+    if (category === 'recharge') { conditions.push('amount > 0'); }
     if (startTime) { conditions.push('created_at >= ?');   params.push(startTime); }
     if (endTime)   { conditions.push('created_at <= ?');   params.push(endTime); }
 

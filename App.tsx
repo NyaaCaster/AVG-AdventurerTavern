@@ -6,7 +6,8 @@ import ConfigScreen from './components/ConfigScreen';
 import TitleScreen from './components/TitleScreen';
 import { loadSettings, saveSettings } from './utils/storage';
 import { setHDMode } from './utils/imagePath';
-import { loadGame } from './services/db'; // Import loadGame
+import { loadGame, getSanityBalance } from './services/db'; // Import loadGame
+import { INITIAL_SANITY } from './utils/gameConstants';
 
 const App: React.FC = () => {
   // 设置初始游戏状态
@@ -21,6 +22,9 @@ const App: React.FC = () => {
   
   // 当前存档槽位ID（0=自动存档，1-3=手动存档）
   const [currentSlotId, setCurrentSlotId] = useState<number>(0);
+
+  // 理智余额（账号级，不随存档变更）
+  const [sanityBalance, setSanityBalance] = useState<number>(INITIAL_SANITY);
 
   // 游戏设置状态，初始化时从本地存储加载，并立即应用 HD 模式设置
   const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
@@ -78,6 +82,12 @@ const App: React.FC = () => {
 
   const handleUserLogin = (uid: number) => {
       setCurrentUserId(uid);
+      // 登录后立即拉取理智余额
+      getSanityBalance(uid).then(result => {
+          if (result !== null) {
+              setSanityBalance(result.balance);
+          }
+      });
   };
 
   const handleTitleLoadGame = async (slotId: number) => {
@@ -170,6 +180,7 @@ const App: React.FC = () => {
                 onSettingsChange={handleUpdateSettings} // Pass handler for in-game loads
                 settings={gameSettings}
                 initialSaveData={initialSaveData} // Pass loaded data
+                sanityBalance={sanityBalance}
             />
         </div>
       )}
