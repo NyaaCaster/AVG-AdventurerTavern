@@ -132,20 +132,21 @@ const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt
       onClick={onClick}
       className={`
         relative flex items-start gap-3 p-3 rounded-lg border cursor-pointer
-        transition-all duration-200 group
+        transition-all duration-200 group shadow-sm
         ${
           status === 'completed'
-            ? 'bg-[#1a3a2a] border-emerald-700 hover:border-emerald-500'
+            ? 'bg-gradient-to-r from-[#1a3a2a] to-[#0f241a] border-emerald-700 hover:border-emerald-500 hover:shadow-emerald-900/50 hover:shadow-lg'
             : status === 'active'
-            ? 'bg-[#3a2a0a] border-amber-600 hover:border-amber-400'
-            : 'bg-[#f5f0e6] border-[#d6cbb8] hover:border-[#9b7a4c] hover:shadow-md'
+            ? 'bg-gradient-to-r from-[#3a2a0a] to-[#2a1a05] border-amber-600 hover:border-amber-400 hover:shadow-amber-900/50 hover:shadow-lg'
+            : 'bg-[#fcfaf7] border-[#d6cbb8] hover:border-[#9b7a4c] hover:shadow-md hover:bg-[#fffef8]'
         }
       `}
     >
       {/* 左侧星级 */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#2c241b] border border-[#9b7a4c]/50 flex items-center justify-center gap-0.5">
-        <i className="fa-solid fa-star text-amber-400" style={{fontSize:'8px'}}></i>
-        <span className="text-amber-400 font-bold text-xs font-mono leading-none">{quest.star}</span>
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[#382b26] to-[#1a1512] border border-[#9b7a4c]/80 shadow-inner flex flex-col items-center justify-center gap-0.5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-white/5 pointer-events-none"></div>
+        <i className="fa-solid fa-star text-amber-400 text-[10px] drop-shadow-[0_0_2px_rgba(251,191,36,0.5)]"></i>
+        <span className="text-amber-400 font-bold text-sm font-mono leading-none drop-shadow-md">{quest.star}</span>
       </div>
 
       {/* 中间内容 */}
@@ -258,28 +259,29 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
         <div className="bg-[#2c241b] px-6 pt-5 pb-4 border-b-2 border-[#9b7a4c]">
           <div className="text-center mt-2">
             <div className="text-[10px] text-[#9b7a4c] tracking-[0.3em] uppercase mb-1 font-bold">— 冒险者公会 悬赏令 —</div>
-            <h2 className="text-lg md:text-xl font-bold text-[#f0e6d2] tracking-wider leading-tight px-8">{quest.quest_name}</h2>
+            <h2 className="text-lg md:text-xl font-bold text-[#f0e6d2] tracking-wider leading-tight px-8 drop-shadow-md">{quest.quest_name}</h2>
           </div>
           {/* 星级 - 只显示对应数量实心星星，居中 */}
-          <div className="flex justify-center mt-2">
-            <span className="text-base md:text-lg text-amber-400 tracking-wider">
-              {'★'.repeat(quest.star)}
-            </span>
+          <div className="flex justify-center mt-2 flex-wrap items-center gap-0.5 px-4 max-w-[80%] mx-auto">
+            {Array.from({ length: quest.star }).map((_, i) => (
+              <i key={i} className="fa-solid fa-star text-amber-400 text-xs md:text-sm drop-shadow-[0_0_4px_rgba(251,191,36,0.6)]"></i>
+            ))}
           </div>
         </div>
 
         {/* 怪物图片 */}
-        <div className="relative bg-[#1a1512] flex items-center justify-center overflow-hidden" style={{ minHeight: '160px', maxHeight: '220px' }}>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1a1512] via-transparent to-[#1a1512] opacity-60 z-10 pointer-events-none" />
+        <div className="relative bg-gradient-to-br from-[#382b26] via-[#1a1512] to-[#2c241b] flex items-center justify-center overflow-hidden border-b-2 border-[#382b26]" style={{ minHeight: '160px', maxHeight: '220px' }}>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1512] via-transparent to-transparent opacity-80 z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(155,122,76,0.1)_0%,transparent_70%)] z-0" />
           <img
             src={resolveImgPath(`img/quest/${quest.target_image}`)}
             alt={quest.target}
-            className="w-full h-full object-contain relative z-0"
+            className="w-full h-full object-contain relative z-0 drop-shadow-2xl"
             style={{ maxHeight: '220px' }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
           <div className="absolute bottom-2 left-0 right-0 text-center z-20">
-            <span className="text-[10px] text-[#9b7a4c]/80 tracking-widest uppercase">TARGET: {quest.target}</span>
+            <span className="text-[10px] text-[#d6cbb8] tracking-widest uppercase bg-[#1a1512]/60 px-3 py-1 rounded-full border border-[#9b7a4c]/30 backdrop-blur-sm">TARGET: {quest.target}</span>
           </div>
         </div>
 
@@ -549,11 +551,11 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
         />
 
         {/* 顶部标题栏 + 筛选器 */}
-        <div className="flex-shrink-0 bg-[#382b26] border-b-2 border-[#9b7a4c] relative z-10">
-          <i className="fa-solid fa-scroll text-[#9b7a4c] text-lg"></i>
+        <div className="flex-shrink-0 bg-[#382b26] px-4 py-3 border-b-2 border-[#9b7a4c] relative z-10 flex items-center gap-3 shadow-md">
+          <i className="fa-solid fa-scroll text-[#9b7a4c] text-2xl drop-shadow-sm"></i>
           <div>
-            <h2 className="text-[#f0e6d2] font-bold text-base md:text-lg tracking-widest">委托告示板</h2>
-            <p className="text-[#9b7a4c] text-[10px] tracking-wider">ADVENTURERS GUILD — QUEST BOARD</p>
+            <h2 className="text-[#f0e6d2] font-bold text-base md:text-lg tracking-widest drop-shadow-sm">委托告示板</h2>
+            <p className="text-[#9b7a4c] text-[9px] md:text-[10px] tracking-wider uppercase">ADVENTURERS GUILD — QUEST BOARD</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             {/* 星级筛选按钮 */}
