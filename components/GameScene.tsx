@@ -59,19 +59,26 @@ import { useDialogueSystem } from '../hooks/useDialogueSystem';
 // 金币获得 Toast
 const GoldToast: React.FC<{ amount: number; onComplete: () => void }> = ({ amount, onComplete }) => {
   const [visible, setVisible] = React.useState(false);
+  const isNegative = amount < 0;
   React.useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
     const t = setTimeout(() => { setVisible(false); setTimeout(onComplete, 500); }, 4000);
     return () => clearTimeout(t);
   }, []);
   return (
-    <div className={`mb-2 flex items-center gap-3 px-4 py-2.5 bg-[#1a1512]/90 border-l-4 border-yellow-500 rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out ${visible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
+    <div className={`mb-2 flex items-center gap-3 px-4 py-2.5 bg-[#1a1512]/90 border-l-4 ${
+      isNegative ? 'border-red-500' : 'border-yellow-500'
+    } rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out ${visible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
       <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] shadow-inner">
-        <i className="fa-solid fa-coins text-yellow-400 text-lg"></i>
+        <i className={`fa-solid fa-coins text-lg ${isNegative ? 'text-red-400' : 'text-yellow-400'}`}></i>
       </div>
       <div className="flex flex-col">
-        <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">获得金币</span>
-        <span className="text-yellow-300 font-bold font-mono text-sm">+{amount.toLocaleString()} G</span>
+        <span className={`text-[10px] font-bold uppercase tracking-wider ${isNegative ? 'text-red-500' : 'text-yellow-500'}`}>
+          {isNegative ? '消耗金币' : '获得金币'}
+        </span>
+        <span className={`font-bold font-mono text-sm ${isNegative ? 'text-red-300' : 'text-yellow-300'}`}>
+          {isNegative ? '' : '+'}{amount.toLocaleString()} G
+        </span>
       </div>
     </div>
   );
@@ -882,6 +889,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         isOpen={isQuestBoardOpen}
         onClose={() => setIsQuestBoardOpen(false)}
         questStates={core.questStates}
+        currentGold={core.gold}
         onAcceptQuest={(questId) => {
           core.handleAcceptQuest(questId);
           setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest accept failed:', err)), 100);

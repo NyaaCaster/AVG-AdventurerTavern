@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { ITEMS } from '../data/items';
 import { ItemData } from '../types';
 
@@ -17,6 +17,19 @@ import { MAX_GOLD } from '../utils/gameConstants';
 const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
   isOpen, onClose, gold, inventory, onUpdateGold, onUpdateInventory
 }) => {
+  const [search, setSearch] = useState('');
+
+  const filteredItems = useMemo(() => {
+    const all = Object.values(ITEMS);
+    if (!search.trim()) return all.slice(0, 50); // 默认只显示前50个
+    const q = search.trim().toLowerCase();
+    return all.filter(item =>
+      item.name.toLowerCase().includes(q) ||
+      item.id.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q)
+    ).slice(0, 100);
+  }, [search]);
+
   if (!isOpen) return null;
 
   const handleGoldChange = (deltaPercent: number) => {
@@ -87,9 +100,30 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
 
                 <div className="h-px bg-slate-800/50 my-2"></div>
 
+                {/* 搜索框 */}
+                <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded px-3 py-2">
+                    <i className="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="搜索道具名/ID/分类..."
+                        className="flex-1 bg-transparent text-slate-300 text-sm outline-none placeholder:text-slate-600"
+                        autoComplete="off"
+                    />
+                    {search && (
+                        <button onClick={() => setSearch('')} className="text-slate-500 hover:text-slate-300 text-xs">
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    )}
+                </div>
+                <div className="text-[10px] text-slate-600 px-1">
+                    显示 {filteredItems.length} 个{!search.trim() ? `（共 ${Object.values(ITEMS).length} 个，输入关键词搜索）` : ''}
+                </div>
+
                 {/* Items List */}
                 <div className="grid grid-cols-1 gap-2">
-                    {Object.values(ITEMS).map(item => {
+                    {filteredItems.map(item => {
                         const count = inventory[item.id] || 0;
                         return (
                             <div key={item.id} className="flex items-center justify-between bg-slate-800/30 p-2 px-3 rounded border border-slate-700/50 hover:border-slate-600 transition-colors">
