@@ -17,6 +17,7 @@ import { ItemData, CartItem } from '../types';
 import { ITEMS_RES } from '../data/item-res';
 import { ITEM_RES_SHOP, getResShopItemPrice } from '../data/item-res-shop';
 import { ITEM_TAGS } from '../data/item-type';
+import QuantityControl from './QuantityControl';
 
 interface ShopResModalProps {
   isOpen: boolean;
@@ -77,6 +78,14 @@ const ShopResModal: React.FC<ShopResModalProps> = ({
       }
       return { ...prev, [itemId]: { ...cur, quantity: cur.quantity - 1 } };
     });
+  };
+
+  const setCartQty = (itemId: string, price: number, qty: number) => {
+    if (qty <= 0) {
+      setCart(prev => { const { [itemId]: _, ...rest } = prev; return rest; });
+    } else {
+      setCart(prev => ({ ...prev, [itemId]: { itemId, quantity: qty, price } as CartItem }));
+    }
   };
 
   const clearCart = () => setCart({});
@@ -292,22 +301,13 @@ const ShopResModal: React.FC<ShopResModalProps> = ({
                         <p className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5">{item.description}</p>
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-[#b45309] font-mono text-xs md:text-sm">{actualPrice} G</span>
-                          <div className="flex items-center gap-0.5 md:gap-1">
-                            <button
-                              onClick={() => removeFromCart(shopItem.resId)}
-                              disabled={!cartItem}
-                              className={`w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center font-bold text-xs transition-all ${
-                                cartItem
-                                  ? 'bg-[#382b26] text-[#f0e6d2] hover:bg-[#2c241b]'
-                                  : 'bg-[#d6cbb8] text-[#8c7b70] cursor-not-allowed'
-                              }`}
-                            >-</button>
-                            <span className="w-5 md:w-7 text-center font-bold text-[#382b26] text-xs">{cartItem?.quantity || 0}</span>
-                            <button
-                              onClick={() => addToCart(shopItem.resId, actualPrice)}
-                              className="w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center font-bold text-xs bg-[#9b7a4c] text-[#1a1512] hover:bg-[#b45309] transition-all"
-                            >+</button>
-                          </div>
+                          <QuantityControl
+                            value={cartItem?.quantity || 0}
+                            onIncrease={() => addToCart(shopItem.resId, actualPrice)}
+                            onDecrease={() => removeFromCart(shopItem.resId)}
+                            onChange={qty => setCartQty(shopItem.resId, actualPrice, qty)}
+                            btnClassName={enabled => `w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center font-bold text-xs transition-all ${enabled ? 'bg-[#9b7a4c] text-[#1a1512] hover:bg-[#b45309]' : 'bg-[#d6cbb8] text-[#8c7b70] cursor-not-allowed'}`}
+                          />
                         </div>
                       </div>
                     </div>
