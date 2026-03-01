@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -229,7 +229,7 @@ app.post('/api/register', (req, res) => {
         // 新账号注册时，赠送初始理智 10000
         const initStmt = db.prepare(
             `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-             VALUES (?, 'recharge', 10000, '新账号注册赠送', ?, ?)`
+             VALUES (?, 'recharge', 100000, '新账号注册赠送', ?, ?)`
         );
         initStmt.run(newUid, getClientIp(req), Date.now(), function(initErr) {
             if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
