@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ITEMS } from '../data/items';
 import { ItemData } from '../types';
 
@@ -18,17 +18,30 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
   isOpen, onClose, gold, inventory, onUpdateGold, onUpdateInventory
 }) => {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
 
   const filteredItems = useMemo(() => {
     const all = Object.values(ITEMS);
-    if (!search.trim()) return all.slice(0, 50); // 默认只显示前50个
+    if (!search.trim()) return all;
     const q = search.trim().toLowerCase();
     return all.filter(item =>
       item.name.toLowerCase().includes(q) ||
       item.id.toLowerCase().includes(q) ||
       item.category.toLowerCase().includes(q)
-    ).slice(0, 100);
+    );
   }, [search]);
+
+  const pagedItems = useMemo(() => {
+    return filteredItems.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  }, [filteredItems, page]);
+
+  const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
+
+  const handleSearch = useCallback((val: string) => {
+    setSearch(val);
+    setPage(0);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -106,24 +119,38 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
                     <input
                         type="text"
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
+                        onChange={e => handleSearch(e.target.value)}
                         placeholder="搜索道具名/ID/分类..."
                         className="flex-1 bg-transparent text-slate-300 text-sm outline-none placeholder:text-slate-600"
                         autoComplete="off"
                     />
                     {search && (
-                        <button onClick={() => setSearch('')} className="text-slate-500 hover:text-slate-300 text-xs">
+                        <button onClick={() => handleSearch('')} className="text-slate-500 hover:text-slate-300 text-xs">
                             <i className="fa-solid fa-xmark"></i>
                         </button>
                     )}
                 </div>
-                <div className="text-[10px] text-slate-600 px-1">
-                    显示 {filteredItems.length} 个{!search.trim() ? `（共 ${Object.values(ITEMS).length} 个，输入关键词搜索）` : ''}
+
+                {/* 分页信息 + 翻页 */}
+                <div className="flex items-center justify-between text-[10px] text-slate-500 px-1">
+                    <span>第 {page + 1} / {totalPages} 页（共 {filteredItems.length} 项）</span>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 disabled:opacity-30 hover:bg-slate-700 transition-colors"
+                        >←</button>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page >= totalPages - 1}
+                            className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 disabled:opacity-30 hover:bg-slate-700 transition-colors"
+                        >→</button>
+                    </div>
                 </div>
 
                 {/* Items List */}
                 <div className="grid grid-cols-1 gap-2">
-                    {filteredItems.map(item => {
+                    {pagedItems.map(item => {
                         const count = inventory[item.id] || 0;
                         return (
                             <div key={item.id} className="flex items-center justify-between bg-slate-800/30 p-2 px-3 rounded border border-slate-700/50 hover:border-slate-600 transition-colors">

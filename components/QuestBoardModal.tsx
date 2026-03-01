@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { QuestList, QuestStateMap, QuestStatus } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
@@ -453,9 +453,6 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   const [rewardQuestId, setRewardQuestId] = useState<string | null>(null);
   const [starFilter, setStarFilter] = useState<number[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
-  const [filterPos, setFilterPos] = useState({ top: 0, right: 0 });
 
   const allQuests = Object.values(QUESTS);
 
@@ -480,16 +477,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
     return () => clearInterval(interval);
   }, [questStates, onCompleteQuest]);
 
-  // 点击外部关闭筛选器
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+
 
   const filteredQuests = starFilter.length === 0
     ? allQuests
@@ -560,63 +548,27 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23382b26' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}
         />
 
-        {/* 顶部标题栏 */}
-        <div className="flex-shrink-0 bg-[#382b26] border-b-2 border-[#9b7a4c] px-4 py-3 flex items-center gap-3 relative z-10">
+        {/* 顶部标题栏 + 筛选器 */}
+        <div className="flex-shrink-0 bg-[#382b26] border-b-2 border-[#9b7a4c] relative z-10">
           <i className="fa-solid fa-scroll text-[#9b7a4c] text-lg"></i>
           <div>
             <h2 className="text-[#f0e6d2] font-bold text-base md:text-lg tracking-widest">委托告示板</h2>
             <p className="text-[#9b7a4c] text-[10px] tracking-wider">ADVENTURERS GUILD — QUEST BOARD</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {/* 星级筛选器 */}
-            <div className="relative" ref={filterRef}>
-              <button
-                ref={filterBtnRef}
-                onClick={() => {
-                  if (!filterOpen && filterBtnRef.current) {
-                    const rect = filterBtnRef.current.getBoundingClientRect();
-                    setFilterPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-                  }
-                  setFilterOpen(v => !v);
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-bold transition-colors ${
-                  starFilter.length > 0
-                    ? 'bg-amber-900/60 border-amber-600 text-amber-300'
-                    : 'bg-[#2c241b] border-[#9b7a4c]/50 text-[#9b7a4c] hover:border-[#9b7a4c]'
-                }`}
-              >
-                <i className="fa-solid fa-star text-[10px]"></i>
-                {starFilter.length > 0 ? `${starFilter.sort((a,b)=>a-b).join(',')}★` : '筛选'}
-                <i className={`fa-solid fa-chevron-${filterOpen ? 'up' : 'down'} text-[9px]`}></i>
-              </button>
-              {filterOpen && (
-                <div
-                  className="fixed bg-[#2c241b] border border-[#9b7a4c] rounded-lg shadow-2xl p-2 z-[300] w-48"
-                  style={{ top: filterPos.top, right: filterPos.right }}
-                >
-                  <div className="text-[10px] text-[#9b7a4c] mb-2 px-1 tracking-wider">选择星级（可多选）</div>
-                  <div className="grid grid-cols-5 gap-1">
-                    {[1,2,3,4,5,6,7,8,9,10].map(star => (
-                      <button
-                        key={star}
-                        onClick={() => toggleStar(star)}
-                        className={`w-8 h-8 rounded text-xs font-bold font-mono border transition-colors ${
-                          starFilter.includes(star)
-                            ? 'bg-amber-600 border-amber-400 text-white'
-                            : 'bg-[#382b26] border-[#9b7a4c]/30 text-[#9b7a4c] hover:border-amber-500 hover:text-amber-400'
-                        }`}
-                      >{star}</button>
-                    ))}
-                  </div>
-{starFilter.length > 0 && (
-                    <button
-                      onClick={() => setStarFilter([])}
-                      className="w-full mt-2 text-[10px] text-[#9b7a4c] hover:text-[#f0e6d2] transition-colors py-1"
-                    >清除筛选</button>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* 星级筛选按钮 */}
+            <button
+              onClick={() => setFilterOpen(v => !v)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-bold transition-colors ${
+                starFilter.length > 0
+                  ? 'bg-amber-900/60 border-amber-600 text-amber-300'
+                  : 'bg-[#2c241b] border-[#9b7a4c]/50 text-[#9b7a4c] hover:border-[#9b7a4c]'
+              }`}
+            >
+              <i className="fa-solid fa-star text-[10px]"></i>
+              {starFilter.length > 0 ? `${[...starFilter].sort((a,b)=>a-b).join(',')}★` : '筛选'}
+              <i className={`fa-solid fa-chevron-${filterOpen ? 'up' : 'down'} text-[9px]`}></i>
+            </button>
             {/* 关闭按钮 */}
             <button
               onClick={onClose}
@@ -626,6 +578,34 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* 星级筛选展开面板 - 内联渲染，不用弹出定位 */}
+        {filterOpen && (
+          <div className="flex-shrink-0 bg-[#2c241b] border-b border-[#9b7a4c]/50 px-4 py-3">
+            <div className="text-[10px] text-[#9b7a4c] mb-2 tracking-wider">选择星级（可多选）</div>
+            <div className="flex flex-wrap gap-1.5">
+              {[1,2,3,4,5,6,7,8,9,10].map(star => (
+                <button
+                  key={star}
+                  onClick={() => toggleStar(star)}
+                  className={`w-9 h-9 rounded text-xs font-bold font-mono border transition-colors ${
+                    starFilter.includes(star)
+                      ? 'bg-amber-600 border-amber-400 text-white'
+                      : 'bg-[#382b26] border-[#9b7a4c]/30 text-[#9b7a4c] hover:border-amber-500 hover:text-amber-400'
+                  }`}
+                >
+                  <i className="fa-solid fa-star text-[8px] mr-0.5"></i>{star}
+                </button>
+              ))}
+              {starFilter.length > 0 && (
+                <button
+                  onClick={() => setStarFilter([])}
+                  className="px-3 h-9 rounded text-[10px] text-[#9b7a4c] border border-[#9b7a4c]/30 hover:text-[#f0e6d2] hover:border-[#9b7a4c] transition-colors"
+                >清除</button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 任务列表 */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 custom-scrollbar bg-[#e8dfd1] relative z-10">
