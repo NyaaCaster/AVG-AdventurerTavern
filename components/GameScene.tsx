@@ -122,8 +122,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
-    1: 5*60, 2: 10*60, 3: 15*60, 4: 20*60, 5: 25*60,
-    6: 30*60, 7: 35*60, 8: 40*60, 9: 45*60, 10: 50*60,
+    1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
+    6: 6*60, 7: 7*60, 8: 8*60, 9: 9*60, 10: 10*60,
   };
   useEffect(() => {
     const interval = setInterval(() => {

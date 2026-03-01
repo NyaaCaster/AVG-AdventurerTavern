@@ -2,6 +2,7 @@
 import { QuestList, QuestStateMap, QuestStatus } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
+import { ITEM_TAGS } from '../data/item-type';
 import { resolveImgPath } from '../utils/imagePath';
 
 interface QuestBoardModalProps {
@@ -15,17 +16,13 @@ interface QuestBoardModalProps {
   onAddItems: (items: { id: string; count: number }[]) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
 }
-// 详情弹窗倒计时（秒）: 1星=5分钟, 10星=50分钟
+// 统一倒计时（秒）: 1星=1分钟, 10星=10分钟
 const QUEST_DURATION_SECONDS: Record<number, number> = {
-  1: 5*60, 2: 10*60, 3: 15*60, 4: 20*60, 5: 25*60,
-  6: 30*60, 7: 35*60, 8: 40*60, 9: 45*60, 10: 50*60,
-};
-
-// 一级列表倒计时（秒）: 1星=1分钟, 10星=10分钟
-const QUEST_LIST_DURATION_SECONDS: Record<number, number> = {
   1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
   6: 6*60, 7: 7*60, 8: 8*60, 9: 9*60, 10: 10*60,
 };
+
+const QUEST_LIST_DURATION_SECONDS = QUEST_DURATION_SECONDS;
 
 const RANK_COLORS: Record<string, string> = {
   E: 'text-slate-400 border-slate-400/50 bg-slate-400/10',
@@ -57,6 +54,16 @@ function getItemName(itemId: string): string {
 
 function getItemImagePath(itemId: string): string | undefined {
   return ITEMS[itemId]?.imagePath;
+}
+
+function getItemTagIcon(itemId: string): string {
+  const item = ITEMS[itemId];
+  if (!item) return '📦';
+  if (item.tag) {
+    const tagInfo = ITEM_TAGS.find(t => t.id === item.tag);
+    if (tagInfo?.icon) return tagInfo.icon;
+  }
+  return '📦';
 }
 
 function renderStars(count: number, large = false): React.ReactNode {
@@ -127,40 +134,49 @@ const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt
         transition-all duration-200 group
         ${
           status === 'completed'
-            ? 'bg-emerald-950/30 border-emerald-800/50 hover:border-emerald-600'
+            ? 'bg-[#1a3a2a] border-emerald-700 hover:border-emerald-500'
             : status === 'active'
-            ? 'bg-amber-950/30 border-amber-800/50 hover:border-amber-500'
+            ? 'bg-[#3a2a0a] border-amber-600 hover:border-amber-400'
             : 'bg-[#f5f0e6] border-[#d6cbb8] hover:border-[#9b7a4c] hover:shadow-md'
         }
       `}
     >
-      {/* 左侧星级数字 */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#2c241b] border border-[#9b7a4c]/50 flex items-center justify-center">
-        <span className="text-amber-400 font-bold text-xs font-mono">{quest.star}</span>
+      {/* 左侧星级 */}
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#2c241b] border border-[#9b7a4c]/50 flex items-center justify-center gap-0.5">
+        <i className="fa-solid fa-star text-amber-400" style={{fontSize:'8px'}}></i>
+        <span className="text-amber-400 font-bold text-xs font-mono leading-none">{quest.star}</span>
       </div>
 
       {/* 中间内容 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <span className={`font-bold text-sm leading-tight ${
-            status === 'completed' ? 'text-emerald-300/70 line-through' :
-            status === 'active' ? 'text-amber-200' : 'text-[#2c241b]'
+            status === 'completed' ? 'text-emerald-300 line-through' :
+            status === 'active' ? 'text-amber-300' : 'text-[#2c241b]'
           }`}>{quest.quest_name}</span>
           {statusBadge()}
         </div>
         <p className={`text-[11px] mt-0.5 line-clamp-2 leading-snug ${
-          status === 'completed' ? 'text-emerald-400/50' :
-          status === 'active' ? 'text-amber-200/70' : 'text-[#5c4d45]'
+          status === 'completed' ? 'text-emerald-400' :
+          status === 'active' ? 'text-amber-200' : 'text-[#5c4d45]'
         }`}>{quest.description}</p>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
             RANK_COLORS[quest.rank] || RANK_COLORS['E']
           }`}>{quest.rank}</span>
-          <span className="text-[10px] text-amber-500 font-bold font-mono">
+          <span className={`text-[10px] font-bold font-mono ${
+            status === 'completed' ? 'text-emerald-400' :
+            status === 'active' ? 'text-amber-300' : 'text-amber-500'
+          }`}>
             <i className="fa-solid fa-coins text-[9px] mr-0.5"></i>{quest.rewards.gold.toLocaleString()}G
           </span>
           {quest.rewards.items.slice(0, 2).map((item, i) => (
-            <span key={i} className="text-[10px] text-[#5c4d45] bg-[#e0d6c5] px-1.5 py-0.5 rounded border border-[#c7bca8]">
+            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
+              status === 'completed' ? 'text-emerald-300 bg-emerald-900/40 border-emerald-700' :
+              status === 'active' ? 'text-amber-200 bg-amber-900/40 border-amber-700' :
+              'text-[#5c4d45] bg-[#e0d6c5] border-[#c7bca8]'
+            }`}>
+<span>{getItemTagIcon(item.item_id)}</span>
               {getItemName(item.item_id)}x{item.item_num}
             </span>
           ))}
@@ -182,11 +198,12 @@ interface QuestDetailModalProps {
   hasActiveQuest: boolean;
   onAccept: () => void;
   onComplete: () => void;
+  onInstantComplete: () => void;
   onClose: () => void;
 }
 
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
-  quest, status, acceptedAt, hasActiveQuest, onAccept, onComplete, onClose
+  quest, status, acceptedAt, hasActiveQuest, onAccept, onComplete, onInstantComplete, onClose
 }) => {
   const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
   const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, duration);
@@ -241,10 +258,10 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
             <div className="text-[10px] text-[#9b7a4c] tracking-[0.3em] uppercase mb-1 font-bold">— 冒险者公会 悬赏令 —</div>
             <h2 className="text-lg md:text-xl font-bold text-[#f0e6d2] tracking-wider leading-tight px-8">{quest.quest_name}</h2>
           </div>
-          {/* 星级 */}
+          {/* 星级 - 只显示对应数量实心星星，居中 */}
           <div className="flex justify-center mt-2">
             <span className="text-base md:text-lg text-amber-400 tracking-wider">
-              {'★'.repeat(quest.star)}{'☆'.repeat(10 - quest.star)}
+              {'★'.repeat(quest.star)}
             </span>
           </div>
         </div>
@@ -299,7 +316,7 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                     {getItemImagePath(item.item_id) ? (
                       <img src={resolveImgPath(getItemImagePath(item.item_id)!)} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <i className="fa-solid fa-cube text-[#9b7a4c] text-xs"></i>
+                      <span className="text-base">{getItemTagIcon(item.item_id)}</span>
                     )}
                   </div>
                   <span className="text-sm text-[#382b26] font-medium">{getItemName(item.item_id)}</span>
@@ -333,6 +350,14 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
               <div className="text-center">
                 <div className="text-3xl font-bold font-mono text-amber-500 tracking-widest">{formatTime(remaining)}</div>
                 <p className="text-[11px] text-[#8c7b70] mt-1">倒计时结束后任务自动完成</p>
+                <button
+                                  onClick={onInstantComplete}
+                  className="mt-3 w-full py-2 rounded-lg font-bold text-sm border-2 bg-[#2c241b] text-amber-300 border-amber-700 hover:bg-amber-900/40 hover:border-amber-500 active:scale-[0.98] transition-all"
+                >
+                  <i className="fa-solid fa-bolt mr-1.5"></i>
+                  立刻完成
+                  <span className="ml-2 text-xs text-amber-500/80 font-mono">(-{Math.floor(quest.rewards.gold * 0.5).toLocaleString()}G)</span>
+                </button>
               </div>
             )}
 {status === 'completed' && (
@@ -478,6 +503,15 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
     setSelectedQuestId(null);
   };
 
+  const handleInstantComplete = (questId: string) => {
+    const quest = QUESTS[questId];
+    if (!quest) return;
+    const cost = Math.floor(quest.rewards.gold * 0.5);
+    onAddGold(-cost); // 扣除费用
+    onCompleteQuest(questId);
+    setSelectedQuestId(null);
+  };
+
   const handleConfirmReward = () => {
     if (!rewardQuestId) return;
     const quest = QUESTS[rewardQuestId];
@@ -531,7 +565,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
                 <i className={`fa-solid fa-chevron-${filterOpen ? 'up' : 'down'} text-[9px]`}></i>
               </button>
               {filterOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-[#2c241b] border border-[#9b7a4c] rounded-lg shadow-2xl p-2 z-50 w-48">
+                <div className="absolute right-0 top-full mt-1 bg-[#2c241b] border border-[#9b7a4c] rounded-lg shadow-2xl p-2 z-[200] w-48">
                   <div className="text-[10px] text-[#9b7a4c] mb-2 px-1 tracking-wider">选择星级（可多选）</div>
                   <div className="grid grid-cols-5 gap-1">
                     {[1,2,3,4,5,6,7,8,9,10].map(star => (
@@ -614,6 +648,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             hasActiveQuest={hasActiveQuest && selectedState.status !== 'active'}
             onAccept={() => handleAccept(selectedQuest.quest_id)}
             onComplete={() => handleDeliverClick(selectedQuest.quest_id)}
+            onInstantComplete={() => handleInstantComplete(selectedQuest.quest_id)}
             onClose={() => setSelectedQuestId(null)}
           />
         )}
