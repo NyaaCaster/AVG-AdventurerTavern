@@ -177,18 +177,19 @@ const CookingModal: React.FC<CookingModalProps> = ({
       // 4. 计算数值
       const allIngredientIds = [mainId, ...subIds];
       let totalStar = 0;
-      let starSumPrice = 0;
 
       allIngredientIds.forEach(id => {
           const item = ITEMS[id];
           const s = parseInt(item.star || '1');
           totalStar += s;
-          starSumPrice += Math.floor(getResValue(item.star) * 0.1);
       });
 
       const avgStar = Math.max(1, Math.round(totalStar / allIngredientIds.length));
-      const basePrice = getResValue(avgStar.toString());
-      const finalPrice = basePrice + starSumPrice;
+
+      // 价格公式：主料全价 + 辅料总价值 ÷ 2
+      const mainPrice = getResValue(ITEMS[mainId].star);
+      const subPrice = Math.floor(subIds.reduce((sum, id) => sum + getResValue(ITEMS[id].star), 0) / 2);
+      const finalPrice = mainPrice + subPrice;
 
       // 5. 设置预览数据
       setPreviewData({
