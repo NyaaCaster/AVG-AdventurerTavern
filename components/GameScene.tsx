@@ -33,6 +33,7 @@ import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
 import { QUESTS } from '../data/quest-list';
 import { getResValue } from '../data/item-value-table';
+import { calculateTavernBonus } from '../data/facilityData';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
@@ -279,6 +280,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               // 销售基数：受集客力影响 (0~5份/小时)
               const baseSalesVolume = Math.max(1, Math.floor(5 * (stats.attraction / 100)));
 
+              // 餐饮溢价：酒场等级加成
+              const tavernLevel = core.sceneLevels['scen_3'] || 1;
+              const { bonus: tavernBonus } = calculateTavernBonus(tavernLevel);
+
               // 处理餐点销售
               core.tavernMenu.foods.forEach(recipeId => {
                   if (!recipeId) return;
@@ -293,7 +298,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                   if (sales > 0) {
                       soldFoods[recipeId] = (soldFoods[recipeId] || 0) + sales;
                       tempFoodStock[recipeId] -= sales;
-                      totalTavernRevenue += sales * recipe.price;
+                      // 应用餐饮溢价：料理售价 × (1 + bonus%)
+                      const priceWithBonus = Math.floor(recipe.price * (1 + tavernBonus / 100));
+                      totalTavernRevenue += sales * priceWithBonus;
                   }
               });
 
