@@ -361,6 +361,108 @@ export const updateCharacterSummary = async (
     return true;
 };
 
+// --- 理智账本服务 ---
+
+/**
+ * 理智消耗类型（amount 为负值）
+ * 新增消耗类型：在此联合类型末尾追加即可，无需改动数据库或后端
+ *
+ * 当前已定义：
+ *   'ai_memory'   - 对话记忆写入（amount = 本条消息字符数，观测期原始数据）
+ *   'ai_summary'  - 摘要压缩（amount = 被压缩的所有消息字符数合计，观测期原始数据）
+ */
+export type SanityConsumeType =
+    | 'ai_memory'       // 对话记忆写入
+    | 'ai_summary'      // 摘要压缩
+    | (string & {});    // 保留扩展：允许传任意字符串，同时保留上方类型的自动补全
+
+/**
+ * 理智充值/收入类型（amount 为正值）
+ * 新增收入类型：在此联合类型末尾追加即可，无需改动数据库或后端
+ *
+ * 当前已定义：
+ *   'recharge'    - 用户付费充值
+ */
+export type SanityRechargeType =
+    | 'recharge'        // 用户付费充值
+    | (string & {});    // 保留扩展
+
+/** 账本单条记录（查询返回） */
+export interface SanityRecord {
+    id: number;
+    type: string;
+    amount: number;
+    description: string | null;
+    client_ip: string | null;
+    created_at: number;
+}
+
+/**
+ * 记录理智消耗（负值）
+ * @param amount 消耗量，传正数，函数内部自动转负
+ */
+export const consumeSanity = async (
+    userId: number,
+    type: SanityConsumeType,
+    amount: number,
+    description?: string
+): Promise<boolean> => {
+    const res = await apiCall('/sanity/consume', {
+        userId,
+        type,
+        amount,
+        description: description || null
+    });
+
+    if (!res.success) {
+        console.error('[Sanity] Failed to record consume:', res.message);
+        return false;
+    }
+
+    return true;
+};
+
+/**
+ * 记录理智充值 / 赠送（正值）
+ */
+export const rechargeSanity = async (
+    userId: number,
+    type: SanityRechargeType,
+    amount: number,
+    description?: string
+): Promise<boolean> => {
+    const res = await apiCall('/sanity/recharge', {
+        userId,
+        type,
+        amount,
+        description: description || null
+    });
+
+    if (!res.success) {
+        console.error('[Sanity] Failed to record recharge:', res.message);
+        return false;
+    }
+
+    return true;
+};
+
+/**
+ * 查询用户理智余额及最近明细
+ */
+export const getSanityBalance = async (
+    userId: number,
+    limit: number = 20
+): Promise<{ balance: number; records: SanityRecord[] } | null> => {
+    const res = await apiCall('/sanity/balance', { userId, limit });
+
+    if (res.success) {
+        return { balance: res.balance, records: res.records };
+    }
+
+    console.error('[Sanity] Failed to get balance:', res.message);
+    return null;
+};
+
 /**
  * 删除已总结的旧对话记录
  */

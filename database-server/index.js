@@ -117,6 +117,41 @@ db.serialize(() => {
             ON chat_messages(user_id, slot_id, character_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_memories 
             ON character_memories(user_id, slot_id, character_id)`);
+
+    // ----------------- 理智用量总表（全局，不随用户数据删除）-----------------
+    // 注意：本表故意不设 FOREIGN KEY，防止删除用户时级联清除计费记录
+    //
+    // amount 符号规则：
+    //   负数 = 消耗（用户使用功能扣除）
+    //   正数 = 收入（充值 / 奖励 / 退款）
+    //
+    // type 为自由文本字段，无枚举约束，随时新增类型无需改表。
+    // 已约定类型（见 services/db.ts 的 SanityConsumeType / SanityRechargeType）：
+    //
+    //   消耗类（负值）：
+    //     'ai_memory'   - 对话记忆写入（amount = 本条消息字符数，观测期原始数据）
+    //     'ai_summary'  - 摘要压缩（amount = 被压缩的所有消息字符数合计，观测期原始数据）
+    //
+    //   收入类（正值）：
+    //     'recharge'    - 用户付费充值
+    //
+    // 新增类型只需在 services/db.ts 的联合类型末尾追加字符串字面量即可。
+    db.run(`CREATE TABLE IF NOT EXISTS sanity_ledger (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id     INTEGER NOT NULL,
+        type        TEXT    NOT NULL,
+        amount      REAL    NOT NULL,
+        description TEXT,
+        client_ip   TEXT,
+        created_at  INTEGER NOT NULL
+    )`);
+
+    // 按用户查账常用，单独建索引；created_at 用于时间范围查询
+    db.run(`CREATE INDEX IF NOT EXISTS idx_sanity_ledger_user
+            ON sanity_ledger(user_id, created_at DESC)`);
+    // type 索引，方便按类型统计
+    db.run(`CREATE INDEX IF NOT EXISTS idx_sanity_ledger_type
+            ON sanity_ledger(type, created_at DESC)`);
 });
 
 // API Routes
@@ -447,6 +482,153 @@ app.post('/api/chat/messages/delete_old', (req, res) => {
         function(err) {
             if (err) return res.status(500).json({ success: false, message: err.message });
             res.json({ success: true, deletedCount: this.changes });
+        }
+    );
+});
+
+// ----------------- 理智账本 API -----------------
+
+// 辅助函数：从请求中提取真实客户端 IP
+function getClientIp(req) {
+    // 优先读反向代理注入的头（Nginx / CDN 场景）
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        // X-Forwarded-For 可能包含多个 IP，取第一个（最原始的客户端）
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket?.remoteAddress || req.ip || null;
+}
+
+    // S-1. 记录理智消耗（负值，由业务逻辑调用）
+// type 参见 services/db.ts → SanityConsumeType
+app.post('/api/sanity/consume', (req, res) => {
+    const { userId, type, amount, description } = req.body;
+
+    if (!userId || !type || amount === undefined) {
+        return res.json({ success: false, message: '缺少必需参数: userId, type, amount' });
+    }
+    if (typeof amount !== 'number' || amount <= 0) {
+        return res.json({ success: false, message: 'amount 必须为正数（系统自动转为负值记账）' });
+    }
+
+    const clientIp = getClientIp(req);
+    const realAmount = -Math.abs(amount); // 消耗强制为负
+
+    const stmt = db.prepare(
+        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    stmt.run(userId, type, realAmount, description || null, clientIp, Date.now(), function(err) {
+        if (err) return res.status(500).json({ success: false, message: err.message });
+        res.json({ success: true, id: this.lastID, amount: realAmount });
+    });
+    stmt.finalize();
+});
+
+// S-2. 记录理智充值/赠送（正值，由管理员或支付回调调用）
+// type 参见 services/db.ts → SanityRechargeType
+app.post('/api/sanity/recharge', (req, res) => {
+    const { userId, type, amount, description } = req.body;
+
+    if (!userId || !type || amount === undefined) {
+        return res.json({ success: false, message: '缺少必需参数: userId, type, amount' });
+    }
+    if (typeof amount !== 'number' || amount <= 0) {
+        return res.json({ success: false, message: 'amount 必须为正数' });
+    }
+
+    const clientIp = getClientIp(req);
+    const realAmount = Math.abs(amount); // 充值强制为正
+
+    const stmt = db.prepare(
+        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    stmt.run(userId, type, realAmount, description || null, clientIp, Date.now(), function(err) {
+        if (err) return res.status(500).json({ success: false, message: err.message });
+        res.json({ success: true, id: this.lastID, amount: realAmount });
+    });
+    stmt.finalize();
+});
+
+// S-3. 查询用户理智余额 + 最近明细
+app.post('/api/sanity/balance', (req, res) => {
+    const { userId, limit = 20 } = req.body;
+
+    if (!userId) {
+        return res.json({ success: false, message: '缺少必需参数: userId' });
+    }
+
+    // 先查总余额（所有记录的 amount 求和）
+    db.get(
+        `SELECT COALESCE(SUM(amount), 0) AS balance FROM sanity_ledger WHERE user_id = ?`,
+        [userId],
+        (err, balanceRow) => {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+
+            // 再查最近明细
+            db.all(
+                `SELECT id, type, amount, description, client_ip, created_at
+                 FROM sanity_ledger
+                 WHERE user_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT ?`,
+                [userId, limit],
+                (err2, rows) => {
+                    if (err2) return res.status(500).json({ success: false, message: err2.message });
+                    res.json({
+                        success: true,
+                        balance: balanceRow.balance,
+                        records: rows
+                    });
+                }
+            );
+        }
+    );
+});
+
+// S-4. 管理端：全量明细查询（支持按 type / 时间范围过滤，分页）
+app.post('/api/sanity/admin/records', (req, res) => {
+    const { userId, type, startTime, endTime, page = 1, pageSize = 50 } = req.body;
+
+    const conditions = [];
+    const params = [];
+
+    if (userId)    { conditions.push('user_id = ?');       params.push(userId); }
+    if (type)      { conditions.push('type = ?');           params.push(type); }
+    if (startTime) { conditions.push('created_at >= ?');   params.push(startTime); }
+    if (endTime)   { conditions.push('created_at <= ?');   params.push(endTime); }
+
+    const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+    const offset = (page - 1) * pageSize;
+
+    // 先查总条数
+    db.get(
+        `SELECT COUNT(*) AS total, COALESCE(SUM(amount), 0) AS total_amount
+         FROM sanity_ledger ${where}`,
+        params,
+        (err, countRow) => {
+            if (err) return res.status(500).json({ success: false, message: err.message });
+
+            // 再查分页数据
+            db.all(
+                `SELECT id, user_id, type, amount, description, client_ip, created_at
+                 FROM sanity_ledger ${where}
+                 ORDER BY created_at DESC
+                 LIMIT ? OFFSET ?`,
+                [...params, pageSize, offset],
+                (err2, rows) => {
+                    if (err2) return res.status(500).json({ success: false, message: err2.message });
+                    res.json({
+                        success: true,
+                        total: countRow.total,
+                        totalAmount: countRow.total_amount,
+                        page,
+                        pageSize,
+                        records: rows
+                    });
+                }
+            );
         }
     );
 });

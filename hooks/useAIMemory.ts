@@ -5,7 +5,8 @@ import {
     getCharacterMemories, 
     addCharacterMemories,
     updateCharacterSummary,
-    deleteOldMessages
+    deleteOldMessages,
+    consumeSanity
 } from '../services/db';
 import { llmService } from '../services/llmService';
 import { ApiConfig } from '../types';
@@ -186,7 +187,8 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
     }, [userId, slotId]);
 
     /**
-     * 保存一条对话记录
+     * 保存一条对话记录，并记录理智消耗
+     * 消耗规则：user 消息 0.5 理智，assistant 消息 0.5 理智，合计每轮 1 理智
      */
     const saveMessage = useCallback(async (
         characterId: string,
@@ -200,6 +202,14 @@ export const useAIMemory = ({ userId, slotId, apiConfig }: UseAIMemoryProps) => 
             if (result !== null) {
                 cacheManager.clear(characterId);
                 console.log('[AI Memory] Cache cleared after saving message');
+
+                // 后台静默记录理智消耗，amount 为本条消息的字符数（观测期原始数据）
+                consumeSanity(
+                    userId,
+                    'ai_memory',
+                    content.length,
+                    `${characterId} / ${role}`
+                ).catch(e => console.warn('[Sanity] consume record failed:', e));
             }
             
             return result !== null;
@@ -413,6 +423,15 @@ ${conversationText}
             console.log(`[AI Memory] 摘要更新成功，删除了 ${SUMMARIZE_BATCH} 条旧消息`);
             console.log(`[AI Memory] 新摘要: ${newSummary.substring(0, 50)}...`);
             console.log('[AI Memory] Cache cleared after summary update');
+
+            // 后台静默记录摘要压缩的理智消耗，amount 为被压缩的所有消息字符数合计（观测期原始数据）
+            const summarizedChars = messagesToSummarize.reduce((sum, m) => sum + m.content.length, 0);
+            consumeSanity(
+                userId,
+                'ai_summary',
+                summarizedChars,
+                `${characterId} / 压缩 ${SUMMARIZE_BATCH} 条`
+            ).catch(e => console.warn('[Sanity] summary consume record failed:', e));
         } catch (error) {
             console.error('[AI Memory] 摘要生成失败，留待下次触发:', error);
         } finally {
