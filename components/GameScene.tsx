@@ -775,14 +775,16 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             characterLocations={world.characterLocations as Record<string, SceneId>}
           />
 
-          <DebugResourceModal
-            isOpen={isResourceDebugOpen}
-            onClose={() => setIsResourceDebugOpen(false)}
-            gold={core.gold}
-            inventory={core.inventory}
-            onUpdateGold={core.updateGold}
-            onUpdateInventory={core.updateInventoryItem}
-          />
+            {isResourceDebugOpen && (
+    <DebugResourceModal
+      isOpen={isResourceDebugOpen}
+      onClose={() => setIsResourceDebugOpen(false)}
+      gold={core.gold}
+      inventory={core.inventory}
+      onUpdateGold={core.updateGold}
+      onUpdateInventory={core.updateInventoryItem}
+    />
+  )}
 
           <DebugUnlocksModal
             isOpen={isUnlocksDebugOpen}
