@@ -1,4 +1,4 @@
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -77,6 +77,7 @@ export const saveGame = async (
     foodStock?: Record<string, number>;
     tavernMenu?: import('../types').TavernMenuState;
     checkedInCharacters?: string[];
+    questStates?: QuestStateMap;
     settings?: GameSettings;
   }
 ) => {

@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState
+    ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
+    QuestStateMap, QuestStatus
 } from '../types';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { 
@@ -42,6 +43,7 @@ export const useCoreState = (initialSaveData?: any) => {
     };
   });
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
+  const [questStates, setQuestStates] = useState<QuestStateMap>({});
 
   // Apply loaded data
   useEffect(() => {
@@ -97,6 +99,7 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.foodStock) setFoodStock(data.foodStock);
       if (data.characterUnlocks) setCharacterUnlocks(data.characterUnlocks);
       if (data.tavernMenu) setTavernMenu(data.tavernMenu);
+      if (data.questStates) setQuestStates(data.questStates);
   };
 
   // --- Handlers ---
@@ -236,6 +239,30 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(newInventory);
   };
 
+  // --- Quest Handlers ---
+  const handleAcceptQuest = (questId: string) => {
+      setQuestStates(prev => ({
+          ...prev,
+          [questId]: { questId, status: 'active' as QuestStatus, acceptedAt: Date.now() }
+      }));
+  };
+
+  const handleCompleteQuest = (questId: string) => {
+      setQuestStates(prev => ({
+          ...prev,
+          [questId]: { questId, status: 'completed' as QuestStatus, acceptedAt: prev[questId]?.acceptedAt }
+      }));
+  };
+
+  const handleDeliverQuest = (questId: string) => {
+      // 交付后从状态中移除（重置为可接受）
+      setQuestStates(prev => {
+          const next = { ...prev };
+          delete next[questId];
+          return next;
+      });
+  };
+
   // Debug Modifiers
   const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
   const updateInventoryItem = (itemId: string, newCount: number) => {
@@ -295,6 +322,10 @@ export const useCoreState = (initialSaveData?: any) => {
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,
       handleClearTavernMenu,
-      handleTavernSales
+      handleTavernSales,
+      questStates, setQuestStates,
+      handleAcceptQuest,
+      handleCompleteQuest,
+      handleDeliverQuest
   };
 };

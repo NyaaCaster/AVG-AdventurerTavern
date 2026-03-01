@@ -2,7 +2,7 @@ import React from 'react';
 import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 
-const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVisible, presentCharacters }) => {
+const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onAction, onEnterDialogue, isMenuVisible, presentCharacters }) => {
   if (!isMenuVisible) return null;
 
   return (
@@ -14,12 +14,10 @@ const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onEnterDialogue, isMenuVi
         onClick={() => onNavigate('scen_1')}
       />
 
-      {/* 查看委托（预留，暂未实现） */}
       <SceneActionBtn
         label="查看委托"
         icon="fa-scroll"
-        onClick={() => {}}
-        disabled
+        onClick={() => onAction('open_quest_board')}
       />
 
       {/* 评级鉴定（预留，暂未实现） */}

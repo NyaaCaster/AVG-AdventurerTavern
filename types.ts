@@ -1,4 +1,4 @@
-﻿
+
 export enum GameState {
   LOADING = 'LOADING',
   MENU = 'MENU',
@@ -289,3 +289,61 @@ export interface ShopItemModalProps {
     inventoryChanges: Record<string, number>;
   }) => void;
 }
+
+// --- 任务系统类型定义 ---
+
+export interface EnemyConfig {
+  enemy_id: number;
+  position: number;
+}
+
+export interface BattleConfig {
+  troop_id: number;
+  enemies: EnemyConfig[];
+}
+
+export interface RewardItem {
+  item_id: string;
+  // item_name 可从 ITEMS 查找，此处仅作可读性参考
+  item_num: number;
+}
+
+export interface QuestRewards {
+  gold: number;
+  experience: number;
+  items: RewardItem[];
+}
+
+export interface QuestList {
+  quest_id: string;
+  quest_name: string;
+  description: string;
+  star: number;       // 难度星级 (1-10)
+  rank: string;       // 难度等级 (E/D/C/B/A/S)
+  target: string;
+  background_image: string;
+  target_image: string;
+  battle_config: BattleConfig;
+  rewards: QuestRewards;
+}
+
+export type QuestMap = Record<string, QuestList>;
+
+export interface QuestTarget {
+  quest_id: string;
+  star: number;
+  rank: string;
+  target: string;
+}
+
+export type QuestTargetList = QuestTarget[];
+
+export type QuestStatus = 'available' | 'active' | 'completed';
+
+export interface QuestState {
+  questId: string;
+  status: QuestStatus;
+  acceptedAt?: number; // 接受任务的时间戳
+}
+
+export type QuestStateMap = Record<string, QuestState>;

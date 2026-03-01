@@ -23,6 +23,7 @@ import SaveLoadModal from './SaveLoadModal';
 import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
 import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
+import QuestBoardModal from './QuestBoardModal';
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import RoomCheckInToast from './RoomCheckInToast';
@@ -30,6 +31,7 @@ import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
+import { QUESTS } from '../data/quest-list';
 import { getResValue } from '../data/item-value-table';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
@@ -53,6 +55,27 @@ import { useCoreState } from '../hooks/useCoreState';
 import { useWorldSystem } from '../hooks/useWorldSystem';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { useDialogueSystem } from '../hooks/useDialogueSystem';
+
+// 金币获得 Toast
+const GoldToast: React.FC<{ amount: number; onComplete: () => void }> = ({ amount, onComplete }) => {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+    const t = setTimeout(() => { setVisible(false); setTimeout(onComplete, 500); }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className={`mb-2 flex items-center gap-3 px-4 py-2.5 bg-[#1a1512]/90 border-l-4 border-yellow-500 rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out ${visible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
+      <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] shadow-inner">
+        <i className="fa-solid fa-coins text-yellow-400 text-lg"></i>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">获得金币</span>
+        <span className="text-yellow-300 font-bold font-mono text-sm">+{amount.toLocaleString()} G</span>
+      </div>
+    </div>
+  );
+};
 
 interface GameSceneProps {
   userId: number; 
@@ -95,6 +118,29 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy'); // 记录从哪个页签打开商店
   const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
   const [isRestModalOpen, setIsRestModalOpen] = useState(false);
+  const [isQuestBoardOpen, setIsQuestBoardOpen] = useState(false);
+
+  // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
+  const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
+    1: 5*60, 2: 10*60, 3: 15*60, 4: 20*60, 5: 25*60,
+    6: 30*60, 7: 35*60, 8: 40*60, 9: 45*60, 10: 50*60,
+  };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Object.values(core.questStates).forEach(state => {
+        if (state.status === 'active' && state.acceptedAt) {
+          const quest = QUESTS[state.questId];
+          if (!quest) return;
+          const duration = QUEST_DURATION_SECONDS_GLOBAL[quest.star] || 300;
+          const elapsed = Math.floor((Date.now() - state.acceptedAt) / 1000);
+          if (elapsed >= duration) {
+            core.handleCompleteQuest(state.questId);
+          }
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [core.questStates]);
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -108,6 +154,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [showHistory, setShowHistory] = useState(false);
   const [showDebugLog, setShowDebugLog] = useState(false);
   const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
+  const [goldNotifications, setGoldNotifications] = useState<{id: string, amount: number}[]>([]);
   const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
   const [checkInNotifications, setCheckInNotifications] = useState<{id: string, charId: string}[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
@@ -448,6 +495,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     if (action === 'open_food_shop') {
         setIsFoodShopOpen(true);
     }
+    if (action === 'open_quest_board') {
+        setIsQuestBoardOpen(true);
+    }
     if (action === 'rest') {
         // 先触发自动存档，再弹出第四面壁提示
         handleSaveGame(0)
@@ -462,6 +512,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       // 保存游戏数据
       await saveGame(userId, slotId, label, {
           gold: core.gold,
+          questStates: core.questStates,
           currentSceneId: world.currentSceneId,
           worldState: world.worldState,
           managementStats: core.managementStats,
@@ -649,6 +700,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
                       onComplete={() => setItemNotifications(prev => prev.filter(n => n.id !== notification.id))}
                   />
               ))}
+                            {goldNotifications.map(notification => (
+                  <GoldToast
+                      key={notification.id}
+                      amount={notification.amount}
+                      onComplete={() => setGoldNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  />
+              ))}
               {affinityNotifications.map(notification => (
                   <AffinityToast 
                       key={notification.id}
@@ -819,6 +877,39 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
       <SaveLoadModal isOpen={isSaveLoadOpen} onClose={() => setIsSaveLoadOpen(false)} mode={saveLoadMode} userId={userId} onSave={handleSaveGame} onLoad={handleLoadGame} onDelete={handleDeleteSave} />
       <RestModal isOpen={isRestModalOpen} onClose={() => setIsRestModalOpen(false)} />
+
+      <QuestBoardModal
+        isOpen={isQuestBoardOpen}
+        onClose={() => setIsQuestBoardOpen(false)}
+        questStates={core.questStates}
+        onAcceptQuest={(questId) => {
+          core.handleAcceptQuest(questId);
+          setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest accept failed:', err)), 100);
+        }}
+        onCompleteQuest={(questId) => {
+          core.handleCompleteQuest(questId);
+          setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest complete failed:', err)), 100);
+        }}
+        onDeliverQuest={core.handleDeliverQuest}
+        onAddGold={(amount) => core.updateGold(core.gold + amount)}
+        onAddItems={(items) => core.handleAddItems(items)}
+        onShowRewardToasts={(gold, items) => {
+          // 金币通知
+          setGoldNotifications(prev => [
+            ...prev,
+            { id: Date.now() + Math.random().toString(), amount: gold }
+          ]);
+          // 道具 toasts（延迟依次显示）
+          items.forEach((item, idx) => {
+            setTimeout(() => {
+              setItemNotifications(prev => [
+                ...prev,
+                { id: Date.now() + Math.random().toString(), itemId: item.id, count: item.count }
+              ]);
+            }, (idx + 1) * 600);
+          });
+        }}
+      />
 
       {/* ShopResModal - 市集食材店（scen_market 使用）*/}
       <ShopResModal
