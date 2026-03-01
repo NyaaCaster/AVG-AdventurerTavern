@@ -4,6 +4,7 @@ import {
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
     QuestStateMap, QuestStatus
 } from '../types';
+import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
@@ -230,13 +231,18 @@ export const useCoreState = (initialSaveData?: any) => {
   };
 
   const handleAddItems = (items: { id: string; count: number }[]) => {
-      const newInventory = { ...inventory };
-      items.forEach(item => {
-          if (item.id && item.count > 0) {
-              newInventory[item.id] = (newInventory[item.id] || 0) + item.count;
-          }
+      setInventory(prev => {
+          const newInventory = { ...prev };
+          items.forEach(item => {
+              if (item.id && item.count > 0) {
+                  const newCount = (newInventory[item.id] || 0) + item.count;
+                  const itemData = ITEMS[item.id];
+                  const maxStack = itemData?.maxStack;
+                  newInventory[item.id] = maxStack ? Math.min(newCount, maxStack) : newCount;
+              }
+          });
+          return newInventory;
       });
-      setInventory(newInventory);
   };
 
   // --- Quest Handlers ---
