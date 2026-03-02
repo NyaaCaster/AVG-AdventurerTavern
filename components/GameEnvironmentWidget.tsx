@@ -2,6 +2,7 @@
 import React from 'react';
 import { WorldState } from '../types';
 import WeatherIcon from './WeatherIcon';
+import { sanityToInspiration } from '../data/currency-value-table';
 
 interface GameEnvironmentWidgetProps {
   worldState: WorldState;
@@ -25,7 +26,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 
   // Format gold with max limit 999,999,999
   const displayGold = Math.min(gold, 999999999).toLocaleString();
-  const displaySanity = sanity.toLocaleString();
+  const displaySanity = sanityToInspiration(sanity).toFixed(2);
 
   return (
     <div className="absolute top-8 left-8 z-40 flex flex-col gap-1 select-none pointer-events-none">
@@ -108,10 +109,11 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
                           <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
                           <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
                         </svg>
-                        <span className="text-[10px] text-cyan-400/80 font-bold tracking-widest group-hover:text-cyan-300">理智</span>
+                        <span className="text-[10px] text-cyan-400/80 font-bold tracking-widest group-hover:text-cyan-300">灵感</span>
                      </div>
                      <div className="flex items-baseline justify-end gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm flex-1">
                         <span className="text-lg tracking-wide leading-none group-hover:text-white">{displaySanity}</span>
+                        <span className="text-xs text-cyan-400">I</span>
                      </div>
                 </div>
             </div>
