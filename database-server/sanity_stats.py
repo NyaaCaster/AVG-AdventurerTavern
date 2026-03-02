@@ -30,21 +30,23 @@ def get_sanity_stats(all_users=False):
     
     rows = cur.execute(sql).fetchall()
     
-    print(f"{'UID':<5} | {'用户名':<18} | {'记录数':<6} | {'当前剩余理智':<16} | {'累计消耗':<12}")
-    print("-" * 75)
+    print(f"{'UID':<5} | {'用户名':<18} | {'记录数':<6} | {'当前剩余灵感':<12} | {'累计消耗':<12}")
+    print("-" * 70)
     
     for row in rows:
         uid = row['user_id']
         username = str(row['username']) if row['username'] else "Unknown"
         record_count = row['record_count']
-        total_amount = float(row['total_amount'] or 0)
-        total_consumed = float(row['total_consumed'] or 0)
+        # 数值除以 10000
+        total_amount = float(row['total_amount'] or 0) / 10000.0
+        total_consumed = float(row['total_consumed'] or 0) / 10000.0
         
         # 默认只显示有实际消耗的活跃用户
         if not all_users and total_consumed == 0:
             continue
             
-        print(f"{uid:<5} | {username:<18} | {record_count:<9} | {total_amount:<20} | {total_consumed:<12}")
+        # 保留小数点 4 位
+        print(f"{uid:<5} | {username:<18} | {record_count:<9} | {total_amount:<16.4f} | {total_consumed:<12.4f}")
 
     conn.close()
 
