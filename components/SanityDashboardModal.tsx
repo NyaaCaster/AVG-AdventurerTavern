@@ -50,6 +50,9 @@ const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
     const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
     const [dateFilter, setDateFilter] = useState<string>(''); // YYYY-MM-DD
 
+    // 柱状图点击高亮状态
+    const [activeChartIndex, setActiveChartIndex] = useState<number | null>(null);
+
     useEffect(() => {
         if (isOpen && userId) {
             fetchBalance();
@@ -158,7 +161,7 @@ const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
                             <h3 className="text-lg font-medium text-slate-200 border-l-2 border-cyan-500 pl-3">综合统计</h3>
                             {overviewData.todayConsumed > 0 && (
                                 <span className="text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-md border border-emerald-800/50">
-                                    今日为您节省了约 ￥{((overviewData.todayConsumed / 10000) * 20).toFixed(2)} 的 API 账单
+                                    今日为您节省了约 ￥{((overviewData.todayConsumed / 10000) * 20 * 0.08694).toFixed(2)} 的 API 账单
                                 </span>
                             )}
                         </div>
@@ -178,20 +181,25 @@ const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
                     <div className="h-48 flex items-end justify-between pt-6 pr-4 pl-8 relative mt-4" style={{ borderBottom: '1px solid rgba(148,163,184,0.1)', borderLeft: '1px solid rgba(148,163,184,0.1)' }}>
                         {/* Y轴刻度 */}
                         <div className="absolute left-1 bottom-0 h-full flex flex-col justify-between text-[10px] text-slate-500 pb-6 pt-6">
-                            <span>{yAxisMax}</span>
-                            <span>{yAxisMax / 2}</span>
-                            <span>0</span>
+                            <span>{sanityToInspiration(yAxisMax).toFixed(2)}</span>
+                            <span>{sanityToInspiration(yAxisMax / 2).toFixed(2)}</span>
+                            <span>0.00</span>
                         </div>
 
                         {overviewData.chartData.map((d, i) => {
                             const heightPercent = (d.amount / yAxisMax) * 100;
+                            const isActive = activeChartIndex === i;
                             return (
-                                <div key={i} className="flex flex-col items-center justify-end h-full w-10 sm:w-12 group">
+                                <div 
+                                    key={i} 
+                                    className="flex flex-col items-center justify-end h-full w-10 sm:w-12 group cursor-pointer"
+                                    onClick={() => setActiveChartIndex(isActive ? null : i)}
+                                >
                                     <div 
-                                        className="relative w-6 sm:w-8 bg-cyan-500/40 hover:bg-cyan-400/60 transition-all rounded-t-sm flex items-end justify-center" 
+                                        className={`relative w-6 sm:w-8 transition-all rounded-t-sm flex items-end justify-center ${isActive ? 'bg-cyan-400/60' : 'bg-cyan-500/40 hover:bg-cyan-400/60'}`} 
                                         style={{ height: `${Math.max(1, heightPercent)}%` }}
                                     >
-                                        <span className="absolute -top-6 text-[10px] font-medium text-cyan-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className={`absolute -top-6 text-[10px] font-medium text-cyan-300 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                             {sanityToInspiration(d.amount).toFixed(2)}
                                         </span>
                                     </div>
