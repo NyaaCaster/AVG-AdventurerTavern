@@ -35,7 +35,7 @@ import { ITEMS } from '../data/items';
 import { QUESTS } from '../data/quest-list';
 import { getResValue } from '../data/item-value-table';
 import { calculateTavernBonus } from '../data/facilityData';
-import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks } from '../types';
+import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks, QuestState } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
 
@@ -138,7 +138,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   };
   useEffect(() => {
     const interval = setInterval(() => {
-      Object.values(core.questStates).forEach(state => {
+      Object.values(core.questStates).forEach((state: QuestState) => {
         if (state.status === 'active' && state.acceptedAt) {
           const quest = QUESTS[state.questId];
           if (!quest) return;
