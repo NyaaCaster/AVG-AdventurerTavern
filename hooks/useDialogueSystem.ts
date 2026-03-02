@@ -109,8 +109,10 @@ export const useDialogueSystem = ({
     setClothingState(nextClothingState);
     setActiveCharacter(char);
     
+    // [BUG FIX] 确保立绘与角色ID匹配，防止显示错误的角色立绘
     const sprite = getCharacterSprite(char, nextClothingState, 'normal');
     setCurrentSprite(sprite);
+    console.log(`[对话系统] 进入对话 - 角色: ${char.name} (${char.id}), 立绘: ${sprite}`);
     setCurrentDialogue({ speaker: char.name, text: "..." });
     setIsDialogueMode(true);
     setIsDialogueEnding(false);
@@ -576,10 +578,13 @@ export const useDialogueSystem = ({
       setIsDialogueEnding(false);
       setActiveCharacter(null);
       setClothingState('default');
+      // [BUG FIX] 清除立绘，防止角色立绘残留
+      setCurrentSprite('');
       // [角色主动结束对话] 重置好感度累计
       setSessionAffinityTotal(0);
       // 清理 llmService，防止残留上一个角色的上下文
       llmService.reset();
+      console.log('[对话系统] 对话结束，已清除所有状态');
   };
 
   const generateAmbientLine = async (char: Character, state: ClothingState, sceneId: string) => {
@@ -588,6 +593,10 @@ export const useDialogueSystem = ({
           return;
       }
 
+      // [BUG FIX] 记录当前请求的角色ID，用于验证响应
+      const requestCharacterId = char.id;
+      console.log(`[环境台词] 开始生成 - 角色: ${char.name} (${requestCharacterId}), 场景: ${sceneId}`);
+      
       setIsAmbientLoading(true);
       try {
           // 加载角色记忆（有 character_id 隔离，安全）
@@ -672,11 +681,19 @@ export const useDialogueSystem = ({
           const text = (parsed.text || raw)
               .replace(/{{user}}/g, settings.userName)
               .replace(/{{home}}/g, settings.innName);
-          setAmbientText(text);
+          
+          // [BUG FIX] 验证角色ID是否匹配，防止异步请求导致的角色错乱
+          if (requestCharacterId === char.id) {
+              setAmbientText(text);
+              console.log(`[环境台词] 生成成功 - 角色: ${char.name} (${requestCharacterId})`);
 
-          if (parsed.emotion) {
-              const sprite = getCharacterSprite(char, state, parsed.emotion);
-              setCurrentSprite(sprite);
+              if (parsed.emotion) {
+                  const sprite = getCharacterSprite(char, state, parsed.emotion);
+                  setCurrentSprite(sprite);
+                  console.log(`[环境台词] 更新立绘 - ${sprite}`);
+              }
+          } else {
+              console.warn(`[环境台词] 角色ID不匹配，丢弃响应 - 请求: ${requestCharacterId}, 当前: ${char.id}`);
           }
 
       } catch (e) {

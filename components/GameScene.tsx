@@ -475,6 +475,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             const ambientState = isBathing ? 'nude' : 'default';
             const sprite = getCharacterSprite(char, ambientState, 'normal');
             dialogue.setCurrentSprite(sprite);
+            console.log(`[环境角色] 场景: ${world.currentSceneId}, 角色: ${char.name} (${char.id}), 立绘: ${sprite}`);
             
             if (world.currentSceneId === 'scen_3' && char.id !== 'char_102') {
                 dialogue.setAmbientText('');
@@ -486,6 +487,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         dialogue.setAmbientCharacter(null);
         dialogue.setAmbientText('');
         dialogue.setShowAmbientDialogue(false);
+        dialogue.setCurrentSprite('');
+        console.log(`[环境角色] 场景: ${world.currentSceneId}, 无角色在场`);
     }
   }, [world.currentSceneId, world.isSceneTransitioning, dialogue.isDialogueMode]);
 
