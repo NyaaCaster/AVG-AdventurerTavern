@@ -1,4 +1,0 @@
-name: sanity
-description: 查询用户理智值消耗统计
----
-请帮我执行 `python database-server/sanity_stats.py` 命令，并根据输出结果向我汇报当前用户的理智值消耗和排名情况。
