@@ -526,6 +526,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const handleSaveGame = async (slotId: number) => {
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
+      // 保存前从数据库获取最新的角色解锁状态（以 character_unlocks 表为准）
+      const { getAllCharacterUnlocks } = await import('../services/db');
+      const latestUnlocks = await getAllCharacterUnlocks(userId, currentSlotId);
+      
+      // 如果数据库中有数据，使用数据库的；否则使用内存中的
+      const unlocksToSave = Object.keys(latestUnlocks).length > 0 ? latestUnlocks : core.characterUnlocks;
+      
+      // 同步到内存状态，确保界面显示一致
+      if (Object.keys(latestUnlocks).length > 0) {
+          core.setCharacterUnlocks(latestUnlocks);
+      }
+      
       // 保存游戏数据
       await saveGame(userId, slotId, label, {
           gold: core.gold,
@@ -535,7 +547,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           managementStats: core.managementStats,
           inventory: core.inventory,
           characterStats: core.characterStats,
-          characterUnlocks: core.characterUnlocks,
+          characterUnlocks: unlocksToSave,
           sceneLevels: core.sceneLevels,
           revenueLogs: core.revenueLogs,
           userRecipes: core.userRecipes,
