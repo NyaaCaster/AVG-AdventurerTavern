@@ -28,6 +28,7 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'load' | 'save'>(initialMode);
   const [slots, setSlots] = useState<GameSaveData[]>([]);
+  const [visible, setVisible] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     type: 'load' | 'overwrite' | 'delete' | 'save';
     slotId: number;
@@ -39,6 +40,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     if (isOpen && userId !== undefined) {
       refreshSlots();
       setActiveTab(initialMode);
+      const t = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(t);
+    } else {
+      setVisible(false);
     }
   }, [isOpen, initialMode, userId]);
 
@@ -125,59 +130,95 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-fadeIn font-sans" onClick={onClose}>
+    <div 
+      className={`fixed inset-0 z-[110] flex items-center justify-center pointer-events-auto transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)' }}
+    >
+      <div className="absolute inset-0" onClick={onClose} />
       <div 
-        className="w-full max-w-3xl bg-slate-900/90 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col relative"
+        className={`relative w-[95vw] md:w-[85vw] max-w-2xl flex flex-col h-[85vh] md:h-[75vh] max-h-[800px] rounded-2xl transition-all duration-500 ${visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+        style={{
+          background: 'rgba(15,23,42,0.93)',
+          border: '1px solid rgba(148,163,184,0.35)',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
+          backdropFilter: 'blur(24px)',
+        }}
         onClick={e => e.stopPropagation()}
       >
+        {/* 顶部装饰线 */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+          style={{
+            width: '48px',
+            height: '2px',
+            marginTop: '-1px',
+            background: `linear-gradient(to right, transparent, ${activeTab === 'load' ? 'rgba(34,211,238,0.8)' : 'rgba(245,158,11,0.8)'}, transparent)`,
+          }}
+        />
+
         {/* Header */}
-        <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold text-amber-500 tracking-wider flex items-center">
-              <i className={`fa-solid ${activeTab === 'load' ? 'fa-folder-open' : 'fa-floppy-disk'} mr-2 md:mr-3`}></i>
+        <div className="p-5 md:p-6 shrink-0 relative z-10 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                background: activeTab === 'load' ? 'rgba(34,211,238,0.1)' : 'rgba(245,158,11,0.1)',
+                border: `1px solid ${activeTab === 'load' ? 'rgba(34,211,238,0.25)' : 'rgba(245,158,11,0.25)'}`,
+              }}
+            >
+              <i className={`fa-solid ${activeTab === 'load' ? 'fa-folder-open text-cyan-400' : 'fa-floppy-disk text-amber-400'} text-lg`}></i>
+            </div>
+            <h2 className="text-xl font-medium text-slate-200 tracking-widest">
               {activeTab === 'load' ? '读取存档' : '保存进度'}
             </h2>
           </div>
           <button 
             onClick={onClose}
-            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:text-white transition-all hover:bg-white/5"
             title="关闭"
           >
-            <i className="fa-solid fa-xmark"></i>
+            <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
+        
+        <div className="w-full h-[1px]" style={{ background: 'rgba(148,163,184,0.12)' }} />
 
         {/* Tab Switcher - Only show if allowed */}
         {allowSwitchMode && (
-          <div className="px-4 md:px-6 pt-4 flex gap-2">
-            <button
-              onClick={() => setActiveTab('load')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                activeTab === 'load'
-                  ? 'bg-gradient-to-r from-cyan-900/40 to-transparent border-l-4 border-cyan-500 text-white shadow-lg'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-              }`}
-            >
-              <i className={`fa-solid fa-folder-open ${activeTab === 'load' ? 'text-cyan-400' : 'opacity-70'}`}></i>
-              <span className="font-medium tracking-wide">读档</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('save')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                activeTab === 'save'
-                  ? 'bg-gradient-to-r from-amber-900/40 to-transparent border-l-4 border-amber-500 text-white shadow-lg'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-              }`}
-            >
-              <i className={`fa-solid fa-floppy-disk ${activeTab === 'save' ? 'text-amber-400' : 'opacity-70'}`}></i>
-              <span className="font-medium tracking-wide">存档</span>
-            </button>
-          </div>
+          <>
+            <div className="flex px-4 shrink-0 relative z-10">
+              <button
+                onClick={() => setActiveTab('load')}
+                className={`flex items-center justify-center gap-2 flex-1 py-4 font-medium tracking-widest text-sm relative transition-colors ${
+                  activeTab === 'load' ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className={`fa-solid fa-folder-open ${activeTab === 'load' ? 'opacity-100' : 'opacity-50'}`}></i>
+                读档
+                {activeTab === 'load' && (
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-400 shadow-[0_-2px_8px_rgba(34,211,238,0.5)]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('save')}
+                className={`flex items-center justify-center gap-2 flex-1 py-4 font-medium tracking-widest text-sm relative transition-colors ${
+                  activeTab === 'save' ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className={`fa-solid fa-floppy-disk ${activeTab === 'save' ? 'opacity-100' : 'opacity-50'}`}></i>
+                存档
+                {activeTab === 'save' && (
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-amber-400 shadow-[0_-2px_8px_rgba(245,158,11,0.5)]" />
+                )}
+              </button>
+            </div>
+            <div className="w-full h-[1px]" style={{ background: 'rgba(148,163,184,0.12)' }} />
+          </>
         )}
 
         {/* Slots Grid */}
-        <div className="overflow-y-auto p-4 md:p-6 space-y-4">
-          <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar relative z-10 space-y-4">
+          <div className="space-y-4">
             {[0, 1, 2, 3].map(slotId => {
               const data = getSlotData(slotId);
               const isAuto = slotId === 0;
@@ -191,23 +232,27 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                   key={slotId}
                   onClick={() => !isDisabled && handleSlotClick(slotId)}
                   className={`
-                    relative p-4 border rounded-lg transition-all duration-200 group
+                    relative p-5 rounded-xl transition-all duration-300 group
                     ${isDisabled 
-                      ? 'border-slate-700/30 bg-slate-800/20 opacity-50 cursor-not-allowed' 
+                      ? 'opacity-40 cursor-not-allowed' 
                       : isEmpty
-                        ? 'border-slate-700/30 bg-slate-800/40 hover:border-slate-600 hover:bg-slate-800/50 cursor-pointer'
-                        : 'border-slate-700/30 bg-slate-800/40 hover:border-cyan-500/50 hover:bg-slate-800/60 cursor-pointer hover:shadow-lg'
+                        ? 'cursor-pointer hover:bg-white/5'
+                        : 'cursor-pointer hover:bg-white/5 hover:shadow-lg'
                     }
-                    ${activeTab === 'load' && isEmpty ? 'opacity-50 pointer-events-none' : ''}
+                    ${activeTab === 'load' && isEmpty ? 'opacity-40 pointer-events-none' : ''}
                   `}
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(148,163,184,0.1)',
+                  }}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     {/* Slot Label */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div className={`w-1 h-6 rounded-full ${
                         isAuto ? 'bg-cyan-500' : 'bg-amber-500'
-                      }`}></div>
-                      <span className={`text-sm font-bold tracking-wide ${
+                      }`} style={{ boxShadow: isAuto ? '0 0 10px rgba(6,182,212,0.5)' : '0 0 10px rgba(245,158,11,0.5)' }}></div>
+                      <span className={`text-sm font-medium tracking-widest ${
                         isAuto ? 'text-cyan-400' : 'text-amber-500'
                       }`}>
                         {isAuto ? '自动存档' : `存档 ${slotId}`}
@@ -218,37 +263,37 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                     {!isAuto && !isEmpty && activeTab === 'save' && (
                       <button
                         onClick={(e) => handleDeleteClick(e, slotId)}
-                        className="w-7 h-7 flex items-center justify-center rounded bg-red-900/50 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20"
                         title="删除存档"
                       >
-                        <i className="fa-solid fa-trash-can text-xs"></i>
+                        <i className="fa-solid fa-trash-can text-sm"></i>
                       </button>
                     )}
                   </div>
 
                   {/* Content */}
                   {isEmpty ? (
-                    <div className="flex items-center justify-center py-6 text-slate-600">
-                      <i className="fa-solid fa-plus text-2xl mr-2 opacity-50"></i>
-                      <span className="font-medium tracking-wide text-sm">空记录</span>
+                    <div className="flex items-center justify-center py-8 text-slate-500">
+                      <i className="fa-solid fa-plus text-xl mr-3 opacity-50"></i>
+                      <span className="font-light tracking-widest text-sm">空记录</span>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <h3 className="text-base font-bold text-slate-100 tracking-wide truncate">
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-medium text-slate-200 tracking-wide truncate">
                         {data.label || '无标题'}
                       </h3>
                       
-                      <div className="text-xs text-cyan-400 font-mono">
+                      <div className="text-sm text-cyan-400/80 font-light tracking-wider">
                         {formatTime(data.savedAt)}
                       </div>
 
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-                        <span className="flex items-center gap-1.5">
-                          <i className="fa-solid fa-coins text-amber-400"></i>
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400 font-light mt-2">
+                        <span className="flex items-center gap-2">
+                          <i className="fa-solid fa-coins text-amber-400/80"></i>
                           {data.gold?.toLocaleString() || 0} G
                         </span>
-                        <span className="flex items-center gap-1.5">
-                          <i className="fa-solid fa-venus text-purple-400"></i>
+                        <span className="flex items-center gap-2">
+                          <i className="fa-solid fa-venus text-purple-400/80"></i>
                           {getCharacterCount(data)} 位角色
                         </span>
                       </div>
@@ -260,23 +305,49 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
           </div>
         </div>
 
+        {/* 底部装饰线 */}
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
+          style={{
+            width: '48px',
+            height: '2px',
+            marginBottom: '-1px',
+            background: `linear-gradient(to right, transparent, ${activeTab === 'load' ? 'rgba(34,211,238,0.4)' : 'rgba(245,158,11,0.4)'}, transparent)`,
+          }}
+        />
+
         {/* Confirmation Modal Overlay */}
         {confirmDialog && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn p-4">
-            <div className="bg-slate-900/90 border border-slate-700/50 backdrop-blur-xl p-6 rounded-lg shadow-[0_25px_50px_rgba(0,0,0,0.5)] max-w-sm w-full text-center">
-              <i className={`text-4xl mb-4 fa-solid ${
-                confirmDialog.type === 'delete' ? 'fa-triangle-exclamation text-red-500' : 
-                confirmDialog.type === 'overwrite' ? 'fa-floppy-disk text-amber-500' : 'fa-folder-open text-blue-500'
-              }`}></i>
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn p-4 rounded-2xl">
+            <div 
+              className="p-8 rounded-2xl max-w-sm w-full text-center flex flex-col items-center"
+              style={{
+                background: 'rgba(15,23,42,0.95)',
+                border: '1px solid rgba(148,163,184,0.2)',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+              }}
+            >
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
+                style={{
+                  background: confirmDialog.type === 'delete' ? 'rgba(239,68,68,0.1)' : confirmDialog.type === 'overwrite' ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)',
+                  border: `1px solid ${confirmDialog.type === 'delete' ? 'rgba(239,68,68,0.25)' : confirmDialog.type === 'overwrite' ? 'rgba(245,158,11,0.25)' : 'rgba(59,130,246,0.25)'}`,
+                }}
+              >
+                <i className={`text-2xl fa-solid ${
+                  confirmDialog.type === 'delete' ? 'fa-triangle-exclamation text-red-500' : 
+                  confirmDialog.type === 'overwrite' ? 'fa-floppy-disk text-amber-500' : 'fa-folder-open text-blue-500'
+                }`}></i>
+              </div>
               
-              <p className="text-slate-100 text-sm md:text-base mb-6 whitespace-pre-wrap leading-relaxed font-bold">
+              <p className="text-slate-200 text-base mb-8 whitespace-pre-wrap leading-relaxed font-light tracking-wide">
                 {confirmDialog.message}
               </p>
 
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-4 justify-center w-full">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="px-5 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-bold text-sm"
+                  className="flex-1 py-3 rounded-xl border border-slate-700/50 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 transition-colors font-medium text-sm tracking-widest"
                 >
                   取消
                 </button>
@@ -286,8 +357,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                     else if (confirmDialog.type === 'load') doLoad(confirmDialog.slotId);
                     else if (confirmDialog.type === 'delete') doDelete(confirmDialog.slotId);
                   }}
-                  className={`px-6 py-2 rounded-lg font-bold text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-colors text-sm ${
-                    confirmDialog.type === 'delete' ? 'bg-red-700 hover:bg-red-600' : 'bg-amber-700 hover:bg-amber-600'
+                  className={`flex-1 py-3 rounded-xl font-medium text-white transition-colors text-sm tracking-widest ${
+                    confirmDialog.type === 'delete' ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30' : 
+                    confirmDialog.type === 'overwrite' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30' :
+                    'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
                   }`}
                 >
                   确定
