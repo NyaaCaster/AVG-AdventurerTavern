@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { DialogueEntry } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
+import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 
 interface DialogueLogModalProps {
   isOpen: boolean;
@@ -90,7 +91,7 @@ const DialogueLogModal: React.FC<DialogueLogModalProps> = ({ isOpen, onClose, hi
                 <div className="flex-shrink-0 mt-1">
                   <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${entry.type === 'user' ? 'border-cyan-700' : 'border-[#9b7a4c]'}`}>
                     <img 
-                      src={resolveImgPath(entry.avatarUrl || 'img/face/1.png')} 
+                      src={resolveImgPath(entry.avatarUrl || PLAYER_AVATAR_URL)} 
                       alt={entry.speaker} 
                       className="w-full h-full object-cover"
                     />

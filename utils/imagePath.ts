@@ -39,12 +39,12 @@ export const resolveImgPath = (path: string): string => {
 
   // 图片文件处理
   if (normalizedPath.startsWith("img/")) {
-    if (isHDMode) {
-      // 开启 HD 模式时，将 img/ 替换为 img-hd/
-      // 例如 img/bg/Title.png -> img-hd/bg/Title.png
-      return PROJECT_BASE_URL + normalizedPath.replace(/^img\//, 'img-hd/');
+    if (isHDMode && normalizedPath.startsWith("img/char/")) {
+      // HD 模式下只变更角色图片路径
+      // 例如 img/char/char_101/1_1/1_1_01.png -> img/char-hd/char_101/1_1/1_1_01.png
+      return PROJECT_BASE_URL + normalizedPath.replace(/^img\/char\//, 'img/char-hd/');
     } else {
-      // 普通模式
+      // 普通模式或非角色图片
       return PROJECT_BASE_URL + normalizedPath;
     }
   }

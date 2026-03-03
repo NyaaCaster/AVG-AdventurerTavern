@@ -1,8 +1,30 @@
 
 import { CharacterImageConfig } from '../../types';
 
+// 玩家角色头像路径
+export const PLAYER_AVATAR_URL = 'img/face/1.png';
+// 玩家角色立绘路径
+export const PLAYER_SPRITE_URL = 'img/char/char_1/1_1_1.png';
+
+// 生成玩家角色图片配置的辅助函数
+const createPlayerImageConfig = (avatarUrl: string, spriteUrl: string): CharacterImageConfig => ({
+  Character: 'char_1',
+  avatarUrl,
+  default: {
+    spriteUrl,
+    emotions: {
+      normal: [spriteUrl],
+      happy: [spriteUrl],
+      angry: [spriteUrl],
+      sad: [spriteUrl],
+      shy: [spriteUrl]
+    }
+  }
+});
+
 // Image data extracted from individual character files
 export const CHARACTER_IMAGES: Record<string, CharacterImageConfig> = {
+  "char_1": createPlayerImageConfig(PLAYER_AVATAR_URL, PLAYER_SPRITE_URL),
   "char_101": {
     "Character": "char_101",
     "avatarUrl": "img/face/101.png",

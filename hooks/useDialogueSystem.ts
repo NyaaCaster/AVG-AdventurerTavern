@@ -10,6 +10,7 @@ import { SCENE_NAMES } from '../utils/gameConstants';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 import { useAIMemory } from './useAIMemory';
+import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
@@ -197,7 +198,7 @@ export const useDialogueSystem = ({
     const userMessage = inputText;
     setInputText('');
     setIsLoading(true);
-    setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: 'img/face/1.png' }]);
+    setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: PLAYER_AVATAR_URL }]);
 
     try {
       const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;
