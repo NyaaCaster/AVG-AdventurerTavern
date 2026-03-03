@@ -63,6 +63,30 @@ export interface CharacterSchedule {
   night?: SceneId[];
 }
 
+export interface CharacterSkillLearning {
+  level: number;
+  skillId: number;
+  ratio: number; // 修正比例 (百分比数字，如 80 表示 80%)
+}
+
+export interface CharacterBattleData {
+  maxLevel: number;
+  className: string;
+  optimizeType: string;
+  canFight: boolean;
+  statMultipliers: {
+    hp: number;
+    mp: number;
+    atk: number;
+    def: number;
+    matk: number;
+    mdef: number;
+    agi: number;
+    luk: number;
+  };
+  skills: CharacterSkillLearning[];
+}
+
 // 新增：衣着状态定义
 export type ClothingState = 'default' | 'nude' | 'bondage' | string;
 
@@ -97,6 +121,7 @@ export interface Character {
   // imageConfig 已移除，改用 centralized config management
   // 系统规则数据
   schedule?: CharacterSchedule;
+  battleData?: CharacterBattleData;
 }
 
 export interface DialogueEntry {
@@ -216,10 +241,28 @@ export type ItemTag =
 export type ItemQuality = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
 
 export interface ItemStats {
-  ATK?: number;
-  DEF?: number;
-  AGI?: number;
-  INT?: number;
+  hp?: number;
+  mp?: number;
+  atk?: number;
+  def?: number;
+  matk?: number;
+  mdef?: number;
+  agi?: number;
+  luk?: number;
+}
+
+// 新增：消耗品使用效果定义
+export interface ConsumableEffects {
+  /** 恢复的 HP 百分比 (0.0 到 1.0) */
+  recoverHpPercent?: number;
+  /** 恢复的 MP 百分比 (0.0 到 1.0) */
+  recoverMpPercent?: number;
+  /** 是否复活 (true 时，只能对死亡角色使用并清除死亡状态) */
+  revive?: boolean;
+  /** 解除的异常状态 ID 列表 */
+  removeStatus?: string[];
+  /** 附加的异常状态 ID 列表 */
+  applyStatus?: string[];
 }
 
 export interface ItemData {
@@ -232,6 +275,7 @@ export interface ItemData {
   maxStack: number;
   description: string;
   stats?: ItemStats;
+  consumableEffects?: ConsumableEffects; // 新增：消耗品特有效果逻辑
   price?: number; // 预留价格字段
   imagePath?: string; // 新增：特定图片路径（如料理图片）
 }

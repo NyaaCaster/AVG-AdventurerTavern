@@ -3,6 +3,94 @@ import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_107';
 
 export const char_107: Character = {
+  battleData: {
+  maxLevel: 99,
+  className: "炼金术士",
+  optimizeType: "magic",
+  canFight: true,
+  statMultipliers: {
+    hp: 100,
+    mp: 150,
+    atk: 50,
+    def: 50,
+    matk: 120,
+    mdef: 120,
+    agi: 80,
+    luk: 100
+  },
+  skills: [
+    {
+      level: 1,
+      skillId: 791,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 802,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 723,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 534,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 540,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 552,
+      ratio: 120
+    },
+    {
+      level: 1,
+      skillId: 553,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 728,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 727,
+      ratio: 80
+    },
+    {
+      level: 1,
+      skillId: 710,
+      ratio: 80
+    },
+    {
+      level: 10,
+      skillId: 535,
+      ratio: 80
+    },
+    {
+      level: 10,
+      skillId: 541,
+      ratio: 80
+    },
+    {
+      level: 10,
+      skillId: 555,
+      ratio: 80
+    },
+    {
+      level: 10,
+      skillId: 556,
+      ratio: 120
+    }
+  ]
+},
   id: 'char_107',
   name: "菲洛",
   role: "精灵族学者 / 魔法师",

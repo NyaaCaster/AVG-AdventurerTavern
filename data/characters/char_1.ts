@@ -14,6 +14,23 @@ export const USER_INFO_TEMPLATE = `
 `;
 
 export const char_1: Character = {
+  battleData: {
+  maxLevel: 100,
+  className: "未知职业",
+  optimizeType: "normal",
+  canFight: true,
+  statMultipliers: {
+    hp: 100,
+    mp: 100,
+    atk: 100,
+    def: 100,
+    matk: 100,
+    mdef: 100,
+    agi: 100,
+    luk: 100
+  },
+  skills: []
+},
   id: 'char_1',
   name: '{{user}}',
   role: '前勇者，冒险者旅店经营者',
