@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ConfigTab } from '../types';
 
 interface SystemMenuProps {
@@ -14,6 +14,42 @@ interface SystemMenuProps {
 const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenSettings, onBackToMenu, onDebug, showDebug }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if ((document.documentElement as any).webkitRequestFullscreen) { /* Safari */
+          await (document.documentElement as any).webkitRequestFullscreen();
+        } else if ((document.documentElement as any).msRequestFullscreen) { /* IE11 */
+          await (document.documentElement as any).msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) { /* Safari */
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).msExitFullscreen) { /* IE11 */
+          await (document as any).msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.error("Error attempting to toggle fullscreen:", err);
+    }
+  };
 
   const btnClass = (isDebug = false) => `
     w-10 h-10 flex items-center justify-center rounded-full backdrop-blur-md transition-all shadow-lg
@@ -99,7 +135,16 @@ const SystemMenu: React.FC<SystemMenuProps> = ({ onLoadGame, onSaveGame, onOpenS
                 <i className="fa-solid fa-house"></i>
               </button>
 
-             {/* Row 3: Debug (Conditional) - If debug is shown, it takes next slot or spans */}
+             {/* Fullscreen Toggle */}
+             <button 
+                onClick={() => { setIsOpen(false); toggleFullscreen(); }} 
+                className={btnClass()}
+                title={isFullscreen ? "退出全屏" : "全屏模式"}
+              >
+                <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+              </button>
+
+             {/* Debug (Conditional) */}
              {showDebug && (
                 <button 
                     onClick={onDebug}
