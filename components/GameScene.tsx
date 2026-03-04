@@ -971,7 +971,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
       <InspirationDashboardModal 
           isOpen={isInspirationDashboardOpen} 
-          onClose={() => setIsInspirationDashboardOpen(false)} 
+          onClose={() => {
+              setIsInspirationDashboardOpen(false);
+              // 关闭 Modal 时刷新灵感余额
+              if (onUpdateInspirationBalance) {
+                  onUpdateInspirationBalance();
+              }
+          }} 
           userId={userId} 
       />
     </div>
