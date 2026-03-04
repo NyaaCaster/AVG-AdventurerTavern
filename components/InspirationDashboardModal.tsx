@@ -25,7 +25,7 @@ const SanityIcon: React.FC<{className?: string}> = ({className = "w-6 h-6 text-c
     </svg>
 );
 
-const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
+const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [balance, setBalance] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -467,4 +467,4 @@ const SanityDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
     );
 };
 
-export default SanityDashboardModal;
+export default InspirationDashboardModal;

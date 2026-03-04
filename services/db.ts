@@ -371,6 +371,7 @@ export const updateCharacterSummary = async (
 export const SANITY_CONSUME_TYPES = {
     ai_memory: '对话记忆',
     ai_summary: '摘要压缩',
+    quest_instant_complete: '任务立即完成',
 } as const;
 
 export type SanityConsumeType = keyof typeof SANITY_CONSUME_TYPES | (string & {});

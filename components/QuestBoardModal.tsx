@@ -4,6 +4,7 @@ import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
 import { ITEM_TAGS } from '../data/item-type';
 import { resolveImgPath } from '../utils/imagePath';
+import { goldToInspiration } from '../data/currency-value-table';
 
 interface QuestBoardModalProps {
   isOpen: boolean;
@@ -13,7 +14,9 @@ interface QuestBoardModalProps {
   onCompleteQuest: (questId: string) => void;
   onDeliverQuest: (questId: string) => void;
   currentGold: number;
+  inspirationBalance: number;
   onAddGold: (amount: number) => void;
+  onConsumeInspiration: (amount: number) => void;
   onAddItems: (items: { id: string; count: number }[]) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
 }
@@ -199,6 +202,7 @@ interface QuestDetailModalProps {
   acceptedAt?: number;
   hasActiveQuest: boolean;
   currentGold: number;
+  inspirationBalance: number;
   onAccept: () => void;
   onComplete: () => void;
   onInstantComplete: () => void;
@@ -206,7 +210,7 @@ interface QuestDetailModalProps {
 }
 
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
-  quest, status, acceptedAt, hasActiveQuest, currentGold, onAccept, onComplete, onInstantComplete, onClose
+  quest, status, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onClose
 }) => {
   const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
   const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, duration);
@@ -355,23 +359,27 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                 <div className="text-3xl font-bold font-mono text-amber-500 tracking-widest">{formatTime(remaining)}</div>
                 <p className="text-[11px] text-[#8c7b70] mt-1">倒计时结束后任务自动完成</p>
                 {(() => {
-                  const cost = Math.floor(quest.rewards.gold * 0.5);
-                  const canAfford = currentGold >= cost;
+                  // 计算灵感消耗：金币奖励的50%换算为灵感
+                  const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
+                  const canAfford = inspirationBalance >= inspirationCost;
                   return (
                     <button
                       onClick={onInstantComplete}
                       disabled={!canAfford}
                       className={`mt-3 w-full py-2 rounded-lg font-bold text-sm border-2 transition-all ${
                         canAfford
-                          ? 'bg-[#2c241b] text-amber-300 border-amber-700 hover:bg-amber-900/40 hover:border-amber-500 active:scale-[0.98]'
+                          ? 'bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]'
                           : 'bg-[#1a1512] text-slate-500 border-slate-700 cursor-not-allowed opacity-70'
                       }`}
                     >
-                      <i className="fa-solid fa-bolt mr-1.5"></i>
+                      <svg className="inline-block w-3.5 h-3.5 mr-1.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
+                        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
+                      </svg>
                       立刻完成
                       <span className={`ml-2 text-xs font-mono ${
-                        canAfford ? 'text-amber-500/80' : 'text-red-400'
-                      }`}>(-{cost.toLocaleString()}G)</span>
+                        canAfford ? 'text-cyan-400/80' : 'text-red-400'
+                      }`}>(-{inspirationCost.toFixed(2)}I)</span>
                     </button>
                   );
                 })()}
@@ -449,7 +457,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest,
-  currentGold, onAddGold, onAddItems, onShowRewardToasts
+  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onShowRewardToasts
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
   const [rewardQuestId, setRewardQuestId] = useState<string | null>(null);
@@ -513,9 +521,9 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   const handleInstantComplete = (questId: string) => {
     const quest = QUESTS[questId];
     if (!quest) return;
-    const cost = Math.floor(quest.rewards.gold * 0.5);
-    onAddGold(-cost);
-    onShowRewardToasts(-cost, []); // 负数金币显示扣减 Toast
+    // 计算灵感消耗：金币奖励的50%换算为灵感
+    const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
+    onConsumeInspiration(inspirationCost);
     onCompleteQuest(questId);
     setSelectedQuestId(null);
   };
@@ -657,6 +665,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             acceptedAt={selectedState.acceptedAt}
             hasActiveQuest={hasActiveQuest && selectedState.status !== 'active'}
             currentGold={currentGold}
+            inspirationBalance={inspirationBalance}
             onAccept={() => handleAccept(selectedQuest.quest_id)}
             onComplete={() => handleDeliverClick(selectedQuest.quest_id)}
             onInstantComplete={() => handleInstantComplete(selectedQuest.quest_id)}

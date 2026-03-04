@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { calculateCharacterLocations } from '../utils/gameLogic';
-import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks } from '../services/db'; 
+import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks, consumeSanity } from '../services/db';
+import { inspirationToSanity } from '../data/currency-value-table'; 
 
 import DialogueBox from './DialogueBox'; 
 import DialogueLogModal from './DialogueLogModal';
@@ -24,7 +25,7 @@ import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
 import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import QuestBoardModal from './QuestBoardModal';
-import SanityDashboardModal from './SanityDashboardModal';
+import InspirationDashboardModal from './InspirationDashboardModal';
 import ItemToast from './ItemToast'; 
 import AffinityToast from './AffinityToast'; 
 import RoomCheckInToast from './RoomCheckInToast';
@@ -95,7 +96,8 @@ interface GameSceneProps {
   settings: GameSettings;
   onLoadGame?: () => void;
   initialSaveData?: any; 
-  sanityBalance: number;
+  inspirationBalance: number;
+  onUpdateInspirationBalance?: () => void;
 }
 
 export interface GameSceneRef {
@@ -104,7 +106,7 @@ export interface GameSceneRef {
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
-const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData, sanityBalance }, ref) => {
+const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData, inspirationBalance, onUpdateInspirationBalance }, ref) => {
   // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
   const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(() => {
@@ -129,7 +131,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
   const [isRestModalOpen, setIsRestModalOpen] = useState(false);
   const [isQuestBoardOpen, setIsQuestBoardOpen] = useState(false);
-  const [isSanityDashboardOpen, setIsSanityDashboardOpen] = useState(false);
+  const [isInspirationDashboardOpen, setIsInspirationDashboardOpen] = useState(false);
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
@@ -507,6 +509,20 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       core.handleUpgradeFacility(facilityId, costGold, costMatIds, costMatCount);
   };
 
+  const handleConsumeInspiration = async (inspirationAmount: number) => {
+    try {
+      // 转换为理智值后调用数据库接口
+      const sanityAmount = inspirationToSanity(inspirationAmount);
+      await consumeSanity(userId, 'quest_instant_complete', sanityAmount);
+      // 消费成功后刷新余额
+      if (onUpdateInspirationBalance) {
+        onUpdateInspirationBalance();
+      }
+    } catch (error) {
+      console.error('Failed to consume inspiration:', error);
+    }
+  };
+
   const handleAction = (action: string, param?: any) => {
     console.log(`[动作] ${action}`, param);
     if (action === 'cook') {
@@ -774,7 +790,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       </div>
 
       <div className={`absolute inset-0 z-50 transition-opacity duration-500 pointer-events-none ${isUIHidden ? 'opacity-0' : 'opacity-100'}`}>
-          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} sanity={sanityBalance} onClickSanity={() => setIsSanityDashboardOpen(true)} />
+          <GameEnvironmentWidget worldState={world.worldState} gold={core.gold} inspiration={inspirationBalance} onClickInspiration={() => setIsInspirationDashboardOpen(true)} />
 
           <SystemMenu 
             onLoadGame={() => { setIsSaveLoadOpen(true); setSaveLoadMode('load'); }} 
@@ -917,6 +933,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onClose={() => setIsQuestBoardOpen(false)}
         questStates={core.questStates}
         currentGold={core.gold}
+        inspirationBalance={inspirationBalance}
         onAcceptQuest={(questId) => {
           core.handleAcceptQuest(questId);
           setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest accept failed:', err)), 100);
@@ -927,6 +944,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         }}
         onDeliverQuest={core.handleDeliverQuest}
         onAddGold={(amount) => core.updateGold(core.gold + amount)}
+        onConsumeInspiration={handleConsumeInspiration}
         onAddItems={(items) => core.handleAddItems(items)}
         onShowRewardToasts={(gold, items) => {
           // 金币通知
@@ -981,9 +999,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         }}
       />
 
-      <SanityDashboardModal 
-          isOpen={isSanityDashboardOpen} 
-          onClose={() => setIsSanityDashboardOpen(false)} 
+      <InspirationDashboardModal 
+          isOpen={isInspirationDashboardOpen} 
+          onClose={() => setIsInspirationDashboardOpen(false)} 
           userId={userId} 
       />
     </div>

@@ -2,16 +2,15 @@
 import React from 'react';
 import { WorldState } from '../types';
 import WeatherIcon from './WeatherIcon';
-import { sanityToInspiration } from '../data/currency-value-table';
 
 interface GameEnvironmentWidgetProps {
   worldState: WorldState;
   gold: number;
-  sanity?: number; // 添加可选理智值
-  onClickSanity?: () => void; // 点击理智栏回调
+  inspiration?: number; // 灵感值
+  onClickInspiration?: () => void; // 点击灵感栏回调
 }
 
-const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldState, gold, sanity = 10000, onClickSanity }) => {
+const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldState, gold, inspiration = 10, onClickInspiration }) => {
   const { dateStr, weekDay, timeStr, period, periodLabel, weatherCode, temp, sceneName } = worldState;
   let colorClass = "text-indigo-600";
   let weatherColor = "text-slate-400";
@@ -26,7 +25,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
 
   // Format gold with max limit 999,999,999
   const displayGold = Math.min(gold, 999999999).toLocaleString();
-  const displaySanity = sanityToInspiration(sanity).toFixed(2);
+  const displayInspiration = inspiration.toFixed(2);
 
   return (
     <div className="absolute top-8 left-8 z-40 flex flex-col gap-1 select-none pointer-events-none">
@@ -99,10 +98,10 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
                      </div>
                 </div>
 
-                {/* Sanity */}
+                {/* Inspiration */}
                 <div 
                     className="group flex items-center justify-between gap-4 cursor-pointer hover:bg-white/10 rounded-sm px-1 -mx-1 transition-colors pointer-events-auto"
-                    onClick={onClickSanity}
+                    onClick={onClickInspiration}
                 >
                      <div className="flex items-center gap-1.5 opacity-80">
                         <svg className="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,7 +111,7 @@ const GameEnvironmentWidget: React.FC<GameEnvironmentWidgetProps> = ({ worldStat
                         <span className="text-[10px] text-cyan-400/80 font-bold tracking-widest group-hover:text-cyan-300">灵感</span>
                      </div>
                      <div className="flex items-baseline justify-end gap-1 text-[#f0e6d2] font-mono font-bold text-shadow-sm flex-1">
-                        <span className="text-lg tracking-wide leading-none group-hover:text-white">{displaySanity}</span>
+                        <span className="text-lg tracking-wide leading-none group-hover:text-white">{displayInspiration}</span>
                         <span className="text-xs text-cyan-400">I</span>
                      </div>
                 </div>
