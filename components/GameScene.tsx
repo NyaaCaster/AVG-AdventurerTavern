@@ -26,9 +26,7 @@ import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import QuestBoardModal from './QuestBoardModal';
 import InspirationDashboardModal from './InspirationDashboardModal';
-import ItemToast from './ItemToast'; 
-import AffinityToast from './AffinityToast'; 
-import RoomCheckInToast from './RoomCheckInToast';
+import ToastManager, { ToastData } from './ToastManager';
 import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { CHARACTERS } from '../data/scenarioData';
@@ -59,33 +57,7 @@ import { useWorldSystem } from '../hooks/useWorldSystem';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { useDialogueSystem } from '../hooks/useDialogueSystem';
 
-// 金币获得 Toast
-const GoldToast: React.FC<{ amount: number; onComplete: () => void }> = ({ amount, onComplete }) => {
-  const [visible, setVisible] = React.useState(false);
-  const isNegative = amount < 0;
-  React.useEffect(() => {
-    requestAnimationFrame(() => setVisible(true));
-    const t = setTimeout(() => { setVisible(false); setTimeout(onComplete, 500); }, 4000);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div className={`mb-2 flex items-center gap-3 px-4 py-2.5 bg-[#1a1512]/90 border-l-4 ${
-      isNegative ? 'border-red-500' : 'border-yellow-500'
-    } rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out ${visible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
-      <div className="w-10 h-10 flex items-center justify-center bg-[#2c241b] rounded border border-[#4a3b32] shadow-inner">
-        <i className={`fa-solid fa-coins text-lg ${isNegative ? 'text-red-400' : 'text-yellow-400'}`}></i>
-      </div>
-      <div className="flex flex-col">
-        <span className={`text-[10px] font-bold uppercase tracking-wider ${isNegative ? 'text-red-500' : 'text-yellow-500'}`}>
-          {isNegative ? '消耗金币' : '获得金币'}
-        </span>
-        <span className={`font-bold font-mono text-sm ${isNegative ? 'text-red-300' : 'text-yellow-300'}`}>
-          {isNegative ? '' : '+'}{amount.toLocaleString()} G
-        </span>
-      </div>
-    </div>
-  );
-};
+
 
 interface GameSceneProps {
   userId: number; 
@@ -166,22 +138,20 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isUIHidden, setIsUIHidden] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showDebugLog, setShowDebugLog] = useState(false);
-  const [itemNotifications, setItemNotifications] = useState<{id: string, itemId: string, count: number}[]>([]);
-  const [goldNotifications, setGoldNotifications] = useState<{id: string, amount: number}[]>([]);
-  const [affinityNotifications, setAffinityNotifications] = useState<{id: string, charId: string, change: number}[]>([]);
-  const [checkInNotifications, setCheckInNotifications] = useState<{id: string, charId: string}[]>([]);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
   const [moveNotification, setMoveNotification] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('connecting');
 
   // --- 对话系统事件处理 ---
   const handleItemsGained = (items: { id: string; count: number }[]) => {
       core.handleAddItems(items);
-      const newNotifications = items.map(item => ({
+      const newToasts = items.map(item => ({
           id: Date.now() + Math.random().toString(),
+          type: 'item' as const,
           itemId: item.id,
           count: item.count
       }));
-      setItemNotifications(prev => [...prev, ...newNotifications]);
+      setToasts(prev => [...prev, ...newToasts]);
       // 获得道具后立即触发自动存档，防止道具丢失
       handleSaveGame(0).catch(err => console.error('Auto-save after item gain failed:', err));
   };
@@ -212,12 +182,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       });
 
       // 显示好感度变化通知
-      const newNotification = {
+      const newToast = {
           id: Date.now() + Math.random().toString(),
+          type: 'affinity' as const,
           charId,
+          characterName: CHARACTERS[charId]?.name || '角色',
           change
       };
-      setAffinityNotifications(prev => [...prev, newNotification]);
+      setToasts(prev => [...prev, newToast]);
   };
 
   const handleUnlockUpdate = (charId: string, unlockKey: keyof import('../types').CharacterUnlocks) => {
@@ -501,10 +473,14 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       const newlyCheckedIn = eligible.filter(id => !checkedInCharacters.includes(id));
       if (newlyCheckedIn.length > 0) {
           setCheckedInCharacters(prev => [...prev, ...newlyCheckedIn]);
-          setCheckInNotifications(prev => [
-              ...prev,
-              ...newlyCheckedIn.map(charId => ({ id: Date.now() + Math.random().toString(), charId }))
-]);
+          const newToasts = newlyCheckedIn.map(charId => ({
+              id: Date.now() + Math.random().toString(),
+              type: 'checkin' as const,
+              charId,
+              characterName: CHARACTERS[charId]?.name || '新住客',
+              avatarUrl: CHARACTERS[charId]?.avatarUrl
+          }));
+          setToasts(prev => [...prev, ...newToasts]);
       }
       core.handleUpgradeFacility(facilityId, costGold, costMatIds, costMatCount);
   };
@@ -518,6 +494,11 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       if (onUpdateInspirationBalance) {
         onUpdateInspirationBalance();
       }
+      // 显示灵感消耗 toast
+      setToasts(prev => [
+        ...prev,
+        { id: Date.now() + Math.random().toString(), type: 'inspiration', amount: inspirationAmount }
+      ]);
     } catch (error) {
       console.error('Failed to consume inspiration:', error);
     }
@@ -739,39 +720,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
       {/* 通知层 - 独立于 z-50 父容器之外，确保始终在最上层 */}
       <div className="absolute inset-0 z-[110] pointer-events-none">
-        <div className="absolute bottom-[200px] left-4 flex flex-col gap-2">
-              {itemNotifications.map(notification => (
-                  <ItemToast 
-                      key={notification.id}
-                      itemId={notification.itemId}
-                      count={notification.count}
-                      onComplete={() => setItemNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  />
-              ))}
-                            {goldNotifications.map(notification => (
-                  <GoldToast
-                      key={notification.id}
-                      amount={notification.amount}
-                      onComplete={() => setGoldNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  />
-              ))}
-              {affinityNotifications.map(notification => (
-                  <AffinityToast 
-                      key={notification.id}
-                      change={notification.change}
-                      characterName={CHARACTERS[notification.charId]?.name || '角色'}
-                      onComplete={() => setAffinityNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  />
-              ))}
-              {checkInNotifications.map(notification => (
-                  <RoomCheckInToast
-                      key={notification.id}
-                      characterName={CHARACTERS[notification.charId]?.name || '新住客'}
-                      avatarUrl={CHARACTERS[notification.charId]?.avatarUrl}
-                      onComplete={() => setCheckInNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  />
-              ))}
-            </div>
+        <ToastManager 
+          toasts={toasts} 
+          onRemoveToast={(id) => setToasts(prev => prev.filter(t => t.id !== id))} 
+        />
 
         {moveNotification && (
             <div className="absolute bottom-[300px] left-4 animate-fadeIn">
@@ -948,16 +900,16 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onAddItems={(items) => core.handleAddItems(items)}
         onShowRewardToasts={(gold, items) => {
           // 金币通知
-          setGoldNotifications(prev => [
+          setToasts(prev => [
             ...prev,
-            { id: Date.now() + Math.random().toString(), amount: gold }
+            { id: Date.now() + Math.random().toString(), type: 'gold', amount: gold }
           ]);
           // 道具 toasts（延迟依次显示）
           items.forEach((item, idx) => {
             setTimeout(() => {
-              setItemNotifications(prev => [
+              setToasts(prev => [
                 ...prev,
-                { id: Date.now() + Math.random().toString(), itemId: item.id, count: item.count }
+                { id: Date.now() + Math.random().toString(), type: 'item', itemId: item.id, count: item.count }
               ]);
             }, (idx + 1) * 600);
           });

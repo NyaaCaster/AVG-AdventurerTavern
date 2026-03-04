@@ -212,6 +212,7 @@ interface QuestDetailModalProps {
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
   quest, status, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onClose
 }) => {
+  const [showConfirm, setShowConfirm] = useState(false);
   const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
   const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, duration);
 
@@ -364,7 +365,7 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                   const canAfford = inspirationBalance >= inspirationCost;
                   return (
                     <button
-                      onClick={onInstantComplete}
+                      onClick={() => setShowConfirm(true)}
                       disabled={!canAfford}
                       className={`mt-3 w-full py-2 rounded-lg font-bold text-sm border-2 transition-all ${
                         canAfford
@@ -396,6 +397,100 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 立刻完成确认弹窗 */}
+      {showConfirm && (() => {
+        const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
+        const remaining = inspirationBalance - inspirationCost;
+        return (
+          <div
+            className="absolute inset-0 z-[140] flex items-center justify-center pointer-events-auto animate-fadeIn"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowConfirm(false)}
+          >
+            <div
+              className="relative w-full max-w-xs rounded-2xl p-6 flex flex-col"
+              style={{
+                background: 'rgba(15,23,42,0.95)',
+                border: '1px solid rgba(34,211,238,0.3)',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(34,211,238,0.1)',
+                backdropFilter: 'blur(16px)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* 顶部青色装饰线 */}
+              <div
+                className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                style={{
+                  width: '40px',
+                  height: '2px',
+                  marginTop: '-1px',
+                  background: 'linear-gradient(to right, transparent, rgba(34,211,238,0.8), transparent)',
+                }}
+              />
+
+              <div className="text-center mb-6">
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                  style={{
+                    background: 'rgba(34,211,238,0.1)',
+                    border: '1px solid rgba(34,211,238,0.25)',
+                    boxShadow: '0 0 15px rgba(34,211,238,0.15)',
+                  }}
+                >
+                  <svg className="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
+                    <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-slate-200 tracking-wider">确认立刻完成？</h3>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div 
+                  className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                  style={{ background: 'rgba(34,211,238,0.05)', border: '1px solid rgba(34,211,238,0.1)' }}
+                >
+                  <span className="text-sm text-slate-400">消耗灵感</span>
+                  <span className="font-medium text-cyan-400 font-mono">-{inspirationCost.toFixed(2)} I</span>
+                </div>
+                <div 
+                  className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                  style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(148,163,184,0.1)' }}
+                >
+                  <span className="text-sm text-slate-400">当前持有</span>
+                  <span className="font-medium text-slate-300 font-mono">{inspirationBalance.toFixed(2)} I</span>
+                </div>
+                <div 
+                  className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                  style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}
+                >
+                  <span className="text-sm text-slate-400">结余</span>
+                  <span className="font-medium text-emerald-400 font-mono">{remaining.toFixed(2)} I</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-auto">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 py-2.5 rounded-lg font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all border border-transparent hover:border-slate-700 tracking-widest"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => {
+                    onInstantComplete();
+                    setShowConfirm(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-lg font-medium text-sm text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all tracking-widest"
+                >
+                  确认
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
