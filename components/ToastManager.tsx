@@ -38,7 +38,16 @@ export interface CheckInToastData {
   avatarUrl?: string;
 }
 
-export type ToastData = ItemToastData | GoldToastData | InspirationToastData | AffinityToastData | CheckInToastData;
+export interface UnlockToastData {
+  id: string;
+  type: 'unlock';
+  charId: string;
+  characterName: string;
+  unlockName: string;
+  avatarUrl?: string;
+}
+
+export type ToastData = ItemToastData | GoldToastData | InspirationToastData | AffinityToastData | CheckInToastData | UnlockToastData;
 
 // ==================== 单个 Toast 组件 ====================
 
@@ -225,6 +234,42 @@ const AffinityToast: React.FC<{ data: AffinityToastData; onComplete: () => void 
   );
 };
 
+// 角色交互解锁 Toast
+const UnlockToast: React.FC<{ data: UnlockToastData; onComplete: () => void }> = ({ data, onComplete }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true));
+    const hideTimer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onComplete, 500);
+    }, 4000);
+    return () => clearTimeout(hideTimer);
+  }, []);
+
+  return (
+    <div className={`relative mb-2 flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-[#2c0c2c]/95 to-[#1a051a]/95 border-l-4 border-purple-500 rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out overflow-hidden ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
+      <div className="relative z-10 w-10 h-10 flex items-center justify-center bg-[#3a113a] rounded-full border border-[#5c1a5c] overflow-hidden shadow-inner shrink-0">
+        {data.avatarUrl ? (
+          <img src={resolveImgPath(data.avatarUrl)} alt={data.characterName} className="w-full h-full object-cover" />
+        ) : (
+          <i className="fa-solid fa-unlock text-purple-400 text-lg"></i>
+        )}
+      </div>
+      <div className="relative z-10 flex flex-col">
+        <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">关系解锁</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[#f0e6d2] font-bold text-sm shadow-black text-shadow-sm">{data.characterName}</span>
+          <span className="text-purple-300 font-normal text-xs">{data.unlockName}</span>
+        </div>
+      </div>
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-purple-500/10 to-transparent skew-x-[-25deg] animate-[shine_2s_infinite]"></div>
+      </div>
+    </div>
+  );
+};
+
 // 角色入住 Toast
 const CheckInToast: React.FC<{ data: CheckInToastData; onComplete: () => void }> = ({ data, onComplete }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -282,6 +327,8 @@ const ToastManager: React.FC<ToastManagerProps> = ({ toasts, onRemoveToast }) =>
         return <AffinityToast key={toast.id} data={toast} onComplete={handleComplete} />;
       case 'checkin':
         return <CheckInToast key={toast.id} data={toast} onComplete={handleComplete} />;
+      case 'unlock':
+        return <UnlockToast key={toast.id} data={toast} onComplete={handleComplete} />;
       default:
         return null;
     }

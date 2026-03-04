@@ -195,6 +195,21 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const handleUnlockUpdate = (charId: string, unlockKey: keyof import('../types').CharacterUnlocks) => {
       console.log(`[GameScene] Updating unlock for ${charId}: ${unlockKey}`);
       core.updateCharacterUnlock(charId, unlockKey, 1);
+      
+      // 显示解锁 Toast
+      const { UNLOCK_STATUS_NAMES } = require('../data/unlockConditions');
+      const character = CHARACTERS[charId];
+      if (character) {
+          const newToast = {
+              id: Date.now() + Math.random().toString(),
+              type: 'unlock' as const,
+              charId,
+              characterName: character.name,
+              unlockName: UNLOCK_STATUS_NAMES[unlockKey] || unlockKey,
+              avatarUrl: character.avatarUrl
+          };
+          setToasts(prev => [...prev, newToast]);
+      }
   };
 
   const dialogue = useDialogueSystem({
@@ -527,15 +542,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
       // 保存前从数据库获取最新的角色解锁状态（以 character_unlocks 表为准）
-      const { getAllCharacterUnlocks } = await import('../services/db');
-      const latestUnlocks = await getAllCharacterUnlocks(userId, currentSlotId);
-      
-      // 如果数据库中有数据，使用数据库的；否则使用内存中的
-      const unlocksToSave = Object.keys(latestUnlocks).length > 0 ? latestUnlocks : core.characterUnlocks;
-      
-      // 同步到内存状态，确保界面显示一致
-      if (Object.keys(latestUnlocks).length > 0) {
-          core.setCharacterUnlocks(latestUnlocks);
+      let unlocksToSave = core.characterUnlocks;
+      try {
+          const { getAllCharacterUnlocks } = await import('../services/db');
+          const latestUnlocks = await getAllCharacterUnlocks(userId, currentSlotId);
+          
+          // 如果数据库中有数据，使用数据库的；否则使用内存中的
+          if (Object.keys(latestUnlocks).length > 0) {
+              unlocksToSave = latestUnlocks;
+              core.setCharacterUnlocks(latestUnlocks);
+          }
+      } catch (error) {
+          console.error('[存档] 获取角色解锁状态失败，使用内存数据:', error);
       }
       
       // 保存游戏数据

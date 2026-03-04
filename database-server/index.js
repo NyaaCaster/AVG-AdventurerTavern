@@ -897,8 +897,11 @@ app.post('/api/character_unlocks/update', (req, res) => {
 app.post('/api/character_unlocks/get_all', (req, res) => {
     const { userId, slotId } = req.body;
     
+    console.log('[character_unlocks/get_all] Request:', { userId, slotId });
+    
     if (!userId || slotId === undefined) {
-        return res.json({ 
+        console.error('[character_unlocks/get_all] 缺少参数');
+        return res.status(400).json({ 
             success: false, 
             message: '缺少必需参数: userId, slotId' 
         });
@@ -928,11 +931,14 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
         [userId, slotId],
         (err, rows) => {
             if (err) {
+                console.error('[character_unlocks/get_all] 数据库错误:', err);
                 return res.status(500).json({ 
                     success: false, 
                     message: '数据库查询错误: ' + err.message 
                 });
             }
+            
+            console.log(`[character_unlocks/get_all] 查询到 ${rows.length} 条记录`);
             
             const data = {};
             rows.forEach(row => {
