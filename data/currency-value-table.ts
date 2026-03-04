@@ -8,14 +8,14 @@
  * 
  * 转换关系：
  * - 1 灵感 = 10000 理智
- * - 1 灵感 = 10000 金币
+ * - 1 灵感 = 100000 金币
  */
 
 // 1 灵感对应的理智数值
 export const INSPIRATION_TO_SANITY_RATIO = 10000;
 
 // 1 灵感对应的金币数值
-export const INSPIRATION_TO_GOLD_RATIO = 10000;
+export const INSPIRATION_TO_GOLD_RATIO = 100000;
 
 /**
  * 将系统理智值转换为客户端显示的灵感值
