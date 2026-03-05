@@ -606,11 +606,12 @@ app.post('/api/sanity/dashboard', (req, res) => {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const sevenDaysAgo = todayStart - 6 * 24 * 60 * 60 * 1000;
 
-    // 1. 今日消耗总量和次数 (amount < 0)
-    db.get(
-        `SELECT COUNT(*) AS todayRequests, COALESCE(SUM(amount), 0) AS todayConsumed
-         FROM sanity_ledger
-         WHERE user_id = ? AND amount < 0 AND created_at >= ?`,
+          // 1. 今日消耗总量和次数 (amount < 0)
+      db.get(
+          `SELECT COUNT(*) AS todayRequests, COALESCE(SUM(amount), 0) AS todayConsumed,
+           COALESCE(SUM(CASE WHEN consume_type IN ('ai_memory', 'ai_summary') THEN amount ELSE 0 END), 0) AS todayAiConsumed
+           FROM sanity_ledger
+           WHERE user_id = ? AND amount < 0 AND created_at >= ?`,
         [userId, todayStart],
         (err, todayRow) => {
             if (err) return res.status(500).json({ success: false, message: err.message });
@@ -648,11 +649,12 @@ app.post('/api/sanity/dashboard', (req, res) => {
                     }
 
                     res.json({
-                        success: true,
-                        todayRequests: todayRow.todayRequests,
-                        todayConsumed: Math.abs(todayRow.todayConsumed),
-                        chartData
-                    });
+                                                  success: true,
+                          todayRequests: todayRow.todayRequests,
+                          todayConsumed: Math.abs(todayRow.todayConsumed),
+                          todayAiConsumed: Math.abs(todayRow.todayAiConsumed),
+                          chartData
+                      });
                 }
             );
         }

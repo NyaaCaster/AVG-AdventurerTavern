@@ -40,8 +40,8 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         }
     }, [isOpen]);
 
-    // 总览数据
-    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayConsumed: 0, chartData: [] });
+        // 总览数据
+    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayConsumed: number; todayAiConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayConsumed: 0, todayAiConsumed: 0, chartData: [] });
 
     // 记录数据
     const [records, setRecords] = useState<SanityRecord[]>([]);
@@ -159,11 +159,11 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
                             <h3 className="text-lg font-medium text-slate-200 border-l-2 border-cyan-500 pl-3">综合统计</h3>
-                            {overviewData.todayConsumed > 0 && (
-                                <span className="text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-md border border-emerald-800/50">
-                                    今日为您节省了约 ￥{((overviewData.todayConsumed / 10000) * 20 * 0.08694).toFixed(2)} 的 API 账单
-                                </span>
-                            )}
+                                                    {overviewData.todayAiConsumed > 0 && (
+                            <span className="text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-md border border-emerald-800/50">
+                                今日为您节省了约 ￥{((overviewData.todayAiConsumed / 10000) * 20 * 0.08694).toFixed(2)} 的 API 账单
+                            </span>
+                        )}
                         </div>
                         <div className="flex gap-6 text-sm">
                             <div className="flex flex-col items-end">
