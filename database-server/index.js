@@ -437,6 +437,7 @@ app.post('/api/auth/discord/migrate', (req, res) => {
         [oldUsername],
         (err, oldUser) => {
             if (err) {
+                console.error('[迁移] 查询旧账号失败:', err);
                 return res.json({ success: false, message: '数据库错误' });
             }
             
@@ -448,28 +449,68 @@ app.post('/api/auth/discord/migrate', (req, res) => {
                 return res.json({ success: false, message: '密码错误' });
             }
             
-            // 2. 迁移数据
             const sourceUserId = oldUser.id;
             const targetUserId = newUserId;
+            let migrationError = null;
+            
+            console.log(`[迁移] 开始迁移: 用户 ${sourceUserId} -> ${targetUserId}`);
             
             db.serialize(() => {
                 db.run("BEGIN TRANSACTION");
                 
-                db.run("UPDATE saves SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
-                db.run("UPDATE character_unlocks SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
-                db.run("UPDATE chat_messages SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
-                db.run("UPDATE character_memories SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
-                db.run("UPDATE sanity_ledger SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
-                db.run("DELETE FROM users WHERE id = ?", [sourceUserId]);
+                // 先清理目标用户的空数据（新账号可能有初始数据）
+                db.run("DELETE FROM saves WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标存档失败:', err); }
+                    else console.log(`[迁移] 清理目标存档: ${this.changes} 条`);
+                });
+                db.run("DELETE FROM character_unlocks WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标解锁失败:', err); }
+                });
+                db.run("DELETE FROM chat_messages WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标聊天失败:', err); }
+                });
+                db.run("DELETE FROM character_memories WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标记忆失败:', err); }
+                });
+                db.run("DELETE FROM sanity_ledger WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标理智失败:', err); }
+                });
+                
+                // 迁移源用户数据到目标用户
+                db.run("UPDATE saves SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移存档失败:', err); }
+                    else console.log(`[迁移] 迁移存档: ${this.changes} 条`);
+                });
+                db.run("UPDATE character_unlocks SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移解锁失败:', err); }
+                    else console.log(`[迁移] 迁移解锁: ${this.changes} 条`);
+                });
+                db.run("UPDATE chat_messages SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移聊天失败:', err); }
+                    else console.log(`[迁移] 迁移聊天: ${this.changes} 条`);
+                });
+                db.run("UPDATE character_memories SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移记忆失败:', err); }
+                    else console.log(`[迁移] 迁移记忆: ${this.changes} 条`);
+                });
+                db.run("UPDATE sanity_ledger SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移理智失败:', err); }
+                    else console.log(`[迁移] 迁移理智: ${this.changes} 条`);
+                });
+                
+                // 删除旧用户
+                db.run("DELETE FROM users WHERE id = ?", [sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 删除旧用户失败:', err); }
+                });
                 
                 db.run("COMMIT", (err) => {
-                    if (err) {
-                        console.error('迁移失败:', err);
+                    if (err || migrationError) {
+                        console.error('[迁移] 事务失败，回滚:', err || migrationError);
                         db.run("ROLLBACK");
-                        return res.json({ success: false, message: '迁移失败' });
+                        return res.json({ success: false, message: '迁移失败: ' + (err || migrationError).message });
                     }
                     
-                    console.log(`成功迁移用户 ${sourceUserId} 的数据到用户 ${targetUserId}`);
+                    console.log(`[迁移] 成功迁移用户 ${sourceUserId} 的数据到用户 ${targetUserId}`);
                     res.json({ success: true, message: '数据迁移成功' });
                 });
             });
