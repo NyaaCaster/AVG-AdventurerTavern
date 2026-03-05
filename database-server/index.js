@@ -616,11 +616,12 @@ app.post('/api/sanity/dashboard', (req, res) => {
         (err, todayRow) => {
             if (err) return res.status(500).json({ success: false, message: err.message });
 
-                        // 2. 过去7天图表数据 (按天分组)
+                                    // 2. 过去7天图表数据 (按天分组)
             db.all(
                 `SELECT 
                     strftime('%m-%d', datetime(created_at / 1000, 'unixepoch', 'localtime')) AS dateStr,
-                    COALESCE(SUM(ABS(amount)), 0) AS dailyConsumed
+                    COALESCE(SUM(ABS(amount)), 0) AS dailyConsumed,
+                    COALESCE(SUM(CASE WHEN type IN ('ai_memory', 'ai_summary') THEN ABS(amount) ELSE 0 END), 0) AS dailyAiConsumed
                  FROM sanity_ledger
                  WHERE user_id = ? AND amount < 0 AND created_at >= ?
                  GROUP BY date(created_at / 1000, 'unixepoch', 'localtime')
@@ -629,28 +630,32 @@ app.post('/api/sanity/dashboard', (req, res) => {
                 (err2, chartRows) => {
                     if (err2) return res.status(500).json({ success: false, message: err2.message });
 
-                                        // 补齐 7 天的数据
+                                                            // 补齐 7 天的数据
                     const chartMap = {};
                     chartRows.forEach(row => {
-                        chartMap[row.dateStr] = row.dailyConsumed;
+                        chartMap[row.dateStr] = {
+                            amount: row.dailyConsumed,
+                            aiAmount: row.dailyAiConsumed
+                        };
                     });
 
-                    const chartData = [];
+                                        const chartData = [];
                     for (let i = 6; i >= 0; i--) {
                         const d = new Date(todayStart - i * 24 * 60 * 60 * 1000);
                         const mm = String(d.getMonth() + 1).padStart(2, '0');
                         const dd = String(d.getDate()).padStart(2, '0');
                         const key = `${mm}-${dd}`;
+                        const dayData = chartMap[key] || { amount: 0, aiAmount: 0 };
                         chartData.push({
                             date: key,
-                            amount: chartMap[key] || 0
+                            amount: dayData.amount,
+                            aiAmount: dayData.aiAmount
                         });
                     }
 
-                                        res.json({
+                                                            res.json({
                         success: true,
                         todayRequests: todayRow.todayRequests,
-                        todayAiConsumed: Math.abs(todayRow.todayAiConsumed),
                         chartData
                     });
                 }

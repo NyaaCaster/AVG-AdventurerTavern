@@ -490,12 +490,11 @@ export const deleteOldMessages = async (
 /**
  * 获取理智面板概况
  */
-    export const getSanityDashboard = async (userId: number): Promise<{ todayRequests: number; todayAiConsumed: number; chartData: { date: string; amount: number }[] } | null> => {
+      export const getSanityDashboard = async (userId: number): Promise<{ todayRequests: number; chartData: { date: string; amount: number; aiAmount: number }[] } | null> => {
       const res = await apiCall('/sanity/dashboard', { userId });
       if (res.success) {
           return {
               todayRequests: res.todayRequests,
-              todayAiConsumed: res.todayAiConsumed,
               chartData: res.chartData
           };
     }

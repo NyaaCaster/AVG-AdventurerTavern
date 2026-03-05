@@ -40,8 +40,8 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         }
     }, [isOpen]);
 
-            // 总览数据
-    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayAiConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayAiConsumed: 0, chartData: [] });
+                // 总览数据
+    const [overviewData, setOverviewData] = useState<{ todayRequests: number; chartData: { date: string; amount: number; aiAmount: number }[] }>({ todayRequests: 0, chartData: [] });
 
     // 记录数据
     const [records, setRecords] = useState<SanityRecord[]>([]);
@@ -108,10 +108,11 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
 
     const totalPages = Math.ceil(totalRecords / 10);
 
-        const renderOverview = () => {
-                // 从图表数据中获取今日消耗（最后一项）
+            const renderOverview = () => {
+        // 从图表数据中获取今日消耗（最后一项）
         const todayChartData = overviewData.chartData[overviewData.chartData.length - 1];
         const todayConsumed = todayChartData ? todayChartData.amount : 0;
+        const todayAiConsumed = todayChartData ? todayChartData.aiAmount : 0;
         
         // 计算Y轴最大值，为了图表美观，向上取整到10的倍数
         const maxAmount = Math.max(...overviewData.chartData.map(d => d.amount), 10);
@@ -166,9 +167,9 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
                             <h3 className="text-lg font-medium text-slate-200 border-l-2 border-cyan-500 pl-3">综合统计</h3>
-                                                    {overviewData.todayAiConsumed > 0 && (
+                                                                                {todayAiConsumed > 0 && (
                             <span className="text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-md border border-emerald-800/50">
-                                今日为您节省了约 ￥{((overviewData.todayAiConsumed / 10000) * 20 * 0.08694).toFixed(2)} 的 API 账单
+                                今日为您节省了约 ￥{((todayAiConsumed / 10000) * 20 * 0.08694).toFixed(2)} 的 API 账单
                             </span>
                         )}
                         </div>
