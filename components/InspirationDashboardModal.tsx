@@ -40,8 +40,8 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         }
     }, [isOpen]);
 
-        // 总览数据
-    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayConsumed: number; todayAiConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayConsumed: 0, todayAiConsumed: 0, chartData: [] });
+            // 总览数据
+    const [overviewData, setOverviewData] = useState<{ todayRequests: number; todayAiConsumed: number; chartData: { date: string; amount: number }[] }>({ todayRequests: 0, todayAiConsumed: 0, chartData: [] });
 
     // 记录数据
     const [records, setRecords] = useState<SanityRecord[]>([]);
@@ -69,10 +69,13 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         if (res) setBalance(res.balance);
     };
 
-    const fetchOverview = async () => {
+        const fetchOverview = async () => {
         setIsLoading(true);
         const data = await getSanityDashboard(userId);
-        if (data) setOverviewData(data);
+        if (data) {
+            console.log('[Dashboard] Received data:', data);
+            setOverviewData(data);
+        }
         setIsLoading(false);
     };
 
@@ -105,7 +108,11 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
 
     const totalPages = Math.ceil(totalRecords / 10);
 
-    const renderOverview = () => {
+        const renderOverview = () => {
+                // 从图表数据中获取今日消耗（最后一项）
+        const todayChartData = overviewData.chartData[overviewData.chartData.length - 1];
+        const todayConsumed = todayChartData ? todayChartData.amount : 0;
+        
         // 计算Y轴最大值，为了图表美观，向上取整到10的倍数
         const maxAmount = Math.max(...overviewData.chartData.map(d => d.amount), 10);
         let yAxisMax = Math.ceil(maxAmount / 10) * 10;
@@ -166,9 +173,9 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                         )}
                         </div>
                         <div className="flex gap-6 text-sm">
-                            <div className="flex flex-col items-end">
+                                                        <div className="flex flex-col items-end">
                                 <span className="text-slate-400">今日消耗</span>
-                                <span className="text-cyan-400 font-medium text-lg">{sanityToInspiration(overviewData.todayConsumed).toFixed(2)} I</span>
+                                <span className="text-cyan-400 font-medium text-lg">{sanityToInspiration(todayConsumed).toFixed(2)} I</span>
                             </div>
                             <div className="flex flex-col items-end">
                                 <span className="text-slate-400">今日请求</span>
