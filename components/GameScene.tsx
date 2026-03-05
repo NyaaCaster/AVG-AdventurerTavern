@@ -37,6 +37,7 @@ import { calculateTavernBonus } from '../data/facilityData';
 import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks, QuestState } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
+import { UNLOCK_STATUS_NAMES } from '../data/unlockConditions';
 
 import Scen1 from './scenes/scen_1';
 import Scen2 from './scenes/scen_2';
@@ -197,8 +198,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       core.updateCharacterUnlock(charId, unlockKey, 1);
       
       // 显示解锁 Toast
-      const { UNLOCK_STATUS_NAMES } = require('../data/unlockConditions');
       const character = CHARACTERS[charId];
+      console.log(`[Unlock Toast] Character found:`, character);
+      console.log(`[Unlock Toast] Unlock name:`, UNLOCK_STATUS_NAMES[unlockKey]);
+      
       if (character) {
           const newToast = {
               id: Date.now() + Math.random().toString(),
@@ -208,7 +211,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               unlockName: UNLOCK_STATUS_NAMES[unlockKey] || unlockKey,
               avatarUrl: character.avatarUrl
           };
-          setToasts(prev => [...prev, newToast]);
+          console.log(`[Unlock Toast] Creating toast:`, newToast);
+          setToasts(prev => {
+              console.log(`[Unlock Toast] Previous toasts:`, prev);
+              const updated = [...prev, newToast];
+              console.log(`[Unlock Toast] Updated toasts:`, updated);
+              return updated;
+          });
       }
   };
 
