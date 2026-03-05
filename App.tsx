@@ -91,6 +91,14 @@ const App: React.FC = () => {
       });
   };
 
+  const handleUserLogout = () => {
+      setCurrentUserId(null);
+      setCurrentSlotId(0);
+      setInitialSaveData(null);
+      setInspirationBalance(INITIAL_INSPIRATION);
+      setGameState(GameState.MENU);
+  };
+
   const handleUpdateInspirationBalance = () => {
       if (currentUserId !== null) {
           getSanityBalance(currentUserId).then(result => {
@@ -204,6 +212,7 @@ const App: React.FC = () => {
                 settings={gameSettings}
                 onUpdateSettings={handleUpdateSettings}
                 onBack={handleBackFromConfig}
+                onLogout={handleUserLogout}
                 initialTab={configInitialTab}
                 currentUserId={currentUserId}
             />

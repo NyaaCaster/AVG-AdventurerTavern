@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, registerUser } from '../services/db';
+import { loginUser, registerUser, getAuthConfig, getDiscordAuthUrl } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -42,11 +42,66 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   const [confirmPassword, setConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   
+  // Auth Config
+  const [enablePasswordLogin, setEnablePasswordLogin] = useState(true);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+
+  // 加载认证配置
+  useEffect(() => {
+      const loadAuthConfig = async () => {
+          const config = await getAuthConfig();
+          if (config) {
+              setEnablePasswordLogin(config.enablePasswordLogin);
+}
+      };
+      loadAuthConfig();
+  }, []);
+
+  // 检查 Cookie 自动登录
+  useEffect(() => {
+      const savedUserId = localStorage.getItem('userId');
+      if (savedUserId && !currentUserId) {
+          const uid = parseInt(savedUserId, 10);
+          if (!isNaN(uid)) {
+              onLogin(uid);
+              setTitleState('MENU');
+          }
+      }
+  }, []);
+
+  // 处理 Discord 回调
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const discordLogin = params.get('discord_login');
+      const uid = params.get('uid');
+      const error = params.get('discord_error');
+      
+      if (error) {
+          const errorMessages: Record<string, string> = {
+              'not_in_guild': '您不在指定的 Discord 服务器中，请先加入服务器',
+              'no_code': 'Discord 授权失败，请重试',
+              'db_error': '数据库错误，请联系管理员',
+              'create_failed': '创建账号失败，请重试'
+          };
+          setAuthError(errorMessages[error] || `Discord 登录失败: ${error}`);
+          setTitleState('AUTH');
+          window.history.replaceState({}, '', window.location.pathname);
+      } else if (discordLogin === 'success' && uid) {
+          const userId = parseInt(uid, 10);
+          if (!isNaN(userId)) {
+              localStorage.setItem('userId', userId.toString());
+              onLogin(userId);
+              setTitleState('MENU');
+              window.history.replaceState({}, '', window.location.pathname);
+          }
+      }
+  }, []);
 
   // If we already have a user ID (e.g. returning from game), show menu directly
   useEffect(() => {
@@ -103,7 +158,23 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
   const handleScreenClick = () => {
       if (titleState === 'WAITING') {
-          setTitleState('AUTH');
+          // 如果关闭了密码登录，直接跳转 Discord
+          if (!enablePasswordLogin) {
+              handleDiscordLogin();
+          } else {
+              setTitleState('AUTH');
+          }
+      }
+  };
+
+  const handleDiscordLogin = async () => {
+      setIsLoadingAuth(true);
+      const authUrl = await getDiscordAuthUrl();
+      if (authUrl) {
+          window.location.href = authUrl;
+      } else {
+          setAuthError('无法连接到 Discord 服务');
+          setIsLoadingAuth(false);
       }
   };
 
@@ -142,8 +213,16 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           // Login
           const result = await loginUser(username, password);
           if (result.success && result.uid !== undefined) {
+              localStorage.setItem('userId', result.uid.toString());
               onLogin(result.uid);
-              setTitleState('MENU');
+              
+              // 检查是否需要绑定 Discord
+              if (result.needDiscordBind) {
+                  setAuthError('请绑定 Discord 账号以继续');
+                  setTimeout(() => handleDiscordLogin(), 2000);
+              } else {
+                  setTitleState('MENU');
+              }
           } else {
               setAuthError(result.message);
           }
@@ -443,24 +522,47 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                             <button
                                 type="submit"
                                 className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2"
+                disabled={isLoadingAuth}
                             >
                                 {authMode === 'LOGIN' ? '登 录' : '注 册'}
                             </button>
                         </form>
 
-                        <div className="mt-6 text-center">
+                        {/* Discord 登录按钮 */}
+                        <div className="mt-4">
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-slate-600"></div>
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-slate-900 px-2 text-slate-500">或</span>
+                                </div>
+                            </div>
                             <button
-                                onClick={() => {
-                                    setAuthMode(authMode === 'LOGIN' ? 'REGISTER' : 'LOGIN');
-                                    setAuthError(null);
-                                    setPassword('');
-                                    setConfirmPassword('');
-                                }}
-                                className="text-slate-400 text-sm hover:text-amber-400 transition-colors underline underline-offset-4"
+                                onClick={handleDiscordLogin}
+                                disabled={isLoadingAuth}
+                                className="w-full mt-4 bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                {authMode === 'LOGIN' ? '还没有账号？点击注册' : '已有账号？返回登录'}
+                <i className="fab fa-discord text-xl"></i>
+                                {isLoadingAuth ? '跳转中...' : 'Discord 登录'}
                             </button>
                         </div>
+
+                        {enablePasswordLogin && (
+                            <div className="mt-6 text-center">
+                                <button
+                                    onClick={() => {
+                                        setAuthMode(authMode === 'LOGIN' ? 'REGISTER' : 'LOGIN');
+                                        setAuthError(null);
+                                        setPassword('');
+                                        setConfirmPassword('');
+                                    }}
+                                    className="text-slate-400 text-sm hover:text-amber-400 transition-colors underline underline-offset-4"
+                                >
+                                    {authMode === 'LOGIN' ? '还没有账号？点击注册' : '已有账号？返回登录'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

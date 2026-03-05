@@ -4,6 +4,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
 
 module.exports = {
     // 后端服务监听端口
@@ -15,7 +16,7 @@ module.exports = {
     SSL_CERT_PATH: path.join(__dirname, 'SSL', 'h.hony-wen.com_bundle.crt'),
 
     // 数据库文件存放路径 (使用数据卷以持久化)
-    DB_PATH: '/app/data/database.sqlite',
+    DB_PATH: process.env.DB_PATH || path.join(__dirname, 'data', 'database.sqlite'),
 
     // CORS (跨域资源共享) 配置
     CORS_CONFIG: {
@@ -23,5 +24,20 @@ module.exports = {
         credentials: true,
         methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization']
+    },
+
+    // Discord OAuth 配置
+    DISCORD: {
+        CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+        CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+        BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
+        GUILD_ID: process.env.DISCORD_GUILD_ID,
+        REDIRECT_URI: process.env.DISCORD_REDIRECT_URI || `https://localhost:${process.env.PORT || 3097}/auth/discord/callback`
+    },
+
+    // 登录方式配置
+    AUTH: {
+        ENABLE_PASSWORD_LOGIN: process.env.ENABLE_PASSWORD_LOGIN !== 'false', // 默认开启账号密码登录
+        FORCE_DISCORD_BIND: process.env.FORCE_DISCORD_BIND !== 'false' // 默认强制绑定 Discord
     }
 };

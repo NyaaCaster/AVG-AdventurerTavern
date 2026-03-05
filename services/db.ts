@@ -49,9 +49,57 @@ export const registerUser = async (username: string, password: string): Promise<
     return res;
 };
 
-export const loginUser = async (username: string, password: string): Promise<{ success: boolean; message: string; uid?: number }> => {
+export const loginUser = async (username: string, password: string): Promise<{ success: boolean; message: string; uid?: number; needDiscordBind?: boolean }> => {
     const res = await apiCall('/login', { username, password });
     return res;
+};
+
+// --- Discord 认证服务 ---
+
+/**
+ * 获取认证配置
+ */
+export const getAuthConfig = async (): Promise<{ enablePasswordLogin: boolean; forceDiscordBind: boolean } | null> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/config`);
+        if (!response.ok) return null;
+        const res = await response.json();
+        return res.success ? res : null;
+    } catch (e) {
+        console.error('Failed to get auth config:', e);
+        return null;
+    }
+};
+
+/**
+ * 获取 Discord 授权 URL
+ */
+export const getDiscordAuthUrl = async (): Promise<string | null> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/discord`);
+        if (!response.ok) return null;
+        const res = await response.json();
+        return res.success ? res.url : null;
+    } catch (e) {
+        console.error('Failed to get Discord auth URL:', e);
+        return null;
+    }
+};
+
+/**
+ * 绑定 Discord 到现有账号
+ */
+export const bindDiscord = async (userId: number, code: string): Promise<{ success: boolean; message: string; discordUsername?: string }> => {
+    const res = await apiCall('/auth/discord/bind', { userId, code });
+    return res;
+};
+
+/**
+ * 检查 Discord 绑定状态
+ */
+export const getDiscordStatus = async (userId: number): Promise<{ isBound: boolean; discordUsername?: string } | null> => {
+    const res = await apiCall('/auth/discord/status', { userId });
+    return res.success ? res : null;
 };
 
 // --- 存档服务层函数 ---

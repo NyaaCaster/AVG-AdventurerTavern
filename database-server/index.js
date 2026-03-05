@@ -7,6 +7,7 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const config = require('./config'); // 引入配置文件
+const discordAuth = require('./discord-auth'); // Discord 认证模块
 
 const app = express();
 const PORT = config.PORT;
@@ -243,13 +244,208 @@ app.post('/api/register', (req, res) => {
 // 2. 登录
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    db.get("SELECT id, password FROM users WHERE username = ?", [username], (err, row) => {
+    db.get("SELECT id, password, is_discord_bound FROM users WHERE username = ?", [username], (err, row) => {
         if (err) return res.json({ success: false, message: '服务器错误' });
         if (!row) return res.json({ success: false, message: '用户名不存在' });
         if (row.password !== password) return res.json({ success: false, message: '密码错误' });
         
-        res.json({ success: true, uid: row.id });
+        res.json({ 
+            success: true, 
+            uid: row.id,
+            needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
+        });
     });
+});
+
+// 2.1 获取认证配置
+app.get('/api/auth/config', (req, res) => {
+    res.json({
+        success: true,
+        enablePasswordLogin: config.AUTH.ENABLE_PASSWORD_LOGIN,
+        forceDiscordBind: config.AUTH.FORCE_DISCORD_BIND
+    });
+});
+
+// 2.2 Discord 登录 - 获取授权 URL
+app.get('/api/auth/discord', (req, res) => {
+    try {
+        const authUrl = discordAuth.getDiscordAuthUrl();
+        res.json({ success: true, url: authUrl });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 2.3 Discord 回调处理
+app.get('/auth/discord/callback', async (req, res) => {
+    const { code, error } = req.query;
+    
+    if (error) {
+        return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=${encodeURIComponent(error)}`);
+    }
+    
+    if (!code) {
+        return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=no_code`);
+    }
+    
+    try {
+        // 1. 用授权码换取访问令牌
+        const tokenData = await discordAuth.exchangeCode(code);
+        
+        // 2. 获取用户信息
+        const discordUser = await discordAuth.getDiscordUser(tokenData.access_token);
+        
+        // 3. 检查用户是否在服务器中
+        const isMember = await discordAuth.checkGuildMembership(discordUser.id);
+        
+        if (!isMember) {
+            return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=not_in_guild`);
+        }
+        
+        // 4. 查找或创建用户
+        db.get(
+            "SELECT id, username, is_discord_bound FROM users WHERE discord_id = ?",
+            [discordUser.id],
+            (err, existingUser) => {
+                if (err) {
+                    console.error('数据库查询错误:', err);
+                    return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=db_error`);
+                }
+                
+                if (existingUser) {
+                    // 用户已存在，直接登录
+                    return res.redirect(`${config.CORS_CONFIG.origin}?discord_login=success&uid=${existingUser.id}`);
+                }
+                
+                // 新用户，创建账号
+                const username = discordUser.username;
+                const stmt = db.prepare(
+                    `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
+                     VALUES (?, ?, ?, ?, 1, ?)`
+                );
+                
+                stmt.run(
+                    username,
+                    discordUser.id,
+                    discordUser.username,
+                    discordUser.avatar,
+                    Date.now(),
+                    function(err) {
+                        if (err) {
+                            console.error('创建用户失败:', err);
+                            return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=create_failed`);
+                        }
+                        
+                        const newUid = this.lastID;
+                        
+                        // 赠送初始理智
+                        const initStmt = db.prepare(
+                            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+                             VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
+                        );
+                        initStmt.run(newUid, getClientIp(req), Date.now());
+                        initStmt.finalize();
+                        
+                        res.redirect(`${config.CORS_CONFIG.origin}?discord_login=success&uid=${newUid}&new_user=true`);
+                    }
+                );
+                stmt.finalize();
+            }
+        );
+    } catch (error) {
+        console.error('Discord 认证错误:', error);
+        res.redirect(`${config.CORS_CONFIG.origin}?discord_error=${encodeURIComponent(error.message)}`);
+    }
+});
+
+// 2.4 绑定 Discord 到现有账号
+app.post('/api/auth/discord/bind', async (req, res) => {
+    const { userId, code } = req.body;
+    
+    if (!userId || !code) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+    
+    try {
+        // 1. 用授权码换取访问令牌
+        const tokenData = await discordAuth.exchangeCode(code);
+        
+        // 2. 获取用户信息
+        const discordUser = await discordAuth.getDiscordUser(tokenData.access_token);
+        
+        // 3. 检查用户是否在服务器中
+        const isMember = await discordAuth.checkGuildMembership(discordUser.id);
+        
+        if (!isMember) {
+            return res.json({ success: false, message: '您不在指定的 Discord 服务器中' });
+        }
+        
+        // 4. 检查该 Discord 账号是否已绑定其他账号
+        db.get(
+            "SELECT id FROM users WHERE discord_id = ? AND id != ?",
+            [discordUser.id, userId],
+            (err, existingUser) => {
+                if (err) {
+                    return res.json({ success: false, message: '数据库错误' });
+                }
+                
+                if (existingUser) {
+                    return res.json({ success: false, message: '该 Discord 账号已绑定其他游戏账号' });
+                }
+                
+                // 5. 绑定 Discord 账号
+                db.run(
+                    `UPDATE users 
+                     SET discord_id = ?, discord_username = ?, discord_avatar = ?, is_discord_bound = 1 
+                     WHERE id = ?`,
+                    [discordUser.id, discordUser.username, discordUser.avatar, userId],
+                    function(err) {
+                        if (err) {
+                            return res.json({ success: false, message: '绑定失败' });
+                        }
+                        
+                        res.json({ 
+                            success: true, 
+                            message: '绑定成功',
+                            discordUsername: discordUser.username
+                        });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error('Discord 绑定错误:', error);
+        res.json({ success: false, message: error.message });
+    }
+});
+
+// 2.5 检查用户 Discord 绑定状态
+app.post('/api/auth/discord/status', (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+        return res.json({ success: false, message: '缺少 userId' });
+    }
+    
+    db.get(
+        "SELECT discord_id, discord_username, is_discord_bound FROM users WHERE id = ?",
+        [userId],
+        (err, row) => {
+            if (err) {
+                return res.json({ success: false, message: '数据库错误' });
+            }
+            
+            if (!row) {
+                return res.json({ success: false, message: '用户不存在' });
+            }
+            
+            res.json({
+                success: true,
+                isBound: !!row.is_discord_bound,
+                discordUsername: row.discord_username
+            });
+        }
+    );
 });
 
 // 3. 上传存档 (Save)

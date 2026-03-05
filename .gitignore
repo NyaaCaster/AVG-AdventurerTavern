@@ -57,4 +57,11 @@ database-server/SSL/*
 # Trae IDE 生成的文档目录
 .trae/
 
+# 环境变量文件（包含敏感信息）
+.env
+.env.local
+.env.*.local
+database-server/.env
+database-server/.env.local
+
 

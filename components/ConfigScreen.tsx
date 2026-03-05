@@ -7,8 +7,9 @@ interface ConfigScreenProps {
   settings: GameSettings;
   onUpdateSettings: (newSettings: GameSettings) => void;
   onBack: () => void;
+  onLogout?: () => void;
   initialTab?: ConfigTab;
-  currentUserId?: number | null; // Added prop
+  currentUserId?: number | null;
 }
 
 // 定义 SVG 图标组件，使用 img 标签引入外部 SVG
@@ -168,7 +169,7 @@ const TypewriterPreview: React.FC<{
 // Main Component
 // -----------------------------------------------------------------------------
 
-const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings, onBack, initialTab = 'dialogue', currentUserId }) => {
+const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings, onBack, onLogout, initialTab = 'dialogue', currentUserId }) => {
   const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
   
   // 监听 initialTab 变化 (确保从不同入口进入时能正确切换)
@@ -399,6 +400,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
             <TabButton active={activeTab === 'dialogue'} onClick={() => setActiveTab('dialogue')} icon="fa-comment-dots" label="对话设置" />
             <TabButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon="fa-plug" label="API 设置" />
             <TabButton active={activeTab === 'sound'} onClick={() => setActiveTab('sound')} icon="fa-music" label="音频设置" />
+            <TabButton active={activeTab === 'account'} onClick={() => setActiveTab('account')} icon="fa-user-circle" label="账号管理" />
           </nav>
 
           {/* Desktop Back Button (Bottom) */}
@@ -797,6 +799,47 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                         <span>100%</span>
                     </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'account' && (
+            <div className="space-y-8 animate-fadeIn">
+              <SectionHeader title="账号管理" subtitle="管理您的游戏账号" />
+              
+              <div className="space-y-6">
+                {currentUserId && (
+                  <div className="p-6 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
+                        <i className="fa-solid fa-user text-2xl text-white"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-medium text-slate-200">用户 ID</h4>
+                        <p className="text-2xl font-mono font-bold text-amber-500">{currentUserId}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {onLogout && (
+                  <div className="p-6 bg-red-900/20 rounded-lg border border-red-800/50">
+                    <h4 className="text-lg font-medium text-slate-200 mb-2">退出登录</h4>
+                    <p className="text-sm text-slate-400 mb-4">退出后将返回登录界面，您的存档数据已保存在服务器</p>
+                    <button
+                      onClick={() => {
+                        if (confirm('确定要退出登录吗？')) {
+                          localStorage.removeItem('userId');
+                          onLogout();
+                        }
+                      }}
+                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <i className="fa-solid fa-right-from-bracket"></i>
+                      退出登录
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

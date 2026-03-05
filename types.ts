@@ -8,7 +8,7 @@ export enum GameState {
 
 export type ApiProvider = 'openai_compatible' | 'google' | 'deepseek' | 'openai' | 'claude';
 
-export type ConfigTab = 'dialogue' | 'api' | 'sound';
+export type ConfigTab = 'dialogue' | 'api' | 'sound' | 'account';
 
 export enum ConnectionStatus {
   DISCONNECTED = 'DISCONNECTED',
