@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl } from '../services/db';
+import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl, migrateOldAccount } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -43,6 +43,14 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   // Auth Config
   const [enablePasswordLogin, setEnablePasswordLogin] = useState(true);
   const [isLoadingAuth, setIsLoadingAuth] = useState(false);
+  
+  // Migration States
+  const [showMigration, setShowMigration] = useState(false);
+  const [pendingNewUserId, setPendingNewUserId] = useState<number | null>(null);
+  const [oldUsername, setOldUsername] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,11 +100,21 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           window.history.replaceState({}, '', window.location.pathname);
       } else if (discordLogin === 'success' && uid) {
           const userId = parseInt(uid, 10);
+          const isNewUser = params.get('new_user') === 'true';
+          
           if (!isNaN(userId)) {
-              localStorage.setItem('userId', userId.toString());
-              onLogin(userId);
-              setTitleState('MENU');
               window.history.replaceState({}, '', window.location.pathname);
+              
+              if (isNewUser) {
+                  // 新创建的 Discord 账号，询问是否需要迁移旧账号数据
+                  setPendingNewUserId(userId);
+                  setShowMigration(true);
+                  setTitleState('AUTH');
+              } else {
+                  localStorage.setItem('userId', userId.toString());
+                  onLogin(userId);
+                  setTitleState('MENU');
+              }
           }
       }
   }, []);
@@ -176,6 +194,45 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       } else {
           setAuthError('无法连接到 Discord 服务');
           setIsLoadingAuth(false);
+      }
+  };
+
+  // 跳过迁移，直接使用新账号
+  const handleSkipMigration = () => {
+      if (pendingNewUserId) {
+          localStorage.setItem('userId', pendingNewUserId.toString());
+          onLogin(pendingNewUserId);
+          setShowMigration(false);
+          setPendingNewUserId(null);
+          setTitleState('MENU');
+      }
+  };
+
+  // 执行旧账号数据迁移
+  const handleMigrate = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setMigrationError(null);
+      
+      if (!oldUsername || !oldPassword) {
+          setMigrationError('请输入旧账号的用户名和密码');
+          return;
+      }
+      if (!pendingNewUserId) return;
+      
+      setIsMigrating(true);
+      const result = await migrateOldAccount(pendingNewUserId, oldUsername, oldPassword);
+      setIsMigrating(false);
+      
+      if (result.success) {
+          localStorage.setItem('userId', pendingNewUserId.toString());
+          onLogin(pendingNewUserId);
+          setShowMigration(false);
+          setPendingNewUserId(null);
+          setOldUsername('');
+          setOldPassword('');
+          setTitleState('MENU');
+      } else {
+          setMigrationError(result.message);
       }
   };
 
@@ -454,8 +511,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                 </div>
             )}
 
-            {/* AUTH STATE: Login Modal */}
-            {titleState === 'AUTH' && (
+            {/* AUTH STATE: Login Modal or Migration Modal */}
+            {titleState === 'AUTH' && !showMigration && (
                 <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto animate-fadeIn">
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
@@ -526,6 +583,66 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                 </button>
                             </form>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Migration Modal */}
+            {titleState === 'AUTH' && showMigration && (
+                <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto animate-fadeIn">
+                    <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold text-[#f0e6d2] tracking-wider mb-2">
+                                迁移旧账号数据
+                            </h2>
+                            <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
+                        </div>
+
+                        <p className="text-sm text-slate-400 mb-6 text-center">
+                            如果您之前使用账号密码登录过，可以输入旧账号信息将存档数据迁移到当前 Discord 账号
+                        </p>
+
+                        <form onSubmit={handleMigrate} className="space-y-4">
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="旧账号用户名"
+                                    value={oldUsername}
+                                    onChange={(e) => setOldUsername(e.target.value)}
+                                    className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <input
+                                    type="password"
+                                    placeholder="旧账号密码"
+                                    value={oldPassword}
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                />
+                            </div>
+
+                            {migrationError && (
+                                <div className="text-red-400 text-xs text-center font-bold animate-pulse">
+                                    {migrationError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg"
+                                disabled={isMigrating}
+                            >
+                                {isMigrating ? '迁移中...' : '迁移数据'}
+                            </button>
+                        </form>
+
+                        <button
+                            onClick={handleSkipMigration}
+                            className="w-full mt-3 py-3 text-slate-400 hover:text-slate-200 text-sm transition-colors text-center"
+                        >
+                            跳过，直接使用新账号
+                        </button>
                     </div>
                 </div>
             )}

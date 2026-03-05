@@ -321,70 +321,39 @@ app.get('/auth/discord/callback', async (req, res) => {
                     return res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${existingUser.id}`);
                 }
                 
-                // 检查是否存在同用户名的旧账号（未绑定Discord）
+                // 新用户，创建账号
                 const username = discordUser.username;
-                db.get(
-                    "SELECT id FROM users WHERE username = ? AND discord_id IS NULL",
-                    [username],
-                    (err2, oldUser) => {
-                        if (err2) {
-                            console.error('查询旧账号失败:', err2);
-                            return res.redirect(`${config.FRONTEND_URL}?discord_error=db_error`);
+                const stmt = db.prepare(
+                    `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
+                     VALUES (?, ?, ?, ?, 1, ?)`
+                );
+                
+                stmt.run(
+                    username,
+                    discordUser.id,
+                    discordUser.username,
+                    discordUser.avatar,
+                    Date.now(),
+                    function(err) {
+                        if (err) {
+                            console.error('创建用户失败:', err);
+                            return res.redirect(`${config.FRONTEND_URL}?discord_error=create_failed`);
                         }
                         
-                        if (oldUser) {
-                            // 找到旧账号，绑定Discord并登录
-                            console.log(`找到旧账号 ${oldUser.id}，绑定Discord ${discordUser.id}`);
-                            db.run(
-                                `UPDATE users 
-                                 SET discord_id = ?, discord_username = ?, discord_avatar = ?, is_discord_bound = 1 
-                                 WHERE id = ?`,
-                                [discordUser.id, discordUser.username, discordUser.avatar, oldUser.id],
-                                function(err3) {
-                                    if (err3) {
-                                        console.error('绑定Discord失败:', err3);
-                                        return res.redirect(`${config.FRONTEND_URL}?discord_error=bind_failed`);
-                                    }
-                                    console.log(`成功绑定Discord到用户 ${oldUser.id}`);
-                                    return res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${oldUser.id}&migrated=true`);
-                                }
-                            );
-                        } else {
-                            // 没有旧账号，创建新账号
-                            const stmt = db.prepare(
-                                `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
-                                 VALUES (?, ?, ?, ?, 1, ?)`
-                            );
-                            
-                            stmt.run(
-                                username,
-                                discordUser.id,
-                                discordUser.username,
-                                discordUser.avatar,
-                                Date.now(),
-                                function(err) {
-                                    if (err) {
-                                        console.error('创建用户失败:', err);
-                                        return res.redirect(`${config.FRONTEND_URL}?discord_error=create_failed`);
-                                    }
-                                    
-                                    const newUid = this.lastID;
-                                    
-                                    // 赠送初始理智
-                                    const initStmt = db.prepare(
-                                        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-                                         VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
-                                    );
-                                    initStmt.run(newUid, getClientIp(req), Date.now());
-                                    initStmt.finalize();
-                                    
-                                    res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${newUid}&new_user=true`);
-                                }
-                            );
-                            stmt.finalize();
-                        }
+                        const newUid = this.lastID;
+                        
+                        // 赠送初始理智
+                        const initStmt = db.prepare(
+                            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+                             VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
+                        );
+                        initStmt.run(newUid, getClientIp(req), Date.now());
+                        initStmt.finalize();
+                        
+                        res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${newUid}&new_user=true`);
                     }
                 );
+                stmt.finalize();
             }
         );
     } catch (error) {
