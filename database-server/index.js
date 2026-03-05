@@ -215,31 +215,31 @@ app.get('/', (req, res) => {
     res.redirect('/api/health');
 });
 
-// 1. 注册
-app.post('/api/register', (req, res) => {
-    const { username, password } = req.body;
-    const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
-    stmt.run(username, password, Date.now(), function(err) {
-        if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-                return res.json({ success: false, message: '用户名已存在' });
-            }
-            return res.json({ success: false, message: err.message });
-        }
-        const newUid = this.lastID;
-        // 新账号注册时，赠送初始理智 10000
-        const initStmt = db.prepare(
-            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-             VALUES (?, 'recharge', 100000, '新账号注册赠送', ?, ?)`
-        );
-        initStmt.run(newUid, getClientIp(req), Date.now(), function(initErr) {
-            if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
-        });
-        initStmt.finalize();
-        res.json({ success: true, uid: newUid });
-    });
-    stmt.finalize();
-});
+// 1. 注册 (已关闭，仅通过 Discord 注册)
+// app.post('/api/register', (req, res) => {
+//     const { username, password } = req.body;
+//     const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
+//     stmt.run(username, password, Date.now(), function(err) {
+//         if (err) {
+//             if (err.message.includes('UNIQUE constraint failed')) {
+//                 return res.json({ success: false, message: '用户名已存在' });
+//             }
+//             return res.json({ success: false, message: err.message });
+//         }
+//         const newUid = this.lastID;
+//         // 新账号注册时，赠送初始理智 10000
+//         const initStmt = db.prepare(
+//             `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+//              VALUES (?, 'recharge', 100000, '新账号注册赠送', ?, ?)`
+//         );
+//         initStmt.run(newUid, getClientIp(req), Date.now(), function(initErr) {
+//             if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
+//         });
+//         initStmt.finalize();
+//         res.json({ success: true, uid: newUid });
+//     });
+//     stmt.finalize();
+// });
 
 // 2. 登录
 app.post('/api/login', (req, res) => {

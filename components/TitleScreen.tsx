@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, registerUser, getAuthConfig, getDiscordAuthUrl } from '../services/db';
+import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -36,10 +36,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   const [titleState, setTitleState] = useState<'WAITING' | 'AUTH' | 'MENU'>('WAITING');
   
   // Auth Form States
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   
   // Auth Config
@@ -194,38 +192,21 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           return;
       }
 
-      if (authMode === 'REGISTER') {
-          if (password !== confirmPassword) {
-              setAuthError("两次输入的密码不一致");
-              return;
-          }
+      // Login
+      const result = await loginUser(username, password);
+      if (result.success && result.uid !== undefined) {
+          localStorage.setItem('userId', result.uid.toString());
+          onLogin(result.uid);
           
-          const result = await registerUser(username, password);
-          if (result.success && result.uid !== undefined) {
-              onLogin(result.uid);
-              setTitleState('MENU');
-              // Automatically open API settings for new users
-              onOpenConfig();
+          // 检查是否需要绑定 Discord
+          if (result.needDiscordBind) {
+              setAuthError('请绑定 Discord 账号以继续');
+              setTimeout(() => handleDiscordLogin(), 2000);
           } else {
-              setAuthError(result.message);
+              setTitleState('MENU');
           }
       } else {
-          // Login
-          const result = await loginUser(username, password);
-          if (result.success && result.uid !== undefined) {
-              localStorage.setItem('userId', result.uid.toString());
-              onLogin(result.uid);
-              
-              // 检查是否需要绑定 Discord
-              if (result.needDiscordBind) {
-                  setAuthError('请绑定 Discord 账号以继续');
-                  setTimeout(() => handleDiscordLogin(), 2000);
-              } else {
-                  setTitleState('MENU');
-              }
-          } else {
-              setAuthError(result.message);
-          }
+          setAuthError(result.message);
       }
   };
 
@@ -470,98 +451,77 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                 </div>
             )}
 
-            {/* AUTH STATE: Login/Register Modal */}
+            {/* AUTH STATE: Login Modal */}
             {titleState === 'AUTH' && (
                 <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto animate-fadeIn">
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-[#f0e6d2] tracking-wider mb-2">
-                                {authMode === 'LOGIN' ? '冒险者登录' : '注册新身份'}
+                                冒险者登录
                             </h2>
                             <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
                         </div>
 
-                        <form onSubmit={handleAuthSubmit} className="space-y-4">
-                            <div>
-                                <input
-                                    type="text"
-                                    placeholder="用户名 (字母/数字)"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                                />
-                            </div>
-                            <div>
-                                <input
-                                    type="password"
-                                    placeholder="密码"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                                />
-                            </div>
-                            
-                            {authMode === 'REGISTER' && (
-                                <div className="animate-fadeIn">
-                                    <input
-                                        type="password"
-                                        placeholder="确认密码"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                                    />
-                                </div>
-                            )}
-
-                            {authError && (
-                                <div className="text-red-400 text-xs text-center font-bold animate-pulse">
-                                    {authError}
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2"
-                disabled={isLoadingAuth}
-                            >
-                                {authMode === 'LOGIN' ? '登 录' : '注 册'}
-                            </button>
-                        </form>
-
-                        {/* Discord 登录按钮 */}
-                        <div className="mt-4">
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-slate-600"></div>
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-slate-900 px-2 text-slate-500">或</span>
-                                </div>
-                            </div>
+                        {/* Discord 登录按钮（主要登录方式） */}
+                        <div className="mb-6">
                             <button
                                 onClick={handleDiscordLogin}
                                 disabled={isLoadingAuth}
-                                className="w-full mt-4 bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                <i className="fab fa-discord text-xl"></i>
+                                <i className="fab fa-discord text-xl"></i>
                                 {isLoadingAuth ? '跳转中...' : 'Discord 登录'}
                             </button>
                         </div>
 
+                        {/* 分隔线 */}
                         {enablePasswordLogin && (
-                            <div className="mt-6 text-center">
-                                <button
-                                    onClick={() => {
-                                        setAuthMode(authMode === 'LOGIN' ? 'REGISTER' : 'LOGIN');
-                                        setAuthError(null);
-                                        setPassword('');
-                                        setConfirmPassword('');
-                                    }}
-                                    className="text-slate-400 text-sm hover:text-amber-400 transition-colors underline underline-offset-4"
-                                >
-                                    {authMode === 'LOGIN' ? '还没有账号？点击注册' : '已有账号？返回登录'}
-                                </button>
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-slate-600"></div>
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-slate-900 px-2 text-slate-500">或使用账号密码</span>
+                                </div>
                             </div>
+                        )}
+
+                        {/* 账号密码登录表单 */}
+                        {enablePasswordLogin && (
+                            <form onSubmit={handleAuthSubmit} className="space-y-4">
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="用户名 (字母/数字)"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="password"
+                                        placeholder="密码"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                    />
+                                </div>
+
+                                {authError && (
+                                    <div className="text-red-400 text-xs text-center font-bold animate-pulse">
+                                        {authError}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2"
+                                    disabled={isLoadingAuth}
+                                >
+                                    登 录
+                                </button>
+                            </form>
                         )}
                     </div>
                 </div>
