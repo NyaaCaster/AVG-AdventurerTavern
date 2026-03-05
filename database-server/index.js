@@ -616,24 +616,23 @@ app.post('/api/sanity/dashboard', (req, res) => {
         (err, todayRow) => {
             if (err) return res.status(500).json({ success: false, message: err.message });
 
-            // 2. 过去7天图表数据 (按天分组)
+                        // 2. 过去7天图表数据 (按天分组)
             db.all(
                 `SELECT 
-                    date(created_at / 1000, 'unixepoch', 'localtime') AS dateStr,
+                    strftime('%m-%d', datetime(created_at / 1000, 'unixepoch', 'localtime')) AS dateStr,
                     COALESCE(SUM(ABS(amount)), 0) AS dailyConsumed
                  FROM sanity_ledger
                  WHERE user_id = ? AND amount < 0 AND created_at >= ?
-                 GROUP BY dateStr
-                 ORDER BY dateStr ASC`,
+                 GROUP BY date(created_at / 1000, 'unixepoch', 'localtime')
+                 ORDER BY created_at ASC`,
                 [userId, sevenDaysAgo],
                 (err2, chartRows) => {
                     if (err2) return res.status(500).json({ success: false, message: err2.message });
 
-                    // 补齐 7 天的数据
+                                        // 补齐 7 天的数据
                     const chartMap = {};
                     chartRows.forEach(row => {
-                        const mmdd = row.dateStr.substring(5);
-                        chartMap[mmdd] = row.dailyConsumed;
+                        chartMap[row.dateStr] = row.dailyConsumed;
                     });
 
                     const chartData = [];
