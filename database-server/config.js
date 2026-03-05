@@ -18,6 +18,9 @@ module.exports = {
     // 数据库文件存放路径 (使用数据卷以持久化)
     DB_PATH: process.env.DB_PATH || path.join(__dirname, 'data', 'database.sqlite'),
 
+    // 前端 URL (用于 Discord OAuth 回调重定向)
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://h.hony-wen.com',
+
     // CORS (跨域资源共享) 配置
     CORS_CONFIG: {
         origin: true, // 允许所有来源 (开发环境)，生产环境建议设为具体域名

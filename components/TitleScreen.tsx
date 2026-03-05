@@ -102,11 +102,14 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   }, []);
 
   // If we already have a user ID (e.g. returning from game), show menu directly
+  // If user logs out (currentUserId becomes null), reset to WAITING
   useEffect(() => {
       if (currentUserId !== null && titleState === 'WAITING') {
           setTitleState('MENU');
+      } else if (currentUserId === null && titleState === 'MENU') {
+          setTitleState('WAITING');
       }
-  }, [currentUserId]);
+  }, [currentUserId, titleState]);
 
   // --- Audio Control Logic ---
   useEffect(() => {

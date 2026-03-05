@@ -11,6 +11,8 @@ services:
       - ./data:/app/data
       - ./SSL:/app/SSL:ro  # SSL证书只读挂载
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - TZ=Asia/Shanghai

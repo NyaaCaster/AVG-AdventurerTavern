@@ -102,6 +102,14 @@ export const getDiscordStatus = async (userId: number): Promise<{ isBound: boole
     return res.success ? res : null;
 };
 
+/**
+ * 迁移旧账号数据到 Discord 账号
+ */
+export const migrateOldAccount = async (newUserId: number, oldUsername: string, oldPassword: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiCall('/auth/discord/migrate', { newUserId, oldUsername, oldPassword });
+    return res;
+};
+
 // --- 存档服务层函数 ---
 
 /**

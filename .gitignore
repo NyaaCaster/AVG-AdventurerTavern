@@ -64,6 +64,6 @@ database-server/SSL/*
 .env.example
 database-server/.env
 database-server/.env.local
-database-server/.env.example
+
 
 

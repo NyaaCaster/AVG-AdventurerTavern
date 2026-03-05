@@ -41,6 +41,10 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
+        discord_id TEXT UNIQUE,
+        discord_username TEXT,
+        discord_avatar TEXT,
+        is_discord_bound INTEGER DEFAULT 0,
         created_at INTEGER
     )`);
 
@@ -281,11 +285,11 @@ app.get('/auth/discord/callback', async (req, res) => {
     const { code, error } = req.query;
     
     if (error) {
-        return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=${encodeURIComponent(error)}`);
+        return res.redirect(`${config.FRONTEND_URL}?discord_error=${encodeURIComponent(error)}`);
     }
     
     if (!code) {
-        return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=no_code`);
+        return res.redirect(`${config.FRONTEND_URL}?discord_error=no_code`);
     }
     
     try {
@@ -299,7 +303,7 @@ app.get('/auth/discord/callback', async (req, res) => {
         const isMember = await discordAuth.checkGuildMembership(discordUser.id);
         
         if (!isMember) {
-            return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=not_in_guild`);
+            return res.redirect(`${config.FRONTEND_URL}?discord_error=not_in_guild`);
         }
         
         // 4. 查找或创建用户
@@ -309,52 +313,83 @@ app.get('/auth/discord/callback', async (req, res) => {
             (err, existingUser) => {
                 if (err) {
                     console.error('数据库查询错误:', err);
-                    return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=db_error`);
+                    return res.redirect(`${config.FRONTEND_URL}?discord_error=db_error`);
                 }
                 
                 if (existingUser) {
                     // 用户已存在，直接登录
-                    return res.redirect(`${config.CORS_CONFIG.origin}?discord_login=success&uid=${existingUser.id}`);
+                    return res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${existingUser.id}`);
                 }
                 
-                // 新用户，创建账号
+                // 检查是否存在同用户名的旧账号（未绑定Discord）
                 const username = discordUser.username;
-                const stmt = db.prepare(
-                    `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
-                     VALUES (?, ?, ?, ?, 1, ?)`
-                );
-                
-                stmt.run(
-                    username,
-                    discordUser.id,
-                    discordUser.username,
-                    discordUser.avatar,
-                    Date.now(),
-                    function(err) {
-                        if (err) {
-                            console.error('创建用户失败:', err);
-                            return res.redirect(`${config.CORS_CONFIG.origin}?discord_error=create_failed`);
+                db.get(
+                    "SELECT id FROM users WHERE username = ? AND discord_id IS NULL",
+                    [username],
+                    (err2, oldUser) => {
+                        if (err2) {
+                            console.error('查询旧账号失败:', err2);
+                            return res.redirect(`${config.FRONTEND_URL}?discord_error=db_error`);
                         }
                         
-                        const newUid = this.lastID;
-                        
-                        // 赠送初始理智
-                        const initStmt = db.prepare(
-                            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-                             VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
-                        );
-                        initStmt.run(newUid, getClientIp(req), Date.now());
-                        initStmt.finalize();
-                        
-                        res.redirect(`${config.CORS_CONFIG.origin}?discord_login=success&uid=${newUid}&new_user=true`);
+                        if (oldUser) {
+                            // 找到旧账号，绑定Discord并登录
+                            console.log(`找到旧账号 ${oldUser.id}，绑定Discord ${discordUser.id}`);
+                            db.run(
+                                `UPDATE users 
+                                 SET discord_id = ?, discord_username = ?, discord_avatar = ?, is_discord_bound = 1 
+                                 WHERE id = ?`,
+                                [discordUser.id, discordUser.username, discordUser.avatar, oldUser.id],
+                                function(err3) {
+                                    if (err3) {
+                                        console.error('绑定Discord失败:', err3);
+                                        return res.redirect(`${config.FRONTEND_URL}?discord_error=bind_failed`);
+                                    }
+                                    console.log(`成功绑定Discord到用户 ${oldUser.id}`);
+                                    return res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${oldUser.id}&migrated=true`);
+                                }
+                            );
+                        } else {
+                            // 没有旧账号，创建新账号
+                            const stmt = db.prepare(
+                                `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
+                                 VALUES (?, ?, ?, ?, 1, ?)`
+                            );
+                            
+                            stmt.run(
+                                username,
+                                discordUser.id,
+                                discordUser.username,
+                                discordUser.avatar,
+                                Date.now(),
+                                function(err) {
+                                    if (err) {
+                                        console.error('创建用户失败:', err);
+                                        return res.redirect(`${config.FRONTEND_URL}?discord_error=create_failed`);
+                                    }
+                                    
+                                    const newUid = this.lastID;
+                                    
+                                    // 赠送初始理智
+                                    const initStmt = db.prepare(
+                                        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+                                         VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
+                                    );
+                                    initStmt.run(newUid, getClientIp(req), Date.now());
+                                    initStmt.finalize();
+                                    
+                                    res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${newUid}&new_user=true`);
+                                }
+                            );
+                            stmt.finalize();
+                        }
                     }
                 );
-                stmt.finalize();
             }
         );
     } catch (error) {
         console.error('Discord 认证错误:', error);
-        res.redirect(`${config.CORS_CONFIG.origin}?discord_error=${encodeURIComponent(error.message)}`);
+        res.redirect(`${config.FRONTEND_URL}?discord_error=${encodeURIComponent(error.message)}`);
     }
 });
 
@@ -419,7 +454,61 @@ app.post('/api/auth/discord/bind', async (req, res) => {
     }
 });
 
-// 2.5 检查用户 Discord 绑定状态
+// 2.5 迁移旧账号数据到 Discord 账号
+app.post('/api/auth/discord/migrate', (req, res) => {
+    const { newUserId, oldUsername, oldPassword } = req.body;
+    
+    if (!newUserId || !oldUsername || !oldPassword) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+    
+    // 1. 验证旧账号
+    db.get(
+        "SELECT id, password FROM users WHERE username = ? AND discord_id IS NULL",
+        [oldUsername],
+        (err, oldUser) => {
+            if (err) {
+                return res.json({ success: false, message: '数据库错误' });
+            }
+            
+            if (!oldUser) {
+                return res.json({ success: false, message: '旧账号不存在或已绑定Discord' });
+            }
+            
+            if (oldUser.password !== oldPassword) {
+                return res.json({ success: false, message: '密码错误' });
+            }
+            
+            // 2. 迁移数据
+            const sourceUserId = oldUser.id;
+            const targetUserId = newUserId;
+            
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                
+                db.run("UPDATE saves SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
+                db.run("UPDATE character_unlocks SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
+                db.run("UPDATE chat_messages SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
+                db.run("UPDATE character_memories SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
+                db.run("UPDATE sanity_ledger SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId]);
+                db.run("DELETE FROM users WHERE id = ?", [sourceUserId]);
+                
+                db.run("COMMIT", (err) => {
+                    if (err) {
+                        console.error('迁移失败:', err);
+                        db.run("ROLLBACK");
+                        return res.json({ success: false, message: '迁移失败' });
+                    }
+                    
+                    console.log(`成功迁移用户 ${sourceUserId} 的数据到用户 ${targetUserId}`);
+                    res.json({ success: true, message: '数据迁移成功' });
+                });
+            });
+        }
+    );
+});
+
+// 2.6 检查用户 Discord 绑定状态
 app.post('/api/auth/discord/status', (req, res) => {
     const { userId } = req.body;
     
