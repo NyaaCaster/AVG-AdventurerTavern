@@ -173,7 +173,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                               setSelectedCharacterId('char_1');
                             }
                           }}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500/90 hover:bg-red-600 text-white text-xs z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs z-20 flex items-center justify-center shadow-md border-2 border-[#fcfaf7]"
                           title="退队"
                         >
                           <i className="fa-solid fa-xmark" />
@@ -181,10 +181,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                       )}
                       <div className="w-full aspect-square rounded-md overflow-hidden bg-[#d6cbb8]/50 border border-[#c7bca8] mb-2 relative">
                         {avatar ? (
-                          <>
-                            <img src={resolveImgPath(avatar)} alt={name} className="w-full h-full object-cover" />
-                            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-                          </>
+                          <img src={resolveImgPath(avatar)} alt={name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-2xl opacity-50 group-hover:opacity-100 transition-opacity">
                             <i className="fa-solid fa-plus" />
@@ -244,58 +241,51 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
               </div>
             </div>
 
-            <div className="p-3 md:p-5 overflow-y-auto custom-scrollbar bg-[#f5f0e6]/50 relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAgMTBoODB2ODBoLTgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] bg-no-repeat bg-right-top opacity-50 pointer-events-none"></div>
-              
-              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-4 tracking-wide flex items-center gap-2">
-                <i className="fa-solid fa-address-card text-[#9b7a4c]"></i> 详细属性
-              </h3>
-              
-              <div className="rounded-xl border-2 border-[#9b7a4c] bg-[#fffef8] p-4 mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.08)] relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#9b7a4c] to-transparent opacity-30"></div>
+            <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar bg-[#f5f0e6]/50 relative flex flex-col">
+              <div className="flex-1 rounded-xl border-2 border-[#d6cbb8] bg-[#fffef8] p-3 md:p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAgMTBoODB2ODBoLTgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] bg-no-repeat bg-right-top opacity-30 pointer-events-none"></div>
                 
-                <div className="flex gap-4">
-                  <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-[#d6cbb8] bg-[#e8dfd1] shadow-inner relative group">
+                <h3 className="text-sm md:text-base font-bold text-[#382b26] tracking-wide flex items-center gap-2 mb-1">
+                  <i className="fa-solid fa-address-card text-[#9b7a4c]"></i> 详细属性
+                </h3>
+                
+                <div className="flex gap-3 items-center relative z-10">
+                  <div className="w-14 h-14 rounded-md overflow-hidden border-2 border-[#d6cbb8] bg-[#e8dfd1] shadow-inner shrink-0">
                     <img
                       src={resolveImgPath(CHARACTER_IMAGES[selectedCharacter.id]?.avatarUrl || selectedCharacter.avatarUrl || '')}
                       alt={selectedCharacter.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                   </div>
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <div className="text-xl font-black text-[#382b26] tracking-wide drop-shadow-sm">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
-                    <div className="text-xs text-[#8c7b70] font-bold mb-2 uppercase tracking-widest">Level <span className="text-[#b45309] text-sm">{level}</span></div>
-                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-xs font-bold text-[#5c4d45] w-fit">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <div className="text-base font-black text-[#382b26] truncate">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
+                      <div className="text-xs text-[#8c7b70] font-bold">Lv.<span className="text-[#b45309] text-sm ml-0.5">{level}</span></div>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-[10px] font-bold text-[#5c4d45] max-w-full">
                       {weaponIcon && <span>{weaponIcon}</span>}
-                      <span className="truncate max-w-[120px]">{selectedWeaponName}</span>
+                      <span className="truncate">{selectedWeaponName}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-[#d6cbb8]/50">
-                  <div className="flex justify-between text-[10px] text-[#8c7b70] mb-1 font-bold uppercase tracking-wider">
-                    <span>Experience</span>
+                <div className="pt-2 border-t border-[#d6cbb8]/50 relative z-10">
+                  <div className="flex justify-between text-[10px] text-[#8c7b70] mb-1 font-bold tracking-wider">
+                    <span>经验值</span>
                     <span className="font-mono text-[#b45309]">
                       {currentExp} / {needExp <= 0 ? 0 : needExp}
                     </span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-[#e8dfd1] border border-[#c7bca8] overflow-hidden shadow-inner relative">
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMCA0TDRgMCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] z-10"></div>
+                  <div className="h-1.5 rounded-full bg-[#e8dfd1] border border-[#c7bca8] overflow-hidden shadow-inner relative">
                     <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500 ease-out" style={{ width: `${expPercent}%` }} />
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-[#fffef8] rounded-xl border border-[#d6cbb8] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] relative">
-                <div className="absolute top-0 right-0 p-2 opacity-10">
-                  <i className="fa-solid fa-chart-pie text-4xl text-[#9b7a4c]"></i>
-                </div>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-4 relative z-10">
+                <div className="pt-2 border-t border-[#d6cbb8]/50 grid grid-cols-2 gap-x-4 gap-y-2 relative z-10">
                   {STAT_LABELS.map((stat) => (
-                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/40 pb-1.5 group hover:border-[#9b7a4c]/50 transition-colors">
-                      <div className="text-xs text-[#8c7b70] font-bold tracking-widest">{stat.label}</div>
-                      <div className="text-sm font-black text-[#b45309] font-mono drop-shadow-sm">{battleStats.finalStats[stat.key]}</div>
+                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/30 pb-0.5 group hover:border-[#9b7a4c]/50 transition-colors">
+                      <div className="text-[10px] md:text-xs text-[#8c7b70] font-bold tracking-widest">{stat.label}</div>
+                      <div className="text-xs md:text-sm font-black text-[#b45309] font-mono drop-shadow-sm">{battleStats.finalStats[stat.key]}</div>
                     </div>
                   ))}
                 </div>
