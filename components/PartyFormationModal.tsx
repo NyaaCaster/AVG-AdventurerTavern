@@ -6,6 +6,7 @@ import { resolveImgPath } from '../utils/imagePath';
 import { buildCharacterBattleStats } from '../services/characterBattleStats';
 import { ITEMS_EQUIP } from '../data/item-equip';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
+import { resolveCharacterDisplayName } from '../utils/playerText';
 
 interface PartyFormationModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface PartyFormationModalProps {
   characterEquipments: Record<string, CharacterEquipment>;
   onAddMember: (characterId: string, slotIndex?: number) => void;
   onRemoveMember: (slotIndex: number) => void;
+  userName: string;
 }
 
 const STAT_LABELS: Array<{ key: keyof ReturnType<typeof buildCharacterBattleStats>['finalStats']; label: string }> = [
@@ -37,7 +39,8 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   characterStats,
   characterEquipments,
   onAddMember,
-  onRemoveMember
+  onRemoveMember,
+  userName
 }) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('char_1');
   const [pendingSlotIndex, setPendingSlotIndex] = useState<number | null>(null);
@@ -69,11 +72,11 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
       .filter((charId) => !partySet.has(charId))
       .map((charId) => ({
         id: charId,
-        name: CHARACTERS[charId].name,
+        name: resolveCharacterDisplayName(CHARACTERS[charId].name, userName),
         level: characterStats[charId]?.level || 1,
         avatarUrl: CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId].avatarUrl || ''
       }));
-  }, [battleParty, characterUnlocks, characterStats]);
+  }, [battleParty, characterUnlocks, characterStats, userName]);
 
   const handleSlotClick = (slotIndex: number) => {
     const memberId = battleParty[slotIndex];
@@ -117,7 +120,8 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {battleParty.map((memberId, idx) => {
                 const avatar = memberId ? (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || '') : '';
-                const name = memberId ? CHARACTERS[memberId]?.name : '空位';
+                const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
+                const name = memberId ? resolveCharacterDisplayName(rawName || '未知角色', userName) : rawName;
                 const isSelected = memberId && selectedCharacterId === memberId;
                 return (
                   <div
@@ -200,7 +204,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-base font-bold text-slate-100">{selectedCharacter.name}</div>
+                  <div className="text-base font-bold text-slate-100">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
                   <div className="text-xs text-slate-400 mb-1">Lv.{level}</div>
                   <div className="text-xs text-slate-300">当前武器：{selectedWeaponName}</div>
                 </div>

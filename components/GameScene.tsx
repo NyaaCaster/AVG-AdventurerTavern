@@ -896,6 +896,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           characterEquipments={core.characterEquipments}
           onAddMember={core.addToBattleParty}
           onRemoveMember={core.removeFromBattleParty}
+          userName={settings.userName}
       />
       <PartyEquipmentModal
           isOpen={isPartyEquipmentOpen}

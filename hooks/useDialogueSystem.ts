@@ -11,6 +11,7 @@ import { getDefaultUnlocks } from '../data/unlockConditions';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 import { useAIMemory } from './useAIMemory';
 import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
+import { applyPlayerTextTemplate, resolveCharacterDisplayName } from '../utils/playerText';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
@@ -68,8 +69,18 @@ export const useDialogueSystem = ({
     return () => unsubscribe();
   }, []);
 
+  const getSpeakerName = (character: Character) => resolveCharacterDisplayName(character.name, settings.userName);
+
+  const formatTemplateText = (text: string) => {
+      return applyPlayerTextTemplate(text, {
+          userName: settings.userName,
+          innName: settings.innName,
+          isBloodRelated: settings.isBloodRelated
+      });
+  };
+
   const initLLM = async (char: Character) => {
-    const dynamicUserInfo = USER_INFO_TEMPLATE.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+    const dynamicUserInfo = formatTemplateText(USER_INFO_TEMPLATE);
     
     // Get character unlocks or use default
     const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
@@ -78,7 +89,7 @@ export const useDialogueSystem = ({
     const stats = characterStats[char.id] || { level: 1, affinity: 0 };
     
     let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated);
-    systemPrompt = systemPrompt.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+    systemPrompt = formatTemplateText(systemPrompt);
     
     // 加载角色记忆并增强 System Prompt
     const memoryContext = await aiMemory.getMemoryContext(char.id);
@@ -114,7 +125,7 @@ export const useDialogueSystem = ({
     const sprite = getCharacterSprite(char, nextClothingState, 'normal');
     setCurrentSprite(sprite);
     console.log(`[对话系统] 进入对话 - 角色: ${char.name} (${char.id}), 立绘: ${sprite}`);
-    setCurrentDialogue({ speaker: char.name, text: "..." });
+    setCurrentDialogue({ speaker: getSpeakerName(char), text: "..." });
     setIsDialogueMode(true);
     setIsDialogueEnding(false);
     
@@ -160,14 +171,14 @@ export const useDialogueSystem = ({
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;
             const response = await llmService.sendMessage(contextPrompt);
-            const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            const displayText = formatTemplateText(response.text);
 
             // 保存开场白到聊天记录
             await aiMemory.saveMessage(char.id, 'assistant', displayText);
 
-            setCurrentDialogue({ speaker: char.name, text: displayText });
+            setCurrentDialogue({ speaker: getSpeakerName(char), text: displayText });
             setHistory(prev => [...prev, { 
-                speaker: char.name, text: displayText, timestamp: Date.now(), 
+                speaker: getSpeakerName(char), text: displayText, timestamp: Date.now(), 
                 type: 'npc', avatarUrl: char.avatarUrl, tokens: response.usage?.completion_tokens 
             }]);
 
@@ -179,12 +190,12 @@ export const useDialogueSystem = ({
         } catch(e) {
             console.error(e);
             setErrorMessage("角色初始化失败");
-            setCurrentDialogue({ speaker: char.name, text: `*(${char.name}看着你)* ...有什么事吗？` });
+            setCurrentDialogue({ speaker: getSpeakerName(char), text: `*(${getSpeakerName(char)}看着你)* ...有什么事吗？` });
         } finally {
             setIsLoading(false);
         }
     } else {
-        setCurrentDialogue({ speaker: char.name, text: `*(${char.name}似乎正在发呆)* ...` });
+        setCurrentDialogue({ speaker: getSpeakerName(char), text: `*(${getSpeakerName(char)}似乎正在发呆)* ...` });
     }
   };
 
@@ -205,7 +216,7 @@ export const useDialogueSystem = ({
       const enrichedMessage = `${contextBlock}\n用户发言: "${userMessage}"`;
       
       const response = await llmService.sendMessage(enrichedMessage);
-      const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+      const displayText = formatTemplateText(response.text);
       
             // 保存用户消息和 AI 回复到聊天记录
       await aiMemory.saveMessage(activeCharacter.id, 'user', userMessage);
@@ -287,7 +298,7 @@ export const useDialogueSystem = ({
           return;
       }
 
-      setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+      setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: displayText });
 
       // Handle unlock request
       if (response.unlock_request && activeCharacter) {
@@ -317,7 +328,7 @@ export const useDialogueSystem = ({
             }
         }
         newHistory.push({ 
-            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            speaker: getSpeakerName(activeCharacter), text: displayText, timestamp: Date.now(), 
             type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: response.usage?.completion_tokens 
         });
         return newHistory;
@@ -344,8 +355,8 @@ export const useDialogueSystem = ({
      try {
          const response = await llmService.redoLastMessage();
          if(response) {
-            const displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
-            setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+            const displayText = formatTemplateText(response.text);
+            setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: displayText });
             setIsTyping(true);
             
             if (response.items && response.items.length > 0) onItemsGained(response.items);
@@ -427,7 +438,7 @@ export const useDialogueSystem = ({
                     }
                 }
                 newHistory.push({
-                    speaker: activeCharacter.name, text: displayText, timestamp: Date.now(),
+                    speaker: getSpeakerName(activeCharacter), text: displayText, timestamp: Date.now(),
                     type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: response.usage?.completion_tokens
                 });
                 return newHistory;
@@ -483,22 +494,22 @@ export const useDialogueSystem = ({
 
         if (settings.apiConfig.apiKey) {
             const response = await llmService.sendMessage(contextPrompt);
-            displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            displayText = formatTemplateText(response.text);
             tokensUsed = response.usage?.completion_tokens || 0;
             if (response.emotion) {
                 const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
                 setCurrentSprite(emotionSprite);
             }
         } else {
-             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 下次见。`;
+             displayText = `*(${getSpeakerName(activeCharacter)}微笑着挥了挥手)* 下次见。`;
         }
 
         // [角色主动结束对话] 将告别语保存到记忆数据库
         await aiMemory.saveMessage(activeCharacter.id, 'assistant', displayText);
 
-        setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+        setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: displayText });
         setHistory(prev => [...prev, { 
-            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            speaker: getSpeakerName(activeCharacter), text: displayText, timestamp: Date.now(), 
             type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: tokensUsed
         }]);
         
@@ -506,7 +517,7 @@ export const useDialogueSystem = ({
         setIsDialogueEnding(true); 
     } catch(e) {
         console.error(e);
-        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 回见。` });
+        setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: `*(${getSpeakerName(activeCharacter)}点了点头)* 回见。` });
         setIsTyping(true);
         setIsDialogueEnding(true);
     } finally {
@@ -537,14 +548,14 @@ export const useDialogueSystem = ({
 
         if (settings.apiConfig.apiKey) {
             const response = await llmService.sendMessage(contextPrompt);
-            displayText = response.text.replace(/{{user}}/g, settings.userName).replace(/{{home}}/g, settings.innName);
+            displayText = formatTemplateText(response.text);
             tokensUsed = response.usage?.completion_tokens || 0;
             if (response.emotion) {
                 const emotionSprite = getCharacterSprite(activeCharacter, clothingState, response.emotion);
                 setCurrentSprite(emotionSprite);
             }
         } else {
-             displayText = `*(${activeCharacter.name}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
+             displayText = `*(${getSpeakerName(activeCharacter)}微笑着挥了挥手)* 我要去${targetSceneName}了，下次见。`;
         }
 
                 // [角色移动系统] 将告别语保存到记忆数据库
@@ -556,9 +567,9 @@ export const useDialogueSystem = ({
         await aiMemory.saveMemories(activeCharacter.id, [moveMemory], 'core_fact');
         console.log(`[角色移动系统] 已将移动记忆写入数据库: ${moveMemory}`);
 
-        setCurrentDialogue({ speaker: activeCharacter.name, text: displayText });
+        setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: displayText });
         setHistory(prev => [...prev, { 
-            speaker: activeCharacter.name, text: displayText, timestamp: Date.now(), 
+            speaker: getSpeakerName(activeCharacter), text: displayText, timestamp: Date.now(), 
             type: 'npc', avatarUrl: activeCharacter.avatarUrl, tokens: tokensUsed
         }]);
         
@@ -566,7 +577,7 @@ export const useDialogueSystem = ({
         setIsDialogueEnding(true); 
     } catch(e) {
         console.error(e);
-        setCurrentDialogue({ speaker: activeCharacter.name, text: `*(${activeCharacter.name}点了点头)* 我去${targetSceneName}了，回见。` });
+        setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: `*(${getSpeakerName(activeCharacter)}点了点头)* 我去${targetSceneName}了，回见。` });
         setIsTyping(true);
         setIsDialogueEnding(true);
     } finally {
@@ -605,18 +616,14 @@ export const useDialogueSystem = ({
 
           const stats = characterStats[char.id] || { level: 1, affinity: 0 };
           const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
-          const dynamicUserInfo = USER_INFO_TEMPLATE
-              .replace(/{{user}}/g, settings.userName)
-              .replace(/{{home}}/g, settings.innName);
+          const dynamicUserInfo = formatTemplateText(USER_INFO_TEMPLATE);
 
           // 构建角色专属 system prompt，不调用 initLLM，避免污染全局 llmService
           let baseSystemPrompt = generateSystemPrompt(
               char, dynamicUserInfo, settings.innName,
               settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated
           );
-          baseSystemPrompt = baseSystemPrompt
-              .replace(/{{user}}/g, settings.userName)
-              .replace(/{{home}}/g, settings.innName);
+          baseSystemPrompt = formatTemplateText(baseSystemPrompt);
           const enhancedSystemPrompt = aiMemory.buildEnhancedPrompt(baseSystemPrompt, memoryContext);
 
                     // [角色移动系统] 检查核心记忆中是否有关于移动到当前场景的约定
@@ -679,9 +686,7 @@ export const useDialogueSystem = ({
               parsed = JSON.parse(si !== -1 && ei !== -1 ? clean.substring(si, ei + 1) : clean);
           } catch { parsed = { text: raw, emotion: 'normal' }; }
 
-          const text = (parsed.text || raw)
-              .replace(/{{user}}/g, settings.userName)
-              .replace(/{{home}}/g, settings.innName);
+          const text = formatTemplateText(parsed.text || raw);
           
           // [BUG FIX] 验证角色ID是否匹配，防止异步请求导致的角色错乱
           if (requestCharacterId === char.id) {

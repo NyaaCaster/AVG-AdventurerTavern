@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { ITEMS, ITEM_CATEGORIES, ITEM_TAGS } from '../data/items';
 import { ItemCategory, ItemQuality, ItemData } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
+import { applyPlayerTextTemplate } from '../utils/playerText';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
 
   const formatText = (text: string) => {
       if (!text) return null;
-      const replaced = text.replace(/{{user}}/g, userName);
+      const replaced = applyPlayerTextTemplate(text, { userName });
       
       const parts = replaced.split(/`([^`]+)`/);
       
