@@ -114,9 +114,8 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
               <div className="w-8 h-8 rounded bg-[#382b26] text-[#f0e6d2] flex items-center justify-center shadow-inner">
                 <i className="fa-solid fa-users" />
               </div>
-              <div>
-                <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em]">队伍编成</h2>
-                <p className="text-[11px] md:text-xs text-[#5c4d45]">点击空栏位选择角色，点击已加入角色查看战斗详情</p>
+              <div className="h-8 flex items-center">
+                <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em] leading-none">队伍编成</h2>
               </div>
             </div>
             <button
