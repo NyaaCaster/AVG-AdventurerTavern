@@ -321,39 +321,52 @@ app.get('/auth/discord/callback', async (req, res) => {
                     return res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${existingUser.id}`);
                 }
                 
-                // 新用户，创建账号
-                const username = discordUser.username;
-                const stmt = db.prepare(
-                    `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
-                     VALUES (?, ?, ?, ?, 1, ?)`
-                );
-                
-                stmt.run(
-                    username,
-                    discordUser.id,
-                    discordUser.username,
-                    discordUser.avatar,
-                    Date.now(),
-                    function(err) {
-                        if (err) {
-                            console.error('创建用户失败:', err);
-                            return res.redirect(`${config.FRONTEND_URL}?discord_error=create_failed`);
+                // 新用户，创建账号（处理用户名冲突）
+                const baseUsername = discordUser.username;
+                const tryCreateUser = (attempt = 0) => {
+                    const username = attempt === 0 ? baseUsername : `${baseUsername}_${attempt}`;
+                    
+                    const stmt = db.prepare(
+                        `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
+                         VALUES (?, ?, ?, ?, 1, ?)`
+                    );
+                    
+                    stmt.run(
+                        username,
+                        discordUser.id,
+                        discordUser.username,
+                        discordUser.avatar,
+                        Date.now(),
+                        function(err) {
+                            if (err) {
+                                if (err.message.includes('UNIQUE constraint failed: users.username') && attempt < 10) {
+                                    console.log(`[Discord] 用户名 ${username} 已存在，尝试 ${baseUsername}_${attempt + 1}`);
+                                    stmt.finalize();
+                                    tryCreateUser(attempt + 1);
+                                } else {
+                                    console.error('[Discord] 创建用户失败:', err);
+                                    stmt.finalize();
+                                    return res.redirect(`${config.FRONTEND_URL}?discord_error=create_failed`);
+                                }
+                            } else {
+                                const newUid = this.lastID;
+                                console.log(`[Discord] 创建新用户: ${username} (uid=${newUid})`);
+                                
+                                const initStmt = db.prepare(
+                                    `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+                                     VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
+                                );
+                                initStmt.run(newUid, getClientIp(req), Date.now());
+                                initStmt.finalize();
+                                stmt.finalize();
+                                
+                                res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${newUid}&new_user=true`);
+                            }
                         }
-                        
-                        const newUid = this.lastID;
-                        
-                        // 赠送初始理智
-                        const initStmt = db.prepare(
-                            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-                             VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
-                        );
-                        initStmt.run(newUid, getClientIp(req), Date.now());
-                        initStmt.finalize();
-                        
-                        res.redirect(`${config.FRONTEND_URL}?discord_login=success&uid=${newUid}&new_user=true`);
-                    }
-                );
-                stmt.finalize();
+                    );
+                };
+                
+                tryCreateUser();
             }
         );
     } catch (error) {
