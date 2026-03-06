@@ -120,14 +120,19 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
             }}
           />
 
-          <div className="relative z-10 flex items-center justify-between pb-2 mb-2 border-b border-[#9b7a4c]/40">
-            <div>
-              <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em]">队伍编成</h2>
-              <p className="text-[11px] md:text-xs text-[#5c4d45]">点击空栏位选择角色，点击已加入角色查看战斗详情</p>
+          <div className="relative z-10 flex items-center justify-between pb-3 mb-3 border-b-2 border-[#9b7a4c]/40">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#382b26] text-[#f0e6d2] flex items-center justify-center shadow-inner">
+                <i className="fa-solid fa-users" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-bold text-[#382b26] tracking-[0.2em]">队伍编成</h2>
+                <p className="text-[11px] md:text-xs text-[#5c4d45]">点击空栏位选择角色，点击已加入角色查看战斗详情</p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 md:w-8 md:h-8 rounded-full text-[#5c4d45] hover:text-[#b45309] hover:bg-[#d6cbb8]/60 transition-colors"
+              className="w-8 h-8 rounded-full bg-transparent text-[#9b7a4c] hover:bg-white/10 hover:text-[#382b26] border border-transparent hover:border-[#9b7a4c] transition-all flex items-center justify-center"
               title="关闭"
             >
               <i className="fa-solid fa-xmark" />
@@ -136,22 +141,28 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
 
           <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] min-h-0">
             <div className="p-3 md:p-4 border-r border-[#c7bca8] overflow-y-auto custom-scrollbar">
-              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide">队伍成员</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide flex items-center gap-2">
+                <i className="fa-solid fa-chess-knight text-[#9b7a4c]"></i> 队伍成员
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 {battleParty.map((memberId, idx) => {
                   const avatar = memberId ? (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || '') : '';
                   const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
                   const name = memberId ? resolveCharacterDisplayName(rawName || '未知角色', userName) : rawName;
                   const isSelected = memberId && selectedCharacterId === memberId;
+                  const isPending = pendingSlotIndex === idx;
+                  
                   return (
                     <div
                       key={`party-slot-${idx}`}
                       onClick={() => handleSlotClick(idx)}
-                      className={`relative p-2 rounded-lg border transition-all cursor-pointer ${
+                      className={`group relative p-2 rounded-lg border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
                         isSelected
-                          ? 'border-[#b45309] bg-[#f5f0e6] shadow-[0_4px_16px_rgba(0,0,0,0.12)]'
-                          : 'border-[#d6cbb8] bg-[#fcfaf7] hover:border-[#9b7a4c] hover:bg-[#f5f0e6]'
-                      } ${pendingSlotIndex === idx ? 'ring-2 ring-amber-400' : ''}`}
+                          ? 'border-[#b45309] bg-[#f5f0e6] shadow-[0_4px_16px_rgba(0,0,0,0.15)] scale-[1.02]'
+                          : memberId 
+                            ? 'border-[#d6cbb8] bg-[#fcfaf7] hover:border-[#9b7a4c] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5'
+                            : 'border-dashed border-[#c7bca8] bg-[#e8dfd1]/50 hover:border-[#9b7a4c] hover:bg-[#e8dfd1]'
+                      } ${isPending ? 'border-amber-400 bg-amber-50 shadow-[0_0_8px_rgba(251,191,36,0.5)] animate-pulse' : ''}`}
                     >
                       {idx > 0 && memberId && (
                         <button
@@ -162,47 +173,70 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                               setSelectedCharacterId('char_1');
                             }
                           }}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 border border-red-200 text-red-800 text-xs z-10 flex items-center justify-center transition-colors"
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500/90 hover:bg-red-600 text-white text-xs z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                           title="退队"
                         >
-                          <i className="fa-solid fa-user-minus" />
+                          <i className="fa-solid fa-xmark" />
                         </button>
                       )}
-                      <div className="w-full aspect-square rounded-md overflow-hidden bg-[#e8dfd1] border border-[#c7bca8] mb-2">
+                      <div className="w-full aspect-square rounded-md overflow-hidden bg-[#d6cbb8]/50 border border-[#c7bca8] mb-2 relative">
                         {avatar ? (
-                          <img src={resolveImgPath(avatar)} alt={name} className="w-full h-full object-cover" />
+                          <>
+                            <img src={resolveImgPath(avatar)} alt={name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-3xl">
-                            <i className="fa-solid fa-user-plus" />
+                          <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-2xl opacity-50 group-hover:opacity-100 transition-opacity">
+                            <i className="fa-solid fa-plus" />
+                          </div>
+                        )}
+                        {idx === 0 && (
+                          <div className="absolute top-1 left-1 bg-black/60 text-[#fcd34d] text-[10px] px-1.5 py-0.5 rounded border border-[#fcd34d]/50 backdrop-blur-sm font-bold shadow-sm flex items-center gap-1">
+                            <span>🚩</span> 队长
                           </div>
                         )}
                       </div>
-                      <div className="text-xs font-bold text-[#382b26]">{idx + 1}号位</div>
-                      <div className="text-[11px] text-[#5c4d45] truncate">{name}</div>
-                      {idx === 0 && <div className="text-[10px] text-amber-700 mt-1 font-bold">固定</div>}
+                      <div className="relative z-10">
+                        <div className="text-[10px] font-bold text-[#8c7b70] uppercase tracking-wider">{idx + 1}号位</div>
+                        <div className={`text-xs font-bold truncate ${memberId ? 'text-[#382b26]' : 'text-[#8c7b70]'}`}>{name}</div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide">可编入角色</h3>
-              {pendingSlotIndex !== null && <div className="mb-3 text-xs text-amber-700 font-bold">当前选择：{pendingSlotIndex + 1}号位</div>}
-              <div className="space-y-2">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm md:text-base font-bold text-[#382b26] tracking-wide flex items-center gap-2">
+                  <i className="fa-solid fa-clipboard-list text-[#9b7a4c]"></i> 可编入角色
+                </h3>
+                {pendingSlotIndex !== null && (
+                  <div className="text-xs bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded font-bold animate-pulse">
+                    正在选择: {pendingSlotIndex + 1}号位
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 pr-1">
                 {selectableCharacters.length === 0 ? (
-                  <div className="text-sm text-[#8c7b70] bg-[#fcfaf7] border border-[#d6cbb8] rounded-lg px-3 py-4">当前没有可加入队伍的角色</div>
+                  <div className="text-sm text-[#8c7b70] bg-[#fcfaf7] border border-[#d6cbb8] rounded-lg px-4 py-6 text-center shadow-inner">
+                    <i className="fa-solid fa-user-slash text-2xl mb-2 opacity-50"></i>
+                    <div>当前没有可加入队伍的角色</div>
+                  </div>
                 ) : (
                   selectableCharacters.map((char) => (
                     <button
                       key={char.id}
                       onClick={() => handleAddCharacter(char.id)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg border border-[#d6cbb8] bg-[#fffef8] hover:border-[#9b7a4c] hover:bg-[#f5f0e6] transition-colors text-left"
+                      className="group w-full flex items-center gap-3 p-2 rounded-lg border border-[#d6cbb8] bg-[#fffef8] hover:border-[#9b7a4c] hover:bg-[#f5f0e6] hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:translate-x-1 transition-all text-left"
                     >
-                      <div className="w-12 h-12 rounded-md overflow-hidden border border-[#c7bca8] bg-[#e8dfd1]">
-                        <img src={resolveImgPath(char.avatarUrl)} alt={char.name} className="w-full h-full object-cover" />
+                      <div className="w-12 h-12 rounded-md overflow-hidden border border-[#c7bca8] bg-[#e8dfd1] shadow-sm">
+                        <img src={resolveImgPath(char.avatarUrl)} alt={char.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
-                      <div>
-                        <div className="text-sm font-bold text-[#382b26]">{char.name}</div>
-                        <div className="text-xs text-[#5c4d45]">Lv.{char.level}</div>
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-[#382b26] group-hover:text-[#b45309] transition-colors">{char.name}</div>
+                        <div className="text-xs text-[#8c7b70] font-mono font-bold">Lv.{char.level}</div>
+                      </div>
+                      <div className="w-6 h-6 rounded-full border border-[#d6cbb8] text-[#d6cbb8] flex items-center justify-center group-hover:border-[#9b7a4c] group-hover:text-[#9b7a4c] group-hover:bg-white transition-colors mr-1">
+                        <i className="fa-solid fa-arrow-right text-[10px]"></i>
                       </div>
                     </button>
                   ))
@@ -210,46 +244,58 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
               </div>
             </div>
 
-            <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar bg-[#f5f0e6]/70">
-              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide">角色信息</h3>
-              <div className="rounded-lg border border-[#d6cbb8] bg-[#fffef8] p-3 mb-3 shadow-sm">
-                <div className="flex gap-3">
-                  <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#c7bca8] bg-[#e8dfd1]">
+            <div className="p-3 md:p-5 overflow-y-auto custom-scrollbar bg-[#f5f0e6]/50 relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAgMTBoODB2ODBoLTgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] bg-no-repeat bg-right-top opacity-50 pointer-events-none"></div>
+              
+              <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-4 tracking-wide flex items-center gap-2">
+                <i className="fa-solid fa-address-card text-[#9b7a4c]"></i> 详细属性
+              </h3>
+              
+              <div className="rounded-xl border-2 border-[#9b7a4c] bg-[#fffef8] p-4 mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.08)] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#9b7a4c] to-transparent opacity-30"></div>
+                
+                <div className="flex gap-4">
+                  <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-[#d6cbb8] bg-[#e8dfd1] shadow-inner relative group">
                     <img
                       src={resolveImgPath(CHARACTER_IMAGES[selectedCharacter.id]?.avatarUrl || selectedCharacter.avatarUrl || '')}
                       alt={selectedCharacter.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <div className="text-lg font-bold text-[#382b26] tracking-wide">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
-                    <div className="text-xs text-[#5c4d45] font-bold mb-1">等级 {level}</div>
-                    <div className="text-sm text-[#b45309] font-bold flex items-center gap-1">
+                    <div className="text-xl font-black text-[#382b26] tracking-wide drop-shadow-sm">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
+                    <div className="text-xs text-[#8c7b70] font-bold mb-2 uppercase tracking-widest">Level <span className="text-[#b45309] text-sm">{level}</span></div>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-xs font-bold text-[#5c4d45] w-fit">
                       {weaponIcon && <span>{weaponIcon}</span>}
-                      <span>{selectedWeaponName}</span>
+                      <span className="truncate max-w-[120px]">{selectedWeaponName}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-[#5c4d45] mb-1 font-bold">
-                    <span>经验值</span>
-                    <span className="font-mono">
+                <div className="mt-4 pt-4 border-t border-[#d6cbb8]/50">
+                  <div className="flex justify-between text-[10px] text-[#8c7b70] mb-1 font-bold uppercase tracking-wider">
+                    <span>Experience</span>
+                    <span className="font-mono text-[#b45309]">
                       {currentExp} / {needExp <= 0 ? 0 : needExp}
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#d6cbb8] border border-[#c7bca8] overflow-hidden shadow-inner">
-                    <div className="h-full bg-emerald-500 transition-all" style={{ width: `${expPercent}%` }} />
+                  <div className="h-2.5 rounded-full bg-[#e8dfd1] border border-[#c7bca8] overflow-hidden shadow-inner relative">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMCA0TDRgMCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] z-10"></div>
+                    <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500 ease-out" style={{ width: `${expPercent}%` }} />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[#fffef8] rounded-lg border border-[#d6cbb8] p-3 shadow-sm">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div className="bg-[#fffef8] rounded-xl border border-[#d6cbb8] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] relative">
+                <div className="absolute top-0 right-0 p-2 opacity-10">
+                  <i className="fa-solid fa-chart-pie text-4xl text-[#9b7a4c]"></i>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4 relative z-10">
                   {STAT_LABELS.map((stat) => (
-                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/40 pb-1">
+                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/40 pb-1.5 group hover:border-[#9b7a4c]/50 transition-colors">
                       <div className="text-xs text-[#8c7b70] font-bold tracking-widest">{stat.label}</div>
-                      <div className="text-sm font-black text-[#382b26] font-mono">{battleStats.finalStats[stat.key]}</div>
+                      <div className="text-sm font-black text-[#b45309] font-mono drop-shadow-sm">{battleStats.finalStats[stat.key]}</div>
                     </div>
                   ))}
                 </div>
