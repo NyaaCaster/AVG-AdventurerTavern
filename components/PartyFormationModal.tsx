@@ -5,6 +5,7 @@ import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 import { resolveImgPath } from '../utils/imagePath';
 import { buildCharacterBattleStats } from '../services/characterBattleStats';
 import { ITEMS_EQUIP } from '../data/item-equip';
+import { ITEM_TAGS } from '../data/item-type';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
 import { resolveCharacterDisplayName } from '../utils/playerText';
 
@@ -21,14 +22,14 @@ interface PartyFormationModalProps {
 }
 
 const STAT_LABELS: Array<{ key: keyof ReturnType<typeof buildCharacterBattleStats>['finalStats']; label: string }> = [
-  { key: 'hp', label: 'HP' },
-  { key: 'mp', label: 'MP' },
-  { key: 'atk', label: 'ATK' },
-  { key: 'def', label: 'DEF' },
-  { key: 'matk', label: 'MATK' },
-  { key: 'mdef', label: 'MDEF' },
-  { key: 'agi', label: 'AGI' },
-  { key: 'luk', label: 'LUK' }
+  { key: 'hp', label: '生命' },
+  { key: 'mp', label: '法力' },
+  { key: 'atk', label: '物理攻击' },
+  { key: 'def', label: '物理防御' },
+  { key: 'matk', label: '魔法攻击' },
+  { key: 'mdef', label: '魔法防御' },
+  { key: 'agi', label: '敏捷' },
+  { key: 'luk', label: '幸运' }
 ];
 
 const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
@@ -62,7 +63,10 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   const currentExp = Math.max(0, selectedStat.exp || 0);
   const expPercent = needExp <= 0 ? 100 : Math.min(100, Math.floor((currentExp / needExp) * 100));
 
-  const selectedWeaponName = selectedEquip.weaponId ? (ITEMS_EQUIP[selectedEquip.weaponId]?.name || '未知武器') : '未装备';
+  const weaponItem = selectedEquip.weaponId ? ITEMS_EQUIP[selectedEquip.weaponId] : null;
+  const selectedWeaponName = weaponItem?.name || '未装备';
+  const weaponTag = weaponItem?.tag ? ITEM_TAGS.find(t => t.id === weaponItem.tag) : null;
+  const weaponIcon = weaponTag?.icon || '';
 
   const selectableCharacters = useMemo(() => {
     const partySet = new Set(battleParty.filter(Boolean));
@@ -217,10 +221,13 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-base font-bold text-[#382b26]">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
-                    <div className="text-xs text-[#5c4d45] mb-1">Lv.{level}</div>
-                    <div className="text-xs text-[#5c4d45]">当前武器：{selectedWeaponName}</div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="text-lg font-bold text-[#382b26] tracking-wide">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
+                    <div className="text-xs text-[#5c4d45] font-bold mb-1">等级 {level}</div>
+                    <div className="text-sm text-[#b45309] font-bold flex items-center gap-1">
+                      {weaponIcon && <span>{weaponIcon}</span>}
+                      <span>{selectedWeaponName}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -237,13 +244,15 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {STAT_LABELS.map((stat) => (
-                  <div key={stat.key} className="rounded-md border border-[#d6cbb8] bg-[#fffef8] px-3 py-2 hover:border-[#9b7a4c] transition-colors shadow-sm hover:shadow-md">
-                    <div className="text-[11px] text-[#8c7b70] font-bold tracking-wide">{stat.label}</div>
-                    <div className="text-sm font-bold text-[#382b26] font-mono">{battleStats.finalStats[stat.key]}</div>
-                  </div>
-                ))}
+              <div className="bg-[#fffef8] rounded-lg border border-[#d6cbb8] p-3 shadow-sm">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                  {STAT_LABELS.map((stat) => (
+                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/40 pb-1">
+                      <div className="text-xs text-[#8c7b70] font-bold tracking-widest">{stat.label}</div>
+                      <div className="text-sm font-black text-[#382b26] font-mono">{battleStats.finalStats[stat.key]}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
