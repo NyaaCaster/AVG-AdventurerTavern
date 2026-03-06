@@ -1,4 +1,4 @@
-﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment } from '../types';
+﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots } from '../types';
 import {
     buildCharacterBattleStats,
     getCharacterBattleStatsFromSaveData,
@@ -24,6 +24,7 @@ export interface GameSaveData {
   managementStats?: ManagementStats;
   characterStats?: Record<string, CharacterStat>;
   characterEquipments?: Record<string, CharacterEquipment>;
+  battleParty?: BattlePartySlots;
   checkedInCharacters?: string[];
   sceneLevels?: Record<string, number>;
 }
@@ -133,6 +134,7 @@ export const saveGame = async (
     inventory: Record<string, number>;
     characterStats: Record<string, CharacterStat>;
     characterEquipments?: Record<string, CharacterEquipment>;
+    battleParty?: BattlePartySlots;
     characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;
     revenueLogs: RevenueLog[];
@@ -233,6 +235,7 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
             characterStats: s.characterStats || {},
             characterEquipments: s.characterEquipments || {},
+            battleParty: s.battleParty,
             checkedInCharacters: s.checkedInCharacters,
             sceneLevels: s.sceneLevels
         }));

@@ -9,8 +9,8 @@ interface Scen1Props extends SceneProps {
     onOpenExpansion?: () => void;
 }
 
-const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, sceneLevels, checkedInCharacters }) => {
-  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management' | 'outing'>('main');
+const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, onOpenPartyFormation, onOpenPartyEquipment, sceneLevels, checkedInCharacters }) => {
+  const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management' | 'party' | 'outing'>('main');
   const [showRoomSelection, setShowRoomSelection] = useState(false);
 
   if (!isMenuVisible) return null;
@@ -39,7 +39,7 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
               onClick={() => setShowRoomSelection(true)} 
               subLabel="Guest Rooms" 
             />
-            <SceneActionBtn label="队伍管理" icon="fa-users" onClick={() => {}} subLabel="Party" />
+            <SceneActionBtn label="队伍管理" icon="fa-users" onClick={() => setMenuLayer('party')} subLabel="Party" />
             <SceneActionBtn label="外出" icon="fa-person-walking" onClick={() => setMenuLayer('outing')} subLabel="Go Out" />
 
             <div className="h-px w-32 bg-white/10 my-2"></div>
@@ -71,6 +71,25 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
              {showPropShop && (
                <SceneActionBtn label="道具店" icon="fa-sack-dollar" onClick={() => onNavigate('scen_10')} />
              )}
+          </>
+        )}
+
+        {menuLayer === 'party' && (
+          <>
+             <SceneActionBtn label="返回上级" icon="fa-arrow-turn-up" onClick={() => setMenuLayer('main')} variant="special" />
+             <div className="h-2"></div>
+             <SceneActionBtn 
+               label="队伍编成" 
+               icon="fa-users-gear" 
+               onClick={() => onOpenPartyFormation && onOpenPartyFormation()} 
+               subLabel="Formation" 
+             />
+             <SceneActionBtn 
+               label="装备变更" 
+               icon="fa-shield" 
+               onClick={() => onOpenPartyEquipment && onOpenPartyEquipment()} 
+               subLabel="Equipment" 
+             />
           </>
         )}
 

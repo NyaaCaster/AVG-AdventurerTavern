@@ -26,6 +26,8 @@ import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import QuestBoardModal from './QuestBoardModal';
 import InspirationDashboardModal from './InspirationDashboardModal';
+import PartyFormationModal from './PartyFormationModal';
+import PartyEquipmentModal from './PartyEquipmentModal';
 import ToastManager, { ToastData } from './ToastManager';
 import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
@@ -105,6 +107,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isRestModalOpen, setIsRestModalOpen] = useState(false);
   const [isQuestBoardOpen, setIsQuestBoardOpen] = useState(false);
   const [isInspirationDashboardOpen, setIsInspirationDashboardOpen] = useState(false);
+  const [isPartyFormationOpen, setIsPartyFormationOpen] = useState(false);
+  const [isPartyEquipmentOpen, setIsPartyEquipmentOpen] = useState(false);
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
@@ -575,6 +579,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           inventory: core.inventory,
           characterStats: core.characterStats,
           characterEquipments: core.characterEquipments,
+          battleParty: core.battleParty,
           characterUnlocks: unlocksToSave,
           sceneLevels: core.sceneLevels,
           revenueLogs: core.revenueLogs,
@@ -696,12 +701,15 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         sceneLevels: core.sceneLevels,
         checkedInCharacters,
         characterUnlocks: core.characterUnlocks,
+        characterStats: core.characterStats,
+        characterEquipments: core.characterEquipments,
+        battleParty: core.battleParty,
         userRecipes: core.userRecipes,
         foodStock: core.foodStock
     };
 
     switch(world.currentSceneId) {
-        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} />;
+        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} />;
         case 'scen_2': return <Scen2 {...commonProps} />;
         case 'scen_3': return <Scen3 {...commonProps} onOpenTavernMenu={() => setIsTavernMenuOpen(true)} />;
         case 'scen_4': return <Scen4 {...commonProps} />;
@@ -879,6 +887,20 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
       <ManagementModal isOpen={isManagementOpen} onClose={() => setIsManagementOpen(false)} stats={core.managementStats} logs={core.revenueLogs} onAction={core.handleManagementAction} currentGold={core.gold} />
       <ExpansionModal isOpen={isExpansionOpen} onClose={() => setIsExpansionOpen(false)} currentLevels={core.sceneLevels} inventory={core.inventory} gold={core.gold} onUpgrade={handleUpgradeFacility} />
+      <PartyFormationModal
+          isOpen={isPartyFormationOpen}
+          onClose={() => setIsPartyFormationOpen(false)}
+          battleParty={core.battleParty}
+          characterUnlocks={core.characterUnlocks}
+          characterStats={core.characterStats}
+          characterEquipments={core.characterEquipments}
+          onAddMember={core.addToBattleParty}
+          onRemoveMember={core.removeFromBattleParty}
+      />
+      <PartyEquipmentModal
+          isOpen={isPartyEquipmentOpen}
+          onClose={() => setIsPartyEquipmentOpen(false)}
+      />
       
       <CookingModal 
           isOpen={isCookingOpen}

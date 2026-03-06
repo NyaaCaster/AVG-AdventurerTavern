@@ -2,14 +2,14 @@
 import { useState, useEffect } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
-    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment
+    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-    INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD
+    INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD, INITIAL_BATTLE_PARTY
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
@@ -24,9 +24,31 @@ export const useCoreState = (initialSaveData?: any) => {
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
   const [tavernMenu, setTavernMenu] = useState<TavernMenuState>({ foods: [], drinks: [] });
+  const [battleParty, setBattleParty] = useState<BattlePartySlots>(INITIAL_BATTLE_PARTY);
 
   const getMaxLevelByCharacter = (charId: string): number => {
       return CHARACTERS[charId]?.battleData?.maxLevel ?? 99;
+  };
+
+  const normalizeBattleParty = (rawParty?: any): BattlePartySlots => {
+      const fallback: BattlePartySlots = [...INITIAL_BATTLE_PARTY];
+      if (!Array.isArray(rawParty) || rawParty.length !== 4) return fallback;
+
+      const usedIds = new Set<string>();
+      const result: BattlePartySlots = ['char_1', null, null, null];
+
+      for (let i = 1; i < 4; i++) {
+          const candidate = rawParty[i];
+          if (typeof candidate !== 'string') continue;
+          const id = candidate.trim();
+          if (!id || id === 'char_1') continue;
+          if (!CHARACTERS[id]) continue;
+          if (usedIds.has(id)) continue;
+          usedIds.add(id);
+          result[i] = id;
+      }
+
+      return result;
   };
 
   const normalizeCharacterStats = (rawStats?: Record<string, any>): Record<string, CharacterStat> => {
@@ -183,6 +205,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(data.inventory);
       setCharacterStats(normalizeCharacterStats(data.characterStats));
       setCharacterEquipments(normalizeCharacterEquipments(data.characterEquipments));
+      setBattleParty(normalizeBattleParty(data.battleParty));
       setSceneLevels(data.sceneLevels);
       setRevenueLogs(data.revenueLogs);
       
@@ -372,7 +395,43 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
-  // Debug Modifiers
+  const removeFromBattleParty = (slotIndex: number) => {
+      if (slotIndex < 1 || slotIndex > 3) return;
+      setBattleParty(prev => {
+          const next: BattlePartySlots = [...prev];
+          next[slotIndex] = null;
+          return next;
+      });
+  };
+
+  const addToBattleParty = (characterId: string, preferredSlotIndex?: number): boolean => {
+      if (!characterId || characterId === 'char_1') return false;
+      if (!CHARACTERS[characterId]) return false;
+
+      let added = false;
+      setBattleParty(prev => {
+          if (prev.includes(characterId)) return prev;
+
+          const next: BattlePartySlots = [...prev];
+          if (typeof preferredSlotIndex === 'number' && preferredSlotIndex >= 1 && preferredSlotIndex <= 3 && !next[preferredSlotIndex]) {
+              next[preferredSlotIndex] = characterId;
+              added = true;
+              return next;
+          }
+
+          const emptyIndex = next.findIndex((id, idx) => idx >= 1 && !id);
+          if (emptyIndex !== -1) {
+              next[emptyIndex] = characterId;
+              added = true;
+              return next;
+          }
+
+          return prev;
+      });
+
+      return added;
+  };
+
   const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
   const updateInventoryItem = (itemId: string, newCount: number) => {
       setInventory(prev => ({ ...prev, [itemId]: newCount }));
@@ -437,6 +496,10 @@ export const useCoreState = (initialSaveData?: any) => {
       questStates, setQuestStates,
       handleAcceptQuest,
       handleCompleteQuest,
-      handleDeliverQuest
+      handleDeliverQuest,
+      battleParty,
+      setBattleParty,
+      addToBattleParty,
+      removeFromBattleParty
   };
 };

@@ -215,6 +215,8 @@ export interface CharacterEquipment {
   accessory2Id: string | null;
 }
 
+export type BattlePartySlots = [string, string | null, string | null, string | null];
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;
@@ -230,6 +232,11 @@ export interface SceneProps {
   sceneLevels: Record<string, number>; // 新增：场景等级信息
     checkedInCharacters?: string[]; // 已入住角色列表
   characterUnlocks: Record<string, CharacterUnlocks>; // 新增：角色解锁状态
+  characterStats?: Record<string, CharacterStat>;
+  characterEquipments?: Record<string, CharacterEquipment>;
+  battleParty?: BattlePartySlots;
+  onOpenPartyFormation?: () => void;
+  onOpenPartyEquipment?: () => void;
   // 烹饪系统相关
   onOpenCooking?: () => void;
   userRecipes?: UserRecipe[];

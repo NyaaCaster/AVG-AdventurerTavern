@@ -1,4 +1,4 @@
-﻿import { SceneId, ManagementStats, CharacterUnlocks, CharacterEquipment } from '../types';
+﻿import { SceneId, ManagementStats, CharacterUnlocks, CharacterEquipment, BattlePartySlots } from '../types';
 
 export const SCENE_NAMES: Record<SceneId, string> = {
   'scen_1': '柜台',
@@ -97,6 +97,8 @@ export const INITIAL_CHARACTER_EQUIPMENT: Record<string, CharacterEquipment> = {
   'char_110': { weaponId: INITIAL_CHARACTER_WEAPON['char_110'], armorId: null, accessory1Id: null, accessory2Id: null },
   'char_111': { weaponId: INITIAL_CHARACTER_WEAPON['char_111'], armorId: null, accessory1Id: null, accessory2Id: null }
 };
+
+export const INITIAL_BATTLE_PARTY: BattlePartySlots = ['char_1', null, null, null];
 
 export const INITIAL_GOLD = 100000; // 原：5000
 export const MAX_GOLD = 999999; // 金币上限
