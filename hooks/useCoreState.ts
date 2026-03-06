@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
-    QuestStateMap, QuestStatus
+    QuestStateMap, QuestStatus, CharacterStat
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
@@ -12,6 +12,8 @@ import {
     INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
+import { EXP_TABLE } from '../data/battle-data/exp_table';
+import { CHARACTERS } from '../data/scenarioData';
 
 export const useCoreState = (initialSaveData?: any) => {
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
@@ -21,13 +23,72 @@ export const useCoreState = (initialSaveData?: any) => {
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
   const [foodStock, setFoodStock] = useState<Record<string, number>>({});
   const [tavernMenu, setTavernMenu] = useState<TavernMenuState>({ foods: [], drinks: [] });
+
+  const getMaxLevelByCharacter = (charId: string): number => {
+      return CHARACTERS[charId]?.battleData?.maxLevel ?? 99;
+  };
+
+  const normalizeCharacterStats = (rawStats?: Record<string, any>): Record<string, CharacterStat> => {
+      const normalized: Record<string, CharacterStat> = {};
+
+      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+          const raw = rawStats?.[charId] || {};
+          const maxLevel = getMaxLevelByCharacter(charId);
+          const safeLevel = Math.max(1, Math.min(maxLevel, Number(raw.level) || 1));
+          const safeAffinity = Math.max(0, Math.min(100, Number(raw.affinity) || 0));
+          const safeExp = safeLevel >= maxLevel ? 0 : Math.max(0, Number(raw.exp) || 0);
+
+          normalized[charId] = {
+              level: safeLevel,
+              affinity: safeAffinity,
+              exp: safeExp
+          };
+      });
+
+      return normalized;
+  };
+
+  const getLevelUpNeedExp = (currentLevel: number): number => {
+      const nextLevel = currentLevel + 1;
+      if (nextLevel >= EXP_TABLE.length) return Number.MAX_SAFE_INTEGER;
+      const currentTotal = EXP_TABLE[currentLevel] ?? 0;
+      const nextTotal = EXP_TABLE[nextLevel] ?? currentTotal;
+      return Math.max(0, nextTotal - currentTotal);
+  };
+
+  const applyExpGainToStat = (charId: string, stat: CharacterStat, gainedExp: number): CharacterStat => {
+      if (gainedExp <= 0) return stat;
+
+      const maxLevel = getMaxLevelByCharacter(charId);
+      let level = Math.max(1, Math.min(maxLevel, stat.level || 1));
+      let exp = Math.max(0, stat.exp || 0) + gainedExp;
+
+      while (level < maxLevel) {
+          const needExp = getLevelUpNeedExp(level);
+          if (needExp <= 0 || exp < needExp) break;
+          exp -= needExp;
+          level += 1;
+      }
+
+      if (level >= maxLevel) {
+          level = maxLevel;
+          exp = 0;
+      }
+
+      return {
+          ...stat,
+          level,
+          exp
+      };
+  };
   
-  const [characterStats, setCharacterStats] = useState<Record<string, { level: number; affinity: number }>>(() => {
-    const initialStats: Record<string, { level: number; affinity: number }> = {};
+  const [characterStats, setCharacterStats] = useState<Record<string, CharacterStat>>(() => {
+    const initialStats: Record<string, CharacterStat> = {};
     Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
       initialStats[charId] = {
-        level: INITIAL_CHARACTER_LEVEL[charId],
-        affinity: INITIAL_CHARACTER_AFFINITY[charId]
+        level: 1,
+        affinity: INITIAL_CHARACTER_AFFINITY[charId],
+        exp: 0
       };
     });
     return initialStats;
@@ -92,7 +153,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setGold(data.gold);
       setManagementStats(data.managementStats);
       setInventory(data.inventory);
-      setCharacterStats(data.characterStats);
+      setCharacterStats(normalizeCharacterStats(data.characterStats));
       setSceneLevels(data.sceneLevels);
       setRevenueLogs(data.revenueLogs);
       
@@ -269,6 +330,19 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
+  const addCharacterExp = (characterId: string, gainedExp: number) => {
+      if (!characterId || gainedExp <= 0) return;
+
+      setCharacterStats(prev => {
+          const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+          const updated = applyExpGainToStat(characterId, current, gainedExp);
+          return {
+              ...prev,
+              [characterId]: updated
+          };
+      });
+  };
+
   // Debug Modifiers
   const updateGold = (newGold: number) => setGold(Math.min(MAX_GOLD, Math.max(0, newGold)));
   const updateInventoryItem = (itemId: string, newCount: number) => {
@@ -320,6 +394,7 @@ export const useCoreState = (initialSaveData?: any) => {
       handleDeleteRecipe,
       handleRenameRecipe,
       handleAddItems,
+      addCharacterExp,
       updateGold,
       updateInventoryItem,
       updateCharacterUnlock,

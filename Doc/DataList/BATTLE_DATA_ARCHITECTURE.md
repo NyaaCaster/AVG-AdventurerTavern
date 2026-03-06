@@ -63,6 +63,96 @@ let finalAtk = rawAtk + (equippedWeapon.stats.atk || 0) + (equippedArmor.stats.a
   }
   ```
 
+### 3.1 前端运行时经验结算与升级入口
+
+- **核心状态 Hook**: `hooks/useCoreState.ts`
+  - `addCharacterExp(characterId, gainedExp)`: 经验发放统一入口。
+  - `applyExpGainToStat(...)`: 按 `EXP_TABLE` 执行升级循环，处理跨级升级、满级清零经验。
+  - `normalizeCharacterStats(...)`: 读档兼容层，旧存档缺失 `exp` 字段时自动补 `0`。
+- **任务奖励接入点**:
+  - `components/QuestBoardModal.tsx` 在任务交付时读取 `quest.rewards.experience`。
+  - `components/GameScene.tsx` 将任务经验发放到 `char_1`（玩家角色）。
+
+### 3.2 数据库存储与同步位置（等级/经验）
+
+> 说明：角色等级与经验属于“可持久化进度数据”，由前端 `characterStats` 与后端表 `character_progress` 双向协作。
+
+- **后端数据表定义**: `database-server/index.js`
+  - 表名：`character_progress`
+  - 主字段：`user_id`, `slot_id`, `character_id`, `level`, `exp`, `updated_at`
+  - 约束：`UNIQUE(user_id, slot_id, character_id)`
+  - 索引：
+    - `idx_character_progress_user_slot`
+    - `idx_character_progress_character`
+
+- **存档写入同步**: `database-server/index.js`
+  - 在 `/api/save` 路由中，保存 `saves` 表后调用 `syncCharacterProgress(...)`。
+  - `syncCharacterProgress(...)` 会基于 `data.characterStats` 重建当前槽位的角色进度记录（先删后插）。
+
+- **存档删除联动**: `database-server/index.js`
+  - `/api/delete` 路由中，删除存档时额外清理 `character_progress` 对应槽位记录。
+
+- **账号迁移联动（Discord）**: `database-server/index.js`
+  - `/api/auth/discord/migrate` 中新增：
+    - 迁移前清理目标账号旧 `character_progress`
+    - 迁移时把源账号 `character_progress` 更新到目标账号
+
+- **前端存档数据类型**: `services/db.ts`
+  - `GameSaveData.characterStats` 与 `saveGame(...).data.characterStats` 已统一为 `CharacterStat`（`level/affinity/exp`）。
+  - 与后端 `character_progress` 保持字段语义一致，避免经验字段丢失。
+
+### 3.3 存档链路时序图（前端 -> API -> saves / character_progress）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as 前端(GameScene/useCoreState)
+    participant API as 后端API(/api/save)
+    participant SAVES as SQLite.saves
+    participant PROG as SQLite.character_progress
+
+    FE->>FE: 组装存档 data\n(含 characterStats.level/affinity/exp)
+    FE->>API: POST /api/save\n{ userId, slotId, label, data }
+
+    API->>SAVES: INSERT OR REPLACE saves\n(user_id, slot_id, label, data, updated_at)
+    SAVES-->>API: 写入完成
+
+    API->>API: syncCharacterProgress(userId, slotId, data.characterStats)
+    API->>PROG: DELETE FROM character_progress\nWHERE user_id=? AND slot_id=?
+    API->>PROG: INSERT character_progress\n(user_id, slot_id, character_id, level, exp, updated_at) * N
+    PROG-->>API: 同步完成
+
+    API-->>FE: { success: true }
+
+    Note over FE,API: 失败场景：任一数据库步骤报错 -> 返回 success:false
+```
+
+### 3.4 读档链路时序图（/api/load -> applyLoadedData -> normalizeCharacterStats）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as 前端(GameScene)
+    participant API as 后端API(/api/load)
+    participant SAVES as SQLite.saves
+    participant CORE as useCoreState
+
+    FE->>API: POST /api/load\n{ userId, slotId }
+    API->>SAVES: SELECT data FROM saves\nWHERE user_id=? AND slot_id=?
+    SAVES-->>API: 返回 JSON 字符串 data
+    API-->>FE: { success:true, data }
+
+    FE->>CORE: applyLoadedData(data)
+    CORE->>CORE: setGold / setInventory / setSceneLevels...
+    CORE->>CORE: normalizeCharacterStats(data.characterStats)
+    CORE->>CORE: 逐角色补全 CharacterStat\n(level/affinity/exp)
+    CORE->>CORE: 旧存档无 exp 时自动置 0
+    CORE-->>FE: setCharacterStats(normalized)
+
+    Note over FE,CORE: 结果：前端运行态 characterStats 始终具备 exp 字段
+```
+
+
 ---
 
 ## 4. 消耗品道具与异常状态引擎

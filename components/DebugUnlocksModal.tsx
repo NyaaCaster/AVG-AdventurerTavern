@@ -1,13 +1,13 @@
 import React from 'react';
 import { CHARACTERS } from '../data/scenarioData';
 import { UNLOCK_STATUS_NAMES } from '../data/unlockConditions';
-import { CharacterUnlocks } from '../types';
+import { CharacterUnlocks, CharacterStat } from '../types';
 
 interface DebugUnlocksModalProps {
   isOpen: boolean;
   onClose: () => void;
   characterUnlocks: Record<string, CharacterUnlocks>;
-  characterStats: Record<string, { level: number; affinity: number }>;
+  characterStats: Record<string, CharacterStat>;
   onUpdateCharacterAffinity: (charId: string, newAffinity: number) => void;
   onUpdateCharacterUnlock: (charId: string, unlockKey: keyof CharacterUnlocks, value: 0 | 1) => void;
   onSaveGame: () => void;
@@ -30,7 +30,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
   };
 
   const handleAffinityChange = (charId: string, change: number) => {
-    const currentStats = characterStats[charId] || { level: 1, affinity: 0 };
+    const currentStats = characterStats[charId] || { level: 1, affinity: 0, exp: 0 };
     let newAffinity = currentStats.affinity + change;
     if (change === -999) {
       newAffinity = 0;
@@ -56,7 +56,7 @@ const DebugUnlocksModal: React.FC<DebugUnlocksModalProps> = ({
             <div className="p-4 overflow-y-auto custom-scrollbar bg-[#0c0c0c] rounded-b-lg space-y-6">
                 {Object.values(CHARACTERS).filter(character => character.id !== 'char_1').map(character => {
                     const unlocks = characterUnlocks[character.id] || {} as CharacterUnlocks;
-                    const stats = characterStats[character.id] || { level: 1, affinity: 0 };
+                    const stats = characterStats[character.id] || { level: 1, affinity: 0, exp: 0 };
                     
                     return (
                         <div key={character.id} className="bg-slate-800/50 border border-slate-700 p-4 rounded">

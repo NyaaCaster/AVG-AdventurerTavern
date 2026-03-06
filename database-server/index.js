@@ -91,6 +91,24 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_unlocks_character 
             ON character_unlocks(character_id)`);
 
+    // 角色等级经验表（每用户-每存档-每角色）
+    db.run(`CREATE TABLE IF NOT EXISTS character_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        level INTEGER NOT NULL DEFAULT 1,
+        exp INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL,
+        UNIQUE(user_id, slot_id, character_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_progress_user_slot 
+            ON character_progress(user_id, slot_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_progress_character 
+            ON character_progress(character_id)`);
+
     // ----------------- 新增：AI 聊天系统数据表 -----------------
 
     // 对话历史表 (短期工作记忆)
@@ -158,6 +176,69 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_sanity_ledger_type
             ON sanity_ledger(type, created_at DESC)`);
 });
+
+// API Routes
+
+function normalizeCharacterStatsForDb(characterStats) {
+    if (!characterStats || typeof characterStats !== 'object') return [];
+
+    return Object.entries(characterStats).map(([characterId, stat]) => {
+        const safeLevel = Math.max(1, parseInt(stat?.level, 10) || 1);
+        const safeExp = Math.max(0, parseInt(stat?.exp, 10) || 0);
+        return {
+            characterId,
+            level: safeLevel,
+            exp: safeExp
+        };
+    });
+}
+
+function syncCharacterProgress(userId, slotId, characterStats, callback) {
+    const progressRows = normalizeCharacterStatsForDb(characterStats);
+    const now = Date.now();
+
+    db.serialize(() => {
+        db.run(
+            "DELETE FROM character_progress WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId],
+            (deleteErr) => {
+                if (deleteErr) {
+                    callback(deleteErr);
+                    return;
+                }
+
+                if (progressRows.length === 0) {
+                    callback(null);
+                    return;
+                }
+
+                const stmt = db.prepare(
+                    `INSERT INTO character_progress (user_id, slot_id, character_id, level, exp, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?)`
+                );
+
+                let finished = 0;
+                let hasError = false;
+
+                progressRows.forEach((row) => {
+                    stmt.run(userId, slotId, row.characterId, row.level, row.exp, now, (insertErr) => {
+                        if (hasError) return;
+                        if (insertErr) {
+                            hasError = true;
+                            stmt.finalize(() => callback(insertErr));
+                            return;
+                        }
+
+                        finished += 1;
+                        if (finished === progressRows.length) {
+                            stmt.finalize((finalizeErr) => callback(finalizeErr || null));
+                        }
+                    });
+                });
+            }
+        );
+    });
+}
 
 // API Routes
 
@@ -479,6 +560,9 @@ app.post('/api/auth/discord/migrate', (req, res) => {
                 db.run("DELETE FROM character_unlocks WHERE user_id = ?", [targetUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 清理目标解锁失败:', err); }
                 });
+                db.run("DELETE FROM character_progress WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标角色进度失败:', err); }
+                });
                 db.run("DELETE FROM chat_messages WHERE user_id = ?", [targetUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 清理目标聊天失败:', err); }
                 });
@@ -497,6 +581,10 @@ app.post('/api/auth/discord/migrate', (req, res) => {
                 db.run("UPDATE character_unlocks SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 迁移解锁失败:', err); }
                     else console.log(`[迁移] 迁移解锁: ${this.changes} 条`);
+                });
+                db.run("UPDATE character_progress SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移角色进度失败:', err); }
+                    else console.log(`[迁移] 迁移角色进度: ${this.changes} 条`);
                 });
                 db.run("UPDATE chat_messages SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 迁移聊天失败:', err); }
@@ -574,7 +662,11 @@ app.post('/api/save', (req, res) => {
     
     stmt.run(userId, slotId, label, dataStr, timestamp, function(err) {
         if (err) return res.json({ success: false, message: err.message });
-        res.json({ success: true });
+
+        syncCharacterProgress(userId, slotId, data.characterStats, (progressErr) => {
+            if (progressErr) return res.json({ success: false, message: progressErr.message });
+            res.json({ success: true });
+        });
     });
     stmt.finalize();
 });
@@ -642,6 +734,10 @@ app.post('/api/delete', (req, res) => {
         if (err) return res.json({ success: false, message: err.message });
         
         // 级联删除相关联的聊天和记忆数据
+        const stmtProgress = db.prepare("DELETE FROM character_progress WHERE user_id = ? AND slot_id = ?");
+        stmtProgress.run(userId, slotId);
+        stmtProgress.finalize();
+
         const stmtChats = db.prepare("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?");
         stmtChats.run(userId, slotId);
         stmtChats.finalize();

@@ -34,7 +34,7 @@ import { ITEMS } from '../data/items';
 import { QUESTS } from '../data/quest-list';
 import { getResValue } from '../data/item-value-table';
 import { calculateTavernBonus } from '../data/facilityData';
-import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks, QuestState } from '../types';
+import { GameSettings, ConfigTab, RevenueLog, RevenueType, SceneId, CharacterUnlocks, QuestState, CharacterStat } from '../types';
 import { SCENE_NAMES } from '../utils/gameConstants';
 import { getCharacterSprite } from '../utils/gameLogic';
 import { UNLOCK_STATUS_NAMES } from '../data/unlockConditions';
@@ -174,7 +174,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       
       // 更新角色好感度数值
       core.setCharacterStats(prev => {
-          const current = prev[charId] || { level: 1, affinity: 0 };
+          const current = prev[charId] || { level: 1, affinity: 0, exp: 0 };
           const newAffinity = Math.max(0, Math.min(100, current.affinity + change));
           return {
               ...prev,
@@ -678,8 +678,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   const currentSceneLevel = core.sceneLevels[world.currentSceneId] || (['scen_5','scen_6','scen_7','scen_8'].includes(world.currentSceneId) ? 0 : 1);
   const currentBgUrl = getSceneBackground(world.currentSceneId, world.worldState.period, currentSceneLevel);
-  const currentStats = dialogue.activeCharacter ? (core.characterStats[dialogue.activeCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
-  const ambientStats = dialogue.ambientCharacter ? (core.characterStats[dialogue.ambientCharacter.id] || { level: 1, affinity: 0 }) : { level: 1, affinity: 0 };
+  const currentStats: CharacterStat = dialogue.activeCharacter ? (core.characterStats[dialogue.activeCharacter.id] || { level: 1, affinity: 0, exp: 0 }) : { level: 1, affinity: 0, exp: 0 };
+  const ambientStats: CharacterStat = dialogue.ambientCharacter ? (core.characterStats[dialogue.ambientCharacter.id] || { level: 1, affinity: 0, exp: 0 }) : { level: 1, affinity: 0, exp: 0 };
 
   const renderScene = () => {
     const commonProps = {
@@ -813,7 +813,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             characterStats={core.characterStats}
             onUpdateCharacterAffinity={(charId, newAffinity) => {
               core.setCharacterStats(prev => {
-                const current = prev[charId] || { level: 1, affinity: 0 };
+                const current = prev[charId] || { level: 1, affinity: 0, exp: 0 };
                 return {
                   ...prev,
                   [charId]: { ...current, affinity: newAffinity }
@@ -925,6 +925,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onAddGold={(amount) => core.updateGold(core.gold + amount)}
         onConsumeInspiration={handleConsumeInspiration}
         onAddItems={(items) => core.handleAddItems(items)}
+        onAddCharacterExp={(exp) => core.addCharacterExp('char_1', exp)}
         onShowRewardToasts={(gold, items) => {
           // 金币通知
           setToasts(prev => [

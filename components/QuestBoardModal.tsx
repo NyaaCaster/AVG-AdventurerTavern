@@ -18,6 +18,7 @@ interface QuestBoardModalProps {
   onAddGold: (amount: number) => void;
   onConsumeInspiration: (amount: number) => void;
   onAddItems: (items: { id: string; count: number }[]) => void;
+  onAddCharacterExp: (exp: number) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
 }
 // 统一倒计时（秒）: 1星=1分钟, 10星=10分钟
@@ -552,7 +553,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest,
-  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onShowRewardToasts
+  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
   const [rewardQuestId, setRewardQuestId] = useState<string | null>(null);
@@ -629,6 +630,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
     if (!quest) return;
     onAddGold(quest.rewards.gold);
     onAddItems(quest.rewards.items.map(i => ({ id: i.item_id, count: i.item_num })));
+    onAddCharacterExp(quest.rewards.experience || 0);
     onShowRewardToasts(
       quest.rewards.gold,
       quest.rewards.items.map(i => ({ id: i.item_id, count: i.item_num }))

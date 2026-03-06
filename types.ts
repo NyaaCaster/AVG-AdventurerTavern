@@ -202,6 +202,12 @@ export interface CharacterUnlocks {
     accept_character_massage: 0 | 1;
 }
 
+export interface CharacterStat {
+  level: number;
+  affinity: number;
+  exp: number;
+}
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;

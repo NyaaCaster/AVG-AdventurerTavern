@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { 
-    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks, SceneId 
+    Character, ClothingState, DialogueEntry, GameSettings, WorldState, LogEntry, CharacterUnlocks, SceneId, CharacterStat 
 } from '../types';
 import { llmService } from '../services/llmService';
 import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
@@ -15,7 +15,7 @@ import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 interface UseDialogueSystemProps {
     settings: GameSettings;
     worldState: WorldState;
-    characterStats: Record<string, { level: number; affinity: number }>;
+    characterStats: Record<string, CharacterStat>;
     characterUnlocks: Record<string, CharacterUnlocks>;
     userId: number;
     currentSlotId: number;

@@ -1,4 +1,4 @@
-﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap } from '../types';
+﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -17,7 +17,7 @@ export interface GameSaveData {
   currentSceneId: string;
   worldState: WorldState;
   managementStats?: ManagementStats;
-  characterStats?: Record<string, { level: number; affinity: number }>;
+  characterStats?: Record<string, CharacterStat>;
   checkedInCharacters?: string[];
   sceneLevels?: Record<string, number>;
 }
@@ -125,7 +125,7 @@ export const saveGame = async (
     worldState: WorldState;
     managementStats: ManagementStats;
     inventory: Record<string, number>;
-    characterStats: Record<string, { level: number; affinity: number }>;
+    characterStats: Record<string, CharacterStat>;
     characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;
     revenueLogs: RevenueLog[];
