@@ -92,7 +92,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fadeIn font-sans">
-      <div className="relative w-full max-w-6xl h-[82vh] flex bg-[#e8dfd1] rounded-r-xl rounded-l-sm shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div className="relative w-full max-w-6xl lg:max-w-3xl h-[82vh] flex bg-[#e8dfd1] rounded-r-xl rounded-l-sm shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
         <div className="absolute left-0 top-0 bottom-0 w-3 md:w-4 bg-gradient-to-r from-[#2c241b] via-[#3d3226] to-[#2c241b] z-20 shadow-xl border-r border-[#1a1512]">
           <div className="h-full w-full opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMwMDAiLz4KPC9zdmc+')]" />
         </div>
@@ -178,7 +178,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                         )}
                         {idx === 0 && (
                           <div className="absolute top-0.5 left-0.5 bg-black/60 text-[#fcd34d] text-[8px] px-1 py-0.5 rounded border border-[#fcd34d]/50 backdrop-blur-sm font-bold">
-                            队长
+                            🚩
                           </div>
                         )}
                       </div>
@@ -220,17 +220,20 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-bold text-[#382b26] group-hover:text-[#b45309] transition-colors truncate">{char.name}</div>
-                          <div className="text-xs text-[#8c7b70] font-mono font-bold">Lv.{char.level}</div>
+                          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[#8c7b70] font-mono font-bold min-w-0">
+                            <span className="w-[48px] shrink-0">Lv.{char.level}</span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-[#5c4d45] font-bold min-w-0 max-w-full">
+                              {char.weaponIcon && <span>{char.weaponIcon}</span>}
+                              <span className="truncate">{char.weaponName}</span>
+                            </span>
+                          </div>
                         </div>
                         <div className="w-6 h-6 rounded-full border border-[#d6cbb8] text-[#d6cbb8] flex items-center justify-center group-hover:border-[#9b7a4c] group-hover:text-[#9b7a4c] group-hover:bg-white transition-colors">
                           <i className="fa-solid fa-arrow-right text-[10px]"></i>
                         </div>
                       </div>
                       <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
-                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-[#5c4d45] font-bold max-w-[60%]">
-                          {char.weaponIcon && <span>{char.weaponIcon}</span>}
-                          <span className="truncate">{char.weaponName}</span>
-                        </div>
+                        <div className="text-[#8c7b70] font-bold tracking-wide">经验值</div>
                         <div className="font-mono font-bold text-[#b45309] shrink-0">
                           {char.currentExp} / {char.needExp <= 0 ? 0 : char.needExp}
                         </div>
