@@ -138,6 +138,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                   const avatar = memberId ? (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || '') : '';
                   const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
                   const name = memberId ? resolveCharacterDisplayName(rawName || '未知角色', userName) : rawName;
+                  const memberLevel = memberId ? (characterStats[memberId]?.level || 1) : null;
                   const isSelected = memberId && selectedCharacterId === memberId;
                   const isPending = pendingSlotIndex === idx;
                   
@@ -183,7 +184,14 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                         )}
                       </div>
                       <div className="relative z-10 min-w-0">
-                        <div className="text-[9px] font-bold text-[#8c7b70] tracking-wide">{idx + 1}号位</div>
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="text-[9px] font-bold text-[#8c7b70] tracking-wide">{idx + 1}号位</div>
+                          {memberId && (
+                            <div className="px-1.5 py-0.5 rounded border border-[#c7b08f] bg-[#efe4d4] text-[9px] font-mono font-black text-[#8a5a30] leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+                              Lv.{memberLevel}
+                            </div>
+                          )}
+                        </div>
                         <div className={`text-[10px] md:text-xs font-bold truncate ${memberId ? 'text-[#382b26]' : 'text-[#8c7b70]'}`}>{name}</div>
                       </div>
                     </div>
