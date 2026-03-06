@@ -139,6 +139,10 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                   const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
                   const name = memberId ? resolveCharacterDisplayName(rawName || '未知角色', userName) : rawName;
                   const memberLevel = memberId ? (characterStats[memberId]?.level || 1) : null;
+                  const memberEquip = memberId ? characterEquipments[memberId] : null;
+                  const memberWeaponItem = memberEquip?.weaponId ? ITEMS_EQUIP[memberEquip.weaponId] : null;
+                  const memberWeaponTag = memberWeaponItem?.tag ? ITEM_TAGS.find((tag) => tag.id === memberWeaponItem.tag) : null;
+                  const memberWeaponIcon = memberWeaponTag?.icon || '';
                   const isSelected = memberId && selectedCharacterId === memberId;
                   const isPending = pendingSlotIndex === idx;
                   
@@ -175,6 +179,11 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-base opacity-50 group-hover:opacity-100 transition-opacity">
                             <i className="fa-solid fa-plus" />
+                          </div>
+                        )}
+                        {memberId && memberWeaponIcon && (
+                          <div className="absolute right-0.5 bottom-0.5 min-w-4 h-4 px-0.5 rounded bg-black/60 border border-[#f5deb3]/40 text-[10px] flex items-center justify-center shadow-sm">
+                            <span>{memberWeaponIcon}</span>
                           </div>
                         )}
                         {idx === 0 && (
