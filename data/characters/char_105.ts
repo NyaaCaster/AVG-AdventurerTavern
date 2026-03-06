@@ -94,7 +94,8 @@ export const char_105: Character = {
       skillId: 593,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['glove', 'L-Arm'] // 拳套、轻甲
 },
   id: 'char_105',
   name: "莲华",

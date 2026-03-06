@@ -104,7 +104,8 @@ export const char_111: Character = {
       skillId: 532,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['gun', 'H-Arm'] // 枪械、重甲
 },
   id: 'char_111',
   name: "吉娜",

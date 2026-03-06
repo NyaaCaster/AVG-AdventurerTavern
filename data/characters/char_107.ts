@@ -89,7 +89,8 @@ export const char_107: Character = {
       skillId: 556,
       ratio: 120
     }
-  ]
+  ],
+  equipableTags: ['book', 'L-Arm'] // 魔导书、轻甲
 },
   id: 'char_107',
   name: "菲洛",

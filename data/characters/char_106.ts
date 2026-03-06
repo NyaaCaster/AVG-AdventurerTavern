@@ -109,7 +109,8 @@ export const char_106: Character = {
       skillId: 710,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['lance', 'H-Arm'] // 长矛、重甲
 },
   id: 'char_106',
   name: "艾琳",

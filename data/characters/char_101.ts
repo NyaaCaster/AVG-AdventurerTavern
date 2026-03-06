@@ -69,7 +69,8 @@ export const char_101: Character = {
       skillId: 802,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: [] // 非战斗人员，无法装备
 },
   id: 'char_101',
   name: "莉莉娅",

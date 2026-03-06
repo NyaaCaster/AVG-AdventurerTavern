@@ -74,7 +74,8 @@ export const char_109: Character = {
       skillId: 710,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['axe', 'M-Arm'] // 斧、中甲
 },
   id: 'char_109',
   name: "莱拉",

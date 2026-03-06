@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { QuestList, QuestStateMap, QuestStatus } from '../types';
+import { QuestList, QuestStateMap, QuestStatus, QuestState } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
 import { ITEM_TAGS } from '../data/item-type';
@@ -562,12 +562,12 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   const allQuests = Object.values(QUESTS);
 
   // 有进行中任务
-  const hasActiveQuest = Object.values(questStates).some(s => s.status === 'active');
+  const hasActiveQuest = Object.values(questStates as QuestStateMap).some(s => s.status === 'active');
 
   // 检查进行中任务是否已完成（倒计时归零）
   useEffect(() => {
     const interval = setInterval(() => {
-      Object.values(questStates).forEach(state => {
+      Object.values(questStates as QuestStateMap).forEach((state: QuestState) => {
         if (state.status === 'active' && state.acceptedAt) {
           const quest = QUESTS[state.questId];
           if (!quest) return;

@@ -94,7 +94,8 @@ export const char_110: Character = {
       skillId: 710,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['bow', 'L-Arm'] // 弓、轻甲
 },
   id: 'char_110',
   name: "琉卡",

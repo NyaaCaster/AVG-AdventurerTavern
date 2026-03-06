@@ -1,4 +1,4 @@
-
+ 
 import { Character } from '../../types';
 import { PERSONA, DIALOGUE } from '../prompts/char_102';
 
@@ -64,7 +64,8 @@ export const char_102: Character = {
       skillId: 588,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: [] // 非战斗人员，无法装备
 },
   id: 'char_102',
   name: "米娜",

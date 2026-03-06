@@ -114,7 +114,8 @@ export const char_108: Character = {
       skillId: 595,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['sword', 'H-Arm'] // 剑、重甲
 },
   id: 'char_108',
   name: "卡特琳娜",

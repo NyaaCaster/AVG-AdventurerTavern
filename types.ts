@@ -85,6 +85,8 @@ export interface CharacterBattleData {
     luk: number;
   };
   skills: CharacterSkillLearning[];
+  /** 角色可穿戴的装备标签列表 (武器+防具类型) */
+  equipableTags?: ItemTag[];
 }
 
 // 新增：衣着状态定义

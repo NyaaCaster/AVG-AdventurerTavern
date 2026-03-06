@@ -109,7 +109,8 @@ export const char_104: Character = {
       skillId: 539,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['gun', 'M-Arm'] // 枪械、中甲
 },
   id: 'char_104',
   name: "朱迪斯",

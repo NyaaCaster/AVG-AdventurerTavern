@@ -104,7 +104,8 @@ export const char_103: Character = {
       skillId: 546,
       ratio: 100
     }
-  ]
+  ],
+  equipableTags: ['book', 'L-Arm'] // 魔导书、轻甲
 },
   id: 'char_103',
   name: "欧若拉",

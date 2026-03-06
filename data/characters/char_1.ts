@@ -29,7 +29,8 @@ export const char_1: Character = {
     agi: 100,
     luk: 100
   },
-  skills: []
+  skills: [],
+  equipableTags: ['sword', 'M-Arm'] // 剑、中甲
 },
   id: 'char_1',
   name: '{{user}}',

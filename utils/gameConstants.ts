@@ -60,6 +60,25 @@ export const INITIAL_CHARACTER_AFFINITY: Record<string, number> = {
   'char_111': 1, // 吉娜
 };
 
+/**
+ * 角色初始武器配置
+ * 非战斗人员不配置初始武器
+ */
+export const INITIAL_CHARACTER_WEAPON: Record<string, string> = {
+  'char_1': 'wpn-101', // {{user}} - 木剑
+  // 'char_101': '', // 莉莉娅 - 非战斗人员
+  // 'char_102': '', // 米娜 - 非战斗人员
+  'char_103': 'wpn-201', // 欧若拉 - 《实用魔法大全》
+  'char_104': 'wpn-301', // 朱迪斯 - 「三岁准用」
+  'char_105': 'wpn-401', // 莲华 - 绑带
+  'char_106': 'wpn-501', // 艾琳 - 晾衣杆
+  'char_107': 'wpn-201', // 菲洛 - 《实用魔法大全》
+  'char_108': 'wpn-101', // 卡特琳娜 - 木剑
+  'char_109': 'wpn-601', // 莱拉 - 手斧
+  'char_110': 'wpn-701', // 琉卡 - 练习弓
+  'char_111': 'wpn-301', // 吉娜 - 「三岁准用」
+};
+
 export const INITIAL_GOLD = 100000; // 原：5000
 export const MAX_GOLD = 999999; // 金币上限
 
