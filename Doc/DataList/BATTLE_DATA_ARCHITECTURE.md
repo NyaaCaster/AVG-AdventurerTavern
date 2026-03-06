@@ -101,7 +101,58 @@ let finalAtk = rawAtk + (equippedWeapon.stats.atk || 0) + (equippedArmor.stats.a
   - `GameSaveData.characterStats` 与 `saveGame(...).data.characterStats` 已统一为 `CharacterStat`（`level/affinity/exp`）。
   - 与后端 `character_progress` 保持字段语义一致，避免经验字段丢失。
 
-### 3.3 存档链路时序图（前端 -> API -> saves / character_progress）
+### 3.3 装备栏位数据结构与初始化
+
+> 说明：角色装备数据与等级经验类似，属于“可持久化进度数据”。装备 ID 来源于 `data/item-equip.ts`，空栏位统一使用 `null`。
+
+- **前端类型定义**: `types.ts`
+  - `CharacterEquipment` 包含四个栏位：
+    - `weaponId`
+    - `armorId`
+    - `accessory1Id`
+    - `accessory2Id`
+  - 四个字段类型均为 `string | null`，其中 `null` 明确表示“未装备”。
+
+- **初始装备配置**: `utils/gameConstants.ts`
+  - `INITIAL_CHARACTER_WEAPON` 继续作为“角色初始武器来源”。
+  - `INITIAL_CHARACTER_EQUIPMENT` 以其为基础构建完整四栏位：
+    - 武器栏优先填入 `INITIAL_CHARACTER_WEAPON[charId]`
+    - 防具/饰品默认 `null`
+
+- **读档归一化与兼容**: `hooks/useCoreState.ts`
+  - `normalizeCharacterEquipments(...)` 用于处理旧档或异常数据：
+    - 旧存档缺失 `characterEquipments` 时，回退到 `INITIAL_CHARACTER_EQUIPMENT`
+    - 非法 ID 或类别不匹配时置为 `null`
+    - 类别约束：`weaponId -> wpn`，`armorId -> arm`，`accessory1/2Id -> acs`
+
+### 3.4 数据库存储与同步位置（角色装备）
+
+- **后端数据表定义**: `database-server/index.js`
+  - 表名：`character_equipment`
+  - 主字段：`user_id`, `slot_id`, `character_id`, `weapon_id`, `armor_id`, `accessory1_id`, `accessory2_id`, `updated_at`
+  - 约束：`UNIQUE(user_id, slot_id, character_id)`
+  - 空槽位：四个装备栏位均允许 `NULL`
+  - 索引：
+    - `idx_character_equipment_user_slot`
+    - `idx_character_equipment_character`
+
+- **存档写入同步**: `database-server/index.js`
+  - `/api/save` 在执行完 `syncCharacterProgress(...)` 后继续执行 `syncCharacterEquipment(...)`。
+  - `syncCharacterEquipment(...)` 同样采用“先删后插”策略重建当前槽位装备记录。
+
+- **存档删除联动**: `database-server/index.js`
+  - `/api/delete` 在删除存档时，联动清理 `character_equipment` 对应槽位数据。
+
+- **账号迁移联动（Discord）**: `database-server/index.js`
+  - `/api/auth/discord/migrate` 中新增：
+    - 迁移前清理目标账号旧 `character_equipment`
+    - 迁移时将源账号 `character_equipment` 更新到目标账号
+
+- **前端存档数据类型**: `services/db.ts`
+  - `GameSaveData.characterEquipments` 与 `saveGame(...).data.characterEquipments` 已加入。
+  - `components/GameScene.tsx` 存档时会把 `core.characterEquipments` 一并提交到后端。
+
+### 3.5 存档链路时序图（前端 -> API -> saves / character_progress / character_equipment）
 
 ```mermaid
 sequenceDiagram
@@ -110,8 +161,9 @@ sequenceDiagram
     participant API as 后端API(/api/save)
     participant SAVES as SQLite.saves
     participant PROG as SQLite.character_progress
+    participant EQUIP as SQLite.character_equipment
 
-    FE->>FE: 组装存档 data\n(含 characterStats.level/affinity/exp)
+    FE->>FE: 组装存档 data\n(含 characterStats + characterEquipments)
     FE->>API: POST /api/save\n{ userId, slotId, label, data }
 
     API->>SAVES: INSERT OR REPLACE saves\n(user_id, slot_id, label, data, updated_at)
@@ -122,12 +174,17 @@ sequenceDiagram
     API->>PROG: INSERT character_progress\n(user_id, slot_id, character_id, level, exp, updated_at) * N
     PROG-->>API: 同步完成
 
+    API->>API: syncCharacterEquipment(userId, slotId, data.characterEquipments)
+    API->>EQUIP: DELETE FROM character_equipment\nWHERE user_id=? AND slot_id=?
+    API->>EQUIP: INSERT character_equipment\n(user_id, slot_id, character_id, weapon_id, armor_id, accessory1_id, accessory2_id, updated_at) * N
+    EQUIP-->>API: 同步完成
+
     API-->>FE: { success: true }
 
     Note over FE,API: 失败场景：任一数据库步骤报错 -> 返回 success:false
 ```
 
-### 3.4 读档链路时序图（/api/load -> applyLoadedData -> normalizeCharacterStats）
+### 3.6 读档链路时序图（/api/load -> applyLoadedData -> normalizeCharacterStats / normalizeCharacterEquipments）
 
 ```mermaid
 sequenceDiagram
@@ -145,11 +202,14 @@ sequenceDiagram
     FE->>CORE: applyLoadedData(data)
     CORE->>CORE: setGold / setInventory / setSceneLevels...
     CORE->>CORE: normalizeCharacterStats(data.characterStats)
+    CORE->>CORE: normalizeCharacterEquipments(data.characterEquipments)
     CORE->>CORE: 逐角色补全 CharacterStat\n(level/affinity/exp)
-    CORE->>CORE: 旧存档无 exp 时自动置 0
-    CORE-->>FE: setCharacterStats(normalized)
+    CORE->>CORE: 逐角色补全 CharacterEquipment\n(weapon/armor/accessory1/accessory2)
+    CORE->>CORE: 旧存档无 exp 或无装备栏位时自动补默认值
+    CORE-->>FE: setCharacterStats(normalizedStats)
+    CORE-->>FE: setCharacterEquipments(normalizedEquipments)
 
-    Note over FE,CORE: 结果：前端运行态 characterStats 始终具备 exp 字段
+    Note over FE,CORE: 结果：前端运行态始终具备完整的经验与装备栏位结构
 ```
 
 

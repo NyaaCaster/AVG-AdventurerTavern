@@ -574,6 +574,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           managementStats: core.managementStats,
           inventory: core.inventory,
           characterStats: core.characterStats,
+          characterEquipments: core.characterEquipments,
           characterUnlocks: unlocksToSave,
           sceneLevels: core.sceneLevels,
           revenueLogs: core.revenueLogs,

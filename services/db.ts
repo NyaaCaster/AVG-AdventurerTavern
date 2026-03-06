@@ -1,4 +1,4 @@
-﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat } from '../types';
+﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment } from '../types';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -18,6 +18,7 @@ export interface GameSaveData {
   worldState: WorldState;
   managementStats?: ManagementStats;
   characterStats?: Record<string, CharacterStat>;
+  characterEquipments?: Record<string, CharacterEquipment>;
   checkedInCharacters?: string[];
   sceneLevels?: Record<string, number>;
 }
@@ -126,6 +127,7 @@ export const saveGame = async (
     managementStats: ManagementStats;
     inventory: Record<string, number>;
     characterStats: Record<string, CharacterStat>;
+    characterEquipments?: Record<string, CharacterEquipment>;
     characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;
     revenueLogs: RevenueLog[];
@@ -181,6 +183,7 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             currentSceneId: s.currentSceneId || '',
             worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
             characterStats: s.characterStats || {},
+            characterEquipments: s.characterEquipments || {},
             checkedInCharacters: s.checkedInCharacters,
             sceneLevels: s.sceneLevels
         }));

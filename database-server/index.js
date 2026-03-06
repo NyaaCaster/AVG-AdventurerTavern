@@ -109,6 +109,27 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_progress_character 
             ON character_progress(character_id)`);
 
+    // 角色装备栏位表（每用户-每存档-每角色）
+    // 无装备统一使用 NULL
+    db.run(`CREATE TABLE IF NOT EXISTS character_equipment (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        weapon_id TEXT DEFAULT NULL,
+        armor_id TEXT DEFAULT NULL,
+        accessory1_id TEXT DEFAULT NULL,
+        accessory2_id TEXT DEFAULT NULL,
+        updated_at INTEGER NOT NULL,
+        UNIQUE(user_id, slot_id, character_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_equipment_user_slot 
+            ON character_equipment(user_id, slot_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_equipment_character 
+            ON character_equipment(character_id)`);
+
     // ----------------- 新增：AI 聊天系统数据表 -----------------
 
     // 对话历史表 (短期工作记忆)
@@ -234,6 +255,86 @@ function syncCharacterProgress(userId, slotId, characterStats, callback) {
                             stmt.finalize((finalizeErr) => callback(finalizeErr || null));
                         }
                     });
+                });
+            }
+        );
+    });
+}
+
+function normalizeCharacterEquipmentsForDb(characterEquipments) {
+    if (!characterEquipments || typeof characterEquipments !== 'object') return [];
+
+    const toNullableString = (value, type) => {
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        if (trimmed.length === 0) return null;
+
+        if (type === 'wpn' && !trimmed.startsWith('wpn-')) return null;
+        if (type === 'arm' && !trimmed.startsWith('arm-')) return null;
+        if (type === 'acs' && !trimmed.startsWith('acs-')) return null;
+        return trimmed;
+    };
+
+    return Object.entries(characterEquipments).map(([characterId, equip]) => ({
+        characterId,
+        weaponId: toNullableString(equip?.weaponId, 'wpn'),
+        armorId: toNullableString(equip?.armorId, 'arm'),
+        accessory1Id: toNullableString(equip?.accessory1Id, 'acs'),
+        accessory2Id: toNullableString(equip?.accessory2Id, 'acs')
+    }));
+}
+
+function syncCharacterEquipment(userId, slotId, characterEquipments, callback) {
+    const equipmentRows = normalizeCharacterEquipmentsForDb(characterEquipments);
+    const now = Date.now();
+
+    db.serialize(() => {
+        db.run(
+            "DELETE FROM character_equipment WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId],
+            (deleteErr) => {
+                if (deleteErr) {
+                    callback(deleteErr);
+                    return;
+                }
+
+                if (equipmentRows.length === 0) {
+                    callback(null);
+                    return;
+                }
+
+                const stmt = db.prepare(
+                    `INSERT INTO character_equipment (user_id, slot_id, character_id, weapon_id, armor_id, accessory1_id, accessory2_id, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                );
+
+                let finished = 0;
+                let hasError = false;
+
+                equipmentRows.forEach((row) => {
+                    stmt.run(
+                        userId,
+                        slotId,
+                        row.characterId,
+                        row.weaponId,
+                        row.armorId,
+                        row.accessory1Id,
+                        row.accessory2Id,
+                        now,
+                        (insertErr) => {
+                            if (hasError) return;
+                            if (insertErr) {
+                                hasError = true;
+                                stmt.finalize(() => callback(insertErr));
+                                return;
+                            }
+
+                            finished += 1;
+                            if (finished === equipmentRows.length) {
+                                stmt.finalize((finalizeErr) => callback(finalizeErr || null));
+                            }
+                        }
+                    );
                 });
             }
         );
@@ -563,6 +664,9 @@ app.post('/api/auth/discord/migrate', (req, res) => {
                 db.run("DELETE FROM character_progress WHERE user_id = ?", [targetUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 清理目标角色进度失败:', err); }
                 });
+                db.run("DELETE FROM character_equipment WHERE user_id = ?", [targetUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 清理目标角色装备失败:', err); }
+                });
                 db.run("DELETE FROM chat_messages WHERE user_id = ?", [targetUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 清理目标聊天失败:', err); }
                 });
@@ -585,6 +689,10 @@ app.post('/api/auth/discord/migrate', (req, res) => {
                 db.run("UPDATE character_progress SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 迁移角色进度失败:', err); }
                     else console.log(`[迁移] 迁移角色进度: ${this.changes} 条`);
+                });
+                db.run("UPDATE character_equipment SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
+                    if (err) { migrationError = err; console.error('[迁移] 迁移角色装备失败:', err); }
+                    else console.log(`[迁移] 迁移角色装备: ${this.changes} 条`);
                 });
                 db.run("UPDATE chat_messages SET user_id = ? WHERE user_id = ?", [targetUserId, sourceUserId], function(err) {
                     if (err) { migrationError = err; console.error('[迁移] 迁移聊天失败:', err); }
@@ -665,7 +773,11 @@ app.post('/api/save', (req, res) => {
 
         syncCharacterProgress(userId, slotId, data.characterStats, (progressErr) => {
             if (progressErr) return res.json({ success: false, message: progressErr.message });
-            res.json({ success: true });
+
+            syncCharacterEquipment(userId, slotId, data.characterEquipments, (equipErr) => {
+                if (equipErr) return res.json({ success: false, message: equipErr.message });
+                res.json({ success: true });
+            });
         });
     });
     stmt.finalize();
@@ -737,6 +849,10 @@ app.post('/api/delete', (req, res) => {
         const stmtProgress = db.prepare("DELETE FROM character_progress WHERE user_id = ? AND slot_id = ?");
         stmtProgress.run(userId, slotId);
         stmtProgress.finalize();
+
+        const stmtEquipment = db.prepare("DELETE FROM character_equipment WHERE user_id = ? AND slot_id = ?");
+        stmtEquipment.run(userId, slotId);
+        stmtEquipment.finalize();
 
         const stmtChats = db.prepare("DELETE FROM chat_messages WHERE user_id = ? AND slot_id = ?");
         stmtChats.run(userId, slotId);

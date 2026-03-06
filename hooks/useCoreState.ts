@@ -2,18 +2,19 @@
 import { useState, useEffect } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
-    QuestStateMap, QuestStatus, CharacterStat
+    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-    INITIAL_CHARACTER_UNLOCKS, MAX_GOLD
+    INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
 import { CHARACTERS } from '../data/scenarioData';
+import { ITEMS_EQUIP } from '../data/item-equip';
 
 export const useCoreState = (initialSaveData?: any) => {
   const [inventory, setInventory] = useState<Record<string, number>>(INITIAL_INVENTORY);
@@ -42,6 +43,32 @@ export const useCoreState = (initialSaveData?: any) => {
               level: safeLevel,
               affinity: safeAffinity,
               exp: safeExp
+          };
+      });
+
+      return normalized;
+  };
+
+  const normalizeCharacterEquipments = (rawEquipments?: Record<string, any>): Record<string, CharacterEquipment> => {
+      const normalized: Record<string, CharacterEquipment> = {};
+
+      const toValidId = (value: any, category: 'wpn' | 'arm' | 'acs'): string | null => {
+          if (typeof value !== 'string' || !value.trim()) return null;
+          const id = value.trim();
+          const item = ITEMS_EQUIP[id];
+          if (!item || item.category !== category) return null;
+          return id;
+      };
+
+      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+          const base = INITIAL_CHARACTER_EQUIPMENT[charId] || { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null };
+          const raw = rawEquipments?.[charId] || {};
+
+          normalized[charId] = {
+              weaponId: toValidId(raw.weaponId ?? base.weaponId, 'wpn'),
+              armorId: toValidId(raw.armorId ?? base.armorId, 'arm'),
+              accessory1Id: toValidId(raw.accessory1Id ?? base.accessory1Id, 'acs'),
+              accessory2Id: toValidId(raw.accessory2Id ?? base.accessory2Id, 'acs')
           };
       });
 
@@ -93,6 +120,7 @@ export const useCoreState = (initialSaveData?: any) => {
     });
     return initialStats;
   });
+  const [characterEquipments, setCharacterEquipments] = useState<Record<string, CharacterEquipment>>(() => normalizeCharacterEquipments());
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
     // Calculate initial values based on facility levels
@@ -154,6 +182,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setManagementStats(data.managementStats);
       setInventory(data.inventory);
       setCharacterStats(normalizeCharacterStats(data.characterStats));
+      setCharacterEquipments(normalizeCharacterEquipments(data.characterEquipments));
       setSceneLevels(data.sceneLevels);
       setRevenueLogs(data.revenueLogs);
       
@@ -381,6 +410,7 @@ export const useCoreState = (initialSaveData?: any) => {
       userRecipes, setUserRecipes,
       foodStock, setFoodStock,
       characterStats, setCharacterStats,
+      characterEquipments, setCharacterEquipments,
       characterUnlocks, setCharacterUnlocks,
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,

@@ -208,6 +208,13 @@ export interface CharacterStat {
   exp: number;
 }
 
+export interface CharacterEquipment {
+  weaponId: string | null;
+  armorId: string | null;
+  accessory1Id: string | null;
+  accessory2Id: string | null;
+}
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;

@@ -1,4 +1,4 @@
-﻿import { SceneId, ManagementStats, CharacterUnlocks } from '../types';
+﻿import { SceneId, ManagementStats, CharacterUnlocks, CharacterEquipment } from '../types';
 
 export const SCENE_NAMES: Record<SceneId, string> = {
   'scen_1': '柜台',
@@ -77,6 +77,25 @@ export const INITIAL_CHARACTER_WEAPON: Record<string, string> = {
   'char_109': 'wpn-601', // 莱拉 - 手斧
   'char_110': 'wpn-701', // 琉卡 - 练习弓
   'char_111': 'wpn-301', // 吉娜 - 「三岁准用」
+};
+
+/**
+ * 角色初始装备栏位配置
+ * 空栏位统一使用 null 表示“未装备”
+ */
+export const INITIAL_CHARACTER_EQUIPMENT: Record<string, CharacterEquipment> = {
+  'char_1': { weaponId: INITIAL_CHARACTER_WEAPON['char_1'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_101': { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_102': { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_103': { weaponId: INITIAL_CHARACTER_WEAPON['char_103'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_104': { weaponId: INITIAL_CHARACTER_WEAPON['char_104'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_105': { weaponId: INITIAL_CHARACTER_WEAPON['char_105'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_106': { weaponId: INITIAL_CHARACTER_WEAPON['char_106'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_107': { weaponId: INITIAL_CHARACTER_WEAPON['char_107'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_108': { weaponId: INITIAL_CHARACTER_WEAPON['char_108'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_109': { weaponId: INITIAL_CHARACTER_WEAPON['char_109'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_110': { weaponId: INITIAL_CHARACTER_WEAPON['char_110'], armorId: null, accessory1Id: null, accessory2Id: null },
+  'char_111': { weaponId: INITIAL_CHARACTER_WEAPON['char_111'], armorId: null, accessory1Id: null, accessory2Id: null }
 };
 
 export const INITIAL_GOLD = 100000; // 原：5000
