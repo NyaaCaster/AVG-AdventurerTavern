@@ -3,7 +3,6 @@ import { BattlePartySlots, CharacterEquipment, CharacterStat, CharacterUnlocks }
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
 import { resolveImgPath } from '../utils/imagePath';
-import { buildCharacterBattleStats } from '../services/characterBattleStats';
 import { ITEMS_EQUIP } from '../data/item-equip';
 import { ITEM_TAGS } from '../data/item-type';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
@@ -21,17 +20,6 @@ interface PartyFormationModalProps {
   userName: string;
 }
 
-const STAT_LABELS: Array<{ key: keyof ReturnType<typeof buildCharacterBattleStats>['finalStats']; label: string }> = [
-  { key: 'hp', label: '生命' },
-  { key: 'mp', label: '法力' },
-  { key: 'atk', label: '物理攻击' },
-  { key: 'def', label: '物理防御' },
-  { key: 'matk', label: '魔法攻击' },
-  { key: 'mdef', label: '魔法防御' },
-  { key: 'agi', label: '敏捷' },
-  { key: 'luk', label: '幸运' }
-];
-
 const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   isOpen,
   onClose,
@@ -46,41 +34,42 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('char_1');
   const [pendingSlotIndex, setPendingSlotIndex] = useState<number | null>(null);
 
-  const selectedCharacter = CHARACTERS[selectedCharacterId] || CHARACTERS['char_1'];
-  const selectedStat = characterStats[selectedCharacter.id] || { level: 1, affinity: 0, exp: 0 };
-  const selectedEquip = characterEquipments[selectedCharacter.id] || {
-    weaponId: null,
-    armorId: null,
-    accessory1Id: null,
-    accessory2Id: null
-  };
-  const battleStats = buildCharacterBattleStats(selectedCharacter.id, selectedStat.level, selectedEquip);
-
-  const level = selectedStat.level || 1;
-  const currentTotalExp = EXP_TABLE[level] || 0;
-  const nextTotalExp = EXP_TABLE[level + 1] || currentTotalExp;
-  const needExp = Math.max(0, nextTotalExp - currentTotalExp);
-  const currentExp = Math.max(0, selectedStat.exp || 0);
-  const expPercent = needExp <= 0 ? 100 : Math.min(100, Math.floor((currentExp / needExp) * 100));
-
-  const weaponItem = selectedEquip.weaponId ? ITEMS_EQUIP[selectedEquip.weaponId] : null;
-  const selectedWeaponName = weaponItem?.name || '未装备';
-  const weaponTag = weaponItem?.tag ? ITEM_TAGS.find(t => t.id === weaponItem.tag) : null;
-  const weaponIcon = weaponTag?.icon || '';
-
   const selectableCharacters = useMemo(() => {
     const partySet = new Set(battleParty.filter(Boolean));
     return Object.keys(CHARACTERS)
       .filter((charId) => charId !== 'char_1')
       .filter((charId) => (characterUnlocks[charId]?.accept_battle_party || 0) === 1)
       .filter((charId) => !partySet.has(charId))
-      .map((charId) => ({
-        id: charId,
-        name: resolveCharacterDisplayName(CHARACTERS[charId].name, userName),
-        level: characterStats[charId]?.level || 1,
-        avatarUrl: CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId].avatarUrl || ''
-      }));
-  }, [battleParty, characterUnlocks, characterStats, userName]);
+      .map((charId) => {
+        const stat = characterStats[charId] || { level: 1, affinity: 0, exp: 0 };
+        const equip = characterEquipments[charId] || {
+          weaponId: null,
+          armorId: null,
+          accessory1Id: null,
+          accessory2Id: null
+        };
+        const weaponItem = equip.weaponId ? ITEMS_EQUIP[equip.weaponId] : null;
+        const weaponTag = weaponItem?.tag ? ITEM_TAGS.find((t) => t.id === weaponItem.tag) : null;
+        const level = stat.level || 1;
+        const currentTotalExp = EXP_TABLE[level] || 0;
+        const nextTotalExp = EXP_TABLE[level + 1] || currentTotalExp;
+        const needExp = Math.max(0, nextTotalExp - currentTotalExp);
+        const currentExp = Math.max(0, stat.exp || 0);
+        const expPercent = needExp <= 0 ? 100 : Math.min(100, Math.floor((currentExp / needExp) * 100));
+
+        return {
+          id: charId,
+          name: resolveCharacterDisplayName(CHARACTERS[charId].name, userName),
+          level,
+          avatarUrl: CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId].avatarUrl || '',
+          weaponName: weaponItem?.name || '未装备',
+          weaponIcon: weaponTag?.icon || '',
+          currentExp,
+          needExp,
+          expPercent
+        };
+      });
+  }, [battleParty, characterUnlocks, characterStats, characterEquipments, userName]);
 
   const handleSlotClick = (slotIndex: number) => {
     const memberId = battleParty[slotIndex];
@@ -139,12 +128,12 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
             </button>
           </div>
 
-          <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] min-h-0">
-            <div className="p-3 md:p-4 border-r border-[#c7bca8] overflow-y-auto custom-scrollbar">
+          <div className="relative z-10 flex-1 min-h-0">
+            <div className="h-full p-2 md:p-4 overflow-y-auto custom-scrollbar">
               <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide flex items-center gap-2">
                 <i className="fa-solid fa-chess-knight text-[#9b7a4c]"></i> 队伍成员
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-4 gap-1.5 md:gap-2 mb-5">
                 {battleParty.map((memberId, idx) => {
                   const avatar = memberId ? (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || '') : '';
                   const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
@@ -156,12 +145,12 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                     <div
                       key={`party-slot-${idx}`}
                       onClick={() => handleSlotClick(idx)}
-                      className={`group relative p-2 rounded-lg border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
+                      className={`group relative p-1 md:p-1.5 rounded-md border transition-all duration-300 cursor-pointer overflow-hidden min-w-0 ${
                         isSelected
-                          ? 'border-[#b45309] bg-[#f5f0e6] shadow-[0_4px_16px_rgba(0,0,0,0.15)] scale-[1.02]'
-                          : memberId 
-                            ? 'border-[#d6cbb8] bg-[#fcfaf7] hover:border-[#9b7a4c] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5'
-                            : 'border-dashed border-[#c7bca8] bg-[#e8dfd1]/50 hover:border-[#9b7a4c] hover:bg-[#e8dfd1]'
+                          ? 'border-[#b45309] bg-[#f5f0e6] shadow-[0_2px_8px_rgba(0,0,0,0.12)] scale-[1.01]'
+                          : memberId
+                            ? 'border-[#d6cbb8] bg-[#fcfaf7] hover:border-[#9b7a4c]'
+                            : 'border-dashed border-[#c7bca8] bg-[#e8dfd1]/50 hover:border-[#9b7a4c]'
                       } ${isPending ? 'border-amber-400 bg-amber-50 shadow-[0_0_8px_rgba(251,191,36,0.5)] animate-pulse' : ''}`}
                     >
                       {idx > 0 && memberId && (
@@ -173,29 +162,29 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                               setSelectedCharacterId('char_1');
                             }
                           }}
-                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs z-20 flex items-center justify-center shadow-md border-2 border-[#fcfaf7]"
-                          title="退队"
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 text-white text-[10px] z-20 flex items-center justify-center shadow-md border border-[#fcfaf7]"
+                          title="下阵"
                         >
-                          <i className="fa-solid fa-xmark" />
+                          <i className="fa-solid fa-right-from-bracket" />
                         </button>
                       )}
-                      <div className="w-full aspect-square rounded-md overflow-hidden bg-[#d6cbb8]/50 border border-[#c7bca8] mb-2 relative">
+                      <div className="w-full aspect-square rounded-md overflow-hidden bg-[#d6cbb8]/50 border border-[#c7bca8] mb-1 relative">
                         {avatar ? (
                           <img src={resolveImgPath(avatar)} alt={name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-2xl opacity-50 group-hover:opacity-100 transition-opacity">
+                          <div className="w-full h-full flex items-center justify-center text-[#8c7b70] text-base opacity-50 group-hover:opacity-100 transition-opacity">
                             <i className="fa-solid fa-plus" />
                           </div>
                         )}
                         {idx === 0 && (
-                          <div className="absolute top-1 left-1 bg-black/60 text-[#fcd34d] text-[10px] px-1.5 py-0.5 rounded border border-[#fcd34d]/50 backdrop-blur-sm font-bold shadow-sm flex items-center gap-1">
-                            <span>🚩</span> 队长
+                          <div className="absolute top-0.5 left-0.5 bg-black/60 text-[#fcd34d] text-[8px] px-1 py-0.5 rounded border border-[#fcd34d]/50 backdrop-blur-sm font-bold">
+                            队长
                           </div>
                         )}
                       </div>
-                      <div className="relative z-10">
-                        <div className="text-[10px] font-bold text-[#8c7b70] uppercase tracking-wider">{idx + 1}号位</div>
-                        <div className={`text-xs font-bold truncate ${memberId ? 'text-[#382b26]' : 'text-[#8c7b70]'}`}>{name}</div>
+                      <div className="relative z-10 min-w-0">
+                        <div className="text-[9px] font-bold text-[#8c7b70] tracking-wide">{idx + 1}号位</div>
+                        <div className={`text-[10px] md:text-xs font-bold truncate ${memberId ? 'text-[#382b26]' : 'text-[#8c7b70]'}`}>{name}</div>
                       </div>
                     </div>
                   );
@@ -223,72 +212,35 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
                     <button
                       key={char.id}
                       onClick={() => handleAddCharacter(char.id)}
-                      className="group w-full flex items-center gap-3 p-2 rounded-lg border border-[#d6cbb8] bg-[#fffef8] hover:border-[#9b7a4c] hover:bg-[#f5f0e6] hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:translate-x-1 transition-all text-left"
+                      className="group w-full p-2 rounded-lg border border-[#d6cbb8] bg-[#fffef8] hover:border-[#9b7a4c] hover:bg-[#f5f0e6] hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-all text-left"
                     >
-                      <div className="w-12 h-12 rounded-md overflow-hidden border border-[#c7bca8] bg-[#e8dfd1] shadow-sm">
-                        <img src={resolveImgPath(char.avatarUrl)} alt={char.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <div className="flex items-center gap-2">
+                        <div className="w-11 h-11 rounded-md overflow-hidden border border-[#c7bca8] bg-[#e8dfd1] shadow-sm shrink-0">
+                          <img src={resolveImgPath(char.avatarUrl)} alt={char.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-[#382b26] group-hover:text-[#b45309] transition-colors truncate">{char.name}</div>
+                          <div className="text-xs text-[#8c7b70] font-mono font-bold">Lv.{char.level}</div>
+                        </div>
+                        <div className="w-6 h-6 rounded-full border border-[#d6cbb8] text-[#d6cbb8] flex items-center justify-center group-hover:border-[#9b7a4c] group-hover:text-[#9b7a4c] group-hover:bg-white transition-colors">
+                          <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-bold text-[#382b26] group-hover:text-[#b45309] transition-colors">{char.name}</div>
-                        <div className="text-xs text-[#8c7b70] font-mono font-bold">Lv.{char.level}</div>
+                      <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
+                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-[#5c4d45] font-bold max-w-[60%]">
+                          {char.weaponIcon && <span>{char.weaponIcon}</span>}
+                          <span className="truncate">{char.weaponName}</span>
+                        </div>
+                        <div className="font-mono font-bold text-[#b45309] shrink-0">
+                          {char.currentExp} / {char.needExp <= 0 ? 0 : char.needExp}
+                        </div>
                       </div>
-                      <div className="w-6 h-6 rounded-full border border-[#d6cbb8] text-[#d6cbb8] flex items-center justify-center group-hover:border-[#9b7a4c] group-hover:text-[#9b7a4c] group-hover:bg-white transition-colors mr-1">
-                        <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                      <div className="mt-1 h-1.5 rounded-full bg-[#e8dfd1] border border-[#c7bca8] overflow-hidden shadow-inner">
+                        <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500 ease-out" style={{ width: `${char.expPercent}%` }} />
                       </div>
                     </button>
                   ))
                 )}
-              </div>
-            </div>
-
-            <div className="p-3 md:p-4 overflow-y-auto custom-scrollbar bg-[#f5f0e6]/50 relative flex flex-col">
-              <div className="flex-1 rounded-xl border-2 border-[#d6cbb8] bg-[#fffef8] p-3 md:p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAgMTBoODB2ODBoLTgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWI3YTRjIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] bg-no-repeat bg-right-top opacity-30 pointer-events-none"></div>
-                
-                <h3 className="text-sm md:text-base font-bold text-[#382b26] tracking-wide flex items-center gap-2 mb-1">
-                  <i className="fa-solid fa-address-card text-[#9b7a4c]"></i> 详细属性
-                </h3>
-                
-                <div className="flex gap-3 items-center relative z-10">
-                  <div className="w-14 h-14 rounded-md overflow-hidden border-2 border-[#d6cbb8] bg-[#e8dfd1] shadow-inner shrink-0">
-                    <img
-                      src={resolveImgPath(CHARACTER_IMAGES[selectedCharacter.id]?.avatarUrl || selectedCharacter.avatarUrl || '')}
-                      alt={selectedCharacter.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <div className="text-base font-black text-[#382b26] truncate">{resolveCharacterDisplayName(selectedCharacter.name, userName)}</div>
-                      <div className="text-xs text-[#8c7b70] font-bold">Lv.<span className="text-[#b45309] text-sm ml-0.5">{level}</span></div>
-                    </div>
-                    <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-[#f5f0e6] border border-[#d6cbb8] rounded text-[10px] font-bold text-[#5c4d45] max-w-full">
-                      {weaponIcon && <span>{weaponIcon}</span>}
-                      <span className="truncate">{selectedWeaponName}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-[#d6cbb8]/50 relative z-10">
-                  <div className="flex justify-between text-[10px] text-[#8c7b70] mb-1 font-bold tracking-wider">
-                    <span>经验值</span>
-                    <span className="font-mono text-[#b45309]">
-                      {currentExp} / {needExp <= 0 ? 0 : needExp}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[#e8dfd1] border border-[#c7bca8] overflow-hidden shadow-inner relative">
-                    <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500 ease-out" style={{ width: `${expPercent}%` }} />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-[#d6cbb8]/50 grid grid-cols-2 gap-x-4 gap-y-2 relative z-10">
-                  {STAT_LABELS.map((stat) => (
-                    <div key={stat.key} className="flex justify-between items-end border-b border-[#d6cbb8]/30 pb-0.5 group hover:border-[#9b7a4c]/50 transition-colors">
-                      <div className="text-[10px] md:text-xs text-[#8c7b70] font-bold tracking-widest">{stat.label}</div>
-                      <div className="text-xs md:text-sm font-black text-[#b45309] font-mono drop-shadow-sm">{battleStats.finalStats[stat.key]}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
