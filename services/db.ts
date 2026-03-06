@@ -1,4 +1,9 @@
 ﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment } from '../types';
+import {
+    buildCharacterBattleStats,
+    getCharacterBattleStatsFromSaveData,
+    CharacterBattleStatsResult
+} from './characterBattleStats';
 import { AppConfig } from '../config';
 
 // 配置服务器地址
@@ -165,6 +170,50 @@ export const loadGame = async (userId: number, slotId: number) => {
         };
     }
     return null;
+};
+
+// --- 角色战斗属性服务（统一导出）---
+
+export { buildCharacterBattleStats, getCharacterBattleStatsFromSaveData };
+export type { CharacterBattleStatsResult };
+
+/**
+ * 从指定存档读取单个角色的最终战斗属性
+ */
+export const getCharacterBattleStats = async (
+    userId: number,
+    slotId: number,
+    characterId: string
+): Promise<CharacterBattleStatsResult | null> => {
+    const saveData = await loadGame(userId, slotId);
+    if (!saveData) return null;
+    return getCharacterBattleStatsFromSaveData(saveData, characterId);
+};
+
+/**
+ * 从指定存档读取全部角色的最终战斗属性
+ */
+export const getAllCharacterBattleStats = async (
+    userId: number,
+    slotId: number
+): Promise<Record<string, CharacterBattleStatsResult> | null> => {
+    const saveData = await loadGame(userId, slotId);
+    if (!saveData) return null;
+
+    const characterStatsMap = saveData?.characterStats || {};
+    const characterEquipmentsMap = saveData?.characterEquipments || {};
+    const characterIds = Array.from(new Set([
+        ...Object.keys(characterStatsMap),
+        ...Object.keys(characterEquipmentsMap)
+    ]));
+
+    if (characterIds.length === 0) return {};
+
+    const result: Record<string, CharacterBattleStatsResult> = {};
+    characterIds.forEach((characterId) => {
+        result[characterId] = getCharacterBattleStatsFromSaveData(saveData, characterId);
+    });
+    return result;
 };
 
 /**
