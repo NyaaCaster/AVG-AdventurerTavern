@@ -73,14 +73,7 @@ const ItemToast: React.FC<{ data: ItemToastData; onComplete: () => void }> = ({ 
       const tagInfo = ITEM_TAGS.find(t => t.id === item.tag);
       if (tagInfo?.icon) return tagInfo.icon;
     }
-    switch (item.category) {
-      case 'wpn': return '⚔️';
-      case 'arm': return '🛡️';
-      case 'itm': return '🧪';
-      case 'acs': return '💍';
-      case 'res': return '📦';
-      default: return '🎁';
-    }
+    return '📦';
   };
 
   return (

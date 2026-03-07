@@ -43,9 +43,9 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
   };
 
   const getTagIcon = (tagId?: string) => {
-      if (!tagId) return null;
+      if (!tagId) return '📦';
       const tag = ITEM_TAGS.find(t => t.id === tagId);
-      return tag ? tag.icon : null;
+      return tag ? tag.icon : '📦';
   };
 
   const formatText = (text: string) => {
@@ -182,12 +182,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                                 className="w-full h-full object-cover" 
                                             />
                                         ) : (
-                                            getTagIcon(item.tag) || (
-                                                item.category === 'wpn' ? '⚔️' :
-                                                item.category === 'arm' ? '🛡️' :
-                                                item.category === 'itm' ? '🧪' :
-                                                item.category === 'acs' ? '💍' : '📦'
-                                            )
+                                            getTagIcon(item.tag)
                                         )}
                                     </div>
 
@@ -258,12 +253,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
                                     className="w-full h-full object-cover" 
                                 />
                             ) : (
-                                getTagIcon(selectedItem.tag) || (
-                                    selectedItem.category === 'wpn' ? '⚔️' :
-                                    selectedItem.category === 'arm' ? '🛡️' :
-                                    selectedItem.category === 'itm' ? '🧪' :
-                                    selectedItem.category === 'acs' ? '💍' : '📦'
-                                )
+                                getTagIcon(selectedItem.tag)
                             )}
                         </div>
                         <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{selectedItem.name}</h2>

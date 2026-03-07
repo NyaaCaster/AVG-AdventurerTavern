@@ -48,9 +48,9 @@ const ShopResModal: React.FC<ShopResModalProps> = ({
   }, [isOpen]);
 
   const getTagIcon = (tagId?: string) => {
-    if (!tagId) return null;
+    if (!tagId) return '📦';
     const tag = ITEM_TAGS.find(t => t.id === tagId);
-    return tag?.icon ?? null;
+    return tag?.icon ?? '📦';
   };
 
   const renderStarBadge = (item: ItemData) => (
@@ -120,7 +120,7 @@ const ShopResModal: React.FC<ShopResModalProps> = ({
   const renderItemIcon = (tagId: string | undefined, holdCount: number) => (
     <div className="flex flex-col items-center gap-1 shrink-0">
       <div className="w-11 h-11 md:w-13 md:h-13 bg-[#e0d6c5] border border-[#c7bca8] rounded flex items-center justify-center text-xl shadow-inner">
-        {getTagIcon(tagId) || <i className="fa-solid fa-box text-[#9b7a4c]" />}
+        {getTagIcon(tagId)}
       </div>
       <span className="text-[9px] text-[#8c7b70] font-bold whitespace-nowrap leading-none">
         持有 <span className="text-[#5c4d45]">{holdCount}</span>

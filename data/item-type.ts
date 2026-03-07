@@ -14,7 +14,7 @@ export const ITEM_CATEGORIES: ItemCategoryInfo[] = [
 // 道具标签定义
 export const ITEM_TAGS: ItemTagInfo[] = [
   // 食材
-  { id: 'non', name: '非食用', icon: '' },  // 0
+  { id: 'non', name: '非食用', icon: '📦' },  // 0
   { id: 'meat', name: '兽肉', icon: '🥩' },  // 1
   { id: 'poultry', name: '禽肉', icon: '🍗' },  // 10
   { id: 'fish', name: '鱼类', icon: '🐟️' },  // 11
