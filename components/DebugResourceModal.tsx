@@ -74,7 +74,7 @@ const ResourceDebugModal: React.FC<ResourceDebugModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn font-mono text-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn font-mono text-sm pointer-events-auto" onClick={onClose}>
         <div className="bg-[#0c0c0c] border border-slate-700/50 rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-[0_25px_50px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between p-3 px-4 border-b border-slate-800 bg-[#1a1a1a] rounded-t-lg shrink-0">
