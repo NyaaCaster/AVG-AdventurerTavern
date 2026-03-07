@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -218,46 +218,56 @@ function syncCharacterProgress(userId, slotId, characterStats, callback) {
     const progressRows = normalizeCharacterStatsForDb(characterStats);
     const now = Date.now();
 
-    db.serialize(() => {
+    if (progressRows.length === 0) {
         db.run(
             "DELETE FROM character_progress WHERE user_id = ? AND slot_id = ?",
             [userId, slotId],
-            (deleteErr) => {
-                if (deleteErr) {
-                    callback(deleteErr);
+            callback
+        );
+        return;
+    }
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.run(
+            "DELETE FROM character_progress WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId]
+        );
+
+        const stmt = db.prepare(
+            `INSERT OR REPLACE INTO character_progress (user_id, slot_id, character_id, level, exp, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        );
+
+        let finished = 0;
+        let hasError = false;
+
+        progressRows.forEach((row) => {
+            stmt.run(userId, slotId, row.characterId, row.level, row.exp, now, (insertErr) => {
+                if (hasError) return;
+                if (insertErr) {
+                    hasError = true;
+                    stmt.finalize(() => {
+                        db.run("ROLLBACK");
+                        callback(insertErr);
+                    });
                     return;
                 }
 
-                if (progressRows.length === 0) {
-                    callback(null);
-                    return;
-                }
-
-                const stmt = db.prepare(
-                    `INSERT INTO character_progress (user_id, slot_id, character_id, level, exp, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?)`
-                );
-
-                let finished = 0;
-                let hasError = false;
-
-                progressRows.forEach((row) => {
-                    stmt.run(userId, slotId, row.characterId, row.level, row.exp, now, (insertErr) => {
-                        if (hasError) return;
-                        if (insertErr) {
-                            hasError = true;
-                            stmt.finalize(() => callback(insertErr));
-                            return;
-                        }
-
-                        finished += 1;
-                        if (finished === progressRows.length) {
-                            stmt.finalize((finalizeErr) => callback(finalizeErr || null));
+                finished += 1;
+                if (finished === progressRows.length) {
+                    stmt.finalize((finalizeErr) => {
+                        if (finalizeErr || hasError) {
+                            db.run("ROLLBACK");
+                            callback(finalizeErr || hasError);
+                        } else {
+                            db.run("COMMIT", callback);
                         }
                     });
-                });
-            }
-        );
+                }
+            });
+        });
     });
 }
 
@@ -288,56 +298,66 @@ function syncCharacterEquipment(userId, slotId, characterEquipments, callback) {
     const equipmentRows = normalizeCharacterEquipmentsForDb(characterEquipments);
     const now = Date.now();
 
-    db.serialize(() => {
+    if (equipmentRows.length === 0) {
         db.run(
             "DELETE FROM character_equipment WHERE user_id = ? AND slot_id = ?",
             [userId, slotId],
-            (deleteErr) => {
-                if (deleteErr) {
-                    callback(deleteErr);
-                    return;
-                }
-
-                if (equipmentRows.length === 0) {
-                    callback(null);
-                    return;
-                }
-
-                const stmt = db.prepare(
-                    `INSERT INTO character_equipment (user_id, slot_id, character_id, weapon_id, armor_id, accessory1_id, accessory2_id, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-                );
-
-                let finished = 0;
-                let hasError = false;
-
-                equipmentRows.forEach((row) => {
-                    stmt.run(
-                        userId,
-                        slotId,
-                        row.characterId,
-                        row.weaponId,
-                        row.armorId,
-                        row.accessory1Id,
-                        row.accessory2Id,
-                        now,
-                        (insertErr) => {
-                            if (hasError) return;
-                            if (insertErr) {
-                                hasError = true;
-                                stmt.finalize(() => callback(insertErr));
-                                return;
-                            }
-
-                            finished += 1;
-                            if (finished === equipmentRows.length) {
-                                stmt.finalize((finalizeErr) => callback(finalizeErr || null));
-                            }
-                        }
-                    );
-                });
-            }
+            callback
         );
+        return;
+    }
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.run(
+            "DELETE FROM character_equipment WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId]
+        );
+
+        const stmt = db.prepare(
+            `INSERT OR REPLACE INTO character_equipment (user_id, slot_id, character_id, weapon_id, armor_id, accessory1_id, accessory2_id, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        );
+
+        let finished = 0;
+        let hasError = false;
+
+        equipmentRows.forEach((row) => {
+            stmt.run(
+                userId,
+                slotId,
+                row.characterId,
+                row.weaponId,
+                row.armorId,
+                row.accessory1Id,
+                row.accessory2Id,
+                now,
+                (insertErr) => {
+                    if (hasError) return;
+                    if (insertErr) {
+                        hasError = true;
+                        stmt.finalize(() => {
+                            db.run("ROLLBACK");
+                            callback(insertErr);
+                        });
+                        return;
+                    }
+
+                    finished += 1;
+                    if (finished === equipmentRows.length) {
+                        stmt.finalize((finalizeErr) => {
+                            if (finalizeErr || hasError) {
+                                db.run("ROLLBACK");
+                                callback(finalizeErr || hasError);
+                            } else {
+                                db.run("COMMIT", callback);
+                            }
+                        });
+                    }
+                }
+            );
+        });
     });
 }
 
