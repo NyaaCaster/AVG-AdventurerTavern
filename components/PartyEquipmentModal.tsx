@@ -367,6 +367,7 @@ const CharacterDetailPanel: React.FC<{
   characterId: string;
   characterStats: CharacterStat;
   characterEquipment: CharacterEquipment;
+  initialEquipment: CharacterEquipment;
   inventory: Record<string, number>;
   userName: string;
   onUpdateEquipment: (equipment: CharacterEquipment, inventoryChanges: Record<string, number>) => void;
@@ -378,6 +379,7 @@ const CharacterDetailPanel: React.FC<{
   characterId,
   characterStats,
   characterEquipment,
+  initialEquipment,
   inventory,
   userName,
   onUpdateEquipment,
@@ -391,12 +393,6 @@ const CharacterDetailPanel: React.FC<{
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  const initialEquipmentRef = useRef<CharacterEquipment>({
-    weaponId: characterEquipment.weaponId,
-    armorId: characterEquipment.armorId,
-    accessory1Id: characterEquipment.accessory1Id,
-    accessory2Id: characterEquipment.accessory2Id
-  });
   const [displayEquipment, setDisplayEquipment] = useState<CharacterEquipment>({
     weaponId: characterEquipment.weaponId,
     armorId: characterEquipment.armorId,
@@ -405,19 +401,13 @@ const CharacterDetailPanel: React.FC<{
   });
 
   useEffect(() => {
-    initialEquipmentRef.current = {
-      weaponId: characterEquipment.weaponId,
-      armorId: characterEquipment.armorId,
-      accessory1Id: characterEquipment.accessory1Id,
-      accessory2Id: characterEquipment.accessory2Id
-    };
     setDisplayEquipment({
       weaponId: characterEquipment.weaponId,
       armorId: characterEquipment.armorId,
       accessory1Id: characterEquipment.accessory1Id,
       accessory2Id: characterEquipment.accessory2Id
     });
-  }, [characterId]);
+  }, [characterEquipment]);
 
   const handleSelectEquipment = useCallback((itemId: string | null) => {
     if (!selectingSlot) return;
@@ -485,8 +475,8 @@ const CharacterDetailPanel: React.FC<{
   const equipableTags = character?.battleData?.equipableTags;
 
   const initialBattleStats = useMemo(() => {
-    return buildCharacterBattleStats(characterId, characterStats.level, initialEquipmentRef.current);
-  }, [characterId, characterStats.level]);
+    return buildCharacterBattleStats(characterId, characterStats.level, initialEquipment);
+  }, [characterId, characterStats.level, initialEquipment]);
 
   const currentBattleStats = useMemo(() => {
     return buildCharacterBattleStats(characterId, characterStats.level, displayEquipment);
@@ -640,6 +630,24 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
 }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const initialEquipmentsRef = useRef<Record<string, CharacterEquipment>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      const initials: Record<string, CharacterEquipment> = {};
+      battleParty.forEach(memberId => {
+        if (memberId && characterEquipments[memberId]) {
+          initials[memberId] = {
+            weaponId: characterEquipments[memberId].weaponId,
+            armorId: characterEquipments[memberId].armorId,
+            accessory1Id: characterEquipments[memberId].accessory1Id,
+            accessory2Id: characterEquipments[memberId].accessory2Id
+          };
+        }
+      });
+      initialEquipmentsRef.current = initials;
+    }
+  }, [isOpen, battleParty, characterEquipments]);
 
   const handleClose = useCallback(() => {
     onAutoSave();
@@ -884,6 +892,7 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
                   characterId={battleParty[selectedSlotIndex]!}
                   characterStats={characterStats[battleParty[selectedSlotIndex]!] || { level: 1, affinity: 0, exp: 0 }}
                   characterEquipment={characterEquipments[battleParty[selectedSlotIndex]!] || { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null }}
+                  initialEquipment={initialEquipmentsRef.current[battleParty[selectedSlotIndex]!] || { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null }}
                   inventory={inventory}
                   userName={userName}
                   onUpdateEquipment={(equipment, inventoryChanges) => handleUpdateEquipment(battleParty[selectedSlotIndex]!, equipment, inventoryChanges)}
