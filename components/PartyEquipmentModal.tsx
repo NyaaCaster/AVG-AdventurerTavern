@@ -387,10 +387,41 @@ const CharacterDetailPanel: React.FC<{
   hasNext
 }) => {
   const [selectingSlot, setSelectingSlot] = useState<EquipmentSlotKey | null>(null);
-  const [pendingEquipment, setPendingEquipment] = useState<CharacterEquipment | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+
+  const initialEquipmentRef = useRef<CharacterEquipment>(characterEquipment);
+  const [displayEquipment, setDisplayEquipment] = useState<CharacterEquipment>(characterEquipment);
+
+  useEffect(() => {
+    initialEquipmentRef.current = characterEquipment;
+    setDisplayEquipment(characterEquipment);
+  }, [characterId]);
+
+  const handleSelectEquipment = useCallback((itemId: string | null) => {
+    if (!selectingSlot) return;
+
+    const currentEquippedId = displayEquipment[selectingSlot];
+    const inventoryChanges: Record<string, number> = {};
+
+    if (currentEquippedId) {
+      inventoryChanges[currentEquippedId] = (inventoryChanges[currentEquippedId] || 0) + 1;
+    }
+
+    if (itemId) {
+      inventoryChanges[itemId] = (inventoryChanges[itemId] || 0) - 1;
+    }
+
+    const newEquipment: CharacterEquipment = {
+      ...displayEquipment,
+      [selectingSlot]: itemId
+    };
+
+    setDisplayEquipment(newEquipment);
+    onUpdateEquipment(newEquipment, inventoryChanges);
+    setSelectingSlot(null);
+  }, [selectingSlot, displayEquipment, onUpdateEquipment, inventory]);
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -433,23 +464,21 @@ const CharacterDetailPanel: React.FC<{
   const character = CHARACTERS[characterId];
   const equipableTags = character?.battleData?.equipableTags;
 
-  const currentBattleStats = useMemo(() => {
-    return buildCharacterBattleStats(characterId, characterStats.level, characterEquipment);
-  }, [characterId, characterStats.level, characterEquipment]);
+  const initialBattleStats = useMemo(() => {
+    return buildCharacterBattleStats(characterId, characterStats.level, initialEquipmentRef.current);
+  }, [characterId, characterStats.level]);
 
-  const previewBattleStats = useMemo(() => {
-    if (!pendingEquipment) return null;
-    return buildCharacterBattleStats(characterId, characterStats.level, pendingEquipment);
-  }, [characterId, characterStats.level, pendingEquipment]);
+  const currentBattleStats = useMemo(() => {
+    return buildCharacterBattleStats(characterId, characterStats.level, displayEquipment);
+  }, [characterId, characterStats.level, displayEquipment]);
 
   const statDiff = useMemo(() => {
-    if (!previewBattleStats) return null;
     const diff: Partial<BaseStats> = {};
     (Object.keys(currentBattleStats.finalStats) as (keyof BaseStats)[]).forEach(key => {
-      diff[key] = previewBattleStats.finalStats[key] - currentBattleStats.finalStats[key];
+      diff[key] = currentBattleStats.finalStats[key] - initialBattleStats.finalStats[key];
     });
     return diff;
-  }, [currentBattleStats, previewBattleStats]);
+  }, [initialBattleStats, currentBattleStats]);
 
   const availableItems = useMemo(() => {
     if (!selectingSlot) return [];
@@ -457,30 +486,6 @@ const CharacterDetailPanel: React.FC<{
     if (!config) return [];
     return getAvailableEquipment(inventory, config.category, equipableTags);
   }, [selectingSlot, inventory, equipableTags]);
-
-  const handleSelectEquipment = useCallback((itemId: string | null) => {
-    if (!selectingSlot) return;
-
-    const currentEquippedId = characterEquipment[selectingSlot];
-    const inventoryChanges: Record<string, number> = {};
-
-    if (currentEquippedId) {
-      inventoryChanges[currentEquippedId] = (inventoryChanges[currentEquippedId] || 0) + 1;
-    }
-
-    if (itemId) {
-      inventoryChanges[itemId] = (inventoryChanges[itemId] || 0) - 1;
-    }
-
-    const newEquipment: CharacterEquipment = {
-      ...characterEquipment,
-      [selectingSlot]: itemId
-    };
-
-    setPendingEquipment(newEquipment);
-    onUpdateEquipment(newEquipment, inventoryChanges);
-    setSelectingSlot(null);
-  }, [selectingSlot, characterEquipment, onUpdateEquipment, inventory]);
 
   const avatarUrl = CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '';
   const rawName = character?.name || '未知角色';
@@ -502,7 +507,7 @@ const CharacterDetailPanel: React.FC<{
           </div>
         </div>
         {(hasPrev || hasNext) && (
-          <div className="flex flex-col gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={onPrev}
               disabled={!hasPrev}
@@ -555,7 +560,7 @@ const CharacterDetailPanel: React.FC<{
         </h4>
         <div className="grid grid-cols-2 gap-2">
           {SLOT_CONFIG.map(config => {
-            const itemId = characterEquipment[config.key];
+            const itemId = displayEquipment[config.key];
             const item = itemId ? ITEMS_EQUIP[itemId] : null;
 
             return (
@@ -594,7 +599,7 @@ const CharacterDetailPanel: React.FC<{
         isOpen={!!selectingSlot}
         onClose={() => setSelectingSlot(null)}
         items={availableItems}
-        currentItemId={selectingSlot ? characterEquipment[selectingSlot] : null}
+        currentItemId={selectingSlot ? displayEquipment[selectingSlot] : null}
         onSelect={handleSelectEquipment}
         slotLabel={SLOT_CONFIG.find(s => s.key === selectingSlot)?.label || '装备'}
       />
