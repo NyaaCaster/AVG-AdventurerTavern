@@ -391,12 +391,32 @@ const CharacterDetailPanel: React.FC<{
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  const initialEquipmentRef = useRef<CharacterEquipment>(characterEquipment);
-  const [displayEquipment, setDisplayEquipment] = useState<CharacterEquipment>(characterEquipment);
+  const initialEquipmentRef = useRef<CharacterEquipment>({
+    weaponId: characterEquipment.weaponId,
+    armorId: characterEquipment.armorId,
+    accessory1Id: characterEquipment.accessory1Id,
+    accessory2Id: characterEquipment.accessory2Id
+  });
+  const [displayEquipment, setDisplayEquipment] = useState<CharacterEquipment>({
+    weaponId: characterEquipment.weaponId,
+    armorId: characterEquipment.armorId,
+    accessory1Id: characterEquipment.accessory1Id,
+    accessory2Id: characterEquipment.accessory2Id
+  });
 
   useEffect(() => {
-    initialEquipmentRef.current = characterEquipment;
-    setDisplayEquipment(characterEquipment);
+    initialEquipmentRef.current = {
+      weaponId: characterEquipment.weaponId,
+      armorId: characterEquipment.armorId,
+      accessory1Id: characterEquipment.accessory1Id,
+      accessory2Id: characterEquipment.accessory2Id
+    };
+    setDisplayEquipment({
+      weaponId: characterEquipment.weaponId,
+      armorId: characterEquipment.armorId,
+      accessory1Id: characterEquipment.accessory1Id,
+      accessory2Id: characterEquipment.accessory2Id
+    });
   }, [characterId]);
 
   const handleSelectEquipment = useCallback((itemId: string | null) => {
