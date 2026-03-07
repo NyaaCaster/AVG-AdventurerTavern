@@ -356,6 +356,19 @@ export interface ShopItemModalProps {
   }) => void;
 }
 
+export interface ShopEquipModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialTab?: ShopTab;
+  inventory: Record<string, number>;
+  currentGold: number;
+  shopLevel: number;
+  onTransaction?: (changes: {
+    goldChange: number;
+    inventoryChanges: Record<string, number>;
+  }) => void;
+}
+
 // --- 任务系统类型定义 ---
 
 export interface EnemyConfig {

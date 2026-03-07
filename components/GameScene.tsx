@@ -22,6 +22,8 @@ import DebugResourceModal from './DebugResourceModal';
 import DebugUnlocksModal from './DebugUnlocksModal';
 import SaveLoadModal from './SaveLoadModal'; 
 import ShopItemModal from './ShopItemModal'; // 道具商店（scen_10 使用）
+import ShopWpnModal from './ShopWpnModal'; // 武器商店（scen_5 使用）
+import ShopArmModal from './ShopArmModal'; // 防具商店（scen_6 使用）
 import RestModal from './RestModal'; // 休息 - 第四面壁对话框
 import ShopResModal from './ShopResModal'; // 市集食材店（scen_market 使用）
 import QuestBoardModal from './QuestBoardModal';
@@ -104,6 +106,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopInitialTab, setShopInitialTab] = useState<'buy' | 'sell'>('buy'); // 记录从哪个页签打开商店
   const [isFoodShopOpen, setIsFoodShopOpen] = useState(false);
+  const [isWpnShopOpen, setIsWpnShopOpen] = useState(false);
+  const [wpnShopInitialTab, setWpnShopInitialTab] = useState<'buy' | 'sell'>('buy');
+  const [isArmShopOpen, setIsArmShopOpen] = useState(false);
+  const [armShopInitialTab, setArmShopInitialTab] = useState<'buy' | 'sell'>('buy');
   const [isRestModalOpen, setIsRestModalOpen] = useState(false);
   const [isQuestBoardOpen, setIsQuestBoardOpen] = useState(false);
   const [isInspirationDashboardOpen, setIsInspirationDashboardOpen] = useState(false);
@@ -542,6 +548,22 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     }
     if (action === 'open_quest_board') {
         setIsQuestBoardOpen(true);
+    }
+    if (action === 'buy_weapon') {
+        setWpnShopInitialTab('buy');
+        setIsWpnShopOpen(true);
+    }
+    if (action === 'sell_weapon') {
+        setWpnShopInitialTab('sell');
+        setIsWpnShopOpen(true);
+    }
+    if (action === 'buy_armor') {
+        setArmShopInitialTab('buy');
+        setIsArmShopOpen(true);
+    }
+    if (action === 'sell_armor') {
+        setArmShopInitialTab('sell');
+        setIsArmShopOpen(true);
     }
     if (action === 'rest') {
         // 先触发自动存档，再弹出第四面壁提示
@@ -995,6 +1017,36 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         initialTab={shopInitialTab}
         inventory={core.inventory}
         currentGold={core.gold}
+        onTransaction={({ goldChange, inventoryChanges }) => {
+          core.updateGold(core.gold + goldChange);
+          Object.entries(inventoryChanges).forEach(([id, count]) => {
+            core.updateInventoryItem(id, count as number);
+          });
+        }}
+      />
+
+      <ShopWpnModal
+        isOpen={isWpnShopOpen}
+        onClose={() => setIsWpnShopOpen(false)}
+        initialTab={wpnShopInitialTab}
+        inventory={core.inventory}
+        currentGold={core.gold}
+        shopLevel={core.sceneLevels['scen_5'] || 0}
+        onTransaction={({ goldChange, inventoryChanges }) => {
+          core.updateGold(core.gold + goldChange);
+          Object.entries(inventoryChanges).forEach(([id, count]) => {
+            core.updateInventoryItem(id, count as number);
+          });
+        }}
+      />
+
+      <ShopArmModal
+        isOpen={isArmShopOpen}
+        onClose={() => setIsArmShopOpen(false)}
+        initialTab={armShopInitialTab}
+        inventory={core.inventory}
+        currentGold={core.gold}
+        shopLevel={core.sceneLevels['scen_6'] || 0}
         onTransaction={({ goldChange, inventoryChanges }) => {
           core.updateGold(core.gold + goldChange);
           Object.entries(inventoryChanges).forEach(([id, count]) => {
