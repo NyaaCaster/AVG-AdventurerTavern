@@ -352,15 +352,20 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   }, [world.worldState.timeStr]);
 
   // --- 初始收入记录（仅首次启动时生成示例数据）---
+  const revenueLogsInitializedRef = useRef(false);
+  
   useEffect(() => {
       if (initialSaveData) return;
-      // 已有记录则跳过
-      if (core.revenueLogs.length > 0) return;
+      if (revenueLogsInitializedRef.current) return;
+      if (core.revenueLogs.length > 0) {
+          revenueLogsInitializedRef.current = true;
+          return;
+      }
 
+      revenueLogsInitializedRef.current = true;
       const initialLogs: RevenueLog[] = [];
       const now = new Date();
       
-      // 使用当前旅店属性作为基准
       const stats = core.managementStats;
       
       for (let i = 2; i >= 0; i--) {
@@ -395,7 +400,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           });
       }
       core.setRevenueLogs(initialLogs.reverse()); 
-  }, [initialSaveData, core.managementStats]); // 仅在首次挂载且无存档时执行
+  }, [initialSaveData]);
 
   // --- API 连接状态检测 ---
   useEffect(() => {
