@@ -43,9 +43,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, invent
   };
 
   const getTagIcon = (tagId?: string) => {
-      if (!tagId) return '📦';
-      const tag = ITEM_TAGS.find(t => t.id === tagId);
-      return tag ? tag.icon : '📦';
+      const tag = ITEM_TAGS.find(t => t.id === (tagId || 'non'));
+      return tag?.icon ?? '📦';
   };
 
   const formatText = (text: string) => {

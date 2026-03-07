@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ShopItemModal - 道具商店模态框
  *功能：
  * - 「道具购入」页签：展示 ITEM_ITM_SHOP 中定义的商品，无库存限制
@@ -19,7 +19,8 @@ import { ShopItemModalProps, ShopTab, ItemData, CartItem } from '../types';
 import { ITEMS_RES } from '../data/item-res';
 import { ITEM_ITM_SHOP, getItmShopItemPrice } from '../data/item-itm-shop';
 import { getResValue } from '../data/item-value-table';
-import { ITEM_TAGS } from '../data/item-type';
+import { ITEM_TAGS, ITEM_CATEGORIES } from '../data/item-type';
+import { resolveImgPath } from '../utils/imagePath';
 import QuantityControl from './QuantityControl';
 
 const ShopItemModal: React.FC<ShopItemModalProps> = ({
@@ -35,6 +36,8 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   // 移动端购物车折叠状态
   const [cartExpanded, setCartExpanded] = useState(false);
+  // 选中商品ID（用于详情弹窗）
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // 每次打开时重置页签和购物车
   useEffect(() => {
@@ -46,9 +49,8 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
   }, [isOpen, initialTab]);
 
   const getTagIcon = (tagId?: string) => {
-    if (!tagId) return null;
-    const tag = ITEM_TAGS.find(t => t.id === tagId);
-    return tag?.icon ?? null;
+    const tag = ITEM_TAGS.find(t => t.id === (tagId || 'non'));
+    return tag?.icon ?? '📦';
   };
 
   const renderStarBadge = (item: ItemData) => (
@@ -126,6 +128,8 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
     [inventory]
   );
 
+  const selectedItem = useMemo(() => selectedItemId ? ITEMS_RES[selectedItemId] : null, [selectedItemId]);
+
   /**
    * 结算购物车
    * - 购入：goldChange 为负数，inventoryChanges 增加对应数量
@@ -154,10 +158,21 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
   };
 
   // 图标区：道具图标 + 持有数量（图标下方）
-  const renderItemIcon = (tagId: string | undefined, holdCount: number) => (
-    <div className="flex flex-col items-center gap-1 shrink-0">
-      <div className="w-11 h-11 md:w-13 md:h-13 bg-[#e0d6c5] border border-[#c7bca8] rounded flex items-center justify-center text-xl shadow-inner">
-        {getTagIcon(tagId) || <i className="fa-solid fa-box text-[#9b7a4c]" />}
+  const renderItemIcon = (tagId: string | undefined, holdCount: number, itemId: string) => (
+    <div
+      className="flex flex-col items-center gap-1 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+      onClick={() => setSelectedItemId(itemId)}
+    >
+      <div className="w-11 h-11 md:w-13 md:h-13 bg-[#e0d6c5] border border-[#c7bca8] rounded flex items-center justify-center text-xl shadow-inner overflow-hidden">
+        {ITEMS_RES[itemId]?.imagePath ? (
+          <img
+            src={resolveImgPath(ITEMS_RES[itemId].imagePath)}
+            alt={ITEMS_RES[itemId].name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          getTagIcon(tagId)
+        )}
       </div>
       <span className="text-[9px] text-[#8c7b70] font-bold whitespace-nowrap leading-none">
         持有 <span className="text-[#5c4d45]">{holdCount}</span>
@@ -334,13 +349,23 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
                 return (
                   <div key={shopItem.id} className="bg-[#f5f0e6] border border-[#d6cbb8] p-2 md:p-3 rounded-lg shadow-sm hover:shadow-md hover:border-[#9b7a4c] transition-all group">
                     <div className="flex gap-2">
-                      {renderItemIcon(item.tag, holdCount)}
+                      {renderItemIcon(item.tag, holdCount, shopItem.resId)}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-0.5">
-                          <h4 className="font-bold text-[#2c241b] truncate pr-1 text-xs md:text-sm group-hover:text-[#9b7a4c] transition-colors leading-tight">{item.name}</h4>
+                          <h4
+                            className="font-bold text-[#2c241b] truncate pr-1 text-xs md:text-sm group-hover:text-[#9b7a4c] transition-colors leading-tight cursor-pointer hover:underline"
+                            onClick={() => setSelectedItemId(shopItem.resId)}
+                          >
+                            {item.name}
+                          </h4>
                           {renderStarBadge(item)}
                         </div>
-                        <p className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5">{item.description}</p>
+                        <p
+                          className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5 cursor-pointer hover:text-[#4a3b32]"
+                          onClick={() => setSelectedItemId(shopItem.resId)}
+                        >
+                          {item.description}
+                        </p>
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-[#b45309] font-mono text-xs md:text-sm">{actualPrice} G</span>
                 <QuantityControl
@@ -371,13 +396,23 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
                       return (
                         <div key={itemId} className="bg-[#f5f0e6] border border-[#d6cbb8] p-2 md:p-3 rounded-lg shadow-sm hover:shadow-md hover:border-[#9b7a4c] transition-all group">
                           <div className="flex gap-2">
-                            {renderItemIcon(item.tag, count)}
+                            {renderItemIcon(item.tag, count, itemId)}
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-start mb-0.5">
-                                <h4 className="font-bold text-[#2c241b] truncate pr-1 text-xs md:text-sm group-hover:text-[#9b7a4c] transition-colors leading-tight">{item.name}</h4>
+                                <h4
+                                  className="font-bold text-[#2c241b] truncate pr-1 text-xs md:text-sm group-hover:text-[#9b7a4c] transition-colors leading-tight cursor-pointer hover:underline"
+                                  onClick={() => setSelectedItemId(itemId)}
+                                >
+                                  {item.name}
+                                </h4>
                                 {renderStarBadge(item)}
                               </div>
-                              <p className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5">{item.description}</p>
+                              <p
+                                className="text-[9px] md:text-[10px] text-[#6e5d52] line-clamp-2 leading-tight mb-1.5 cursor-pointer hover:text-[#4a3b32]"
+                                onClick={() => setSelectedItemId(itemId)}
+                              >
+                                {item.description}
+                              </p>
                               <div className="flex justify-between items-center">
                                 <span className="font-bold text-emerald-600 font-mono text-xs md:text-sm">+{price} G</span>
                                 <QuantityControl
@@ -438,7 +473,78 @@ const ShopItemModal: React.FC<ShopItemModalProps> = ({
         {/* ── 桌面端：右侧购物车侧栏 ── */}
         <div className="hidden md:flex w-64 lg:w-72 bg-[#382b26] border-l border-[#9b7a4c]/30 flex-col rounded-r-lg overflow-hidden shrink-0">
           {renderCartPanel()}
-        </div></div>
+        </div>
+      </div>
+
+      {/* 商品详情弹窗 */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn" onClick={() => setSelectedItemId(null)}>
+          <div
+            className="bg-[#2c241b] border-2 border-[#9b7a4c] rounded-xl shadow-2xl max-w-lg w-full relative overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedItemId(null)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-[#382b26] rounded-full text-[#9b7a4c] hover:bg-white/10 hover:text-white transition-colors z-10"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+
+            <div className="bg-gradient-to-b from-[#3d3226] to-[#2c241b] p-6 flex flex-col items-center justify-center border-b border-[#9b7a4c]/30 relative">
+              <div className="w-24 h-24 bg-[#e0d6c5] border-4 border-[#c7bca8] rounded-2xl flex items-center justify-center text-5xl shadow-xl z-10 overflow-hidden">
+                {selectedItem.imagePath ? (
+                  <img
+                    src={resolveImgPath(selectedItem.imagePath)}
+                    alt={selectedItem.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getTagIcon(selectedItem.tag)
+                )}
+              </div>
+              <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{selectedItem.name}</h2>
+
+              <div className="flex items-center gap-3 mt-2">
+                {renderStarBadge(selectedItem)}
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30 uppercase tracking-widest">
+                  {ITEM_CATEGORIES.find(c => c.id === selectedItem.category)?.name || '食材'}
+                </span>
+                {selectedItem.tag && (
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-slate-700/50 text-slate-300 border border-slate-600/30 uppercase tracking-widest">
+                    {ITEM_TAGS.find(t => t.id === selectedItem.tag)?.name || selectedItem.tag}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 bg-[#e8dfd1] text-[#2c241b]">
+              {selectedItem.stats && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {Object.entries(selectedItem.stats).map(([stat, val]) => (
+                    <div key={stat} className="bg-[#d6cbb8] border border-[#c7bca8] px-3 py-1.5 rounded flex items-center gap-2 shadow-sm">
+                      <span className="text-[10px] font-bold text-[#6e5d52] uppercase">{stat}</span>
+                      <span className={`font-mono font-bold ${(val as number) > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {(val as number) > 0 ? `+${val}` : val}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="bg-[#f5f0e6] border border-[#d6cbb8] p-4 rounded-lg shadow-inner mb-4">
+                <div className="text-sm md:text-base leading-relaxed font-medium text-[#4a3b32] whitespace-pre-wrap">
+                  {selectedItem.description}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-xs text-[#8c7b70] font-mono border-t border-[#d6cbb8] pt-3">
+                <span>ID: {selectedItem.id}</span>
+                <span>持有数量: <strong className="text-[#2c241b] text-base">{inventory[selectedItem.id] || 0}</strong> / {selectedItem.maxStack || 99}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
