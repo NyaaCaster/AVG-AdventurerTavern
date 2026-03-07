@@ -923,6 +923,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       <PartyEquipmentModal
           isOpen={isPartyEquipmentOpen}
           onClose={() => setIsPartyEquipmentOpen(false)}
+          battleParty={core.battleParty}
+          characterStats={core.characterStats}
+          characterEquipments={core.characterEquipments}
+          inventory={core.inventory}
+          userName={settings.userName}
+          onUpdateEquipment={(characterId, equipment) => {
+            core.setCharacterEquipments(prev => ({
+              ...prev,
+              [characterId]: equipment
+            }));
+            setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after equipment change failed:', err)), 100);
+          }}
       />
       
       <CookingModal 
