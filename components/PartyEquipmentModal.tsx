@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { BattlePartySlots, CharacterEquipment, CharacterStat, ItemData, ItemTag } from '../types';
 import { BaseStats, STAT_NAMES_CN } from '../data/battle-data/base_stats_table';
 import { CHARACTERS } from '../data/scenarioData';
@@ -17,7 +17,8 @@ interface PartyEquipmentModalProps {
   characterEquipments: Record<string, CharacterEquipment>;
   inventory: Record<string, number>;
   userName: string;
-  onUpdateEquipment: (characterId: string, equipment: CharacterEquipment) => void;
+  onUpdateEquipment: (characterId: string, equipment: CharacterEquipment, inventoryChanges: Record<string, number>) => void;
+  onAutoSave: () => void;
 }
 
 type EquipmentSlotKey = 'weaponId' | 'armorId' | 'accessory1Id' | 'accessory2Id';
@@ -70,12 +71,20 @@ const getAvailableEquipment = (
     result.push(item);
   });
 
-  return result.sort((a, b) => {
-    const qualityOrder = ['S', 'A', 'B', 'C', 'D', 'E'];
-    const aIdx = qualityOrder.indexOf(a.quality || 'E');
-    const bIdx = qualityOrder.indexOf(b.quality || 'E');
-    return aIdx - bIdx;
+  return result.sort((a, b) => a.id.localeCompare(b.id));
+};
+
+const getAllEquipmentsInInventory = (inventory: Record<string, number>): ItemData[] => {
+  const result: ItemData[] = [];
+
+  Object.entries(inventory).forEach(([itemId, count]) => {
+    if (count <= 0) return;
+    const item = ITEMS_EQUIP[itemId];
+    if (!item) return;
+    result.push(item);
   });
+
+  return result.sort((a, b) => a.id.localeCompare(b.id));
 };
 
 const StatDisplay: React.FC<{
@@ -143,6 +152,108 @@ const EquipmentSlot: React.FC<{
     )}
   </button>
 );
+
+const ItemDetailModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  item: ItemData | null;
+  count: number;
+}> = ({ isOpen, onClose, item, count }) => {
+  if (!isOpen || !item) return null;
+
+  const getTagIcon = (tag?: ItemTag) => {
+    const tagInfo = ITEM_TAGS.find(t => t.id === tag);
+    return tagInfo?.icon || '📦';
+  };
+
+  const renderRankBadge = (itemData: ItemData, large?: boolean) => {
+    if (itemData.star) {
+      return (
+        <span className={`px-2 py-0.5 rounded text-xs font-bold bg-black/40 text-yellow-400 border border-yellow-400/30 ${large ? 'text-sm' : ''}`}>
+          {'★'.repeat(parseInt(itemData.star) || 1)}
+        </span>
+      );
+    }
+    if (itemData.quality) {
+      const qualityStyles: Record<string, string> = {
+        S: 'bg-amber-500 text-white border-amber-400',
+        A: 'bg-red-500 text-white border-red-400',
+        B: 'bg-blue-500 text-white border-blue-400',
+        C: 'bg-emerald-500 text-white border-emerald-400',
+        D: 'bg-slate-400 text-white border-slate-300',
+        E: 'bg-slate-300 text-slate-700 border-slate-200'
+      };
+      return (
+        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${qualityStyles[itemData.quality] || qualityStyles.E} ${large ? 'text-sm' : ''}`}>
+          {itemData.quality}级
+        </span>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn" onClick={onClose}>
+      <div 
+        className="bg-[#2c241b] border-2 border-[#9b7a4c] rounded-xl shadow-2xl max-w-lg w-full relative overflow-hidden" 
+        onClick={e => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-[#382b26] rounded-full text-[#9b7a4c] hover:bg-white/10 hover:text-white transition-colors z-10"
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+
+        <div className="bg-gradient-to-b from-[#3d3226] to-[#2c241b] p-6 flex flex-col items-center justify-center border-b border-[#9b7a4c]/30 relative">
+          <div className="absolute inset-0 opacity-10 bg-[url('img/svg/unicorn.svg')] bg-center bg-no-repeat bg-contain"></div>
+          <div className="w-24 h-24 bg-[#e0d6c5] border-4 border-[#c7bca8] rounded-2xl flex items-center justify-center text-5xl shadow-xl z-10 overflow-hidden">
+            {getTagIcon(item.tag)}
+          </div>
+          <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{item.name}</h2>
+          
+          <div className="flex items-center gap-3 mt-2">
+            {renderRankBadge(item, true)}
+            <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30 uppercase tracking-widest">
+              {ITEM_CATEGORIES.find(c => c.id === item.category)?.name}
+            </span>
+            {item.tag && (
+              <span className="px-2 py-0.5 rounded text-xs font-bold bg-slate-700/50 text-slate-300 border border-slate-600/30 uppercase tracking-widest">
+                {ITEM_TAGS.find(t => t.id === item.tag)?.name || item.tag}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 bg-[#e8dfd1] text-[#2c241b]">
+          {item.stats && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {Object.entries(item.stats).map(([stat, val]) => (
+                <div key={stat} className="bg-[#d6cbb8] border border-[#c7bca8] px-3 py-1.5 rounded flex items-center gap-2 shadow-sm">
+                  <span className="text-[10px] font-bold text-[#6e5d52] uppercase">{STAT_NAMES_CN[stat as keyof BaseStats] || stat}</span>
+                  <span className={`font-mono font-bold ${(val as number) > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {(val as number) > 0 ? `+${val}` : val}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-[#f5f0e6] border border-[#d6cbb8] p-4 rounded-lg shadow-inner mb-4">
+            <div className="text-sm md:text-base leading-relaxed font-medium text-[#4a3b32] whitespace-pre-wrap">
+              {item.description}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center text-xs text-[#8c7b70] font-mono border-t border-[#d6cbb8] pt-3">
+            <span>ID: {item.id}</span>
+            <span>持有数量: <strong className="text-[#2c241b] text-base">{count}</strong> / {item.maxStack}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const EquipmentSelectModal: React.FC<{
   isOpen: boolean;
@@ -258,7 +369,7 @@ const CharacterDetailPanel: React.FC<{
   characterEquipment: CharacterEquipment;
   inventory: Record<string, number>;
   userName: string;
-  onUpdateEquipment: (equipment: CharacterEquipment) => void;
+  onUpdateEquipment: (equipment: CharacterEquipment, inventoryChanges: Record<string, number>) => void;
   onPrev?: () => void;
   onNext?: () => void;
   hasPrev?: boolean;
@@ -277,6 +388,47 @@ const CharacterDetailPanel: React.FC<{
 }) => {
   const [selectingSlot, setSelectingSlot] = useState<EquipmentSlotKey | null>(null);
   const [pendingEquipment, setPendingEquipment] = useState<CharacterEquipment | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      touchEndX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+      if (touchStartX.current === null || touchEndX.current === null) return;
+      const diff = touchStartX.current - touchEndX.current;
+      const threshold = 50;
+
+      if (diff > threshold && hasNext && onNext) {
+        onNext();
+      } else if (diff < -threshold && hasPrev && onPrev) {
+        onPrev();
+      }
+
+      touchStartX.current = null;
+      touchEndX.current = null;
+    };
+
+    panel.addEventListener('touchstart', handleTouchStart, { passive: true });
+    panel.addEventListener('touchmove', handleTouchMove, { passive: true });
+    panel.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      panel.removeEventListener('touchstart', handleTouchStart);
+      panel.removeEventListener('touchmove', handleTouchMove);
+      panel.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [hasPrev, hasNext, onPrev, onNext]);
 
   const character = CHARACTERS[characterId];
   const equipableTags = character?.battleData?.equipableTags;
@@ -309,43 +461,54 @@ const CharacterDetailPanel: React.FC<{
   const handleSelectEquipment = useCallback((itemId: string | null) => {
     if (!selectingSlot) return;
 
+    const currentEquippedId = characterEquipment[selectingSlot];
+    const inventoryChanges: Record<string, number> = {};
+
+    if (currentEquippedId) {
+      inventoryChanges[currentEquippedId] = (inventoryChanges[currentEquippedId] || 0) + 1;
+    }
+
+    if (itemId) {
+      inventoryChanges[itemId] = (inventoryChanges[itemId] || 0) - 1;
+    }
+
     const newEquipment: CharacterEquipment = {
       ...characterEquipment,
       [selectingSlot]: itemId
     };
 
     setPendingEquipment(newEquipment);
-    onUpdateEquipment(newEquipment);
+    onUpdateEquipment(newEquipment, inventoryChanges);
     setSelectingSlot(null);
-  }, [selectingSlot, characterEquipment, onUpdateEquipment]);
+  }, [selectingSlot, characterEquipment, onUpdateEquipment, inventory]);
 
   const avatarUrl = CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '';
   const rawName = character?.name || '未知角色';
   const displayName = resolveCharacterDisplayName(rawName, userName);
 
   return (
-    <div className="relative h-full flex flex-col">
-      {hasPrev && (
-        <button
-          onClick={onPrev}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 w-8 h-16 rounded-l-lg bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg"
-          title="上一个角色"
-        >
-          <i className="fa-solid fa-chevron-left animate-pulse"></i>
-        </button>
-      )}
+    <div ref={panelRef} className="relative h-full flex flex-col">
+      <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-[#9b7a4c]/40 relative">
+        {hasPrev && (
+          <button
+            onClick={onPrev}
+            className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-6 h-10 rounded-l-md bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg text-xs"
+            title="上一个角色"
+          >
+            <i className="fa-solid fa-chevron-left"></i>
+          </button>
+        )}
 
-      {hasNext && (
-        <button
-          onClick={onNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 w-8 h-16 rounded-r-lg bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg"
-          title="下一个角色"
-        >
-          <i className="fa-solid fa-chevron-right animate-pulse"></i>
-        </button>
-      )}
+        {hasNext && (
+          <button
+            onClick={onNext}
+            className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-6 h-10 rounded-r-md bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg text-xs"
+            title="下一个角色"
+          >
+            <i className="fa-solid fa-chevron-right"></i>
+          </button>
+        )}
 
-      <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-[#9b7a4c]/40">
         <div className="w-14 h-14 rounded-lg overflow-hidden border-2 border-[#9b7a4c] shadow-md shrink-0">
           <img src={resolveImgPath(avatarUrl)} alt={displayName} className="w-full h-full object-cover" />
         </div>
@@ -439,9 +602,16 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
   characterEquipments,
   inventory,
   userName,
-  onUpdateEquipment
+  onUpdateEquipment,
+  onAutoSave
 }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    onAutoSave();
+    onClose();
+  }, [onAutoSave, onClose]);
 
   const partyMembers = useMemo(() => {
     return battleParty.map((memberId, idx) => {
@@ -465,6 +635,10 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
       };
     });
   }, [battleParty, characterStats, characterEquipments, userName]);
+
+  const equipmentList = useMemo(() => {
+    return getAllEquipmentsInInventory(inventory);
+  }, [inventory]);
 
   const handlePrev = useCallback(() => {
     if (selectedSlotIndex === null) return;
@@ -520,9 +694,12 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
     setSelectedSlotIndex(idx);
   };
 
-  const handleUpdateEquipment = useCallback((characterId: string, equipment: CharacterEquipment) => {
-    onUpdateEquipment(characterId, equipment);
+  const handleUpdateEquipment = useCallback((characterId: string, equipment: CharacterEquipment, inventoryChanges: Record<string, number>) => {
+    onUpdateEquipment(characterId, equipment, inventoryChanges);
   }, [onUpdateEquipment]);
+
+  const selectedItem = selectedItemId ? ITEMS_EQUIP[selectedItemId] : null;
+  const selectedItemCount = selectedItemId ? (inventory[selectedItemId] || 0) : 0;
 
   if (!isOpen) return null;
 
@@ -555,7 +732,7 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-8 h-8 rounded-full bg-transparent text-[#9b7a4c] hover:bg-white/10 hover:text-[#382b26] border border-transparent hover:border-[#9b7a4c] transition-all flex items-center justify-center"
               title="关闭"
             >
@@ -624,11 +801,49 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
                     })}
                   </div>
 
-                  <div className="mt-4 p-3 bg-[#fcfaf7] border border-[#d6cbb8] rounded-lg">
-                    <div className="text-xs text-[#8c7b70] flex items-center gap-2">
-                      <i className="fa-solid fa-circle-info text-[#9b7a4c]"></i>
-                      点击角色卡片进入装备变更界面
-                    </div>
+                  <div className="mt-5">
+                    <h3 className="text-sm md:text-base font-bold text-[#382b26] mb-3 tracking-wide flex items-center gap-2">
+                      <i className="fa-solid fa-boxes-stacked text-[#9b7a4c]"></i> 装备库存
+                    </h3>
+                    {equipmentList.length === 0 ? (
+                      <div className="text-center py-6 text-[#8c7b70] bg-[#fcfaf7] border border-[#d6cbb8] rounded-lg">
+                        <i className="fa-solid fa-box-open text-2xl mb-2 opacity-50"></i>
+                        <div className="text-sm">暂无装备</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {equipmentList.map(item => (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedItemId(item.id)}
+                            className="w-full p-2 rounded-lg border border-[#d6cbb8] bg-[#fcfaf7] hover:border-[#9b7a4c] hover:bg-[#f5f0e6] transition-all text-left flex items-center gap-2"
+                          >
+                            <div className="w-8 h-8 rounded bg-[#e8dfd1] border border-[#c7bca8] flex items-center justify-center text-lg shrink-0">
+                              {item.tag ? ITEM_TAGS.find(t => t.id === item.tag)?.icon || '📦' : '📦'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold ${getQualityColor(item.quality)}`}>
+                                  {item.name}
+                                </span>
+                                {item.quality && (
+                                  <span className={`text-[9px] px-1 py-0.5 rounded border ${getQualityBgColor(item.quality)}`}>
+                                    {item.quality}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-[#8c7b70] mt-0.5">
+                                {ITEM_CATEGORIES.find(c => c.id === item.category)?.name}
+                                {item.tag && ` · ${ITEM_TAGS.find(t => t.id === item.tag)?.name || item.tag}`}
+                              </div>
+                            </div>
+                            <div className="text-xs font-mono font-bold text-[#382b26] bg-[#efe4d4] px-2 py-1 rounded border border-[#c7b08f]">
+                              x{inventory[item.id]}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -638,7 +853,7 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
                   characterEquipment={characterEquipments[battleParty[selectedSlotIndex]!] || { weaponId: null, armorId: null, accessory1Id: null, accessory2Id: null }}
                   inventory={inventory}
                   userName={userName}
-                  onUpdateEquipment={(equipment) => handleUpdateEquipment(battleParty[selectedSlotIndex]!, equipment)}
+                  onUpdateEquipment={(equipment, inventoryChanges) => handleUpdateEquipment(battleParty[selectedSlotIndex]!, equipment, inventoryChanges)}
                   onPrev={handlePrev}
                   onNext={handleNext}
                   hasPrev={hasPrevMember}
@@ -661,6 +876,13 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
           )}
         </div>
       </div>
+
+      <ItemDetailModal
+        isOpen={!!selectedItemId}
+        onClose={() => setSelectedItemId(null)}
+        item={selectedItem}
+        count={selectedItemCount}
+      />
     </div>
   );
 };

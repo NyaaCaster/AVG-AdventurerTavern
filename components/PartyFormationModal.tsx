@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { BattlePartySlots, CharacterEquipment, CharacterStat, CharacterUnlocks } from '../types';
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
@@ -18,6 +18,7 @@ interface PartyFormationModalProps {
   onAddMember: (characterId: string, slotIndex?: number) => void;
   onRemoveMember: (slotIndex: number) => void;
   userName: string;
+  onAutoSave: () => void;
 }
 
 const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
@@ -29,10 +30,16 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   characterEquipments,
   onAddMember,
   onRemoveMember,
-  userName
+  userName,
+  onAutoSave
 }) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('char_1');
   const [pendingSlotIndex, setPendingSlotIndex] = useState<number | null>(null);
+
+  const handleClose = useCallback(() => {
+    onAutoSave();
+    onClose();
+  }, [onAutoSave, onClose]);
 
   const selectableCharacters = useMemo(() => {
     const partySet = new Set(battleParty.filter(Boolean));
@@ -119,7 +126,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-8 h-8 rounded-full bg-transparent text-[#9b7a4c] hover:bg-white/10 hover:text-[#382b26] border border-transparent hover:border-[#9b7a4c] transition-all flex items-center justify-center"
               title="关闭"
             >

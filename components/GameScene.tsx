@@ -919,6 +919,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onAddMember={core.addToBattleParty}
           onRemoveMember={core.removeFromBattleParty}
           userName={settings.userName}
+          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after party formation close failed:', err))}
       />
       <PartyEquipmentModal
           isOpen={isPartyEquipmentOpen}
@@ -928,13 +929,22 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           characterEquipments={core.characterEquipments}
           inventory={core.inventory}
           userName={settings.userName}
-          onUpdateEquipment={(characterId, equipment) => {
+          onUpdateEquipment={(characterId, equipment, inventoryChanges) => {
             core.setCharacterEquipments(prev => ({
               ...prev,
               [characterId]: equipment
             }));
-            setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after equipment change failed:', err)), 100);
+            if (Object.keys(inventoryChanges).length > 0) {
+              core.setInventory(prev => {
+                const next = { ...prev };
+                Object.entries(inventoryChanges).forEach(([itemId, change]) => {
+                  next[itemId] = Math.max(0, (next[itemId] || 0) + change);
+                });
+                return next;
+              });
+            }
           }}
+          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after equipment modal close failed:', err))}
       />
       
       <CookingModal 
