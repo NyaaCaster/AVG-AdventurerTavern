@@ -1,3 +1,13 @@
+/**
+ * [已停用] 用户数据迁移脚本
+ * 
+ * 停用日期: 2026-03-08
+ * 停用原因: 账号迁移系统已关闭，不再需要迁移用户数据
+ * 
+ * 如需重新启用，取消下方代码块的注释
+ */
+
+/*
 const sqlite3 = require('sqlite3').verbose();
 const config = require('./config');
 
@@ -108,3 +118,7 @@ db.serialize(() => {
         });
     });
 });
+*/
+
+console.log('[migrate-user-data.js] 此脚本已停用，不再执行迁移操作');
+process.exit(0);

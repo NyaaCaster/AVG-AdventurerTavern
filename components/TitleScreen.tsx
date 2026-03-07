@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl, migrateOldAccount } from '../services/db';
+import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -44,13 +44,13 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   const [enablePasswordLogin, setEnablePasswordLogin] = useState(true);
   const [isLoadingAuth, setIsLoadingAuth] = useState(false);
   
-  // Migration States
-  const [showMigration, setShowMigration] = useState(false);
-  const [pendingNewUserId, setPendingNewUserId] = useState<number | null>(null);
-  const [oldUsername, setOldUsername] = useState('');
-  const [oldPassword, setOldPassword] = useState('');
-  const [migrationError, setMigrationError] = useState<string | null>(null);
-  const [isMigrating, setIsMigrating] = useState(false);
+  // Migration States [2026-03-08 已停用账号迁移功能]
+  // const [showMigration, setShowMigration] = useState(false);
+  // const [pendingNewUserId, setPendingNewUserId] = useState<number | null>(null);
+  // const [oldUsername, setOldUsername] = useState('');
+  // const [oldPassword, setOldPassword] = useState('');
+  // const [migrationError, setMigrationError] = useState<string | null>(null);
+  // const [isMigrating, setIsMigrating] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -100,21 +100,26 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           window.history.replaceState({}, '', window.location.pathname);
       } else if (discordLogin === 'success' && uid) {
           const userId = parseInt(uid, 10);
-          const isNewUser = params.get('new_user') === 'true';
+          // [2026-03-08 已停用] const isNewUser = params.get('new_user') === 'true';
           
           if (!isNaN(userId)) {
               window.history.replaceState({}, '', window.location.pathname);
               
-              if (isNewUser) {
-                  // 新创建的 Discord 账号，询问是否需要迁移旧账号数据
-                  setPendingNewUserId(userId);
-                  setShowMigration(true);
-                  setTitleState('AUTH');
-              } else {
-                  localStorage.setItem('userId', userId.toString());
-                  onLogin(userId);
-                  setTitleState('MENU');
-              }
+              // [2026-03-08 已停用账号迁移功能] Discord 登录成功后直接进入游戏
+              localStorage.setItem('userId', userId.toString());
+              onLogin(userId);
+              setTitleState('MENU');
+              
+              // [2026-03-08 已停用] 迁移逻辑已注释
+              // if (isNewUser) {
+              //     setPendingNewUserId(userId);
+              //     setShowMigration(true);
+              //     setTitleState('AUTH');
+              // } else {
+              //     localStorage.setItem('userId', userId.toString());
+              //     onLogin(userId);
+              //     setTitleState('MENU');
+              // }
           }
       }
   }, []);
@@ -197,44 +202,44 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       }
   };
 
-  // 跳过迁移，直接使用新账号
-  const handleSkipMigration = () => {
-      if (pendingNewUserId) {
-          localStorage.setItem('userId', pendingNewUserId.toString());
-          onLogin(pendingNewUserId);
-          setShowMigration(false);
-          setPendingNewUserId(null);
-          setTitleState('MENU');
-      }
-  };
+  // [2026-03-08 已停用] 跳过迁移，直接使用新账号
+  // const handleSkipMigration = () => {
+  //     if (pendingNewUserId) {
+  //         localStorage.setItem('userId', pendingNewUserId.toString());
+  //         onLogin(pendingNewUserId);
+  //         setShowMigration(false);
+  //         setPendingNewUserId(null);
+  //         setTitleState('MENU');
+  //     }
+  // };
 
-  // 执行旧账号数据迁移
-  const handleMigrate = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setMigrationError(null);
-      
-      if (!oldUsername || !oldPassword) {
-          setMigrationError('请输入旧账号的用户名和密码');
-          return;
-      }
-      if (!pendingNewUserId) return;
-      
-      setIsMigrating(true);
-      const result = await migrateOldAccount(pendingNewUserId, oldUsername, oldPassword);
-      setIsMigrating(false);
-      
-      if (result.success) {
-          localStorage.setItem('userId', pendingNewUserId.toString());
-          onLogin(pendingNewUserId);
-          setShowMigration(false);
-          setPendingNewUserId(null);
-          setOldUsername('');
-          setOldPassword('');
-          setTitleState('MENU');
-      } else {
-          setMigrationError(result.message);
-      }
-  };
+  // [2026-03-08 已停用] 执行旧账号数据迁移
+  // const handleMigrate = async (e: React.FormEvent) => {
+  //     e.preventDefault();
+  //     setMigrationError(null);
+  //     
+  //     if (!oldUsername || !oldPassword) {
+  //         setMigrationError('请输入旧账号的用户名和密码');
+  //         return;
+  //     }
+  //     if (!pendingNewUserId) return;
+  //     
+  //     setIsMigrating(true);
+  //     const result = await migrateOldAccount(pendingNewUserId, oldUsername, oldPassword);
+  //     setIsMigrating(false);
+  //     
+  //     if (result.success) {
+  //         localStorage.setItem('userId', pendingNewUserId.toString());
+  //         onLogin(pendingNewUserId);
+  //         setShowMigration(false);
+  //         setPendingNewUserId(null);
+  //         setOldUsername('');
+  //         setOldPassword('');
+  //         setTitleState('MENU');
+  //     } else {
+  //         setMigrationError(result.message);
+  //     }
+  // };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -511,8 +516,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                 </div>
             )}
 
-            {/* AUTH STATE: Login Modal or Migration Modal */}
-            {titleState === 'AUTH' && !showMigration && (
+            {/* AUTH STATE: Login Modal */}
+            {titleState === 'AUTH' && (
                 <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto animate-fadeIn">
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
@@ -587,7 +592,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                 </div>
             )}
 
-            {/* Migration Modal */}
+            {/* [2026-03-08 已停用] Migration Modal - 账号迁移界面 */}
+            {/* 
             {titleState === 'AUTH' && showMigration && (
                 <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto animate-fadeIn">
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
@@ -646,6 +652,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                     </div>
                 </div>
             )}
+            */}
 
             {/* MENU STATE: Main Buttons */}
             {titleState === 'MENU' && (

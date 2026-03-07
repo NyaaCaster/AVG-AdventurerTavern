@@ -1,4 +1,4 @@
-﻿import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots } from '../types';
 import {
     buildCharacterBattleStats,
     getCharacterBattleStatsFromSaveData,
@@ -111,10 +111,16 @@ export const getDiscordStatus = async (userId: number): Promise<{ isBound: boole
 
 /**
  * 迁移旧账号数据到 Discord 账号
+ * [2026-03-08] 已停用账号迁移功能
  */
+/*
 export const migrateOldAccount = async (newUserId: number, oldUsername: string, oldPassword: string): Promise<{ success: boolean; message: string }> => {
     const res = await apiCall('/auth/discord/migrate', { newUserId, oldUsername, oldPassword });
     return res;
+};
+*/
+export const migrateOldAccount = async (newUserId: number, oldUsername: string, oldPassword: string): Promise<{ success: boolean; message: string }> => {
+    return { success: false, message: '账号迁移功能已停用' };
 };
 
 // --- 存档服务层函数 ---

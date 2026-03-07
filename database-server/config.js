@@ -39,8 +39,9 @@ module.exports = {
     },
 
     // 登录方式配置
+    // [2026-03-08] 已关闭账号密码登录，只保留 Discord 登录
     AUTH: {
-        ENABLE_PASSWORD_LOGIN: process.env.ENABLE_PASSWORD_LOGIN !== 'false', // 默认开启账号密码登录
-        FORCE_DISCORD_BIND: process.env.FORCE_DISCORD_BIND !== 'false' // 默认强制绑定 Discord
+        ENABLE_PASSWORD_LOGIN: false, // 关闭账号密码登录
+        FORCE_DISCORD_BIND: false // 关闭强制绑定（已无密码登录，无需绑定）
     }
 };

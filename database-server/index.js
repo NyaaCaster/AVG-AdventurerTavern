@@ -448,6 +448,8 @@ app.get('/', (req, res) => {
 // });
 
 // 2. 登录
+// [2026-03-08] 已停用密码登录，只保留 Discord 登录
+/*
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.get("SELECT id, password, is_discord_bound FROM users WHERE username = ?", [username], (err, row) => {
@@ -461,6 +463,11 @@ app.post('/api/login', (req, res) => {
             needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
         });
     });
+});
+*/
+// 密码登录已停用，返回错误提示
+app.post('/api/login', (req, res) => {
+    res.json({ success: false, message: '密码登录已停用，请使用 Discord 登录' });
 });
 
 // 2.1 获取认证配置
@@ -639,6 +646,8 @@ app.post('/api/auth/discord/bind', async (req, res) => {
 });
 
 // 2.5 迁移旧账号数据到 Discord 账号
+// [2026-03-08] 已停用账号迁移功能，不再支持旧账号数据迁移
+/*
 app.post('/api/auth/discord/migrate', (req, res) => {
     const { newUserId, oldUsername, oldPassword } = req.body;
     
@@ -745,6 +754,11 @@ app.post('/api/auth/discord/migrate', (req, res) => {
             });
         }
     );
+});
+*/
+// 迁移功能已停用，返回错误提示
+app.post('/api/auth/discord/migrate', (req, res) => {
+    res.json({ success: false, message: '账号迁移功能已停用' });
 });
 
 // 2.6 检查用户 Discord 绑定状态

@@ -1,3 +1,13 @@
+/**
+ * [已停用] Discord 字段迁移脚本
+ * 
+ * 停用日期: 2026-03-08
+ * 停用原因: 账号迁移系统已关闭，不再需要添加 Discord 字段
+ * 
+ * 如需重新启用，取消下方代码块的注释
+ */
+
+/*
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const config = require('./config');
@@ -59,3 +69,7 @@ db.serialize(() => {
         });
     });
 });
+*/
+
+console.log('[migrate-add-discord-fields.js] 此脚本已停用，不再执行迁移操作');
+process.exit(0);
