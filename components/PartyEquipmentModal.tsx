@@ -489,26 +489,6 @@ const CharacterDetailPanel: React.FC<{
   return (
     <div ref={panelRef} className="relative h-full flex flex-col">
       <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-[#9b7a4c]/40 relative">
-        {hasPrev && (
-          <button
-            onClick={onPrev}
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-6 h-10 rounded-l-md bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg text-xs"
-            title="上一个角色"
-          >
-            <i className="fa-solid fa-chevron-left"></i>
-          </button>
-        )}
-
-        {hasNext && (
-          <button
-            onClick={onNext}
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-6 h-10 rounded-r-md bg-[#382b26] border border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 transition-all flex items-center justify-center shadow-lg text-xs"
-            title="下一个角色"
-          >
-            <i className="fa-solid fa-chevron-right"></i>
-          </button>
-        )}
-
         <div className="w-14 h-14 rounded-lg overflow-hidden border-2 border-[#9b7a4c] shadow-md shrink-0">
           <img src={resolveImgPath(avatarUrl)} alt={displayName} className="w-full h-full object-cover" />
         </div>
@@ -521,6 +501,34 @@ const CharacterDetailPanel: React.FC<{
             <span className="text-xs text-[#8c7b70]">{character?.battleData?.className || '未知职业'}</span>
           </div>
         </div>
+        {(hasPrev || hasNext) && (
+          <div className="flex flex-col gap-1 shrink-0">
+            <button
+              onClick={onPrev}
+              disabled={!hasPrev}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all text-xs ${
+                hasPrev
+                  ? 'bg-[#382b26] border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 shadow-md'
+                  : 'bg-[#d6cbb8] border-[#c7bca8] text-[#8c7b70] cursor-not-allowed opacity-50'
+              }`}
+              title="上一个角色"
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+            <button
+              onClick={onNext}
+              disabled={!hasNext}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all text-xs ${
+                hasNext
+                  ? 'bg-[#382b26] border-[#9b7a4c] text-[#f0e6d2] hover:bg-[#4a3b32] hover:scale-105 shadow-md'
+                  : 'bg-[#d6cbb8] border-[#c7bca8] text-[#8c7b70] cursor-not-allowed opacity-50'
+              }`}
+              title="下一个角色"
+            >
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mb-4">
