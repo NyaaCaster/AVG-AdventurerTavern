@@ -2857,5 +2857,29 @@ export const SKILLS: SkillData[] = [
     "stypeId": 1,
     "successRate": 100,
     "tpGain": 0
+  },
+  {
+    "id": 999,
+    "animationId": 0,
+    "damage": {
+      "critical": false,
+      "elementId": 0,
+      "formula": "0",
+      "type": 0,
+      "variance": 20
+    },
+    "description": "毫无斗志，散漫摸鱼，随随便便应付一下战斗。",
+    "effects": [],
+    "hitType": 0,
+    "iconIndex": 1,
+    "message1": "",
+    "name": "怠惰",
+    "note": "",
+    "occasion": 3,
+    "scope": 0,
+    "speed": 0,
+    "stypeId": 1,
+    "successRate": 100,
+    "tpGain": 0
   }
 ];
