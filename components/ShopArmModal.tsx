@@ -41,15 +41,24 @@ const ShopArmModal: React.FC<ShopEquipModalProps> = ({
     return tag?.icon ?? '📦';
   };
 
-  const renderQualityBadge = (item: ItemData) => (
-    <span className={`text-[10px] px-1.5 py-0.5 font-bold rounded border flex items-center gap-0.5 shrink-0 ${
-      item.quality === 'S' ? 'text-amber-400 bg-amber-900/40 border-amber-500/50' :
-      item.quality === 'A' ? 'text-purple-400 bg-purple-900/40 border-purple-500/50' :
-      item.quality === 'B' ? 'text-blue-400 bg-blue-900/40 border-blue-500/50' :
-      item.quality === 'C' ? 'text-green-400 bg-green-900/40 border-green-500/50' :
-      item.quality === 'D' ? 'text-cyan-400 bg-cyan-900/40 border-cyan-500/50' :
-      'text-gray-400 bg-gray-900/40 border-gray-500/50'
-    }`}>
+  const getQualityStyle = (quality?: string) => {
+    if (!quality) return 'text-slate-400';
+    switch(quality) {
+      case 'S': return 'text-amber-400 font-bold drop-shadow-[0_0_2px_rgba(251,191,36,0.8)]';
+      case 'A': return 'text-red-400 font-bold';
+      case 'B': return 'text-blue-400 font-bold';
+      case 'C': return 'text-emerald-400 font-bold';
+      case 'D': return 'text-slate-300';
+      case 'E': return 'text-slate-500';
+      default: return 'text-slate-400';
+    }
+  };
+
+  const renderQualityBadge = (item: ItemData, isLarge = false) => (
+    <span className={`
+      ${isLarge ? 'text-sm px-3 py-1' : 'text-xs px-1.5 py-0.5'}
+      ${getQualityStyle(item.quality)} bg-[#2c241b]/80 rounded ml-1 font-mono border border-black/20
+    `}>
       {item.quality || 'E'}
     </span>
   );
@@ -471,7 +480,7 @@ const ShopArmModal: React.FC<ShopEquipModalProps> = ({
               <h2 className="text-2xl font-bold text-[#f0e6d2] mt-4 tracking-wider text-shadow-sm text-center">{selectedItem.name}</h2>
 
               <div className="flex items-center gap-3 mt-2">
-                {renderQualityBadge(selectedItem)}
+                {renderQualityBadge(selectedItem, true)}
                 <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30 uppercase tracking-widest">
                   {ITEM_CATEGORIES.find(c => c.id === selectedItem.category)?.name || '防具'}
                 </span>
