@@ -385,6 +385,95 @@ function syncCharacterEquipment(userId, slotId, characterEquipments, callback) {
     });
 }
 
+function syncCharacterSkills(userId, slotId, characterSkills, callback) {
+    const skillRows = [];
+    const now = Date.now();
+
+    if (characterSkills && typeof characterSkills === 'object') {
+        for (const [characterId, skills] of Object.entries(characterSkills)) {
+            if (skills && typeof skills === 'object') {
+                skillRows.push({
+                    characterId,
+                    slot1: skills.slot1 || null,
+                    slot2: skills.slot2 || null,
+                    slot3: skills.slot3 || null,
+                    slot4: skills.slot4 || null,
+                    slot5: skills.slot5 || null,
+                    slot6: skills.slot6 || null,
+                    slot7: skills.slot7 || null,
+                    slot8: skills.slot8 || null
+                });
+            }
+        }
+    }
+
+    if (skillRows.length === 0) {
+        db.run(
+            "DELETE FROM character_skills WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId],
+            callback
+        );
+        return;
+    }
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.run(
+            "DELETE FROM character_skills WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId]
+        );
+
+        const stmt = db.prepare(
+            `INSERT OR REPLACE INTO character_skills (user_id, slot_id, character_id, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        );
+
+        let finished = 0;
+        let hasError = false;
+
+        skillRows.forEach((row) => {
+            stmt.run(
+                userId,
+                slotId,
+                row.characterId,
+                row.slot1,
+                row.slot2,
+                row.slot3,
+                row.slot4,
+                row.slot5,
+                row.slot6,
+                row.slot7,
+                row.slot8,
+                now,
+                (insertErr) => {
+                    if (hasError) return;
+                    if (insertErr) {
+                        hasError = true;
+                        stmt.finalize(() => {
+                            db.run("ROLLBACK");
+                            callback(insertErr);
+                        });
+                        return;
+                    }
+
+                    finished += 1;
+                    if (finished === skillRows.length) {
+                        stmt.finalize((finalizeErr) => {
+                            if (finalizeErr || hasError) {
+                                db.run("ROLLBACK");
+                                callback(finalizeErr || hasError);
+                            } else {
+                                db.run("COMMIT", callback);
+                            }
+                        });
+                    }
+                }
+            );
+        });
+    });
+}
+
 // API Routes
 
 // 健康检查和状态端点 (GET请求，可通过浏览器直接访问)
@@ -834,7 +923,11 @@ app.post('/api/save', (req, res) => {
 
             syncCharacterEquipment(userId, slotId, data.characterEquipments, (equipErr) => {
                 if (equipErr) return res.json({ success: false, message: equipErr.message });
-                res.json({ success: true });
+
+                syncCharacterSkills(userId, slotId, data.characterSkills, (skillErr) => {
+                    if (skillErr) return res.json({ success: false, message: skillErr.message });
+                    res.json({ success: true });
+                });
             });
         });
     });

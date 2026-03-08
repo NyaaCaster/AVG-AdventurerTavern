@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
-    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots
+    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots, CharacterSkills
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
@@ -97,6 +97,26 @@ export const useCoreState = (initialSaveData?: any) => {
       return normalized;
   };
 
+  const normalizeCharacterSkills = (rawSkills?: Record<string, any>): Record<string, CharacterSkills> => {
+      const normalized: Record<string, CharacterSkills> = {};
+
+      Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
+          const raw = rawSkills?.[charId] || {};
+          normalized[charId] = {
+              slot1: typeof raw.slot1 === 'number' ? raw.slot1 : null,
+              slot2: typeof raw.slot2 === 'number' ? raw.slot2 : null,
+              slot3: typeof raw.slot3 === 'number' ? raw.slot3 : null,
+              slot4: typeof raw.slot4 === 'number' ? raw.slot4 : null,
+              slot5: typeof raw.slot5 === 'number' ? raw.slot5 : null,
+              slot6: typeof raw.slot6 === 'number' ? raw.slot6 : null,
+              slot7: typeof raw.slot7 === 'number' ? raw.slot7 : null,
+              slot8: typeof raw.slot8 === 'number' ? raw.slot8 : null
+          };
+      });
+
+      return normalized;
+  };
+
   const getLevelUpNeedExp = (currentLevel: number): number => {
       const nextLevel = currentLevel + 1;
       if (nextLevel >= EXP_TABLE.length) return Number.MAX_SAFE_INTEGER;
@@ -143,6 +163,7 @@ export const useCoreState = (initialSaveData?: any) => {
     return initialStats;
   });
   const [characterEquipments, setCharacterEquipments] = useState<Record<string, CharacterEquipment>>(() => normalizeCharacterEquipments());
+  const [characterSkills, setCharacterSkills] = useState<Record<string, CharacterSkills>>({});
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
     // Calculate initial values based on facility levels
@@ -205,6 +226,7 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(data.inventory);
       setCharacterStats(normalizeCharacterStats(data.characterStats));
       setCharacterEquipments(normalizeCharacterEquipments(data.characterEquipments));
+      setCharacterSkills(normalizeCharacterSkills(data.characterSkills));
       setBattleParty(normalizeBattleParty(data.battleParty));
       setSceneLevels(data.sceneLevels);
       setRevenueLogs(data.revenueLogs);
@@ -462,6 +484,23 @@ export const useCoreState = (initialSaveData?: any) => {
       }));
   };
 
+  const updateCharacterSkill = (characterId: string, slot: 'slot1' | 'slot2' | 'slot3' | 'slot4' | 'slot5' | 'slot6' | 'slot7' | 'slot8', skillId: number | null) => {
+      setCharacterSkills(prev => ({
+          ...prev,
+          [characterId]: {
+              ...(prev[characterId] || { slot1: null, slot2: null, slot3: null, slot4: null, slot5: null, slot6: null, slot7: null, slot8: null }),
+              [slot]: skillId
+          }
+      }));
+  };
+
+  const updateCharacterSkills = (characterId: string, skills: CharacterSkills) => {
+      setCharacterSkills(prev => ({
+          ...prev,
+          [characterId]: skills
+      }));
+  };
+
   return {
       inventory, setInventory,
       gold, setGold,
@@ -470,6 +509,7 @@ export const useCoreState = (initialSaveData?: any) => {
       foodStock, setFoodStock,
       characterStats, setCharacterStats,
       characterEquipments, setCharacterEquipments,
+      characterSkills, setCharacterSkills,
       characterUnlocks, setCharacterUnlocks,
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
@@ -488,6 +528,8 @@ export const useCoreState = (initialSaveData?: any) => {
       updateInventoryItem,
       updateCharacterUnlock,
       updateCharacterUnlocks,
+      updateCharacterSkill,
+      updateCharacterSkills,
       applyLoadedData,
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,

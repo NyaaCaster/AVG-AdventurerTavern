@@ -603,6 +603,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           inventory: core.inventory,
           characterStats: core.characterStats,
           characterEquipments: core.characterEquipments,
+          characterSkills: core.characterSkills,
           battleParty: core.battleParty,
           characterUnlocks: unlocksToSave,
           sceneLevels: core.sceneLevels,
@@ -955,9 +956,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           battleParty={core.battleParty}
           characterUnlocks={core.characterUnlocks}
           characterStats={core.characterStats}
+          characterSkills={core.characterSkills}
           userName={settings.userName}
-          userId={userId}
-          slotId={currentSlotId}
+          onUpdateCharacterSkills={core.updateCharacterSkills}
           onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after skill set modal close failed:', err))}
       />
       

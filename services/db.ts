@@ -140,6 +140,7 @@ export const saveGame = async (
     inventory: Record<string, number>;
     characterStats: Record<string, CharacterStat>;
     characterEquipments?: Record<string, CharacterEquipment>;
+    characterSkills?: Record<string, import('../types').CharacterSkills>;
     battleParty?: BattlePartySlots;
     characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;
