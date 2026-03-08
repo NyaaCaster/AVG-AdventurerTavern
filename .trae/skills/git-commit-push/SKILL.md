@@ -91,6 +91,29 @@ git push origin <branch>
 ```
 Push to the current branch.
 
+### Step 7: Check Database Server Rebuild Requirement
+
+**判断是否需要重建数据库服务器：**
+
+检查本次提交是否修改了以下文件/目录：
+- `database-server/` 目录下的任何文件
+- `services/db.ts`
+- 任何涉及数据库表结构变更的文件
+
+**需要重建的情况：**
+1. 修改了 `database-server/index.js` 中的表结构定义
+2. 添加了新的数据库表
+3. 修改了数据库同步函数（如 `syncCharacterProgress`, `syncCharacterEquipment` 等）
+4. 修改了 API 端点中的数据库操作逻辑
+
+**输出提示（仅提醒，不执行）：**
+如果需要重建，在完成摘要中添加：
+```
+⚠️ 需要重建数据库服务器以应用更改！
+```
+
+**注意**：不要自动执行重建命令，用户有自己的 rebuild 脚本（docker build）。
+
 ## Error Handling
 
 - **TypeScript 编译失败**：停止提交，向用户展示错误信息，建议修复后再提交
