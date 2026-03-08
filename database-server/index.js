@@ -130,6 +130,30 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_character_equipment_character 
             ON character_equipment(character_id)`);
 
+    // 角色技能配置表（每用户-每存档-每角色-8个技能栏位）
+    db.run(`CREATE TABLE IF NOT EXISTS character_skills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
+        slot1 INTEGER DEFAULT NULL,
+        slot2 INTEGER DEFAULT NULL,
+        slot3 INTEGER DEFAULT NULL,
+        slot4 INTEGER DEFAULT NULL,
+        slot5 INTEGER DEFAULT NULL,
+        slot6 INTEGER DEFAULT NULL,
+        slot7 INTEGER DEFAULT NULL,
+        slot8 INTEGER DEFAULT NULL,
+        updated_at INTEGER NOT NULL,
+        UNIQUE(user_id, slot_id, character_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_skills_user_slot 
+            ON character_skills(user_id, slot_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_character_skills_character 
+            ON character_skills(character_id)`);
+
     // ----------------- 新增：AI 聊天系统数据表 -----------------
 
     // 对话历史表 (短期工作记忆)
@@ -1504,6 +1528,191 @@ app.post('/api/character_unlocks/get_all', (req, res) => {
                 const characterId = row.character_id;
                 delete row.character_id;
                 data[characterId] = row;
+            });
+            
+            res.json({ success: true, data });
+        }
+    );
+});
+
+// --- 角色技能配置 API ---
+
+// 10. 获取单个角色的技能配置
+app.post('/api/character_skills/get', (req, res) => {
+    const { userId, slotId, characterId } = req.body;
+    
+    if (!userId || slotId === undefined || !characterId) {
+        return res.json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId, characterId' 
+        });
+    }
+    
+    db.get(
+        `SELECT character_id, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8
+         FROM character_skills 
+         WHERE user_id = ? AND slot_id = ? AND character_id = ?`,
+        [userId, slotId, characterId],
+        (err, row) => {
+            if (err) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: '数据库查询错误: ' + err.message 
+                });
+            }
+            
+            if (!row) {
+                return res.json({
+                    success: true,
+                    skills: {
+                        characterId: characterId,
+                        slot1: null,
+                        slot2: null,
+                        slot3: null,
+                        slot4: null,
+                        slot5: null,
+                        slot6: null,
+                        slot7: null,
+                        slot8: null
+                    }
+                });
+            }
+            
+            res.json({ success: true, skills: row });
+        }
+    );
+});
+
+// 11. 更新角色技能配置
+app.post('/api/character_skills/update', (req, res) => {
+    const { userId, slotId, characterId, skills } = req.body;
+    
+    if (!userId || slotId === undefined || !characterId || !skills) {
+        return res.json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId, characterId, skills' 
+        });
+    }
+    
+    const timestamp = Date.now();
+    
+    const validSlots = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5', 'slot6', 'slot7', 'slot8'];
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    for (const slot of validSlots) {
+        if (skills.hasOwnProperty(slot)) {
+            const value = skills[slot];
+            if (value !== null && typeof value !== 'number') {
+                return res.json({ 
+                    success: false, 
+                    message: `字段 ${slot} 的值必须是数字或 null` 
+                });
+            }
+            updateFields.push(`${slot} = ?`);
+            updateValues.push(value);
+        }
+    }
+    
+    if (updateFields.length === 0) {
+        return res.json({ 
+            success: false, 
+            message: '没有有效的更新字段' 
+        });
+    }
+    
+    updateFields.push('updated_at = ?');
+    updateValues.push(timestamp);
+    
+    updateValues.push(userId, slotId, characterId);
+    
+    const updateSql = `
+        UPDATE character_skills 
+        SET ${updateFields.join(', ')}
+        WHERE user_id = ? AND slot_id = ? AND character_id = ?
+    `;
+    
+    db.run(updateSql, updateValues, function(err) {
+        if (err) {
+            return res.status(500).json({ 
+                success: false, 
+                message: '更新失败: ' + err.message 
+            });
+        }
+        
+        if (this.changes === 0) {
+            const insertFields = ['user_id', 'slot_id', 'character_id', 'updated_at'];
+            const insertPlaceholders = ['?', '?', '?', '?'];
+            const insertValues = [userId, slotId, characterId, timestamp];
+            
+            for (const slot of validSlots) {
+                if (skills.hasOwnProperty(slot)) {
+                    insertFields.push(slot);
+                    insertPlaceholders.push('?');
+                    insertValues.push(skills[slot]);
+                }
+            }
+            
+            const insertSql = `
+                INSERT INTO character_skills (${insertFields.join(', ')})
+                VALUES (${insertPlaceholders.join(', ')})
+            `;
+            
+            db.run(insertSql, insertValues, function(err) {
+                if (err) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: '插入失败: ' + err.message 
+                    });
+                }
+                res.json({ success: true, message: '技能配置已创建' });
+            });
+        } else {
+            res.json({ success: true, message: '技能配置已更新' });
+        }
+    });
+});
+
+// 12. 批量获取所有角色的技能配置
+app.post('/api/character_skills/get_all', (req, res) => {
+    const { userId, slotId } = req.body;
+    
+    if (!userId || slotId === undefined) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '缺少必需参数: userId, slotId' 
+        });
+    }
+    
+    db.all(
+        `SELECT character_id, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8
+         FROM character_skills 
+         WHERE user_id = ? AND slot_id = ?`,
+        [userId, slotId],
+        (err, rows) => {
+            if (err) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: '数据库查询错误: ' + err.message 
+                });
+            }
+            
+            const data = {};
+            rows.forEach(row => {
+                const characterId = row.character_id;
+                const skillsData = {
+                    characterId: characterId,
+                    slot1: row.slot1,
+                    slot2: row.slot2,
+                    slot3: row.slot3,
+                    slot4: row.slot4,
+                    slot5: row.slot5,
+                    slot6: row.slot6,
+                    slot7: row.slot7,
+                    slot8: row.slot8
+                };
+                data[characterId] = skillsData;
             });
             
             res.json({ success: true, data });
