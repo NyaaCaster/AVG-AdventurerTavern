@@ -12,7 +12,7 @@ def get_conn():
     return conn
 
 
-def print_rows(rows: Iterable[sqlite3.Row]):
+def print_rows(rows: Iterable[sqlite3.Row]) -> None:
     rows = list(rows)
     if not rows:
         print("无结果")
@@ -33,7 +33,7 @@ def table_exists(cur: sqlite3.Cursor, table_name: str) -> bool:
     return row is not None
 
 
-def table_counts():
+def table_counts() -> None:
     """查看各表数据量"""
     conn = get_conn()
     cur = conn.cursor()
@@ -58,7 +58,7 @@ def table_counts():
     conn.close()
 
 
-def query_inventory(user_id: int, item_id: str | None = None):
+def query_inventory(user_id: int, item_id: str | None = None) -> None:
     """查询用户背包，可指定道具ID"""
     conn = get_conn()
     cur = conn.cursor()
@@ -80,7 +80,7 @@ def query_inventory(user_id: int, item_id: str | None = None):
     conn.close()
 
 
-def query_user(user_id: int | None = None):
+def query_user(user_id: int | None = None) -> None:
     """查询用户信息"""
     conn = get_conn()
     cur = conn.cursor()
@@ -88,6 +88,8 @@ def query_user(user_id: int | None = None):
     sql = """
     SELECT id,
            username,
+           discord_username,
+           discord_id,
            datetime(created_at/1000, 'unixepoch', '+8 hours') AS created_at
     FROM users
     """
@@ -101,7 +103,7 @@ def query_user(user_id: int | None = None):
     conn.close()
 
 
-def query_save(user_id: int, slot_id: int | None = None):
+def query_save(user_id: int, slot_id: int | None = None) -> None:
     """查看存档完整数据"""
     conn = get_conn()
     cur = conn.cursor()
@@ -128,7 +130,7 @@ def query_save(user_id: int, slot_id: int | None = None):
     conn.close()
 
 
-def query_unlocks(user_id: int, slot_id: int | None = None, character_id: str | None = None):
+def query_unlocks(user_id: int, slot_id: int | None = None, character_id: str | None = None) -> None:
     """查询角色解锁状态"""
     conn = get_conn()
     cur = conn.cursor()
@@ -170,7 +172,7 @@ def query_unlocks(user_id: int, slot_id: int | None = None, character_id: str | 
     conn.close()
 
 
-def query_progress(user_id: int, slot_id: int | None = None, character_id: str | None = None):
+def query_progress(user_id: int, slot_id: int | None = None, character_id: str | None = None) -> None:
     """查询角色等级与经验"""
     conn = get_conn()
     cur = conn.cursor()
@@ -198,7 +200,7 @@ def query_progress(user_id: int, slot_id: int | None = None, character_id: str |
     conn.close()
 
 
-def query_equipment(user_id: int, slot_id: int | None = None, character_id: str | None = None):
+def query_equipment(user_id: int, slot_id: int | None = None, character_id: str | None = None) -> None:
     """查询角色装备"""
     conn = get_conn()
     cur = conn.cursor()
@@ -228,7 +230,7 @@ def query_equipment(user_id: int, slot_id: int | None = None, character_id: str 
     conn.close()
 
 
-def query_character_overview(user_id: int, slot_id: int, character_id: str | None = None):
+def query_character_overview(user_id: int, slot_id: int, character_id: str | None = None) -> None:
     """查询角色总览：解锁 + 等级经验 + 装备"""
     conn = get_conn()
     cur = conn.cursor()
@@ -265,7 +267,7 @@ def query_character_overview(user_id: int, slot_id: int, character_id: str | Non
     conn.close()
 
 
-def query_sanity(user_id: int, limit: int = 20):
+def query_sanity(user_id: int, limit: int = 20) -> None:
     """查询某用户理智账本最近明细"""
     conn = get_conn()
     cur = conn.cursor()
@@ -286,7 +288,7 @@ def query_sanity(user_id: int, limit: int = 20):
     conn.close()
 
 
-def query_balance(user_id: int | None = None):
+def query_balance(user_id: int | None = None) -> None:
     """查询理智余额（sum(amount)）"""
     conn = get_conn()
     cur = conn.cursor()
@@ -302,7 +304,7 @@ def query_balance(user_id: int | None = None):
     conn.close()
 
 
-def raw_sql(sql: str):
+def raw_sql(sql: str) -> None:
     """执行任意 SQL 语句（建议优先使用 SELECT）"""
     conn = get_conn()
     cur = conn.cursor()
