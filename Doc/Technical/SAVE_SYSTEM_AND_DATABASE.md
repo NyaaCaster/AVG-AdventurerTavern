@@ -145,6 +145,7 @@ interface SaveData {
     characterStats: Record<string, { level: number; affinity: number }>;
     characterEquipments?: Record<string, CharacterEquipment>;
     characterSkills?: Record<string, CharacterSkills>;
+    playerLearnedSkills?: number[];
     battleParty?: BattlePartySlots;
     characterUnlocks: Record<string, CharacterUnlocks>;
     
@@ -291,7 +292,24 @@ interface SaveData {
 }
 ```
 
-#### 5.3 战斗队伍配置 (`battleParty`)
+#### 5.3 玩家已学习技能 (`playerLearnedSkills`)
+
+| 数据结构 | 说明 | 示例 |
+|----------|------|------|
+| `number[]` | 玩家角色(char_1)已学习技能ID数组 | `[1, 2, 5, 10]` |
+
+**说明**:
+- 记录玩家角色(char_1)通过特殊途径学习到的技能ID
+- 技能来源包括：特殊事件、任务奖励、道具使用等
+- 学习新技能后自动存档到0号存档位
+- 新学习的技能不会自动配置到技能栏位，需要玩家手动配置
+
+**示例**:
+```json
+[1, 2, 5, 10, 15, 20]
+```
+
+#### 5.4 战斗队伍配置 (`battleParty`)
 
 | 数据结构 | 说明 | 示例 |
 |----------|------|------|
@@ -462,6 +480,7 @@ export const useWorldSystem = (sceneLevels: any, initialData?: any) => {
 3. 从设置界面返回游戏时
 4. **模态框关闭时**（队伍编成、装备变更、技能配置）
 5. **任务操作后**（接受任务、完成任务）
+6. **学习新技能后**（玩家角色获得新技能）
 
 **存档模式**:
 
@@ -470,7 +489,7 @@ export const useWorldSystem = (sceneLevels: any, initialData?: any) => {
 | 模式 | 适用场景 | 触发时机 | 示例组件 |
 |------|----------|----------|----------|
 | **关闭时存档** | 批量编辑操作 | 模态框关闭时 | `PartyFormationModal`, `PartyEquipmentModal`, `PartySkillSetModal` |
-| **即时存档** | 单次操作即时生效 | 操作完成后立即存档 | `QuestBoardModal` |
+| **即时存档** | 单次操作即时生效 | 操作完成后立即存档 | `QuestBoardModal`, `handleLearnPlayerSkill` |
 
 **关闭时存档模式**:
 ```typescript
@@ -527,6 +546,7 @@ const saveData = {
     characterStats: core.characterStats,
     characterEquipments: core.characterEquipments,
     characterSkills: core.characterSkills,
+    playerLearnedSkills: core.playerLearnedSkills,
     battleParty: core.battleParty,
     characterUnlocks: core.characterUnlocks,
     sceneLevels: core.sceneLevels,

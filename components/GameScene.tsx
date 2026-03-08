@@ -36,6 +36,7 @@ import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
+import { SKILLS } from '../data/battle-data/skills';
 import { QUESTS } from '../data/quest-list';
 import { getResValue } from '../data/item-value-table';
 import { calculateTavernBonus } from '../data/facilityData';
@@ -243,7 +244,31 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       onItemsGained: handleItemsGained,
       onCharacterMove: handleCharacterMove,
       onAffinityChange: handleAffinityChange,
-      onUnlockUpdate: handleUnlockUpdate
+      onUnlockUpdate: handleUnlockUpdate,
+      onSkillLearned: async (characterId: string): Promise<{ skillId: number; skillName: string; characterName: string } | null> => {
+          const skillId = core.getCharacterLearnableSkill(characterId);
+          if (skillId === null) {
+              console.log(`[技能学习] 角色 ${characterId} 没有可学习的技能`);
+              return null;
+          }
+          const learned = await handleLearnPlayerSkill(skillId);
+          if (learned) {
+              const skillData = SKILLS.find(s => s.id === skillId);
+              const skillName = skillData?.name || `技能${skillId}`;
+              const characterData = CHARACTERS[characterId];
+              const characterName = characterData?.name || characterId;
+              
+              console.log(`[技能学习] 玩家从角色 ${characterName} 习得技能 ${skillName}`);
+              
+              setToasts(prev => [
+                  ...prev,
+                  { id: Date.now() + Math.random().toString(), type: 'skill', skillId, skillName, characterName }
+              ]);
+              
+              return { skillId, skillName, characterName };
+          }
+          return null;
+      }
   });
 
   // --- 游戏循环：收入结算与时间推进 ---
@@ -604,6 +629,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           characterStats: core.characterStats,
           characterEquipments: core.characterEquipments,
           characterSkills: core.characterSkills,
+          playerLearnedSkills: core.playerLearnedSkills,
           battleParty: core.battleParty,
           characterUnlocks: unlocksToSave,
           sceneLevels: core.sceneLevels,
@@ -620,6 +646,15 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           console.log(`[AI Memory] Syncing chat memory from slot 0 to slot ${slotId}`);
           await syncChatSlot(userId, 0, slotId);
       }
+  };
+
+  const handleLearnPlayerSkill = async (skillId: number): Promise<boolean> => {
+      const learned = core.learnPlayerSkill(skillId);
+      if (learned) {
+          console.log(`[Skill] Player learned skill ${skillId}, auto-saving...`);
+          await handleSaveGame(0).catch(err => console.error('Auto-save after learning skill failed:', err));
+      }
+      return learned;
   };
 
   const handleLoadGame = async (slotId: number) => {

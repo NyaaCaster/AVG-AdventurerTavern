@@ -141,6 +141,7 @@ export const saveGame = async (
     characterStats: Record<string, CharacterStat>;
     characterEquipments?: Record<string, CharacterEquipment>;
     characterSkills?: Record<string, import('../types').CharacterSkills>;
+    playerLearnedSkills?: number[];
     battleParty?: BattlePartySlots;
     characterUnlocks: Record<string, CharacterUnlocks>;
     sceneLevels: Record<string, number>;

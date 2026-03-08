@@ -76,6 +76,7 @@ const PROMPT_FORMATTING = `
 - unlock_request: (可选) 角色接受解锁的状态键名（如 "accept_direct_sexual"），当角色在回复中接受了某个未解锁行为时必须输出
 - gain_items: (可选) 获得的道具列表，格式为 [{id: 'item-id', count: 1}]
 - move_to: (可选) 角色同意前往的场景ID (scen_X)
+- learned_skill: (可选) 玩家从角色处习得的技能，格式为 {character_id: "char_xxx"}，仅在角色达到性高潮时输出
 
 ## 状态变更指令 (Clothing)
 - 如果剧情发展导致角色脱去衣服、变得赤裸，请在 JSON 响应的 'clothing' 字段返回 'nude'。
@@ -283,6 +284,68 @@ e) **不接受时的响应示例**：
   4. 该状态是否标注「条件不足，禁止解锁」？如果是，不应接受该行为
 `;
 
+// 9. 玩家技能学习系统指令
+const PROMPT_SKILL_LEARNING = `
+## 玩家技能学习系统 (Skill Learning System)
+
+### 触发条件
+当且仅当以下条件全部满足时，玩家可以从角色处习得技能：
+1. 当前正在进行**直接性行为**（已解锁 accept_direct_sexual）
+2. 角色**达到性高潮**（在对话中明确描述了高潮表现）
+3. 本次对话中玩家**尚未习得任何技能**
+
+### 直接性行为的定义
+**直接性行为**：仅指插入式性行为（阴道性交、肛交等），即玩家的性器官进入角色体内的行为。
+
+**间接性行为**（不触发技能学习）：
+- 亲吻、爱抚、手淫等非插入式行为
+- 使用器具（如按摩棒、跳蛋等）
+- 角色自慰或被手淫
+- 口交、乳交等非插入式性行为
+
+### 输出格式
+当满足上述条件时，在 JSON 响应中输出：
+\`\`\`json
+{
+  "text": "啊...！（身体剧烈颤抖，达到了高潮）...",
+  "emotion": "pleasure",
+  "affinity_change": 5,
+  "learned_skill": { "character_id": "当前角色的ID" }
+}
+\`\`\`
+
+### 重要规则
+- **每次对话最多触发一次**：一旦玩家从某个角色习得了技能，本次对话中不能再从该角色习得第二个技能
+- **仅限直接性行为**：间接性行为（亲吻、爱抚、使用器具、自慰等）不触发技能学习
+- **必须达到高潮**：角色必须在回复中明确表现出性高潮
+- **自动判定**：系统会自动处理技能选择逻辑，AI 只需输出角色ID
+
+### 玩家习得技能的规则（系统自动处理）
+- 玩家只能习得角色当前等级已解锁的技能
+- 按技能ID顺序依次习得
+- 已习得的技能不会重复获得
+- 习得后自动保存到存档
+
+### 示例场景
+**正确示例**：
+玩家与 char_103 进行插入式性行为，角色达到高潮：
+\`\`\`json
+{
+  "text": "不要了...啊！（身体剧烈痉挛，达到了极限）...",
+  "emotion": "pleasure",
+  "affinity_change": 5,
+  "learned_skill": { "character_id": "char_103" }
+}
+\`\`\`
+
+**错误示例**（不满足条件）：
+- 仅有亲吻、爱抚 → 不输出 learned_skill
+- 使用器具刺激 → 不输出 learned_skill
+- 角色自慰或被手淫 → 不输出 learned_skill
+- 角色未达到高潮 → 不输出 learned_skill
+- 本次对话已习得过技能 → 不再输出 learned_skill
+`;
+
 /**
  * 组合所有提示词模块
  * 提示：未来如果需要根据设置关闭 NSFW，可以在这里进行条件判断
@@ -296,5 +359,6 @@ export const GLOBAL_AI_RULES = [
     PROMPT_FORMATTING,
     PROMPT_AFFINITY,
     PROMPT_MOVEMENT,
-    PROMPT_UNLOCK_SYSTEM
+    PROMPT_UNLOCK_SYSTEM,
+    PROMPT_SKILL_LEARNING
 ].join('\n\n');

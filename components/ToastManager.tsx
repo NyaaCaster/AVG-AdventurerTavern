@@ -47,7 +47,15 @@ export interface UnlockToastData {
   avatarUrl?: string;
 }
 
-export type ToastData = ItemToastData | GoldToastData | InspirationToastData | AffinityToastData | CheckInToastData | UnlockToastData;
+export interface SkillToastData {
+  id: string;
+  type: 'skill';
+  skillId: number;
+  skillName: string;
+  characterName: string;
+}
+
+export type ToastData = ItemToastData | GoldToastData | InspirationToastData | AffinityToastData | CheckInToastData | UnlockToastData | SkillToastData;
 
 // ==================== 单个 Toast 组件 ====================
 
@@ -299,6 +307,35 @@ const CheckInToast: React.FC<{ data: CheckInToastData; onComplete: () => void }>
   );
 };
 
+// 技能习得 Toast
+const SkillToast: React.FC<{ data: SkillToastData; onComplete: () => void }> = ({ data, onComplete }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true));
+    const hideTimer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onComplete, 500);
+    }, 4000);
+    return () => clearTimeout(hideTimer);
+  }, []);
+
+  return (
+    <div className={`relative mb-2 flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-[#0c1a2c]/95 to-[#050d1a]/95 border-l-4 border-indigo-500 rounded-r shadow-2xl backdrop-blur-sm transform transition-all duration-500 ease-out overflow-hidden ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
+      <div className="relative z-10 w-10 h-10 flex items-center justify-center bg-[#11203a] rounded border border-[#1a345c] shadow-inner shrink-0">
+        <span className="text-xl">🔯</span>
+      </div>
+      <div className="relative z-10 flex flex-col">
+        <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">灵魂共鸣习得</span>
+        <span className="text-[#f0e6d2] font-bold text-sm shadow-black text-shadow-sm">{data.skillName}</span>
+      </div>
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent skew-x-[-25deg] animate-[shine_2s_infinite]"></div>
+      </div>
+    </div>
+  );
+};
+
 // ==================== Toast 管理器组件 ====================
 interface ToastManagerProps {
   toasts: ToastData[];
@@ -322,6 +359,8 @@ const ToastManager: React.FC<ToastManagerProps> = ({ toasts, onRemoveToast }) =>
         return <CheckInToast key={toast.id} data={toast} onComplete={handleComplete} />;
       case 'unlock':
         return <UnlockToast key={toast.id} data={toast} onComplete={handleComplete} />;
+      case 'skill':
+        return <SkillToast key={toast.id} data={toast} onComplete={handleComplete} />;
       default:
         return null;
     }

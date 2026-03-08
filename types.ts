@@ -228,6 +228,8 @@ export interface CharacterSkills {
   slot8: number | null;
 }
 
+export type PlayerLearnedSkills = number[];
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;

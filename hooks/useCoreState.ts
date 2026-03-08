@@ -2,10 +2,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
-    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots, CharacterSkills
+    QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots, CharacterSkills,
+    PlayerLearnedSkills
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
+import { CHARACTERS } from '../data/scenarioData';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
@@ -13,7 +15,6 @@ import {
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
-import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS_EQUIP } from '../data/item-equip';
 
 export const useCoreState = (initialSaveData?: any) => {
@@ -117,6 +118,11 @@ export const useCoreState = (initialSaveData?: any) => {
       return normalized;
   };
 
+  const normalizePlayerLearnedSkills = (rawSkills?: any): PlayerLearnedSkills => {
+      if (!Array.isArray(rawSkills)) return [];
+      return rawSkills.filter((id): id is number => typeof id === 'number' && id > 0);
+  };
+
   const getLevelUpNeedExp = (currentLevel: number): number => {
       const nextLevel = currentLevel + 1;
       if (nextLevel >= EXP_TABLE.length) return Number.MAX_SAFE_INTEGER;
@@ -177,6 +183,7 @@ export const useCoreState = (initialSaveData?: any) => {
   });
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
   const [questStates, setQuestStates] = useState<QuestStateMap>({});
+  const [playerLearnedSkills, setPlayerLearnedSkills] = useState<PlayerLearnedSkills>([]);
 
   // Apply loaded data
   useEffect(() => {
@@ -236,6 +243,7 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.characterUnlocks) setCharacterUnlocks(data.characterUnlocks);
       if (data.tavernMenu) setTavernMenu(data.tavernMenu);
       if (data.questStates) setQuestStates(data.questStates);
+      if (data.playerLearnedSkills !== undefined) setPlayerLearnedSkills(normalizePlayerLearnedSkills(data.playerLearnedSkills));
   };
 
   // --- Handlers ---
@@ -516,6 +524,30 @@ export const useCoreState = (initialSaveData?: any) => {
       return skills;
   }, [characterSkills, characterStats]);
 
+  const learnPlayerSkill = (skillId: number): boolean => {
+      if (playerLearnedSkills.includes(skillId)) return false;
+      setPlayerLearnedSkills(prev => [...prev, skillId]);
+      return true;
+  };
+
+  const hasPlayerLearnedSkill = useCallback((skillId: number): boolean => {
+      return playerLearnedSkills.includes(skillId);
+  }, [playerLearnedSkills]);
+
+  const getCharacterLearnableSkill = useCallback((characterId: string): number | null => {
+      const characterData = CHARACTERS[characterId];
+      if (!characterData?.battleData?.skills) return null;
+
+      const characterLevel = characterStats[characterId]?.level || 1;
+      const unlockedSkills = characterData.battleData.skills
+          .filter(skillLearning => characterLevel >= skillLearning.level)
+          .map(skillLearning => skillLearning.skillId);
+
+      const learnableSkills = unlockedSkills.filter(skillId => !playerLearnedSkills.includes(skillId));
+
+      return learnableSkills.length > 0 ? learnableSkills[0] : null;
+  }, [characterStats, playerLearnedSkills]);
+
   return {
       inventory, setInventory,
       gold, setGold,
@@ -528,6 +560,7 @@ export const useCoreState = (initialSaveData?: any) => {
       characterUnlocks, setCharacterUnlocks,
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
+      playerLearnedSkills, setPlayerLearnedSkills,
       
       // Handlers
       handleManagementAction,
@@ -546,6 +579,9 @@ export const useCoreState = (initialSaveData?: any) => {
       updateCharacterSkill,
       updateCharacterSkills,
       getEffectiveCharacterSkills,
+      learnPlayerSkill,
+      hasPlayerLearnedSkill,
+      getCharacterLearnableSkill,
       applyLoadedData,
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,

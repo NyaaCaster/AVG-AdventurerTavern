@@ -24,10 +24,11 @@ interface UseDialogueSystemProps {
     onCharacterMove: (charId: string, targetId: SceneId) => void;
     onAffinityChange: (charId: string, change: number) => void;
     onUnlockUpdate: (charId: string, unlockKey: keyof CharacterUnlocks) => void;
+    onSkillLearned: (characterId: string) => Promise<{ skillId: number; skillName: string; characterName: string } | null>;
 }
 
 export const useDialogueSystem = ({ 
-    settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate 
+    settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate, onSkillLearned 
 }: UseDialogueSystemProps) => {
   // AI 记忆系统
   const aiMemory = useAIMemory({ 
@@ -60,6 +61,9 @@ export const useDialogueSystem = ({
   
   // [角色主动结束对话] 跟踪当前对话中的好感度累计变化
   const [sessionAffinityTotal, setSessionAffinityTotal] = useState<number>(0);
+  
+  // [技能学习系统] 跟踪当前对话中是否已习得技能（每次对话最多一个）
+  const [sessionLearnedSkill, setSessionLearnedSkill] = useState<boolean>(false);
 
   // Subscribe to LLM logs
   useEffect(() => {
@@ -109,6 +113,9 @@ export const useDialogueSystem = ({
 
     // [角色主动结束对话] 重置对话会话的好感度累计
     setSessionAffinityTotal(0);
+    
+    // [技能学习系统] 重置对话会话的技能学习状态
+    setSessionLearnedSkill(false);
 
     let nextClothingState: ClothingState = 'default';
     if (
@@ -316,6 +323,21 @@ export const useDialogueSystem = ({
               console.log(`[Unlock Request] Database updated successfully`);
           } catch (error) {
               console.error(`[Unlock Request] Failed to update database:`, error);
+          }
+      }
+
+      // [技能学习系统] 处理玩家从角色处习得技能
+      if (response.learned_skill && activeCharacter && !sessionLearnedSkill) {
+          const { character_id } = response.learned_skill;
+          if (character_id === activeCharacter.id) {
+              console.log(`[技能学习] AI 触发技能学习: 角色ID=${character_id}`);
+              const result = await onSkillLearned(character_id);
+              if (result) {
+                  setSessionLearnedSkill(true);
+                  console.log(`[技能学习] 玩家成功习得技能 ${result.skillName}，本次对话已锁定`);
+              } else {
+                  console.log(`[技能学习] 技能习得失败（可能已全部学会或无可用技能）`);
+              }
           }
       }
 
@@ -594,6 +616,8 @@ export const useDialogueSystem = ({
       setCurrentSprite('');
       // [角色主动结束对话] 重置好感度累计
       setSessionAffinityTotal(0);
+      // [技能学习系统] 重置技能学习状态
+      setSessionLearnedSkill(false);
       // 清理 llmService，防止残留上一个角色的上下文
       llmService.reset();
       console.log('[对话系统] 对话结束，已清除所有状态');
