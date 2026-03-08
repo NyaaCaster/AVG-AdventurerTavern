@@ -30,6 +30,7 @@ import QuestBoardModal from './QuestBoardModal';
 import InspirationDashboardModal from './InspirationDashboardModal';
 import PartyFormationModal from './PartyFormationModal';
 import PartyEquipmentModal from './PartyEquipmentModal';
+import PartySkillSetModal from './PartySkillSetModal';
 import ToastManager, { ToastData } from './ToastManager';
 import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
@@ -115,6 +116,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isInspirationDashboardOpen, setIsInspirationDashboardOpen] = useState(false);
   const [isPartyFormationOpen, setIsPartyFormationOpen] = useState(false);
   const [isPartyEquipmentOpen, setIsPartyEquipmentOpen] = useState(false);
+  const [isPartySkillSetOpen, setIsPartySkillSetOpen] = useState(false);
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
@@ -731,7 +733,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     };
 
     switch(world.currentSceneId) {
-        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} />;
+        case 'scen_1': return <Scen1 {...commonProps} onOpenManagement={() => setIsManagementOpen(true)} onOpenExpansion={() => setIsExpansionOpen(true)} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} onOpenPartySkillSet={() => setIsPartySkillSetOpen(true)} />;
         case 'scen_2': return <Scen2 {...commonProps} />;
         case 'scen_3': return <Scen3 {...commonProps} onOpenTavernMenu={() => setIsTavernMenuOpen(true)} />;
         case 'scen_4': return <Scen4 {...commonProps} />;
@@ -945,6 +947,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             }
           }}
           onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after equipment modal close failed:', err))}
+      />
+      
+      <PartySkillSetModal
+          isOpen={isPartySkillSetOpen}
+          onClose={() => setIsPartySkillSetOpen(false)}
+          battleParty={core.battleParty}
+          characterUnlocks={core.characterUnlocks}
+          characterStats={core.characterStats}
+          userName={settings.userName}
+          userId={userId}
+          slotId={currentSlotId}
+          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after skill set modal close failed:', err))}
       />
       
       <CookingModal 

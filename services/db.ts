@@ -640,3 +640,74 @@ export const getSanityRecords = async (
     }
     return null;
 };
+
+// --- 角色技能配置服务 ---
+
+export interface CharacterSkillsData {
+    characterId: string;
+    slot1: number | null;
+    slot2: number | null;
+    slot3: number | null;
+    slot4: number | null;
+    slot5: number | null;
+    slot6: number | null;
+    slot7: number | null;
+    slot8: number | null;
+}
+
+export const getCharacterSkills = async (
+    userId: number,
+    slotId: number,
+    characterId: string
+): Promise<CharacterSkillsData | null> => {
+    const res = await apiCall('/character_skills/get', {
+        userId,
+        slotId,
+        characterId
+    });
+    
+    if (res.success && res.skills) {
+        return res.skills;
+    }
+    
+    console.error('Failed to get character skills:', res.message);
+    return null;
+};
+
+export const updateCharacterSkills = async (
+    userId: number,
+    slotId: number,
+    characterId: string,
+    skills: Partial<CharacterSkillsData>
+): Promise<boolean> => {
+    const res = await apiCall('/character_skills/update', {
+        userId,
+        slotId,
+        characterId,
+        skills
+    });
+    
+    if (!res.success) {
+        console.error('Failed to update character skills:', res.message);
+        return false;
+    }
+    
+    return true;
+};
+
+export const getAllCharacterSkills = async (
+    userId: number,
+    slotId: number
+): Promise<Record<string, CharacterSkillsData>> => {
+    const res = await apiCall('/character_skills/get_all', {
+        userId,
+        slotId
+    });
+    
+    if (res.success && res.data) {
+        return res.data;
+    }
+    
+    console.error('Failed to get all character skills:', res.message);
+    return {};
+};

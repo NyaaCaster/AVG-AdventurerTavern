@@ -9,7 +9,7 @@ interface Scen1Props extends SceneProps {
     onOpenExpansion?: () => void;
 }
 
-const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, onOpenPartyFormation, onOpenPartyEquipment, sceneLevels, checkedInCharacters }) => {
+const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisible, worldState, settings, presentCharacters, onOpenManagement, onOpenExpansion, onOpenPartyFormation, onOpenPartyEquipment, onOpenPartySkillSet, sceneLevels, checkedInCharacters }) => {
   const [menuLayer, setMenuLayer] = useState<'main' | 'move' | 'management' | 'party' | 'outing'>('main');
   const [showRoomSelection, setShowRoomSelection] = useState(false);
 
@@ -89,6 +89,12 @@ const Scen1: React.FC<Scen1Props> = ({ onNavigate, onEnterDialogue, isMenuVisibl
                icon="fa-shield" 
                onClick={() => onOpenPartyEquipment && onOpenPartyEquipment()} 
                subLabel="Equipment" 
+             />
+             <SceneActionBtn 
+               label="技能配置" 
+               icon="fa-book" 
+               onClick={() => onOpenPartySkillSet && onOpenPartySkillSet()} 
+               subLabel="Skills" 
              />
           </>
         )}

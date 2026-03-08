@@ -217,6 +217,17 @@ export interface CharacterEquipment {
 
 export type BattlePartySlots = [string, string | null, string | null, string | null];
 
+export interface CharacterSkills {
+  slot1: number | null;
+  slot2: number | null;
+  slot3: number | null;
+  slot4: number | null;
+  slot5: number | null;
+  slot6: number | null;
+  slot7: number | null;
+  slot8: number | null;
+}
+
 export interface SceneProps {
   onNavigate: (sceneId: SceneId, params?: any) => void;
   onAction: (action: string, param?: any) => void;
@@ -237,6 +248,7 @@ export interface SceneProps {
   battleParty?: BattlePartySlots;
   onOpenPartyFormation?: () => void;
   onOpenPartyEquipment?: () => void;
+  onOpenPartySkillSet?: () => void;
   // 烹饪系统相关
   onOpenCooking?: () => void;
   userRecipes?: UserRecipe[];

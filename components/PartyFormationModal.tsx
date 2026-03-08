@@ -45,6 +45,7 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
     const partySet = new Set(battleParty.filter(Boolean));
     return Object.keys(CHARACTERS)
       .filter((charId) => charId !== 'char_1')
+      .filter((charId) => CHARACTERS[charId]?.battleData?.canFight !== false)
       .filter((charId) => (characterUnlocks[charId]?.accept_battle_party || 0) === 1)
       .filter((charId) => !partySet.has(charId))
       .map((charId) => {
