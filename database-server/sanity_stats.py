@@ -5,7 +5,7 @@ import os
 # 确保能正确找到数据库文件
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "database.sqlite")
 
-def get_sanity_stats(all_users=False):
+def get_sanity_stats(all_users: bool = False) -> None:
     if not os.path.exists(DB_PATH):
         print(f"找不到数据库文件: {DB_PATH}")
         return
