@@ -143,6 +143,10 @@ interface SaveData {
     
     // 角色系统
     characterStats: Record<string, { level: number; affinity: number }>;
+    characterEquipments?: Record<string, CharacterEquipment>;
+    characterSkills?: Record<string, CharacterSkills>;
+    battleParty?: BattlePartySlots;
+    characterUnlocks: Record<string, CharacterUnlocks>;
     
     // 场景系统
     sceneLevels: Record<string, number>;
@@ -227,7 +231,67 @@ interface SaveData {
 }
 ```
 
-#### 6. 场景等级 (`sceneLevels`)
+#### 5.1 角色装备数据 (`characterEquipments`)
+
+| 数据结构 | 说明 | 示例 |
+|----------|------|------|
+| `Record<string, CharacterEquipment>` | 角色 ID → 装备数据 | 见下表 |
+
+**装备数据字段**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `weaponId` | `string \| null` | 武器 ID |
+| `armorId` | `string \| null` | 防具 ID |
+| `accessory1Id` | `string \| null` | 饰品1 ID |
+| `accessory2Id` | `string \| null` | 饰品2 ID |
+
+#### 5.2 角色技能配置 (`characterSkills`)
+
+| 数据结构 | 说明 | 示例 |
+|----------|------|------|
+| `Record<string, CharacterSkills>` | 角色 ID → 技能配置 | 见下表 |
+
+**技能配置字段**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `slot1` | `number \| null` | 技能栏位1的技能ID |
+| `slot2` | `number \| null` | 技能栏位2的技能ID |
+| `slot3` | `number \| null` | 技能栏位3的技能ID |
+| `slot4` | `number \| null` | 技能栏位4的技能ID |
+| `slot5` | `number \| null` | 技能栏位5的技能ID |
+| `slot6` | `number \| null` | 技能栏位6的技能ID |
+| `slot7` | `number \| null` | 技能栏位7的技能ID |
+| `slot8` | `number \| null` | 技能栏位8的技能ID |
+
+**示例**:
+```json
+{
+    "char_1": {
+        "slot1": 1,
+        "slot2": 2,
+        "slot3": null,
+        "slot4": null,
+        "slot5": null,
+        "slot6": null,
+        "slot7": null,
+        "slot8": 999
+    },
+    "char_103": {
+        "slot1": null,
+        "slot2": null,
+        "slot3": null,
+        "slot4": null,
+        "slot5": null,
+        "slot6": null,
+        "slot7": null,
+        "slot8": null
+    }
+}
+```
+
+#### 5.3 战斗队伍配置 (`battleParty`)
 
 | 数据结构 | 说明 | 示例 |
 |----------|------|------|
@@ -407,6 +471,10 @@ const saveData = {
     managementStats: core.managementStats,
     inventory: core.inventory,
     characterStats: core.characterStats,
+    characterEquipments: core.characterEquipments,
+    characterSkills: core.characterSkills,
+    battleParty: core.battleParty,
+    characterUnlocks: core.characterUnlocks,
     sceneLevels: core.sceneLevels,
     revenueLogs: core.revenueLogs,
     userRecipes: core.userRecipes,
