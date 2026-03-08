@@ -13,6 +13,7 @@ interface PartySkillSetModalProps {
   characterUnlocks: Record<string, CharacterUnlocks>;
   characterStats: Record<string, CharacterStat>;
   characterSkills: Record<string, CharacterSkills>;
+  playerLearnedSkills: number[];  // 玩家已习得的技能ID列表
   userName: string;
   onUpdateCharacterSkills: (characterId: string, skills: CharacterSkills) => void;
   onAutoSave: () => void;
@@ -166,6 +167,7 @@ const CharacterSkillPanel: React.FC<{
   characterId: string;
   characterStats: CharacterStat;
   characterSkills: CharacterSkills;
+  playerLearnedSkills: number[];  // 玩家已习得的技能ID列表
   userName: string;
   onUpdateSkills: (skills: CharacterSkills) => void;
   onPrev?: () => void;
@@ -176,6 +178,7 @@ const CharacterSkillPanel: React.FC<{
   characterId,
   characterStats,
   characterSkills,
+  playerLearnedSkills,
   userName,
   onUpdateSkills,
   onPrev,
@@ -233,11 +236,26 @@ const CharacterSkillPanel: React.FC<{
   const isSlot8Locked = isPlayerCharacter && characterLevel < PLAYER_UNLOCK_LEVEL;
 
   const unlockedSkillIds = useMemo(() => {
-    if (!character?.battleData?.skills) return [];
-    return character.battleData.skills
-      .filter(skillLearning => characterLevel >= skillLearning.level)
-      .map(skillLearning => skillLearning.skillId);
-  }, [character, characterLevel]);
+    const ids: number[] = [];
+    
+    // 从角色 battleData 获取基于等级解锁的技能
+    if (character?.battleData?.skills) {
+      character.battleData.skills
+        .filter(skillLearning => characterLevel >= skillLearning.level)
+        .forEach(skillLearning => ids.push(skillLearning.skillId));
+    }
+    
+    // 如果是玩家角色，添加玩家习得的技能
+    if (isPlayerCharacter && playerLearnedSkills.length > 0) {
+      playerLearnedSkills.forEach(skillId => {
+        if (!ids.includes(skillId)) {
+          ids.push(skillId);
+        }
+      });
+    }
+    
+    return ids;
+  }, [character, characterLevel, isPlayerCharacter, playerLearnedSkills]);
 
   const effectiveSkills = useMemo(() => {
     if (!isSlot8Locked) return characterSkills;
@@ -382,6 +400,7 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
   characterUnlocks,
   characterStats,
   characterSkills,
+  playerLearnedSkills,
   userName,
   onUpdateCharacterSkills,
   onAutoSave
@@ -622,6 +641,7 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
                   characterId={selectedCharacterId}
                   characterStats={characterStats[selectedCharacterId] || { level: 1, affinity: 0, exp: 0 }}
                   characterSkills={getCharacterSkillsData(selectedCharacterId)}
+                  playerLearnedSkills={playerLearnedSkills}
                   userName={userName}
                   onUpdateSkills={(skills) => onUpdateCharacterSkills(selectedCharacterId, skills)}
                   onPrev={handlePrev}

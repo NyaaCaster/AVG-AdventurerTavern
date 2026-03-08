@@ -1007,6 +1007,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           characterUnlocks={core.characterUnlocks}
           characterStats={core.characterStats}
           characterSkills={core.characterSkills}
+          playerLearnedSkills={core.playerLearnedSkills}
           userName={settings.userName}
           onUpdateCharacterSkills={core.updateCharacterSkills}
           onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after skill set modal close failed:', err))}
