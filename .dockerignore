@@ -60,6 +60,7 @@ Thumbs.db
 
 # 文档
 Doc/
+.DesDoc/
 README.md
 README-SERVER.md
 DOCKER-DEPLOY.md

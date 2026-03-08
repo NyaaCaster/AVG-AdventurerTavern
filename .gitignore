@@ -54,8 +54,14 @@ database-server/SSL/*
 .github/workflows/job-logs/*
 !.github/workflows/job-logs/.gitkeep
 
-# Trae IDE 生成的文档目录
-.trae/
+# Trae IDE 生成的文档目录（已移动到 .DesDoc）
+.trae/documents/
+
+# 设计及外部设计参考资料文档目录
+.DesDoc/
+
+# Trae IDE 规则和技能目录（提交到 GitHub，方便跨设备使用）
+# .trae/rules/ 和 .trae/skills/ 不再排除
 
 # 环境变量文件（包含敏感信息）
 .env
