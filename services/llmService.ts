@@ -9,7 +9,7 @@ export interface AIResponse {
   items?: { id: string; count: number }[];
   affinity_change?: number; // 好感度变化 (-5 到 +5)
   unlock_request?: string; // 角色解锁请求
-  learned_skill?: { character_id: string }; // 玩家习得技能
+  learned_skill?: boolean | { character_id: string }; // 玩家习得技能（简化为 boolean，或兼容旧格式）
   update_memory?: string[]; // AI 提取的核心记忆（长期记忆）
   usage?: {
       prompt_tokens: number;
