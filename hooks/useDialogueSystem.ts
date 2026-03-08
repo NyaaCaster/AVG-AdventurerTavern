@@ -327,20 +327,15 @@ export const useDialogueSystem = ({
       }
 
       // [技能学习系统] 处理玩家从角色处习得技能
-      if (response.learned_skill && activeCharacter && !sessionLearnedSkill) {
-          // 支持两种格式：learned_skill: true 或 learned_skill: { character_id: "xxx" }
-          const shouldLearn = response.learned_skill === true || 
-              (typeof response.learned_skill === 'object' && response.learned_skill.character_id);
-          
-          if (shouldLearn) {
-              console.log(`[技能学习] AI 触发技能学习，当前角色: ${activeCharacter.id}(${activeCharacter.name})`);
-              const result = await onSkillLearned(activeCharacter.id);
-              if (result) {
-                  setSessionLearnedSkill(true);
-                  console.log(`[技能学习] 玩家成功习得技能 ${result.skillName}，本次对话已锁定`);
-              } else {
-                  console.log(`[技能学习] 技能习得失败（可能已全部学会或无可用技能）`);
-              }
+      // AI 输出 learned_skill 字段即触发，系统自动使用当前对话角色的 ID
+      if (response.learned_skill !== undefined && activeCharacter && !sessionLearnedSkill) {
+          console.log(`[技能学习] AI 触发技能学习，当前角色: ${activeCharacter.id}(${activeCharacter.name})`);
+          const result = await onSkillLearned(activeCharacter.id);
+          if (result) {
+              setSessionLearnedSkill(true);
+              console.log(`[技能学习] 玩家成功习得技能 ${result.skillName}，本次对话已锁定`);
+          } else {
+              console.log(`[技能学习] 技能习得失败（可能已全部学会或无可用技能）`);
           }
       }
 
