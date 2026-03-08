@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
     QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots, CharacterSkills
@@ -501,6 +501,21 @@ export const useCoreState = (initialSaveData?: any) => {
       }));
   };
 
+  const getEffectiveCharacterSkills = useCallback((charId: string): CharacterSkills => {
+      const skills = characterSkills[charId] || {
+          slot1: null, slot2: null, slot3: null, slot4: null,
+          slot5: null, slot6: null, slot7: null, slot8: null
+      };
+      
+      const level = characterStats[charId]?.level || 1;
+      
+      if (charId === 'char_1' && level < 100) {
+          return { ...skills, slot8: 999 };
+      }
+      
+      return skills;
+  }, [characterSkills, characterStats]);
+
   return {
       inventory, setInventory,
       gold, setGold,
@@ -530,6 +545,7 @@ export const useCoreState = (initialSaveData?: any) => {
       updateCharacterUnlocks,
       updateCharacterSkill,
       updateCharacterSkills,
+      getEffectiveCharacterSkills,
       applyLoadedData,
       tavernMenu, setTavernMenu,
       handleUpdateTavernMenu,
