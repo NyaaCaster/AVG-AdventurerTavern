@@ -310,9 +310,11 @@ const PROMPT_SKILL_LEARNING = `
   "text": "啊...！（身体剧烈颤抖，达到了高潮）...",
   "emotion": "pleasure",
   "affinity_change": 5,
-  "learned_skill": { "character_id": "当前角色的ID" }
+  "learned_skill": { "character_id": "char_xxx" }
 }
 \`\`\`
+
+**重要：character_id 必须使用角色的系统ID格式（如 char_101、char_102、char_103 等），不要使用角色名称。**
 
 ### 重要规则
 - **每次对话最多触发一次**：一旦玩家从某个角色习得了技能，本次对话中不能再从该角色习得第二个技能
