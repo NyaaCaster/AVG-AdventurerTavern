@@ -460,6 +460,60 @@ export const useWorldSystem = (sceneLevels: any, initialData?: any) => {
 1. 每次对话结束时
 2. 每 5 分钟（如果不在对话中且不在场景转换中）
 3. 从设置界面返回游戏时
+4. **模态框关闭时**（队伍编成、装备变更、技能配置）
+5. **任务操作后**（接受任务、完成任务）
+
+**存档模式**:
+
+根据操作类型，系统采用两种不同的存档模式：
+
+| 模式 | 适用场景 | 触发时机 | 示例组件 |
+|------|----------|----------|----------|
+| **关闭时存档** | 批量编辑操作 | 模态框关闭时 | `PartyFormationModal`, `PartyEquipmentModal`, `PartySkillSetModal` |
+| **即时存档** | 单次操作即时生效 | 操作完成后立即存档 | `QuestBoardModal` |
+
+**关闭时存档模式**:
+```typescript
+// 模态框组件内部
+const handleClose = useCallback(() => {
+    onAutoSave();  // 触发存档
+    onClose();
+}, [onAutoSave, onClose]);
+
+// GameScene 中传递回调
+<PartyFormationModal
+    onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save failed:', err))}
+    // ...
+/>
+```
+
+**即时存档模式**:
+```typescript
+// GameScene 中直接在回调中存档
+<QuestBoardModal
+    onAcceptQuest={(questId) => {
+        core.handleAcceptQuest(questId);
+        setTimeout(() => handleSaveGame(0).catch(err => ...), 100);
+    }}
+    onCompleteQuest={(questId) => {
+        core.handleCompleteQuest(questId);
+        setTimeout(() => handleSaveGame(0).catch(err => ...), 100);
+    }}
+    // ...
+/>
+```
+
+**流程**:4. **模态框关闭时**（批量编辑场景）
+5. **关键操作后**（即时存档场景）
+
+**存档时机策略**:
+
+| 场景类型 | 存档时机 | 适用组件 | 说明 |
+|----------|----------|----------|------|
+| 批量编辑 | 关闭时存档 | PartyFormationModal, PartyEquipmentModal, PartySkillSetModal | 用户可能进行多次编辑，关闭时统一保存，避免频繁存档 |
+| 即时生效 | 即时存档 | QuestBoardModal (任务接受/完成) | 单次操作即时生效，需要立即保存确保数据不丢失 |
+| 对话交互 | 对话结束时 | DialogueScene | 对话可能较长，结束时保存 |
+| 定时保存 | 每5分钟 | GameScene | 兜底机制，防止意外丢失 |
 
 **流程**:
 ```typescript
