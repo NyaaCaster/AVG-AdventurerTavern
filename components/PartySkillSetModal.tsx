@@ -495,7 +495,7 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
       [characterId]: skills
     }));
     
-    if (userId && slotId) {
+    if (userId !== undefined && slotId !== undefined) {
       updateCharacterSkills(userId, slotId, characterId, skills).catch(err => {
         console.error('Failed to save character skills:', err);
       });
