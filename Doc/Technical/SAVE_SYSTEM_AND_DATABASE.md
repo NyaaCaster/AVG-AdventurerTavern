@@ -120,6 +120,69 @@
 - 与存档槽位关联，不同槽位的角色状态独立
 - 支持级联删除，确保数据一致性
 
+#### 4. `character_progress` 表（角色等级经验）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 记录唯一 ID |
+| `user_id` | INTEGER | NOT NULL, FOREIGN KEY | 用户 ID（外键） |
+| `slot_id` | INTEGER | NOT NULL | 存档槽位 (0=自动, 1-3=手动) |
+| `character_id` | TEXT | NOT NULL | 角色 ID (如 char_101) |
+| `level` | INTEGER | NOT NULL DEFAULT 1 | 角色等级 |
+| `exp` | INTEGER | NOT NULL DEFAULT 0 | 当前经验值 |
+| `updated_at` | INTEGER | NOT NULL | 最后更新时间戳 |
+
+**索引**:
+- `UNIQUE(user_id, slot_id, character_id)` - 每个存档中每个角色只有一条记录
+
+**同步说明**: 此表在 `/api/save` 端点中自动同步，无需额外处理。
+
+#### 5. `character_equipment` 表（角色装备栏位）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 记录唯一 ID |
+| `user_id` | INTEGER | NOT NULL, FOREIGN KEY | 用户 ID（外键） |
+| `slot_id` | INTEGER | NOT NULL | 存档槽位 (0=自动, 1-3=手动) |
+| `character_id` | TEXT | NOT NULL | 角色 ID (如 char_101) |
+| `weapon_id` | TEXT | DEFAULT NULL | 武器 ID |
+| `armor_id` | TEXT | DEFAULT NULL | 防具 ID |
+| `accessory1_id` | TEXT | DEFAULT NULL | 饰品1 ID |
+| `accessory2_id` | TEXT | DEFAULT NULL | 饰品2 ID |
+| `updated_at` | INTEGER | NOT NULL | 最后更新时间戳 |
+
+**索引**:
+- `UNIQUE(user_id, slot_id, character_id)` - 每个存档中每个角色只有一条记录
+
+**同步说明**: 此表在 `/api/save` 端点中自动同步，无需额外处理。
+
+#### 6. `character_skills` 表（角色技能配置）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 记录唯一 ID |
+| `user_id` | INTEGER | NOT NULL, FOREIGN KEY | 用户 ID（外键） |
+| `slot_id` | INTEGER | NOT NULL | 存档槽位 (0=自动, 1-3=手动) |
+| `character_id` | TEXT | NOT NULL | 角色 ID (如 char_101) |
+| `slot1` ~ `slot8` | INTEGER | DEFAULT NULL | 技能栏位 1-8 |
+| `updated_at` | INTEGER | NOT NULL | 最后更新时间戳 |
+
+**索引**:
+- `UNIQUE(user_id, slot_id, character_id)` - 每个存档中每个角色只有一条记录
+
+**同步说明**: 此表在 `/api/save` 端点中自动同步，无需额外处理。
+
+### 独立表同步机制说明
+
+| 表名 | `/api/save` 同步 | 说明 |
+|------|------------------|------|
+| `character_progress` | ✅ 自动同步 | 服务器端 `syncCharacterProgress()` |
+| `character_equipment` | ✅ 自动同步 | 服务器端 `syncCharacterEquipment()` |
+| `character_skills` | ✅ 自动同步 | 服务器端 `syncCharacterSkills()` |
+| `character_unlocks` | ✅ 自动同步 | 服务器端 `syncCharacterUnlocks()` |
+
+**注意**: 所有独立表都在 `/api/save` 端点中自动同步，客户端无需额外处理。
+
 ---
 
 ## 📦 云存档数据字典（数据库 `saves.data` 字段）
@@ -472,7 +535,14 @@ export const useWorldSystem = (sceneLevels: any, initialData?: any) => {
 };
 ```
 
-### 自动存档（Slot 0）
+### 自动存档
+
+**重要说明**: 自动存档采用**双重保存机制**：
+
+1. **当前槽位保存**：保存到玩家当前使用的存档槽位（`currentSlotId`），确保游戏进度正确保存
+2. **0号槽位备份**：同时保存到 slot 0 作为备份，防止数据丢失
+
+**手动存档**：只更新当前槽位（`currentSlotId`），不更新 0 号槽位。
 
 **触发时机**:
 1. 每次对话结束时
@@ -499,27 +569,65 @@ const handleClose = useCallback(() => {
     onClose();
 }, [onAutoSave, onClose]);
 
-// GameScene 中传递回调
+// GameScene 中传递回调（使用 handleAutoSave）
 <PartyFormationModal
-    onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save failed:', err))}
+    onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save failed:', err))}
     // ...
 />
 ```
 
 **即时存档模式**:
 ```typescript
-// GameScene 中直接在回调中存档
+// GameScene 中直接在回调中存档（使用 handleAutoSave）
 <QuestBoardModal
     onAcceptQuest={(questId) => {
         core.handleAcceptQuest(questId);
-        setTimeout(() => handleSaveGame(0).catch(err => ...), 100);
+        setTimeout(() => handleAutoSave().catch(err => ...), 100);
     }}
     onCompleteQuest={(questId) => {
         core.handleCompleteQuest(questId);
-        setTimeout(() => handleSaveGame(0).catch(err => ...), 100);
+        setTimeout(() => handleAutoSave().catch(err => ...), 100);
     }}
     // ...
 />
+```
+
+**自动存档实现**:
+```typescript
+// 自动存档：同时保存到当前槽位和0号槽位（备份）
+const handleAutoSave = async () => {
+    console.log(`[AutoSave] Saving to slot ${currentSlotId} and slot 0 (backup)...`);
+    
+    // 先保存到当前槽位
+    await handleSaveGame(currentSlotId);
+    
+    // 如果当前不是0号槽位，再保存到0号槽位作为备份
+    // 注意：服务器端 /api/save 会自动同步所有独立表（包括 character_unlocks）
+    if (currentSlotId !== 0) {
+        await handleSaveGame(0);
+    }
+};
+```
+
+**从设置界面返回时的自动存档**:
+```typescript
+// App.tsx 中
+const handleBackFromConfig = () => {
+    setGameState(previousGameState);
+    
+    if (previousGameState === GameState.PLAYING && gameSceneRef.current) {
+        gameSceneRef.current.autoSave();  // 使用自动存档机制
+    }
+};
+
+// GameScene.tsx 中暴露的接口
+export interface GameSceneRef {
+    autoSave: () => Promise<void>;
+}
+
+useImperativeHandle(ref, () => ({
+    autoSave: handleAutoSave
+}));
 ```
 
 **流程**:4. **模态框关闭时**（批量编辑场景）

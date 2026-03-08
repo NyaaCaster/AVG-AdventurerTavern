@@ -148,7 +148,7 @@ const App: React.FC = () => {
 
      // 如果是从游戏中进入设置并返回，则触发自动保存（保存设置和当前进度）
      if (previousGameState === GameState.PLAYING && gameSceneRef.current) {
-         gameSceneRef.current.saveGame(0);
+         gameSceneRef.current.autoSave();
      }
   };
 

@@ -80,7 +80,7 @@ interface GameSceneProps {
 }
 
 export interface GameSceneRef {
-    saveGame: (slotId: number) => Promise<void>;
+    autoSave: () => Promise<void>;
 }
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
@@ -167,7 +167,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       }));
       setToasts(prev => [...prev, ...newToasts]);
       // 获得道具后立即触发自动存档，防止道具丢失
-      handleSaveGame(0).catch(err => console.error('Auto-save after item gain failed:', err));
+      handleAutoSave().catch(err => console.error('Auto-save after item gain failed:', err));
   };
 
       const handleCharacterMove = (charId: string, targetId: SceneId) => {
@@ -594,7 +594,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     }
     if (action === 'rest') {
         // 先触发自动存档，再弹出第四面壁提示
-        handleSaveGame(0)
+        handleAutoSave()
             .catch(err => console.error('Auto-save on rest failed:', err))
             .finally(() => setIsRestModalOpen(true));
     }
@@ -604,6 +604,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
       // 保存前从数据库获取最新的角色解锁状态（以 character_unlocks 表为准）
+      // 注意：始终使用当前游戏槽位的解锁状态，而不是目标存档槽位
       let unlocksToSave = core.characterUnlocks;
       try {
           const { getAllCharacterUnlocks } = await import('../services/db');
@@ -648,11 +649,25 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       }
   };
 
+  // 自动存档：同时保存到当前槽位和0号槽位（备份）
+  const handleAutoSave = async () => {
+      console.log(`[AutoSave] Saving to slot ${currentSlotId} and slot 0 (backup)...`);
+      
+      // 先保存到当前槽位
+      await handleSaveGame(currentSlotId);
+      
+      // 如果当前不是0号槽位，再保存到0号槽位作为备份
+      // 注意：服务器端 /api/save 会自动同步所有独立表（包括 character_unlocks）
+      if (currentSlotId !== 0) {
+          await handleSaveGame(0);
+      }
+  };
+
   const handleLearnPlayerSkill = async (skillId: number): Promise<boolean> => {
       const learned = core.learnPlayerSkill(skillId);
       if (learned) {
           console.log(`[Skill] Player learned skill ${skillId}, auto-saving...`);
-          await handleSaveGame(0).catch(err => console.error('Auto-save after learning skill failed:', err));
+          await handleAutoSave().catch(err => console.error('Auto-save after learning skill failed:', err));
       }
       return learned;
   };
@@ -702,18 +717,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   };
 
   useImperativeHandle(ref, () => ({
-      saveGame: handleSaveGame
+      autoSave: handleAutoSave
   }));
 
   // --- 自动存档（每5分钟，非对话/非切换场景时触发）---
   useEffect(() => {
       const autoSaveInterval = setInterval(() => {
           if (!dialogue.isDialogueMode && !world.isSceneTransitioning) {
-              handleSaveGame(0);
+              handleAutoSave();
           }
       }, 60000 * 5); 
       return () => clearInterval(autoSaveInterval);
-  }, [dialogue.isDialogueMode, world.isSceneTransitioning, core.gold, world.worldState, core.inventory, userId]);
+  }, [dialogue.isDialogueMode, world.isSceneTransitioning, core.gold, world.worldState, core.inventory, userId, currentSlotId]);
 
   // --- 渲染辅助函数 ---
   const handleOpenDebug = () => {
@@ -739,7 +754,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       }
       
       // 对话结束时触发自动存档（保存角色好感度等数据）
-      handleSaveGame(0).catch(err => console.error('Auto-save failed:', err));
+      handleAutoSave().catch(err => console.error('Auto-save failed:', err));
   };
 
   const currentSceneLevel = core.sceneLevels[world.currentSceneId] || (['scen_5','scen_6','scen_7','scen_8'].includes(world.currentSceneId) ? 0 : 1);
@@ -890,7 +905,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               });
             }}
             onUpdateCharacterUnlock={core.updateCharacterUnlock}
-            onSaveGame={() => handleSaveGame(0)}
+            onSaveGame={() => handleAutoSave()}
           />
 
           <div className="pointer-events-auto">
@@ -957,7 +972,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onAddMember={core.addToBattleParty}
           onRemoveMember={core.removeFromBattleParty}
           userName={settings.userName}
-          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after party formation close failed:', err))}
+          onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after party formation close failed:', err))}
       />
       <PartyEquipmentModal
           isOpen={isPartyEquipmentOpen}
@@ -982,7 +997,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
               });
             }
           }}
-          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after equipment modal close failed:', err))}
+          onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after equipment modal close failed:', err))}
       />
       
       <PartySkillSetModal
@@ -994,7 +1009,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           characterSkills={core.characterSkills}
           userName={settings.userName}
           onUpdateCharacterSkills={core.updateCharacterSkills}
-          onAutoSave={() => handleSaveGame(0).catch(err => console.error('Auto-save after skill set modal close failed:', err))}
+          onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after skill set modal close failed:', err))}
       />
       
       <CookingModal 
@@ -1033,11 +1048,11 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         inspirationBalance={inspirationBalance}
         onAcceptQuest={(questId) => {
           core.handleAcceptQuest(questId);
-          setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest accept failed:', err)), 100);
+          setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after quest accept failed:', err)), 100);
         }}
         onCompleteQuest={(questId) => {
           core.handleCompleteQuest(questId);
-          setTimeout(() => handleSaveGame(0).catch(err => console.error('Auto-save after quest complete failed:', err)), 100);
+          setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after quest complete failed:', err)), 100);
         }}
         onDeliverQuest={core.handleDeliverQuest}
         onAddGold={(amount) => core.updateGold(core.gold + amount)}

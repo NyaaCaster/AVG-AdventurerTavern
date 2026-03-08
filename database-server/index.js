@@ -474,6 +474,100 @@ function syncCharacterSkills(userId, slotId, characterSkills, callback) {
     });
 }
 
+function syncCharacterUnlocks(userId, slotId, characterUnlocks, callback) {
+    const unlockRows = [];
+    const now = Date.now();
+
+    const validFields = [
+        'accept_battle_party', 'accept_flirt_topic', 'accept_nsfw_topic',
+        'accept_physical_contact', 'accept_indirect_sexual', 'accept_become_lover',
+        'accept_direct_sexual', 'accept_sexual_partner', 'accept_public_exposure',
+        'accept_public_sexual', 'accept_group_sexual', 'accept_prostitution',
+        'accept_sexual_slavery', 'accept_bathing_together', 'accept_player_massage',
+        'accept_character_massage'
+    ];
+
+    if (characterUnlocks && typeof characterUnlocks === 'object') {
+        for (const [characterId, unlocks] of Object.entries(characterUnlocks)) {
+            if (unlocks && typeof unlocks === 'object') {
+                const row = { characterId };
+                validFields.forEach(field => {
+                    row[field] = unlocks[field] ? 1 : 0;
+                });
+                unlockRows.push(row);
+            }
+        }
+    }
+
+    if (unlockRows.length === 0) {
+        db.run(
+            "DELETE FROM character_unlocks WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId],
+            callback
+        );
+        return;
+    }
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.run(
+            "DELETE FROM character_unlocks WHERE user_id = ? AND slot_id = ?",
+            [userId, slotId]
+        );
+
+        const stmt = db.prepare(
+            `INSERT OR REPLACE INTO character_unlocks (
+                user_id, slot_id, character_id,
+                accept_battle_party, accept_flirt_topic, accept_nsfw_topic,
+                accept_physical_contact, accept_indirect_sexual, accept_become_lover,
+                accept_direct_sexual, accept_sexual_partner, accept_public_exposure,
+                accept_public_sexual, accept_group_sexual, accept_prostitution,
+                accept_sexual_slavery, accept_bathing_together, accept_player_massage,
+                accept_character_massage, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        );
+
+        let finished = 0;
+        let hasError = false;
+
+        unlockRows.forEach((row) => {
+            stmt.run(
+                userId, slotId, row.characterId,
+                row.accept_battle_party, row.accept_flirt_topic, row.accept_nsfw_topic,
+                row.accept_physical_contact, row.accept_indirect_sexual, row.accept_become_lover,
+                row.accept_direct_sexual, row.accept_sexual_partner, row.accept_public_exposure,
+                row.accept_public_sexual, row.accept_group_sexual, row.accept_prostitution,
+                row.accept_sexual_slavery, row.accept_bathing_together, row.accept_player_massage,
+                row.accept_character_massage, now,
+                (insertErr) => {
+                    if (hasError) return;
+                    if (insertErr) {
+                        hasError = true;
+                        stmt.finalize(() => {
+                            db.run("ROLLBACK");
+                            callback(insertErr);
+                        });
+                        return;
+                    }
+
+                    finished += 1;
+                    if (finished === unlockRows.length) {
+                        stmt.finalize((finalizeErr) => {
+                            if (finalizeErr || hasError) {
+                                db.run("ROLLBACK");
+                                callback(finalizeErr || hasError);
+                            } else {
+                                db.run("COMMIT", callback);
+                            }
+                        });
+                    }
+                }
+            );
+        });
+    });
+}
+
 // API Routes
 
 // 健康检查和状态端点 (GET请求，可通过浏览器直接访问)
@@ -926,7 +1020,11 @@ app.post('/api/save', (req, res) => {
 
                 syncCharacterSkills(userId, slotId, data.characterSkills, (skillErr) => {
                     if (skillErr) return res.json({ success: false, message: skillErr.message });
-                    res.json({ success: true });
+
+                    syncCharacterUnlocks(userId, slotId, data.characterUnlocks, (unlockErr) => {
+                        if (unlockErr) return res.json({ success: false, message: unlockErr.message });
+                        res.json({ success: true });
+                    });
                 });
             });
         });

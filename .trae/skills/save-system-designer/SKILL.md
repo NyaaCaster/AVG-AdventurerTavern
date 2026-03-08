@@ -39,6 +39,38 @@ This skill ensures all new features follow the unified save/load data flow patte
 | **On-Close Save** | Batch editing | Modal close | PartyFormationModal, PartyEquipmentModal, PartySkillSetModal |
 | **Immediate Save** | Single action | After action | QuestBoardModal |
 
+### 2.1 Auto-Save Double-Write Mechanism
+
+**重要**: 自动存档采用双重保存机制：
+
+1. **当前槽位保存**: 保存到 `currentSlotId`
+2. **Slot 0 备份**: 同时保存到 slot 0 作为备份
+
+```typescript
+const handleAutoSave = async () => {
+    await handleSaveGame(currentSlotId);
+    
+    // 如果当前不是0号槽位，再保存到0号槽位作为备份
+    // 注意：服务器端 /api/save 会自动同步所有独立表
+    if (currentSlotId !== 0) {
+        await handleSaveGame(0);
+    }
+};
+```
+
+**手动存档**: 只保存到当前槽位，不同步到 slot 0。
+
+### 2.2 Dedicated Table Sync (Server-Side)
+
+所有独立表都在服务器端 `/api/save` 端点中自动同步，客户端无需额外处理：
+
+| 表名 | 同步函数 | 说明 |
+|------|----------|------|
+| `character_progress` | `syncCharacterProgress()` | 角色等级/经验 |
+| `character_equipment` | `syncCharacterEquipment()` | 角色装备 |
+| `character_skills` | `syncCharacterSkills()` | 角色技能配置 |
+| `character_unlocks` | `syncCharacterUnlocks()` | 角色解锁状态 |
+
 ### 3. Component Implementation Pattern
 
 #### On-Close Save Pattern
@@ -78,10 +110,12 @@ const MyModal: React.FC<MyModalProps> = ({
 <MyModal
   onAction={(param) => {
     core.handleAction(param);
-    setTimeout(() => handleSaveGame(0).catch(err => console.error(err)), 100);
+    setTimeout(() => handleAutoSave().catch(err => console.error(err)), 100);
   }}
 />
 ```
+
+**注意**: 使用 `handleAutoSave()` 而不是 `handleSaveGame(0)`，因为自动存档会同时保存到当前槽位和 slot 0（备份）。
 
 ## Implementation Checklist
 

@@ -34,9 +34,7 @@ interface AIResponse {
     emotion?: string;
     clothing?: string;
     affinity_change?: number;
-    learned_skill?: {
-        character_id: string;  // 角色ID，如 "char_103"
-    };
+    learned_skill?: boolean;  // 存在即触发，系统自动识别当前对话角色
     // ... 其他字段
 }
 ```
@@ -47,7 +45,7 @@ interface AIResponse {
     "text": "不要了...啊！（身体剧烈痉挛，达到了极限）...",
     "emotion": "pleasure",
     "affinity_change": 5,
-    "learned_skill": { "character_id": "char_103" }
+    "learned_skill": true
 }
 ```
 
@@ -154,26 +152,32 @@ const handleFinalClose = () => {
 ```typescript
 const dialogue = useDialogueSystem({
     // ... 其他属性
-    onSkillLearned: async (characterId: string): Promise<boolean> => {
+    onSkillLearned: async (characterId: string): Promise<{ skillId: number; skillName: string; characterName: string } | null> => {
         const skillId = core.getCharacterLearnableSkill(characterId);
         if (skillId === null) {
             console.log(`[技能学习] 角色 ${characterId} 没有可学习的技能`);
-            return false;
+            return null;
         }
         const learned = await handleLearnPlayerSkill(skillId);
         if (learned) {
-            console.log(`[技能学习] 玩家从角色 ${characterId} 习得技能 ${skillId}`);
+            // 显示 Toast 通知
+            const skillData = SKILLS.find(s => s.id === skillId);
+            const skillName = skillData?.name || `技能${skillId}`;
+            const characterData = CHARACTERS[characterId];
+            const characterName = characterData?.name || characterId;
+            console.log(`[技能学习] 玩家从角色 ${characterName} 习得技能 ${skillName}`);
+            return { skillId, skillName, characterName };
         }
-        return learned;
+        return null;
     }
 });
 
-// handleLearnPlayerSkill 定义
+// handleLearnPlayerSkill 定义（注意使用 currentSlotId）
 const handleLearnPlayerSkill = async (skillId: number): Promise<boolean> => {
     const learned = core.learnPlayerSkill(skillId);
     if (learned) {
-        console.log(`[Skill] Player learned skill ${skillId}, auto-saving...`);
-        await handleSaveGame(0).catch(err => 
+        console.log(`[Skill] Player learned skill ${skillId}, auto-saving to slot ${currentSlotId}...`);
+        await handleSaveGame(currentSlotId).catch(err => 
             console.error('Auto-save after learning skill failed:', err)
         );
     }
@@ -190,13 +194,13 @@ const handleLearnPlayerSkill = async (skillId: number): Promise<boolean> => {
     ↓
 角色达到性高潮
     ↓
-AI 输出 learned_skill: { character_id: "char_xxx" }
+AI 输出 learned_skill: true
     ↓
-useDialogueSystem 检测到 learned_skill
+useDialogueSystem 检测到 learned_skill 字段
     ↓
 检查 sessionLearnedSkill（本次对话是否已习得）
     ↓
-调用 onSkillLearned(characterId)
+调用 onSkillLearned(activeCharacter.id)
     ↓
 getCharacterLearnableSkill(characterId)
     ├── 获取角色当前等级
@@ -206,7 +210,10 @@ getCharacterLearnableSkill(characterId)
     ↓
 handleLearnPlayerSkill(skillId)
     ├── 更新 playerLearnedSkills 状态
-    └── 自动存档到 slot 0
+    └── 自动存档到 currentSlotId（当前存档槽位）
+    ↓
+显示 Toast 通知（灵魂共鸣习得）
+```
     ↓
 setSessionLearnedSkill(true)  // 锁定本次对话
 ```
@@ -225,17 +232,20 @@ setSessionLearnedSkill(true)  // 锁定本次对话
      "text": "啊...！（身体剧烈颤抖，达到了高潮）...",
      "emotion": "pleasure",
      "affinity_change": 5,
-     "learned_skill": { "character_id": "char_103" }
+     "learned_skill": true
    }
    ↓
 3. 系统处理:
+   - 当前对话角色: char_103
    - char_103 等级: 10
    - 已解锁技能: [802, 723, 551, 552, 553, 542, 545, 728, 727, 554, 555, 556]
    - 玩家已习得: [802, 723]
    - 可学习技能: [551, 552, 553, 542, 545, 728, 727, 554, 555, 556]
    - 习得技能: 551
    ↓
-4. 自动存档
+4. 自动存档到 currentSlotId
+   ↓
+5. 显示 Toast 通知
 ```
 
 ### 场景 2: 已全部学会
@@ -243,13 +253,13 @@ setSessionLearnedSkill(true)  // 锁定本次对话
 ```
 1. 玩家与 char_103 进行插入式性行为
    ↓
-2. AI 响应包含 learned_skill
+2. AI 响应包含 learned_skill: true
    ↓
 3. 系统处理:
    - char_103 所有技能已习得
    - getCharacterLearnableSkill 返回 null
    ↓
-4. 不习得任何技能，返回 false
+4. 不习得任何技能，返回 null
 ```
 
 ### 场景 3: 非直接性行为
