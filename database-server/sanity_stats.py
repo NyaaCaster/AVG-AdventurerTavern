@@ -18,7 +18,7 @@ def get_sanity_stats(all_users=False):
     sql = """
     SELECT 
         s.user_id, 
-        u.discord_username, 
+        u.username, 
         COUNT(s.id) as record_count, 
         SUM(s.amount) as total_amount,
         SUM(CASE WHEN s.amount < 0 THEN ABS(s.amount) ELSE 0 END) as total_consumed
@@ -35,7 +35,7 @@ def get_sanity_stats(all_users=False):
     
     for row in rows:
         uid = row['user_id']
-        username = str(row['discord_username']) if row['discord_username'] else "Unknown"
+        username = str(row['username']) if row['username'] else "Unknown"
         record_count = row['record_count']
         # 数值除以 10000
         total_amount = float(row['total_amount'] or 0) / 10000.0
