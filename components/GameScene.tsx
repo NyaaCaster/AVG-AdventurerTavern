@@ -746,7 +746,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         case 'scen_10': return <Scen10 {...commonProps} onOpenShop={(tab) => { setShopInitialTab(tab); setIsShopOpen(true); }} />;
         // --- 额外场景组（非旅店设施，不可升级）---
         case 'scen_town': return <ScenTown {...commonProps} />;
-        case 'scen_guild': return <ScenGuild {...commonProps} />;
+        case 'scen_guild': return <ScenGuild {...commonProps} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} onOpenPartySkillSet={() => setIsPartySkillSetOpen(true)} />;
         case 'scen_market': return <ScenMarket {...commonProps} />;
         default: return <Scen1 {...commonProps} />;
     }
