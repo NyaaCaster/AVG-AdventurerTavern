@@ -109,11 +109,18 @@ const SkillSelectModal: React.FC<{
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-bold text-[#382b26]">{skill.name}</span>
-                      {isEquipped && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30">
-                          已装备
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {skill.mpCost !== undefined && skill.mpCost > 0 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#3b82f6]/10 text-[#3b82f6]">
+                            魔力：{skill.mpCost}
+                          </span>
+                        )}
+                        {isEquipped && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#9b7a4c]/20 text-[#9b7a4c] border border-[#9b7a4c]/30">
+                            已装备
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-[10px] text-[#8c7b70] mt-1 line-clamp-2">
                       {skill.description || '无描述'}
@@ -150,9 +157,16 @@ const SkillSlot: React.FC<{
     {skill ? (
       <div className="flex items-center justify-between gap-1.5">
         <span className={`text-xs font-bold ${isLocked ? 'text-[#9b7a4c]/90' : 'text-[#382b26]'}`}>{skill.name}</span>
-        {isLocked && (
-          <i className="fa-solid fa-lock text-[#9b7a4c]/70 text-[10px]" />
-        )}
+        <div className="flex items-center gap-1">
+          {skill.mpCost !== undefined && skill.mpCost > 0 && (
+            <span className={`text-[8px] px-1 py-0.5 rounded ${isLocked ? 'bg-[#9b7a4c]/20 text-[#9b7a4c]/70' : 'bg-[#3b82f6]/10 text-[#3b82f6]'}`}>
+              魔力：{skill.mpCost}
+            </span>
+          )}
+          {isLocked && (
+            <i className="fa-solid fa-lock text-[#9b7a4c]/70 text-[10px]" />
+          )}
+        </div>
       </div>
     ) : (
       <div className={`text-xs italic ${isLocked ? 'text-[#9b7a4c]/50' : 'text-[#8c7b70]'}`}>未配置</div>
