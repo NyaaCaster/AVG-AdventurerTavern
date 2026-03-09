@@ -326,7 +326,7 @@ const SkillToast: React.FC<{ data: SkillToastData; onComplete: () => void }> = (
         <span className="text-xl">🔯</span>
       </div>
       <div className="relative z-10 flex flex-col">
-        <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">灵魂共鸣习得</span>
+        <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">灵魂共鸣，习得：</span>
         <span className="text-[#f0e6d2] font-bold text-sm shadow-black text-shadow-sm">{data.skillName}</span>
       </div>
       <div className="absolute inset-0 pointer-events-none z-0">

@@ -43,7 +43,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "基础攻击",
     "effects": [
       {
         "code": 44,
@@ -510,7 +510,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方全体造成伤害。",
     "effects": [
       {
         "code": 21,
@@ -796,7 +796,7 @@ export const SKILLS: SkillData[] = [
       "type": 0,
       "variance": 0
     },
-    "description": "",
+    "description": "解除使用者的所有强化、弱化效果和状态异常。",
     "effects": [
       {
         "code": 34,
@@ -953,7 +953,7 @@ export const SKILLS: SkillData[] = [
       "type": 5,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害并吸收等量HP。伤害量为最大HP的一半或已损失HP中较小值。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 659,
@@ -977,7 +977,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对随机敌方4体进行攻击。",
     "effects": [
       {
         "code": 21,
@@ -1008,7 +1008,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成大伤害。",
     "effects": [
       {
         "code": 21,
@@ -1039,7 +1039,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害。",
     "effects": [
       {
         "code": 44,
@@ -1070,7 +1070,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并降低其防御力和魔法防御。",
     "effects": [
       {
         "code": 32,
@@ -1107,7 +1107,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并降低其攻击力和魔法力。",
     "effects": [
       {
         "code": 32,
@@ -1144,7 +1144,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成大伤害。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 538,
@@ -1168,7 +1168,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并提升自身的攻击力和魔法力3回合。",
     "effects": [
       {
         "code": 44,
@@ -1199,7 +1199,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并提升自身的防御力和魔法防御3回合。",
     "effects": [
       {
         "code": 44,
@@ -1230,7 +1230,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方全体造成伤害。",
     "effects": [
       {
         "code": 44,
@@ -1999,7 +1999,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并使其对使用者产生敌视。",
     "effects": [
       {
         "code": 44,
@@ -2036,7 +2036,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "消耗自身10%HP，对敌方单体造成大伤害。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 535,
@@ -2060,7 +2060,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 0
     },
-    "description": "",
+    "description": "对敌方单体造成等于自身已损失HP的伤害。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 535,
@@ -2084,7 +2084,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方全体造成伤害。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 1229,
@@ -2108,7 +2108,7 @@ export const SKILLS: SkillData[] = [
       "type": 5,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方全体造成伤害并吸收等量HP。伤害量为最大HP的一半或已损失HP的1/3中较小值。",
     "effects": [],
     "hitType": 1,
     "iconIndex": 659,
@@ -2132,7 +2132,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方全体造成伤害，并赋予弱点状态。",
     "effects": [
       {
         "code": 44,
@@ -2243,7 +2243,7 @@ export const SKILLS: SkillData[] = [
       "type": 0,
       "variance": 20
     },
-    "description": "",
+    "description": "赋予我方全体HP回复状态。",
     "effects": [
       {
         "code": 21,
@@ -2367,7 +2367,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并提升自身回避率10%持续3回合。",
     "effects": [
       {
         "code": 44,
@@ -2398,7 +2398,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并提升自身会心率10%持续3回合。",
     "effects": [
       {
         "code": 44,
@@ -2429,7 +2429,7 @@ export const SKILLS: SkillData[] = [
       "type": 1,
       "variance": 20
     },
-    "description": "",
+    "description": "对敌方单体造成伤害，并提升自身反击率10%持续3回合。",
     "effects": [
       {
         "code": 44,

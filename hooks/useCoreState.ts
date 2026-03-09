@@ -545,7 +545,9 @@ export const useCoreState = (initialSaveData?: any) => {
 
       const learnableSkills = unlockedSkills.filter(skillId => !playerLearnedSkills.includes(skillId));
 
-      return learnableSkills.length > 0 ? learnableSkills[0] : null;
+      if (learnableSkills.length === 0) return null;
+      const randomIndex = Math.floor(Math.random() * learnableSkills.length);
+      return learnableSkills[randomIndex];
   }, [characterStats, playerLearnedSkills]);
 
   return {
