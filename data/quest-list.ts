@@ -15,15 +15,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 101,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 101,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 101,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -33,12 +36,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 1
       },
       {
         "item_id": "res-m0101",
-        // item_name: '光孢菌伞'
         "item_num": 5
       }
     ]
@@ -59,15 +60,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 102,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 102,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 102,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -77,12 +81,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 1
       },
       {
         "item_id": "res-m0102",
-        // item_name: '渡鸦蛋'
         "item_num": 5
       }
     ]
@@ -103,15 +105,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 103,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 103,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 103,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -121,12 +126,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 1
       },
       {
         "item_id": "res-m0103",
-        // item_name: '史莱姆凝胶'
         "item_num": 5
       }
     ]
@@ -147,15 +150,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 104,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 104,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 104,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -165,12 +171,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 1
       },
       {
         "item_id": "res-m0104",
-        // item_name: '狂暴兔虾'
         "item_num": 5
       }
     ]
@@ -191,15 +195,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 105,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 105,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 105,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -209,12 +216,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 1
       },
       {
         "item_id": "res-m0105",
-        // item_name: '影鼠豆'
         "item_num": 5
       }
     ]
@@ -235,15 +240,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 106,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 106,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 106,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -253,12 +261,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 1
       },
       {
         "item_id": "res-m0106",
-        // item_name: '莫古薯'
         "item_num": 5
       }
     ]
@@ -279,15 +285,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 107,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 107,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 107,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -297,12 +306,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 1
       },
       {
         "item_id": "res-m0107",
-        // item_name: '噬焰兽奶'
         "item_num": 5
       }
     ]
@@ -323,15 +330,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 108,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 108,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 108,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -341,12 +351,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 1
       },
       {
         "item_id": "res-m0108",
-        // item_name: '焰蝠爪'
         "item_num": 5
       }
     ]
@@ -367,15 +375,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 111,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 111,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 111,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -385,12 +396,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 2
       },
       {
         "item_id": "res-m0201",
-        // item_name: '哥布林面包'
         "item_num": 5
       }
     ]
@@ -411,15 +420,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 112,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 112,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 112,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -429,12 +441,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 2
       },
       {
         "item_id": "res-m0202",
-        // item_name: '影牙米'
         "item_num": 5
       }
     ]
@@ -455,15 +465,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 113,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 113,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 113,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -473,12 +486,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 2
       },
       {
         "item_id": "res-m0203",
-        // item_name: '纺车番茄'
         "item_num": 5
       }
     ]
@@ -499,15 +510,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 114,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 114,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 114,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -517,12 +531,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 2
       },
       {
         "item_id": "res-m0204",
-        // item_name: '影刃萝卜'
         "item_num": 5
       }
     ]
@@ -543,15 +555,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 115,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 115,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 115,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -561,12 +576,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 2
       },
       {
         "item_id": "res-m0205",
-        // item_name: '木灵胡椒'
         "item_num": 5
       }
     ]
@@ -587,15 +600,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 116,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 116,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 116,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -605,12 +621,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 2
       },
       {
         "item_id": "res-m0206",
-        // item_name: '绿环瓜'
         "item_num": 5
       }
     ]
@@ -631,15 +645,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 117,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 117,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 117,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -649,12 +666,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 2
       },
       {
         "item_id": "res-m0207",
-        // item_name: '屠夫禽肉'
         "item_num": 5
       }
     ]
@@ -675,15 +690,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 118,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 118,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 118,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -693,12 +711,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 2
       },
       {
         "item_id": "res-m0208",
-        // item_name: '哨兵草'
         "item_num": 5
       }
     ]
@@ -719,15 +735,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 119,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 119,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 119,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -737,12 +756,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 2
       },
       {
         "item_id": "res-m0209",
-        // item_name: '魔像奶油'
         "item_num": 5
       }
     ]
@@ -763,15 +780,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 121,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 121,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 121,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -781,12 +801,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 3
       },
       {
         "item_id": "res-m0301",
-        // item_name: '毒木果'
         "item_num": 5
       }
     ]
@@ -807,15 +825,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 122,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 122,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 122,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -825,12 +846,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 3
       },
       {
         "item_id": "res-m0302",
-        // item_name: '镰刀菌'
         "item_num": 5
       }
     ]
@@ -851,15 +870,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 123,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 123,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 123,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -869,12 +891,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 3
       },
       {
         "item_id": "res-m0303",
-        // item_name: '翡翠蜥肉'
         "item_num": 5
       }
     ]
@@ -895,15 +915,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 124,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 124,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 124,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -913,12 +936,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 3
       },
       {
         "item_id": "res-m0304",
-        // item_name: '余烬蜥蛋'
         "item_num": 5
       }
     ]
@@ -939,15 +960,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 125,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 125,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 125,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -957,12 +981,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 3
       },
       {
         "item_id": "res-m0305",
-        // item_name: '蜘蛛眼'
         "item_num": 5
       }
     ]
@@ -983,15 +1005,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 126,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 126,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 126,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1001,12 +1026,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 3
       },
       {
         "item_id": "res-m0306",
-        // item_name: '鸡蛇肉'
         "item_num": 5
       }
     ]
@@ -1027,15 +1050,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 127,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 127,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 127,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1045,12 +1071,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 3
       },
       {
         "item_id": "res-m0307",
-        // item_name: '未知粉尘'
         "item_num": 5
       }
     ]
@@ -1071,15 +1095,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 128,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 128,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 128,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1089,12 +1116,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 3
       },
       {
         "item_id": "res-m0308",
-        // item_name: '猛禽汗液'
         "item_num": 5
       }
     ]
@@ -1115,15 +1140,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 116,
-        "position": 1
+        "position": 1,
+        "role": "servant"
       },
       {
         "enemy_id": 116,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 131,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1133,12 +1161,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 4
       },
       {
         "item_id": "res-m0401",
-        // item_name: '绿牙虾'
         "item_num": 5
       }
     ]
@@ -1159,15 +1185,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 132,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 132,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 132,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1177,12 +1206,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 4
       },
       {
         "item_id": "res-m0402",
-        // item_name: '地狱犬肉'
         "item_num": 5
       }
     ]
@@ -1203,15 +1230,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 133,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 133,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 133,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1221,12 +1251,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 4
       },
       {
         "item_id": "res-m0403",
-        // item_name: '狮鹫蛋'
         "item_num": 5
       }
     ]
@@ -1247,15 +1275,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 134,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 104,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 104,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1265,12 +1296,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 4
       },
       {
         "item_id": "res-m0404",
-        // item_name: '霜牙贝'
         "item_num": 5
       }
     ]
@@ -1291,15 +1320,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 135,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 112,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 112,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1309,12 +1341,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 4
       },
       {
         "item_id": "res-m0405",
-        // item_name: '奇怪的米'
         "item_num": 5
       }
     ]
@@ -1335,15 +1365,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 136,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 136,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 136,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1353,12 +1386,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 4
       },
       {
         "item_id": "res-m0406",
-        // item_name: '雷霆禽肉'
         "item_num": 5
       }
     ]
@@ -1379,15 +1410,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 137,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 137,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 137,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1397,12 +1431,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 4
       },
       {
         "item_id": "res-m0407",
-        // item_name: '霜牙果'
         "item_num": 5
       }
     ]
@@ -1423,15 +1455,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 141,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 117,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 117,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1441,12 +1476,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 5
       },
       {
         "item_id": "res-m0501",
-        // item_name: '屠夫面包'
         "item_num": 5
       }
     ]
@@ -1467,15 +1500,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 142,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 126,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 126,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1485,12 +1521,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 5
       },
       {
         "item_id": "res-m0502",
-        // item_name: '奇美拉肉'
         "item_num": 5
       }
     ]
@@ -1511,15 +1545,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 143,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 115,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 115,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1529,12 +1566,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 5
       },
       {
         "item_id": "res-m0503",
-        // item_name: '绿盔奶酪'
         "item_num": 5
       }
     ]
@@ -1555,15 +1590,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 144,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 112,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 112,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1573,12 +1611,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 5
       },
       {
         "item_id": "res-m0504",
-        // item_name: '烈焰番茄'
         "item_num": 5
       }
     ]
@@ -1599,15 +1635,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 145,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 137,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 137,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1617,12 +1656,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 5
       },
       {
         "item_id": "res-m0505",
-        // item_name: '冰霜萝卜'
         "item_num": 5
       }
     ]
@@ -1643,15 +1680,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 146,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 146,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 146,
-        "position": 3
+        "position": 3,
+        "role": "master"
       }
     ]
   },
@@ -1661,12 +1701,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 5
       },
       {
         "item_id": "res-m0506",
-        // item_name: '闪电乳汁'
         "item_num": 5
       }
     ]
@@ -1687,15 +1725,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 151,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 101,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 101,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1705,12 +1746,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 6
       },
       {
         "item_id": "res-m0601",
-        // item_name: '毒影新薯'
         "item_num": 5
       }
     ]
@@ -1731,15 +1770,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 152,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 113,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 113,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1749,12 +1791,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 6
       },
       {
         "item_id": "res-m0602",
-        // item_name: '以太凝胶'
         "item_num": 5
       }
     ]
@@ -1775,15 +1815,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 153,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 116,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 116,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1793,12 +1836,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 6
       },
       {
         "item_id": "res-m0603",
-        // item_name: '狂战士鱼'
         "item_num": 5
       }
     ]
@@ -1819,15 +1860,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 154,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 123,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 123,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1837,12 +1881,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 6
       },
       {
         "item_id": "res-m0604",
-        // item_name: '暴君贝'
         "item_num": 5
       }
     ]
@@ -1863,15 +1905,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 155,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 102,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 102,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1881,12 +1926,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 6
       },
       {
         "item_id": "res-m0605",
-        // item_name: '鸦王肉'
         "item_num": 5
       }
     ]
@@ -1907,15 +1950,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 161,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 128,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 128,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1925,12 +1971,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 7
       },
       {
         "item_id": "res-m0701",
-        // item_name: '野猪龙薯'
         "item_num": 5
       }
     ]
@@ -1951,15 +1995,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 162,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 118,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 118,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -1969,12 +2016,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 7
       },
       {
         "item_id": "res-m0702",
-        // item_name: '绿怒怪肉'
         "item_num": 5
       }
     ]
@@ -1995,15 +2040,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 163,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 135,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 135,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2013,12 +2061,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 7
       },
       {
         "item_id": "res-m0703",
-        // item_name: '雾之凝胶'
         "item_num": 5
       }
     ]
@@ -2039,15 +2085,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 164,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 119,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 119,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2057,12 +2106,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 7
       },
       {
         "item_id": "res-m0704",
-        // item_name: '巨像面包'
         "item_num": 5
       }
     ]
@@ -2083,15 +2130,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 165,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 136,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 136,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2101,12 +2151,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 7
       },
       {
         "item_id": "res-m0705",
-        // item_name: '闪电果'
         "item_num": 5
       }
     ]
@@ -2127,15 +2175,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 166,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 107,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 107,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2145,12 +2196,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 7
       },
       {
         "item_id": "res-m0706",
-        // item_name: '熔岩粉末'
         "item_num": 5
       }
     ]
@@ -2171,15 +2220,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 103,
-        "position": 1
+        "position": 1,
+        "role": "servant"
       },
       {
         "enemy_id": 171,
-        "position": 2
+        "position": 2,
+        "role": "master"
       },
       {
         "enemy_id": 103,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2189,12 +2241,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 8
       },
       {
         "item_id": "res-m0801",
-        // item_name: '彩虹凝胶'
         "item_num": 5
       }
     ]
@@ -2215,15 +2265,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 172,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 111,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 111,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2233,12 +2286,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 8
       },
       {
         "item_id": "res-m0802",
-        // item_name: '黄金面包'
         "item_num": 5
       }
     ]
@@ -2259,15 +2310,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 173,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 117,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 117,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2277,12 +2331,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 8
       },
       {
         "item_id": "res-m0803",
-        // item_name: '水晶贝'
         "item_num": 5
       }
     ]
@@ -2303,15 +2355,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 174,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 108,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 108,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2321,12 +2376,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 8
       },
       {
         "item_id": "res-m0804",
-        // item_name: '熔岩鱼'
         "item_num": 5
       }
     ]
@@ -2347,15 +2400,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 175,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 146,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 146,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2365,12 +2421,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 8
       },
       {
         "item_id": "res-m0805",
-        // item_name: '雷霆包菜'
         "item_num": 5
       }
     ]
@@ -2391,15 +2445,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 181,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 132,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 132,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2409,12 +2466,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0002",
-        // item_name: '幻皮'
         "item_num": 9
       },
       {
         "item_id": "res-m0901",
-        // item_name: '黑暗豆'
         "item_num": 5
       }
     ]
@@ -2435,15 +2490,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 182,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 155,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 155,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2453,12 +2511,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 9
       },
       {
         "item_id": "res-m0902",
-        // item_name: '梦境番茄'
         "item_num": 5
       }
     ]
@@ -2479,15 +2535,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 191,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 124,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 124,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2497,12 +2556,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0003",
-        // item_name: '魔晶石'
         "item_num": 10
       },
       {
         "item_id": "res-m1001",
-        // item_name: '熔岩瓜'
         "item_num": 5
       }
     ]
@@ -2523,15 +2580,18 @@ export const QUESTS: QuestMap = {
     "enemies": [
       {
         "enemy_id": 192,
-        "position": 1
+        "position": 1,
+        "role": "master"
       },
       {
         "enemy_id": 122,
-        "position": 2
+        "position": 2,
+        "role": "servant"
       },
       {
         "enemy_id": 122,
-        "position": 3
+        "position": 3,
+        "role": "servant"
       }
     ]
   },
@@ -2541,12 +2601,10 @@ export const QUESTS: QuestMap = {
     "items": [
       {
         "item_id": "res-0001",
-        // item_name: '灵木'
         "item_num": 10
       },
       {
         "item_id": "res-m1002",
-        // item_name: '灵魂粉尘'
         "item_num": 5
       }
     ]

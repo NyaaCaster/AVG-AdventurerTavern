@@ -75,7 +75,7 @@ export enum BattleEndReason {
   /** 失败 - 玩家全灭 */
   DEFEAT = 'defeat',
   /** 逃跑成功 */
-  ESCAPED = 'escap * 技能ed'
+  ESCAPED = 'escaped'
 }
 
 /**

@@ -385,9 +385,12 @@ export interface ShopEquipModalProps {
 
 // --- 任务系统类型定义 ---
 
+export type EnemyRole = 'master' | 'servant';
+
 export interface EnemyConfig {
   enemy_id: number;
   position: number;
+  role: EnemyRole;
 }
 
 export interface BattleConfig {
