@@ -116,16 +116,78 @@ services/
 
 ---
 
-## 九、待实现模块
+## 九、已实现模块
 
 ```
 battle-system/
-├── types.ts              # 类型定义
-├── BattleUnit.ts         # 战斗单位类
-├── DamageCalculator.ts   # 伤害计算器
-├── StatusManager.ts      # 状态效果管理器
-├── SkillExecutor.ts      # 技能执行器
-├── BattleManager.ts      # 战斗管理器
-├── EnemyAI.ts            # 敌人AI系统
+├── types.ts              # 类型定义（BattleStats, BattleUnit, SkillData 等）
+├── damage.ts             # 伤害计算器
+├── healing.ts            # 治疗计算器
+├── absorb.ts             # HP吸收计算器
+├── status-effects.ts     # 状态效果管理器
+├── buffs-debuffs.ts      # 增益/减益管理器
+├── targeting.ts          # 目标选择器
+├── skill-executor.ts     # 技能执行器
+├── counter.ts            # 反击系统
+├── formula-parser.ts     # RPG Maker 公式解析器
+├── enemy-unit-factory.ts # 敌人战斗单位工厂
+├── BattleManager.ts      # 战斗流程管理器
 └── index.ts              # 统一导出
 ```
+
+### 9.1 模块功能说明
+
+| 模块 | 功能 |
+|------|------|
+| `types.ts` | 定义战斗系统所有接口、枚举和类型 |
+| `damage.ts` | 物理/魔法伤害计算、暴击判定、伤害浮动 |
+| `healing.ts` | HP回复计算、复活处理 |
+| `absorb.ts` | HP吸收效果计算 |
+| `status-effects.ts` | 状态效果应用、解除、回合结算 |
+| `buffs-debuffs.ts` | 属性增益/减益管理 |
+| `targeting.ts` | 根据技能范围选择目标 |
+| `skill-executor.ts` | 技能执行流程、效果应用 |
+| `counter.ts` | 反击触发判定与执行 |
+| `formula-parser.ts` | 解析 RPG Maker 风格的伤害公式 |
+| `enemy-unit-factory.ts` | 将敌人配置转换为 BattleUnit |
+| `BattleManager.ts` | 战斗流程控制、回合管理、胜负判定 |
+
+---
+
+## 十、敌人战斗单位创建流程
+
+### 10.1 数据来源
+
+| 数据 | 来源 | 说明 |
+|------|------|------|
+| 敌人ID | `quest-list.ts` → `battle_config.enemies[].enemy_id` | 任务配置中的敌人ID |
+| 敌人等级 | `quest-list.ts` → `star` | 任务星级（1-10） |
+| 敌人行动 | `enemies.ts` → `actions` | AI行动配置 |
+| 敌人特性 | `enemies.ts` → `traits` | 属性抗性、状态免疫等 |
+| 基础属性 | `base_stats_table.ts` → `getBaseStats(level)` | 等级对应属性 |
+
+### 10.2 创建流程
+
+```typescript
+import { createEnemyParty } from './battle-system';
+
+// 从任务配置创建敌人队伍
+const enemyUnits = createEnemyParty({
+  enemies: quest.battle_config.enemies,  // [{ enemy_id: 101, position: 1 }, ...]
+  enemyLevel: quest.enemy_level,          // 敌人等级 (1-99)
+  statMultipliers: { atk: 120 }           // 可选：属性修正
+});
+```
+
+### 10.3 属性命名对照
+
+| BaseStats (数据层) | BattleStats (战斗层) | RPG Maker 公式 |
+|-------------------|---------------------|----------------|
+| `hp` | `maxHp`, `hp` | `mhp`, `hp` |
+| `mp` | `maxMp`, `mp` | `mmp`, `mp` |
+| `atk` | `atk` | `atk` |
+| `def` | `def` | `def` |
+| `matk` | `matk` | `mat` |
+| `mdef` | `mdef` | `mdf` |
+| `agi` | `agi` | `agi` |
+| `luk` | `luk` | `luk` |

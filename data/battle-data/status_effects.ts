@@ -25,25 +25,51 @@ export type StatusEffectId =
 export type StatusEffectType = 'negative' | 'positive' | 'special';
 
 export interface StatusEffectData {
+  /** 状态效果ID */
   id: StatusEffectId;
+  /** 显示名称 */
   name: string;
+  /** 图标 */
   icon: string;
+  /** 描述文本 */
   description: string;
+  /** 状态类型：负面/正面/特殊 */
   type: StatusEffectType;
   
+  /** 默认持续回合数，-1表示永久或特殊持续时间 */
   defaultDuration: number;
+  /** 是否跳过回合 */
   skipTurn: boolean;
+  /** 受到物理攻击时是否苏醒 */
   wakeOnPhysicalHit: boolean;
+  /** 每回合HP流失百分比 */
   hpDrainPercent: number;
+  /** 每回合HP回复百分比 */
   hpRegenPercent: number;
+  /** 命中率修正 */
   hitRateModifier: number;
+  /** 是否可以使用技能 */
   canUseSkill: boolean;
+  /** 是否强制攻击敌人 */
   forceAttackEnemy: boolean;
+  /** 是否随机选择目标 */
   randomTarget: boolean;
+  /** 是否攻击友方 */
   attackAlly: boolean;
+  /** 受到伤害时解除的概率百分比 */
   removeOnDamagePercent: number;
+  /** 是否可叠加 */
   canStack: boolean;
+  /** 战斗结束后是否持续 */
   persistAfterBattle: boolean;
+  /** 受到伤害倍率 */
+  damageReceivedMultiplier: number;
+  /** 反击率加成 */
+  counterRateBonus: number;
+  /** 暴击率加成 */
+  critRateBonus: number;
+  /** 回避率加成 */
+  evasionBonus: number;
 }
 
 export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
@@ -65,7 +91,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   horny: {
     id: 'horny',
@@ -85,7 +115,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: true
+    persistAfterBattle: true,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   sleep: {
     id: 'sleep',
@@ -105,7 +139,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 50,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   stun: {
     id: 'stun',
@@ -125,7 +163,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   poison: {
     id: 'poison',
@@ -145,7 +187,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   blind: {
     id: 'blind',
@@ -165,7 +211,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   silence: {
     id: 'silence',
@@ -185,7 +235,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   berserk: {
     id: 'berserk',
@@ -205,7 +259,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 50,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   confuse: {
     id: 'confuse',
@@ -225,7 +283,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 50,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   charm: {
     id: 'charm',
@@ -245,7 +307,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: true,
     removeOnDamagePercent: 50,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   paralyze: {
     id: 'paralyze',
@@ -265,7 +331,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   hp_regen: {
     id: 'hp_regen',
@@ -285,7 +355,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   provoke: {
     id: 'provoke',
@@ -305,13 +379,17 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   weakness: {
     id: 'weakness',
     name: '弱点暴露',
     icon: '🎯',
-    description: '弱点被暴露，受到属性攻击伤害增加。',
+    description: '弱点被暴露，受到的伤害增加20%。',
     type: 'negative',
     defaultDuration: 3,
     skipTurn: false,
@@ -325,7 +403,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1.2,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0
   },
   evasion_up: {
     id: 'evasion_up',
@@ -345,7 +427,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0,
+    evasionBonus: 0.1
   },
   crit_up: {
     id: 'crit_up',
@@ -365,7 +451,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0,
+    critRateBonus: 0.1,
+    evasionBonus: 0
   },
   counter_up: {
     id: 'counter_up',
@@ -385,7 +475,11 @@ export const STATUS_EFFECTS: Record<StatusEffectId, StatusEffectData> = {
     attackAlly: false,
     removeOnDamagePercent: 0,
     canStack: false,
-    persistAfterBattle: false
+    persistAfterBattle: false,
+    damageReceivedMultiplier: 1,
+    counterRateBonus: 0.1,
+    critRateBonus: 0,
+    evasionBonus: 0
   }
 };
 
@@ -402,6 +496,7 @@ export const STATUS_EFFECT_ID_MAP: Record<number, StatusEffectId> = {
   12: 'paralyze',
   13: 'stun',
   15: 'hp_regen',
+  1000: 'horny',
   1001: 'weakness',
   1103: 'evasion_up',
   1105: 'crit_up',

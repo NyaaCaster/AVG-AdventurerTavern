@@ -1,35 +1,61 @@
 export interface SkillEffect {
+  /** 效果码，决定效果类型 */
   code: number;
+  /** 效果关联的数据ID（如状态ID、属性ID等） */
   dataId: number;
+  /** 效果参数1 */
   value1: number;
+  /** 效果参数2 */
   value2: number;
 }
 
 export interface SkillDamage {
+  /** 是否可暴击 */
   critical: boolean;
+  /** 属性ID，-1表示无属性 */
   elementId: number;
+  /** 伤害公式，a=攻击者，b=目标 */
   formula: string;
+  /** 伤害类型：0=无、1=HP伤害、3=HP回复、5=HP吸收 */
   type: number;
+  /** 伤害浮动百分比 */
   variance: number;
 }
 
 export interface SkillData {
+  /** 技能ID */
   id: number;
+  /** 动画ID */
   animationId: number;
+  /** 伤害配置 */
   damage: SkillDamage;
+  /** 技能描述 */
   description: string;
+  /** 效果列表 */
   effects: SkillEffect[];
+  /** 命中类型：0=必定命中、1=物理（可闪避）、2=魔法 */
   hitType: number;
+  /** 图标索引 */
   iconIndex: number;
+  /** 使用时显示的消息 */
   message1: string;
+  /** MP消耗 */
   mpCost: number;
+  /** 技能名称 */
   name: string;
+  /** 备注，可包含<Cooldown:x>等标签 */
   note: string;
+  /** 使用场合：1=战斗中、2=菜单中、3=均可 */
   occasion: number;
+  /** 目标范围：1=敌单体、2=敌全体、7=我方单体等 */
   scope: number;
+  /** 技能速度修正 */
   speed: number;
+  /** 技能类型ID */
   stypeId: number;
+  /** 成功率百分比 */
   successRate: number;
+  /** TP获取量 */
   tpGain: number;
 }
 

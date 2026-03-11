@@ -1,3 +1,8 @@
+/**
+ * 战斗系统 - 目标选择模块
+ * 处理技能目标选择、范围判定等逻辑
+ */
+
 import {
   BattleUnit,
   BattleState,
@@ -5,20 +10,42 @@ import {
   Faction
 } from './types';
 
+/**
+ * 目标选择结果
+ */
 export interface TargetSelection {
+  /** 选中的目标列表 */
   targets: BattleUnit[];
+  /** 选择是否有效 */
   isValid: boolean;
+  /** 是否需要用户输入 */
   requiresUserInput: boolean;
 }
 
+/**
+ * 获取存活单位列表
+ * @param units 单位列表
+ * @returns 存活的单位列表
+ */
 export function getAliveUnits(units: BattleUnit[]): BattleUnit[] {
   return units.filter(unit => unit.isAlive);
 }
 
+/**
+ * 获取死亡单位列表
+ * @param units 单位列表
+ * @returns 死亡的单位列表
+ */
 export function getDeadUnits(units: BattleUnit[]): BattleUnit[] {
   return units.filter(unit => !unit.isAlive);
 }
 
+/**
+ * 根据ID获取单位
+ * @param state 战斗状态
+ * @param unitId 单位ID
+ * @returns 单位或undefined
+ */
 export function getUnitById(state: BattleState, unitId: string): BattleUnit | undefined {
   const playerUnit = state.playerUnits.find(u => u.id === unitId);
   if (playerUnit) return playerUnit;
@@ -27,14 +54,32 @@ export function getUnitById(state: BattleState, unitId: string): BattleUnit | un
   return enemyUnit;
 }
 
+/**
+ * 获取敌方阵营
+ * @param unit 当前单位
+ * @param state 战斗状态
+ * @returns 敌方单位列表
+ */
 export function getOpposingFaction(unit: BattleUnit, state: BattleState): BattleUnit[] {
   return unit.faction === Faction.PLAYER ? state.enemyUnits : state.playerUnits;
 }
 
+/**
+ * 获取友方阵营
+ * @param unit 当前单位
+ * @param state 战斗状态
+ * @returns 友方单位列表
+ */
 export function getAllyFaction(unit: BattleUnit, state: BattleState): BattleUnit[] {
   return unit.faction === Faction.PLAYER ? state.playerUnits : state.enemyUnits;
 }
 
+/**
+ * 随机选择目标
+ * @param units 单位列表
+ * @param excludeDead 是否排除死亡单位，默认true
+ * @returns 随机选择的目标
+ */
 export function selectRandomTarget(units: BattleUnit[], excludeDead: boolean = true): BattleUnit | undefined {
   const validUnits = excludeDead ? getAliveUnits(units) : units;
   if (validUnits.length === 0) return undefined;
@@ -43,6 +88,13 @@ export function selectRandomTarget(units: BattleUnit[], excludeDead: boolean = t
   return validUnits[index];
 }
 
+/**
+ * 随机选择多个目标
+ * @param units 单位列表
+ * @param count 选择数量
+ * @param excludeDead 是否排除死亡单位，默认true
+ * @returns 随机选择的目标列表
+ */
 export function selectRandomTargets(units: BattleUnit[], count: number, excludeDead: boolean = true): BattleUnit[] {
   const validUnits = excludeDead ? getAliveUnits(units) : units;
   if (validUnits.length === 0) return [];
@@ -51,6 +103,14 @@ export function selectRandomTargets(units: BattleUnit[], count: number, excludeD
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
+/**
+ * 根据技能范围选择目标
+ * @param source 技能来源
+ * @param state 战斗状态
+ * @param scope 技能范围
+ * @param specificTargetId 指定目标ID（可选）
+ * @returns 目标选择结果
+ */
 export function selectTargetsByScope(
   source: BattleUnit,
   state: BattleState,

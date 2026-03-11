@@ -413,6 +413,7 @@ export interface QuestList {
   description: string;
   star: number;       // 难度星级 (1-10)
   rank: string;       // 难度等级 (E/D/C/B/A/S)
+  enemy_level: number; // 敌人等级 (1-99)
   target: string;
   background_image: string;
   target_image: string;

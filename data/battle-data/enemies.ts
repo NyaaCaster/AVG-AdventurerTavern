@@ -1,31 +1,66 @@
+/**
+ * 敌人行动配置
+ * 定义敌人可使用的技能及其触发条件
+ */
 export interface EnemyAction {
+  /** 使用的技能ID */
   skillId: number;
+  /** 行动优先级权重，数值越高越优先选择 */
   rating: number;
+  /** 条件类型：0=无条件、1=回合数、2=HP百分比、3=MP百分比、4=状态等 */
   conditionType: number;
+  /** 条件参数1 */
   conditionParam1: number;
+  /** 条件参数2 */
   conditionParam2: number;
 }
 
+/**
+ * 敌人特性配置
+ * 定义敌人的固有特性（如属性抗性、状态免疫等）
+ */
 export interface EnemyTrait {
+  /** 特性代码 */
   code: number;
+  /** 特性关联的数据ID */
   dataId: number;
+  /** 特性数值 */
   value: number;
 }
 
+/**
+ * 敌人伤害配置
+ * 定义敌人的基础攻击伤害参数
+ */
 export interface EnemyDamage {
+  /** 是否可暴击 */
   critical: string | number;
+  /** 属性ID */
   elementId: string | number;
+  /** 伤害公式 */
   formula: string;
+  /** 伤害类型 */
   type: string | number;
+  /** 伤害浮动百分比 */
   variance: string | number;
 }
 
+/**
+ * 敌人数据配置
+ * 定义敌人的基本信息、行动和特性
+ */
 export interface EnemyData {
+  /** 敌人ID */
   id: number;
+  /** 敌人名称 */
   name: string;
+  /** 战斗图像名称 */
   battlerName: string;
+  /** 可用行动列表 */
   actions: EnemyAction[];
+  /** 特性列表 */
   traits: EnemyTrait[];
+  /** 基础攻击伤害配置 */
   damage?: EnemyDamage;
 }
 

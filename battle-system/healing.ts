@@ -1,3 +1,8 @@
+/**
+ * 战斗系统 - 治疗模块
+ * 处理HP恢复、MP恢复、复活等治疗相关逻辑
+ */
+
 import {
   BattleUnit,
   DamageResult,
@@ -5,15 +10,29 @@ import {
 } from './types';
 import { getEffectiveStats, calculateDamageVariance } from './damage';
 
+/**
+ * 治疗计算参数接口
+ */
 export interface HealingCalculationParams {
+  /** 治疗来源 */
   source: BattleUnit;
+  /** 目标 */
   target: BattleUnit;
+  /** 基础威力 */
   basePower: number;
+  /** 是否固定数值 */
   isFixed?: boolean;
+  /** 是否基于MAT计算 */
   scaleWithMat?: boolean;
+  /** 是否有浮动 */
   hasVariance?: boolean;
 }
 
+/**
+ * 计算治疗量
+ * @param params 治疗计算参数
+ * @returns 治疗结果
+ */
 export function calculateHealing(params: HealingCalculationParams): DamageResult {
   const {
     source,
@@ -31,7 +50,7 @@ export function calculateHealing(params: HealingCalculationParams): DamageResult
   if (isFixed) {
     baseHealing = basePower;
   } else if (scaleWithMat) {
-    baseHealing = Math.floor(sourceStats.mat * 4 * (basePower / 100));
+    baseHealing = Math.floor(sourceStats.matk * 4 * (basePower / 100));
   } else {
     baseHealing = basePower;
   }

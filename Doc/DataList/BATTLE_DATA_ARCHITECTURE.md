@@ -246,5 +246,96 @@ function useConsumable(item, target) {
 
 ---
 
+## 5. 敌人战斗单位创建流程
+
+敌人战斗单位的数据来源与角色不同，采用任务配置驱动的动态创建模式。
+
+### 5.1 数据来源映射
+
+| 数据项 | 来源 | 说明 |
+|--------|------|------|
+| 敌人ID | `quest-list.ts` → `battle_config.enemies[].enemy_id` | 任务配置中指定的敌人 |
+| 敌人等级 | `quest-list.ts` → `star` | 任务星级（1-10）作为敌人等级 |
+| 敌人名称 | `enemies.ts` → `name` | 敌人基础信息 |
+| 敌人行动 | `enemies.ts` → `actions` | AI行动配置（技能ID、优先级、触发条件） |
+| 敌人特性 | `enemies.ts` → `traits` | 属性抗性、状态免疫等 |
+| 基础属性 | `base_stats_table.ts` → `getBaseStats(level)` | 根据等级查表获取 |
+
+### 5.2 创建流程
+
+```typescript
+import { createEnemyParty } from './battle-system';
+import { QUESTS } from './data/quest-list';
+
+// 获取任务配置
+const quest = QUESTS['0101'];
+
+// 创建敌人队伍
+const enemyUnits = createEnemyParty({
+  enemies: quest.battle_config.enemies,  // [{ enemy_id: 101, position: 1 }, ...]
+  enemyLevel: quest.enemy_level,          // 敌人等级 (1-99)
+  statMultipliers: { atk: 120 }           // 可选：属性修正（攻击+20%）
+});
+```
+
+### 5.3 敌人数据结构
+
+```typescript
+// enemies.ts 中的敌人定义
+interface EnemyData {
+  id: number;           // 敌人ID
+  name: string;         // 敌人名称
+  battlerName: string;  // 战斗图像名称
+  actions: EnemyAction[];  // AI行动配置
+  traits: EnemyTrait[];    // 特性列表
+  damage?: EnemyDamage;    // 基础攻击配置
+}
+
+// 创建后的战斗单位
+interface EnemyBattleUnit extends BattleUnit {
+  enemyData: EnemyData;    // 原始敌人数据
+  actions: EnemyAction[];  // AI可用行动
+  traits: EnemyTrait[];    // 特性列表
+}
+```
+
+### 5.4 属性命名对照表
+
+由于 RPG Maker 公式使用缩写，而数据层使用完整命名，存在以下映射关系：
+
+| BaseStats (数据层) | BattleStats (战斗层) | RPG Maker 公式变量 |
+|-------------------|---------------------|-------------------|
+| `hp` | `maxHp`, `hp` | `mhp`, `hp` |
+| `mp` | `maxMp`, `mp` | `mmp`, `mp` |
+| `atk` | `atk` | `atk` |
+| `def` | `def` | `def` |
+| `matk` | `matk` | `mat` |
+| `mdef` | `mdef` | `mdf` |
+| `agi` | `agi` | `agi` |
+| `luk` | `luk` | `luk` |
+
+> **注意**：`formula-parser.ts` 内部已处理 `mat`/`mdf` 到 `matk`/`mdef` 的映射，技能公式可直接使用 RPG Maker 语法。
+
+### 5.5 任务配置示例
+
+```typescript
+// quest-list.ts
+{
+  "quest_id": "0101",
+  "quest_name": "发光孢子的威胁",
+  "star": 1,  // 敌人等级 = 1
+  "battle_config": {
+    "troop_id": 1,
+    "enemies": [
+      { "enemy_id": 101, "position": 1 },
+      { "enemy_id": 101, "position": 2 },
+      { "enemy_id": 101, "position": 3 }
+    ]
+  }
+}
+```
+
+---
+
 ## 总结
 通过这种将**核心机制参数化、数值增长静态化、接口字段统一化**的数据架构，游戏的战斗系统被解耦为了纯粹的“规则执行器”。无论是添加新的极品武器、设计新的连环剧毒状态，还是调整角色的后期成长难度，都不需要再修改任何一行逻辑代码，仅需调整 `data/` 下对应的 `.ts` 配置文件即可。
