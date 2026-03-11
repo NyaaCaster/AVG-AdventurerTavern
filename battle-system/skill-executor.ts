@@ -22,7 +22,8 @@ import {
   EffectCode,
   DamageType,
   BattleLogEntry,
-  StatusEffectType
+  StatusEffectType,
+  Faction
 } from './types';
 import { selectTargetsByScope, TargetSelection } from './targeting';
 import {
@@ -747,16 +748,16 @@ export function processTurnEnd(state: BattleState): BattleLogEntry[] {
  * @param state 战斗状态
  * @returns 战斗结束结果，包含是否结束和获胜方
  */
-export function checkBattleEnd(state: BattleState): { isEnded: boolean; winner?: 'player' | 'enemy' } {
+export function checkBattleEnd(state: BattleState): { isEnded: boolean; winner?: Faction } {
   const playerAlive = state.playerUnits.some(u => u.isAlive);
   const enemyAlive = state.enemyUnits.some(u => u.isAlive);
   
   if (!playerAlive) {
-    return { isEnded: true, winner: 'enemy' };
+    return { isEnded: true, winner: Faction.ENEMY };
   }
   
   if (!enemyAlive) {
-    return { isEnded: true, winner: 'player' };
+    return { isEnded: true, winner: Faction.PLAYER };
   }
   
   return { isEnded: false };

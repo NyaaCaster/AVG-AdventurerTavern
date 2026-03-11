@@ -54,6 +54,7 @@ import {
 import { executeSkill, processTurnEnd, checkBattleEnd } from './skill-executor';
 import { checkCounterAttack, executeCounterAttack } from './counter';
 import { clearNonPersistentEffects } from './status-effects';
+import { executeEscapeCommand, checkBattleEnd as checkPlayerBattleEnd } from './player-commands';
 
 /**
  * 战斗初始化选项
