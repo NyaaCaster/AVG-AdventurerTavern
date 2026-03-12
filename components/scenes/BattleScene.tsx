@@ -423,6 +423,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               onCommandSelect={handleCommandSelect}
               onSkillClick={() => setShowSkillOverlay(true)}
               onEscapeClick={() => setShowEscapeConfirm(true)}
+              isMobile={isMobile}
             />
           </div>
         </div>

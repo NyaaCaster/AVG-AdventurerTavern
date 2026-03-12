@@ -9,6 +9,7 @@ interface CommandMenuProps {
   onCommandSelect: (command: PlayerCommand) => void;
   onSkillClick: () => void;
   onEscapeClick: () => void;
+  isMobile?: boolean;
 }
 
 const CommandMenu: React.FC<CommandMenuProps> = ({
@@ -17,7 +18,8 @@ const CommandMenu: React.FC<CommandMenuProps> = ({
   selectedCommand,
   onCommandSelect,
   onSkillClick,
-  onEscapeClick
+  onEscapeClick,
+  isMobile = false
 }) => {
   if (!isPlayerTurn || currentTurnUnitFaction !== Faction.PLAYER) {
     return null;
@@ -33,7 +35,7 @@ const CommandMenu: React.FC<CommandMenuProps> = ({
   ];
   
   return (
-    <div className="flex justify-center">
+    <div className={`flex justify-center ${isMobile ? 'mb-[10vh]' : ''}`}>
       <div className="bg-[#e8dfd1] rounded-lg border-2 border-[#9b7a4c] p-1.5 sm:p-2 md:p-3 shadow-lg">
         <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
           {commands.map(({ cmd, icon, label, onClick, disabled }) => (

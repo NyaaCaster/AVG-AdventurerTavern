@@ -16,7 +16,7 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
   isMobile = false
 }) => {
   return (
-    <div className={`flex justify-center ${isMobile ? 'gap-1' : 'gap-1 sm:gap-2 md:gap-4'} ${isMobile ? 'mb-1' : 'mb-2 sm:mb-4'}`}>
+    <div className={`flex justify-center ${isMobile ? 'gap-1 mb-3' : 'gap-1 sm:gap-2 md:gap-4 mb-2 sm:mb-4'}`}>
       {players.map((player) => {
         const isCurrentTurn = currentTurnUnitId === player.id;
         const isDead = !player.isAlive;

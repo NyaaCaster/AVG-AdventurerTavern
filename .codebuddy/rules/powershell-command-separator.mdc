@@ -1,9 +1,0 @@
----
-description: 
-alwaysApply: true
-enabled: true
-updatedAt: 2026-03-11T10:11:50.478Z
-provider: 
----
-
-在 Windows PowerShell 环境下执行多条终端命令时，必须使用分号 `;` 作为命令分隔符，禁止使用 `&&`。
