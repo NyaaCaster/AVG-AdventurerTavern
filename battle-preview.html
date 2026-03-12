@@ -1032,23 +1032,105 @@
         
         @media (max-width: 767px) {
             .turn-order-panel, .battle-log { display: none; }
-            .enemy-area { top: 15%; gap: 16px; }
-            .enemy-unit.master .sprite { width: 80px; height: 96px; }
-            .enemy-unit.servant .sprite { width: 64px; height: 80px; }
+            
+            /* 移动端行动顺序面板 - 只显示头像，纵向排列 */
+            .mobile-turn-order {
+                display: flex !important;
+                position: absolute;
+                right: 4px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 40;
+            }
+            
+            .mobile-turn-order .panel {
+                background: rgba(44, 36, 27, 0.9);
+                border-radius: 8px;
+                border: 1px solid #9b7a4c;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                overflow: hidden;
+            }
+            
+            .mobile-turn-order .panel-header {
+                background: rgba(56, 43, 38, 1);
+                padding: 4px 8px;
+                border-bottom: 1px solid #9b7a4c;
+            }
+            
+            .mobile-turn-order .panel-header-text {
+                color: #f0e6d2;
+                font-size: 10px;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            .mobile-turn-order .avatar-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                padding: 4px;
+            }
+            
+            .mobile-turn-order .avatar-item {
+                width: 24px;
+                height: 24px;
+                border-radius: 4px;
+                overflow: hidden;
+                border: 1px solid rgba(155, 122, 76, 0.5);
+                background: rgba(232, 223, 209, 0.2);
+                transition: all 0.2s;
+            }
+            
+            .mobile-turn-order .avatar-item.active {
+                border-color: #fbbf24;
+                box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+                transform: scale(1.1);
+            }
+            
+            .mobile-turn-order .avatar-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            
+            /* 移动端敌人区域 - 位置上调，图片放大 */
+            .enemy-area { 
+                top: 20% !important; 
+                gap: 4px; 
+            }
+            .enemy-unit.master .sprite { width: 80px !important; height: 96px !important; }
+            .enemy-unit.servant .sprite { width: 72px !important; height: 80px !important; }
             .enemy-unit .hp-container { width: 56px; }
-            .player-cards { gap: 4px; }
-            .player-card { width: 64px; }
-            .player-card .card-content { padding: 4px; }
-            .player-card .char-name { font-size: 10px; }
-            .player-card .stat-row { font-size: 8px; }
-            .command-buttons { gap: 4px; }
-            .cmd-btn { width: 48px; height: 40px; }
-            .cmd-btn i { font-size: 12px; }
-            .cmd-btn span { font-size: 8px; }
-            .result-panel { padding: 16px; }
-            .result-panel .title { font-size: 20px; }
-            .exp-gain .avatar { width: 32px; height: 32px; }
-            .exp-gain .char-name { font-size: 12px; }
+            
+            /* 移动端玩家区域 - 位置上调 */
+            .player-area {
+                padding-top: 16px !important;
+            }
+            .player-area .gradient-bg {
+                padding-top: 16px !important;
+            }
+            .player-cards { gap: 2px; margin-bottom: 4px; }
+            .player-card { width: 56px; }
+            .player-card .card-content { padding: 2px; }
+            .player-card .char-name { font-size: 8px; margin-bottom: 2px; }
+            .player-card .stat-row { font-size: 7px; }
+            .player-card .mp-bar { height: 4px; }
+            .command-buttons { gap: 2px; }
+            .cmd-btn { width: 40px; height: 32px; }
+            .cmd-btn i { font-size: 10px; }
+            .cmd-btn span { font-size: 7px; }
+            .result-panel { padding: 12px; }
+            .result-panel .title { font-size: 18px; }
+            .exp-gain .avatar { width: 28px; height: 28px; }
+            .exp-gain .char-name { font-size: 10px; }
+            .exp-gain { padding: 4px; gap: 6px; }
+        }
+        
+        /* PC端敌人位置上调 */
+        @media (min-width: 768px) {
+            .enemy-area {
+                top: 15% !important;
+            }
         }
     </style>
 </head>
@@ -1105,6 +1187,32 @@
                                 <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="">
                             </div>
                             <div class="name">梅琳</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 移动端行动顺序面板 - 只显示头像，纵向排列 -->
+            <div class="mobile-turn-order" style="display: none;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-header-text">顺序</div>
+                    </div>
+                    <div class="avatar-list">
+                        <div class="avatar-item active">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png" alt="">
+                        </div>
+                        <div class="avatar-item">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
+                        </div>
+                        <div class="avatar-item">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="">
+                        </div>
+                        <div class="avatar-item">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
+                        </div>
+                        <div class="avatar-item">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="">
                         </div>
                     </div>
                 </div>

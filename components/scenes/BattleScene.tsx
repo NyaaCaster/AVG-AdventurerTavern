@@ -413,6 +413,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               players={playerUnitsWithImages}
               currentTurnUnitId={currentTurnUnit?.id || null}
               resolveImgPath={resolveImgPath}
+              isMobile={isMobile}
             />
 
             <CommandMenu
