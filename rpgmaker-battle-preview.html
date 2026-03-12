@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Maker MZ - 前视战斗UI预览</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            width: 1280px;
+            height: 720px;
+            position: relative;
+            background: linear-gradient(180deg, #2d1b4e 0%, #1a1a2e 50%, #0d0d1a 100%);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        
+        @keyframes flash {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.5); }
+        }
+        
+        .battle-background {
+            position: absolute;
+            inset: 0;
+            background-image: url('https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/bg/dungeon/bg_dungeon_001.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.6;
+        }
+        
+        .battle-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, 
+                rgba(45, 27, 78, 0.3) 0%, 
+                rgba(26, 26, 46, 0.5) 50%, 
+                rgba(13, 13, 26, 0.8) 100%);
+        }
+        
+        /* 帮助窗口 - 顶部 */
+        .help-window {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 100%);
+            border-bottom: 2px solid #4a3f6a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            z-index: 100;
+        }
+        
+        .help-window .text {
+            color: #f0e6ff;
+            font-size: 18px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        /* 敌人区域 - 上半部分 */
+        .enemy-area {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 80px;
+            padding-bottom: 20px;
+            z-index: 50;
+        }
+        
+        .enemy-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .enemy-unit:hover {
+            transform: scale(1.05);
+        }
+        
+        .enemy-unit.selected {
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+        
+        .enemy-unit.targeted .enemy-sprite {
+            animation: shake 0.1s ease-in-out infinite;
+        }
+        
+        .enemy-sprite {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+        
+        .enemy-sprite.boss {
+            width: 180px;
+            height: 180px;
+        }
+        
+        .enemy-sprite img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+        
+        .enemy-hp-gauge {
+            width: 100px;
+            height: 8px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #666;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .enemy-hp-gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff8040, #ff4020);
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .enemy-hp-gauge-fill.danger {
+            background: linear-gradient(90deg, #ff2020, #ff0000);
+        }
+        
+        .enemy-name {
+            color: #fff;
+            font-size: 14px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            margin-top: 4px;
+        }
+        
+        /* 玩家状态区域 - 下半部分 */
+        .player-status-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 360px;
+            z-index: 60;
+        }
+        
+        /* 状态窗口 - 右侧 */
+        .status-windows {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .status-window {
+            width: 320px;
+            background: linear-gradient(180deg, rgba(30, 20, 50, 0.95) 0%, rgba(20, 15, 35, 0.95) 100%);
+            border: 2px solid #4a3f6a;
+            border-radius: 8px;
+            padding: 10px 15px;
+            transition: all 0.3s;
+        }
+        
+        .status-window.active {
+            border-color: #f0c040;
+            box-shadow: 0 0 15px rgba(240, 192, 64, 0.3);
+        }
+        
+        .status-window.dead {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+        }
+        
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .status-face {
+            width: 48px;
+            height: 48px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid #4a3f6a;
+            flex-shrink: 0;
+        }
+        
+        .status-face img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .status-info {
+            flex: 1;
+        }
+        
+        .status-name {
+            color: #f0e6ff;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .status-class {
+            color: #a0a0c0;
+            font-size: 12px;
+        }
+        
+        .status-level {
+            color: #f0c040;
+            font-size: 12px;
+        }
+        
+        .status-gauges {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .gauge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .gauge-label {
+            width: 30px;
+            color: #a0a0c0;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .gauge-bar {
+            flex: 1;
+            height: 14px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            border-radius: 7px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .gauge-fill {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.5s ease-out;
+            position: relative;
+        }
+        
+        .gauge-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+            border-radius: 7px 7px 0 0;
+        }
+        
+        .gauge-fill.hp {
+            background: linear-gradient(90deg, #ff8040, #ff4020);
+        }
+        
+        .gauge-fill.hp.danger {
+            background: linear-gradient(90deg, #ff2020, #cc0000);
+        }
+        
+        .gauge-fill.mp {
+            background: linear-gradient(90deg, #4080ff, #4040ff);
+        }
+        
+        .gauge-fill.tp {
+            background: linear-gradient(90deg, #80ff40, #40ff80);
+        }
+        
+        .gauge-value {
+            width: 70px;
+            text-align: right;
+            color: #f0e6ff;
+            font-size: 11px;
+        }
+        
+        .status-icons {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .status-icon.buff { color: #80ff80; }
+        .status-icon.debuff { color: #ff8080; }
+        
+        /* 命令窗口 - 左侧 */
+        .command-window {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 220px;
+            background: linear-gradient(180deg, rgba(30, 20, 50, 0.95) 0%, rgba(20, 15, 35, 0.95) 100%);
+            border: 2px solid #4a3f6a;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 70;
+        }
+        
+        .command-header {
+            background: linear-gradient(180deg, #4a3f6a 0%, #3a2f5a 100%);
+            padding: 8px 15px;
+            border-bottom: 1px solid #5a4f7a;
+        }
+        
+        .command-header-text {
+            color: #f0e6ff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .command-list {
+            padding: 8px;
+        }
+        
+        .command-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .command-item:hover {
+            background: rgba(240, 192, 64, 0.2);
+        }
+        
+        .command-item.selected {
+            background: rgba(240, 192, 64, 0.3);
+            border: 1px solid #f0c040;
+        }
+        
+        .command-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .command-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .command-item.attack .command-icon { color: #ff8040; }
+        .command-item.skill .command-icon { color: #8080ff; }
+        .command-item.guard .command-icon { color: #80ff80; }
+        .command-item.item .command-icon { color: #80c0ff; }
+        .command-item.escape .command-icon { color: #c0c0c0; }
+        
+        .command-text {
+            color: #f0e6ff;
+            font-size: 14px;
+            flex: 1;
+        }
+        
+        .command-shortcut {
+            color: #8080a0;
+            font-size: 12px;
+        }
+        
+        /* 技能窗口 */
+        .skill-window {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 400px;
+            max-height: 400px;
+            background: linear-gradient(180deg, rgba(30, 20, 50, 0.95) 0%, rgba(20, 15, 35, 0.95) 100%);
+            border: 2px solid #4a3f6a;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 80;
+            display: none;
+        }
+        
+        .skill-window.visible {
+            display: block;
+        }
+        
+        .skill-header {
+            background: linear-gradient(180deg, #4a3f6a 0%, #3a2f5a 100%);
+            padding: 8px 15px;
+            border-bottom: 1px solid #5a4f7a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .skill-header-text {
+            color: #f0e6ff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .skill-close {
+            color: #a0a0c0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .skill-close:hover {
+            color: #f0e6ff;
+        }
+        
+        .skill-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .skill-item:hover {
+            background: rgba(128, 128, 255, 0.2);
+        }
+        
+        .skill-item.selected {
+            background: rgba(128, 128, 255, 0.3);
+            border-color: #8080ff;
+        }
+        
+        .skill-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .skill-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .skill-info {
+            flex: 1;
+        }
+        
+        .skill-name {
+            color: #f0e6ff;
+            font-size: 14px;
+        }
+        
+        .skill-desc {
+            color: #a0a0c0;
+            font-size: 11px;
+        }
+        
+        .skill-cost {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .skill-cost-mp, .skill-cost-tp {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .skill-cost-mp {
+            background: rgba(64, 64, 255, 0.3);
+            color: #80c0ff;
+        }
+        
+        .skill-cost-tp {
+            background: rgba(64, 255, 128, 0.3);
+            color: #80ff80;
+        }
+        
+        /* 战斗光标 */
+        .battle-cursor {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+            z-index: 200;
+            animation: float 1s ease-in-out infinite;
+        }
+        
+        .battle-cursor img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 伤害弹出 */
+        .damage-popup {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 150;
+            animation: damageRise 1s ease-out forwards;
+        }
+        
+        @keyframes damageRise {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-30px) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1); opacity: 0; }
+        }
+        
+        .damage-popup.hp-damage { color: #ff4040; }
+        .damage-popup.hp-heal { color: #40ff40; }
+        .damage-popup.mp-damage { color: #4040ff; }
+        .damage-popup.mp-heal { color: #40c0ff; }
+        .damage-popup.critical { color: #ffff40; font-size: 36px; }
+        .damage-popup.miss { color: #a0a0a0; font-size: 20px; }
+        
+        /* 回合信息 */
+        .turn-info {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: rgba(30, 20, 50, 0.9);
+            border: 2px solid #4a3f6a;
+            border-radius: 8px;
+            padding: 10px 15px;
+            z-index: 90;
+        }
+        
+        .turn-label {
+            color: #a0a0c0;
+            font-size: 12px;
+        }
+        
+        .turn-number {
+            color: #f0c040;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        /* 战斗结果 */
+        .battle-result {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+        
+        .result-panel {
+            background: linear-gradient(180deg, rgba(30, 20, 50, 0.98) 0%, rgba(20, 15, 35, 0.98) 100%);
+            border: 3px solid #4a3f6a;
+            border-radius: 12px;
+            padding: 30px 50px;
+            text-align: center;
+        }
+        
+        .result-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .result-title.victory {
+            color: #f0c040;
+            text-shadow: 0 0 20px rgba(240, 192, 64, 0.5);
+        }
+        
+        .result-title.defeat {
+            color: #ff4040;
+            text-shadow: 0 0 20px rgba(255, 64, 64, 0.5);
+        }
+        
+        .result-exp {
+            color: #a0a0c0;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .result-exp span {
+            color: #f0c040;
+            font-size: 24px;
+        }
+        
+        .result-btn {
+            background: linear-gradient(180deg, #4a3f6a 0%, #3a2f5a 100%);
+            border: 2px solid #6a5f8a;
+            color: #f0e6ff;
+            padding: 12px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .result-btn:hover {
+            background: linear-gradient(180deg, #5a4f7a 0%, #4a3f6a 100%);
+            border-color: #8a7faa;
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* 调试按钮 */
+        .debug-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .debug-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="battle-background"></div>
+        <div class="battle-overlay"></div>
+        
+        <!-- 帮助窗口 -->
+        <div class="help-window">
+            <div class="text">选择行动命令</div>
+        </div>
+        
+        <!-- 回合信息 -->
+        <div class="turn-info">
+            <div class="turn-label">TURN</div>
+            <div class="turn-number">3</div>
+        </div>
+        
+        <!-- 敌人区域 -->
+        <div class="enemy-area">
+            <div class="enemy-unit" onclick="selectEnemy(this)">
+                <div class="enemy-sprite">
+                    <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="史莱姆">
+                </div>
+                <div class="enemy-hp-gauge">
+                    <div class="enemy-hp-gauge-fill" style="width: 60%"></div>
+                </div>
+                <div class="enemy-name">史莱姆 A</div>
+            </div>
+            
+            <div class="enemy-unit" onclick="selectEnemy(this)">
+                <div class="enemy-sprite boss">
+                    <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_002.png" alt="史莱姆王">
+                </div>
+                <div class="enemy-hp-gauge">
+                    <div class="enemy-hp-gauge-fill danger" style="width: 25%"></div>
+                </div>
+                <div class="enemy-name">史莱姆王</div>
+            </div>
+            
+            <div class="enemy-unit" onclick="selectEnemy(this)">
+                <div class="enemy-sprite">
+                    <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="史莱姆">
+                </div>
+                <div class="enemy-hp-gauge">
+                    <div class="enemy-hp-gauge-fill" style="width: 80%"></div>
+                </div>
+                <div class="enemy-name">史莱姆 B</div>
+            </div>
+        </div>
+        
+        <!-- 玩家状态区域 -->
+        <div class="player-status-area">
+            <!-- 状态窗口 - 右侧 -->
+            <div class="status-windows">
+                <div class="status-window active">
+                    <div class="status-header">
+                        <div class="status-face">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png" alt="艾莉丝">
+                        </div>
+                        <div class="status-info">
+                            <div class="status-name">艾莉丝</div>
+                            <div class="status-class">剑士 <span class="status-level">Lv.5</span></div>
+                        </div>
+                    </div>
+                    <div class="status-gauges">
+                        <div class="gauge-row">
+                            <span class="gauge-label">HP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill hp" style="width: 75%"></div>
+                            </div>
+                            <span class="gauge-value">150/200</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">MP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill mp" style="width: 60%"></div>
+                            </div>
+                            <span class="gauge-value">30/50</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">TP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill tp" style="width: 40%"></div>
+                            </div>
+                            <span class="gauge-value">40/100</span>
+                        </div>
+                    </div>
+                    <div class="status-icons">
+                        <div class="status-icon buff"><i class="fa-solid fa-shield"></i></div>
+                    </div>
+                </div>
+                
+                <div class="status-window">
+                    <div class="status-header">
+                        <div class="status-face">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="莉莉">
+                        </div>
+                        <div class="status-info">
+                            <div class="status-name">莉莉</div>
+                            <div class="status-class">魔法师 <span class="status-level">Lv.4</span></div>
+                        </div>
+                    </div>
+                    <div class="status-gauges">
+                        <div class="gauge-row">
+                            <span class="gauge-label">HP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill hp" style="width: 45%"></div>
+                            </div>
+                            <span class="gauge-value">72/160</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">MP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill mp" style="width: 80%"></div>
+                            </div>
+                            <span class="gauge-value">80/100</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">TP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill tp" style="width: 20%"></div>
+                            </div>
+                            <span class="gauge-value">20/100</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-window">
+                    <div class="status-header">
+                        <div class="status-face">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="梅琳">
+                        </div>
+                        <div class="status-info">
+                            <div class="status-name">梅琳</div>
+                            <div class="status-class">牧师 <span class="status-level">Lv.4</span></div>
+                        </div>
+                    </div>
+                    <div class="status-gauges">
+                        <div class="gauge-row">
+                            <span class="gauge-label">HP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill hp danger" style="width: 20%"></div>
+                            </div>
+                            <span class="gauge-value">25/125</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">MP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill mp" style="width: 15%"></div>
+                            </div>
+                            <span class="gauge-value">15/100</span>
+                        </div>
+                        <div class="gauge-row">
+                            <span class="gauge-label">TP</span>
+                            <div class="gauge-bar">
+                                <div class="gauge-fill tp" style="width: 60%"></div>
+                            </div>
+                            <span class="gauge-value">60/100</span>
+                        </div>
+                    </div>
+                    <div class="status-icons">
+                        <div class="status-icon debuff"><i class="fa-solid fa-skull"></i></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 命令窗口 - 左侧 -->
+            <div class="command-window" id="commandWindow">
+                <div class="command-header">
+                    <span class="command-header-text">命令</span>
+                </div>
+                <div class="command-list">
+                    <div class="command-item attack selected" onclick="selectCommand('attack')">
+                        <div class="command-icon"><i class="fa-solid fa-sword"></i></div>
+                        <span class="command-text">攻击</span>
+                        <span class="command-shortcut">A</span>
+                    </div>
+                    <div class="command-item skill" onclick="showSkillWindow()">
+                        <div class="command-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <span class="command-text">技能</span>
+                        <span class="command-shortcut">S</span>
+                    </div>
+                    <div class="command-item guard" onclick="selectCommand('guard')">
+                        <div class="command-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <span class="command-text">防御</span>
+                        <span class="command-shortcut">G</span>
+                    </div>
+                    <div class="command-item item" onclick="selectCommand('item')">
+                        <div class="command-icon"><i class="fa-solid fa-bag-shopping"></i></div>
+                        <span class="command-text">道具</span>
+                        <span class="command-shortcut">I</span>
+                    </div>
+                    <div class="command-item escape" onclick="selectCommand('escape')">
+                        <div class="command-icon"><i class="fa-solid fa-person-running"></i></div>
+                        <span class="command-text">逃跑</span>
+                        <span class="command-shortcut">E</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 技能窗口 -->
+            <div class="skill-window" id="skillWindow">
+                <div class="skill-header">
+                    <span class="skill-header-text">技能 - 剑技</span>
+                    <span class="skill-close" onclick="hideSkillWindow()"><i class="fa-solid fa-xmark"></i></span>
+                </div>
+                <div class="skill-list">
+                    <div class="skill-item selected">
+                        <div class="skill-icon"><i class="fa-solid fa-fire" style="color: #ff8040;"></i></div>
+                        <div class="skill-info">
+                            <div class="skill-name">火焰斩</div>
+                            <div class="skill-desc">对单体敌人造成火焰属性伤害</div>
+                        </div>
+                        <div class="skill-cost">
+                            <span class="skill-cost-mp">MP 15</span>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-icon"><i class="fa-solid fa-wind" style="color: #80c0ff;"></i></div>
+                        <div class="skill-info">
+                            <div class="skill-name">疾风突刺</div>
+                            <div class="skill-desc">快速刺击，有较高暴击率</div>
+                        </div>
+                        <div class="skill-cost">
+                            <span class="skill-cost-mp">MP 10</span>
+                            <span class="skill-cost-tp">TP 5</span>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-icon"><i class="fa-solid fa-bolt" style="color: #ffff80;"></i></div>
+                        <div class="skill-info">
+                            <div class="skill-name">雷霆一击</div>
+                            <div class="skill-desc">对全体敌人造成雷属性伤害</div>
+                        </div>
+                        <div class="skill-cost">
+                            <span class="skill-cost-mp">MP 30</span>
+                        </div>
+                    </div>
+                    <div class="skill-item disabled">
+                        <div class="skill-icon"><i class="fa-solid fa-sun" style="color: #ffff40;"></i></div>
+                        <div class="skill-info">
+                            <div class="skill-name">圣光剑</div>
+                            <div class="skill-desc">MP不足</div>
+                        </div>
+                        <div class="skill-cost">
+                            <span class="skill-cost-mp">MP 50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 战斗结果 -->
+        <div class="battle-result hidden" id="victoryResult">
+            <div class="result-panel">
+                <div class="result-title victory"><i class="fa-solid fa-trophy"></i> 战斗胜利！</div>
+                <div class="result-exp">获得经验值: <span>+500</span></div>
+                <div class="result-exp">获得金币: <span>+200G</span></div>
+                <button class="result-btn" onclick="hideResult()">确认</button>
+            </div>
+        </div>
+        
+        <div class="battle-result hidden" id="defeatResult">
+            <div class="result-panel">
+                <div class="result-title defeat"><i class="fa-solid fa-skull"></i> 战败...</div>
+                <div class="result-exp">队伍全灭</div>
+                <button class="result-btn" onclick="hideResult()">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 调试按钮 -->
+    <div class="debug-buttons">
+        <button class="debug-btn" style="background: #059669; color: white;" onclick="showVictory()">胜利画面</button>
+        <button class="debug-btn" style="background: #dc2626; color: white;" onclick="showDefeat()">战败画面</button>
+        <button class="debug-btn" style="background: #7c3aed; color: white;" onclick="showDamage()">伤害弹出</button>
+        <button class="debug-btn" style="background: #0891b2; color: white;" onclick="showHeal()">治疗弹出</button>
+        <button class="debug-btn" style="background: #f59e0b; color: white;" onclick="toggleSkillWindow()">切换技能窗口</button>
+    </div>
+    
+    <script>
+        function selectEnemy(element) {
+            document.querySelectorAll('.enemy-unit').forEach(e => e.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectCommand(type) {
+            document.querySelectorAll('.command-item').forEach(e => e.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+        
+        function showSkillWindow() {
+            document.getElementById('commandWindow').style.display = 'none';
+            document.getElementById('skillWindow').classList.add('visible');
+        }
+        
+        function hideSkillWindow() {
+            document.getElementById('skillWindow').classList.remove('visible');
+            document.getElementById('commandWindow').style.display = 'block';
+        }
+        
+        function toggleSkillWindow() {
+            const skillWindow = document.getElementById('skillWindow');
+            const commandWindow = document.getElementById('commandWindow');
+            if (skillWindow.classList.contains('visible')) {
+                hideSkillWindow();
+            } else {
+                showSkillWindow();
+            }
+        }
+        
+        function showVictory() {
+            document.getElementById('victoryResult').classList.remove('hidden');
+        }
+        
+        function showDefeat() {
+            document.getElementById('defeatResult').classList.remove('hidden');
+        }
+        
+        function hideResult() {
+            document.getElementById('victoryResult').classList.add('hidden');
+            document.getElementById('defeatResult').classList.add('hidden');
+        }
+        
+        function showDamage() {
+            const enemyArea = document.querySelector('.enemy-area');
+            const popup = document.createElement('div');
+            popup.className = 'damage-popup hp-damage';
+            popup.textContent = '-128';
+            popup.style.left = '50%';
+            popup.style.top = '30%';
+            enemyArea.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+        
+        function showHeal() {
+            const statusWindows = document.querySelector('.status-windows');
+            const popup = document.createElement('div');
+            popup.className = 'damage-popup hp-heal';
+            popup.textContent = '+50';
+            popup.style.left = '80px';
+            popup.style.top = '20px';
+            statusWindows.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+    </script>
+</body>
+</html>

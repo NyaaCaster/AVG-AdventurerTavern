@@ -462,6 +462,70 @@
             opacity: 0.6;
         }
         
+        .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        
+        .skill-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #d6cbb8;
+        }
+        
+        .skill-list-header span {
+            font-size: 12px;
+            font-weight: bold;
+            color: #382b26;
+        }
+        
+        .skill-list-header button {
+            color: #9b7a4c;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .skill-list-header button:hover {
+            color: #382b26;
+        }
+        
+        .skill-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fcfaf7;
+            color: #382b26;
+            border: 1px solid #d6cbb8;
+        }
+        
+        .skill-btn:hover {
+            background: #f5f0e6;
+            border-color: #9b7a4c;
+        }
+        
+        .skill-btn.disabled {
+            background: #d6cbb8;
+            color: #8c7b70;
+            cursor: not-allowed;
+        }
+        
+        .skill-btn .skill-name { font-weight: bold; }
+        .skill-btn .skill-cost { margin-left: 8px; color: #0891b2; }
+        .skill-btn.disabled .skill-cost { color: #ef4444; }
+        
         .battle-log {
             position: absolute;
             left: 16px;
@@ -540,6 +604,12 @@
         .result-panel.victory .title { color: #059669; }
         .result-panel.victory .title i { color: #f59e0b; margin-right: 8px; }
         
+        .result-panel.escaped .title { color: #0891b2; }
+        .result-panel.escaped .title i { margin-right: 8px; }
+        
+        .result-panel.defeat .title { color: #dc2626; }
+        .result-panel.defeat .title i { margin-right: 8px; }
+        
         .result-panel .subtitle {
             color: #382b26;
             font-size: 14px;
@@ -579,6 +649,11 @@
             box-shadow: inset 0 0 0 1px #9b7a4c;
         }
         
+        .exp-gain.level-up {
+            background: rgba(245, 158, 11, 0.2);
+            box-shadow: 0 0 0 2px #fbbf24;
+        }
+        
         .exp-gain .avatar {
             width: 40px;
             height: 40px;
@@ -586,6 +661,13 @@
             overflow: hidden;
             border: 1px solid #9b7a4c;
             flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        
+        .exp-gain.level-up .avatar {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.5);
+            transform: scale(1.1);
         }
         
         .exp-gain .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -605,27 +687,69 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            transition: color 0.3s;
         }
         
-        .exp-gain .level { color: #fbbf24; font-size: 12px; font-weight: bold; }
+        .exp-gain.level-up .char-name {
+            color: #fcd34d;
+        }
+        
+        .exp-gain .level { 
+            color: #fbbf24; 
+            font-size: 12px; 
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .exp-gain.level-up .level {
+            color: #fcd34d;
+            transform: scale(1.25);
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        .exp-gain .level .arrow-up {
+            margin-right: 2px;
+        }
         
         .exp-gain .exp-bar {
             height: 8px;
             background: #1a1512;
             border-radius: 9999px;
             overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .exp-gain.level-up .exp-bar {
+            background: rgba(120, 53, 15, 0.5);
+            box-shadow: 0 0 0 1px #fbbf24;
         }
         
         .exp-gain .exp-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, #10b981, #34d399);
             border-radius: 9999px;
+            transition: all 0.3s;
+        }
+        
+        .exp-gain.level-up .exp-bar-fill {
+            background: linear-gradient(90deg, #fbbf24, #fde047);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+        }
+        
+        .exp-gain.level-up .exp-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: pulse 1s ease-in-out infinite;
         }
         
         .exp-gain .exp-info { display: flex; justify-content: space-between; margin-top: 2px; }
-        .exp-gain .exp-info span { font-size: 10px; }
+        .exp-gain .exp-info span { font-size: 10px; transition: color 0.3s; }
         .exp-gain .exp-gained { color: #9b7a4c; }
+        .exp-gain.level-up .exp-gained { color: #fbbf24; }
         .exp-gain .exp-percent { color: #8c7b70; }
+        .exp-gain.level-up .exp-percent { color: #fcd34d; }
         
         .confirm-btn {
             padding: 8px 24px;
@@ -641,37 +765,270 @@
         
         .confirm-btn:hover { background: #4a3b32; }
         
-        .level-up-overlay {
+        .hidden { display: none !important; }
+        
+        /* 技能覆盖层 */
+        .skill-overlay {
             position: absolute;
             inset: 0;
-            z-index: 60;
+            z-index: 45;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .skill-panel {
+            background: #e8dfd1;
+            border-radius: 12px;
+            border: 3px solid #9b7a4c;
+            padding: 16px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 70vh;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        
+        .skill-panel .skill-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #d6cbb8;
+        }
+        
+        .skill-panel .skill-list-header span {
+            font-size: 16px;
+            font-weight: bold;
+            color: #382b26;
+        }
+        
+        .skill-panel .skill-list-header span i {
+            color: #9b7a4c;
+            margin-right: 8px;
+        }
+        
+        .skill-panel .skill-list-header button {
+            background: none;
+            border: none;
+            color: #9b7a4c;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .skill-panel .skill-list-header button:hover {
+            background: #d6cbb8;
+            color: #382b26;
+        }
+        
+        .skill-panel .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .skill-panel .skill-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fcfaf7;
+            color: #382b26;
+            border: 2px solid #d6cbb8;
+            text-align: left;
+        }
+        
+        .skill-panel .skill-btn:hover {
+            background: #f5f0e6;
+            border-color: #9b7a4c;
+            transform: translateX(4px);
+        }
+        
+        .skill-panel .skill-btn.disabled {
+            background: #d6cbb8;
+            color: #8c7b70;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .skill-panel .skill-btn .skill-name { font-weight: bold; }
+        .skill-panel .skill-btn .skill-cost { color: #0891b2; font-size: 12px; }
+        .skill-panel .skill-btn.disabled .skill-cost { color: #ef4444; }
+        
+        /* 逃跑确认弹窗 */
+        .escape-confirm-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 55;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .escape-confirm-panel {
+            background: #e8dfd1;
+            border-radius: 16px;
+            border: 3px solid #9b7a4c;
+            padding: 24px 32px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .escape-confirm-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            background: #f59e0b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .escape-confirm-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #382b26;
+            margin-bottom: 8px;
+        }
+        
+        .escape-confirm-desc {
+            font-size: 14px;
+            color: #5c4d45;
+            margin-bottom: 20px;
+        }
+        
+        .escape-confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .escape-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .escape-btn.cancel {
+            background: #d6cbb8;
+            color: #382b26;
+            border: 2px solid #c7bca8;
+        }
+        
+        .escape-btn.cancel:hover {
+            background: #c7bca8;
+        }
+        
+        .escape-btn.confirm {
+            background: #382b26;
+            color: #f0e6d2;
+            border: 2px solid #9b7a4c;
+        }
+        
+        .escape-btn.confirm:hover {
+            background: #4a3b32;
+        }
+        
+        /* 伤害弹出 */
+        .damage-popup-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .damage-popup {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            animation: damageRise 1.2s ease-out forwards;
             pointer-events: none;
         }
         
-        .level-up-banner {
-            background: linear-gradient(to bottom, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
-            border-radius: 12px;
-            padding: 24px 32px;
-            box-shadow: 0 0 60px rgba(251, 191, 36, 0.6);
-            animation: bounce 1s ease-in-out infinite;
-            text-align: center;
+        @keyframes damageRise {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            10% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+            30% { transform: translateY(-30px) scale(1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(0.8); opacity: 0; }
         }
         
-        .level-up-banner .title {
+        .damage-popup.hp-damage { color: #ff4040; text-shadow: 0 0 10px rgba(255,64,64,0.5), 0 2px 4px rgba(0,0,0,0.8); }
+        .damage-popup.hp-heal { color: #40ff40; text-shadow: 0 0 10px rgba(64,255,64,0.5), 0 2px 4px rgba(0,0,0,0.8); }
+        .damage-popup.critical { color: #ffff40; font-size: 36px; text-shadow: 0 0 15px rgba(255,255,64,0.7), 0 2px 4px rgba(0,0,0,0.8); }
+        .damage-popup.miss { color: #a0a0a0; font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        
+        /* 战斗光标 */
+        .battle-cursor {
+            position: absolute;
+            pointer-events: none;
+            z-index: 90;
+            animation: cursorFloat 0.8s ease-in-out infinite;
+        }
+        
+        @keyframes cursorFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        .battle-cursor i {
             font-size: 24px;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            color: #fbbf24;
+            text-shadow: 0 0 10px rgba(251,191,36,0.8);
         }
         
-        .level-up-banner .title i { margin-right: 8px; }
-        .level-up-banner .char-name { font-size: 18px; font-weight: bold; color: white; }
+        /* 受伤抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
         
-        .hidden { display: none !important; }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        
+        /* 死亡淡出动画 */
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.8); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
         
         @media (max-width: 767px) {
             .turn-order-panel, .battle-log { display: none; }
@@ -700,9 +1057,8 @@
         <div class="battle-scene">
             <div class="battle-overlay"></div>
             
-            <button class="close-btn" onclick="alert('关闭预览')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+            <button class="close-btn" onclick="alert('关闭预览')" style="display: none;">            <i class="fa-solid fa-xmark"></i>
+        </button>
             
             <div class="turn-info">
                 <div class="turn-number">第 3 回合</div>
@@ -898,12 +1254,12 @@
                     
                     <div class="command-menu">
                         <div class="menu-panel">
-                            <div class="command-buttons">
+                            <div id="commandButtons" class="command-buttons">
                                 <button class="cmd-btn">
-                                    <i class="fa-solid fa-hand-fist"></i>
+                                    <i class="fa-solid fa-sword"></i>
                                     <span>攻击</span>
                                 </button>
-                                <button class="cmd-btn">
+                                <button class="cmd-btn" onclick="showSkillOverlay()">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                                     <span>技能</span>
                                 </button>
@@ -915,7 +1271,11 @@
                                     <i class="fa-solid fa-shield-halved"></i>
                                     <span>防御</span>
                                 </button>
-                                <button class="cmd-btn">
+                                <button class="cmd-btn" disabled>
+                                    <i class="fa-solid fa-comments"></i>
+                                    <span>对话</span>
+                                </button>
+                                <button class="cmd-btn" onclick="showEscapeConfirm()">
                                     <i class="fa-solid fa-person-running"></i>
                                     <span>逃跑</span>
                                 </button>
@@ -939,6 +1299,56 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- 技能选择覆盖层 -->
+            <div class="skill-overlay hidden" id="skillOverlay">
+                <div class="skill-panel">
+                    <div class="skill-list-header">
+                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> 选择技能</span>
+                        <button onclick="hideSkillOverlay()"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="skill-list custom-scrollbar">
+                        <button class="skill-btn" onclick="selectSkill('fireball')">
+                            <span class="skill-name">🔥 火球术</span>
+                            <span class="skill-cost">MP 15</span>
+                        </button>
+                        <button class="skill-btn" onclick="selectSkill('icebolt')">
+                            <span class="skill-name">❄️ 冰箭</span>
+                            <span class="skill-cost">MP 10</span>
+                        </button>
+                        <button class="skill-btn" onclick="selectSkill('heal')">
+                            <span class="skill-name">💚 治愈术</span>
+                            <span class="skill-cost">MP 20</span>
+                        </button>
+                        <button class="skill-btn disabled">
+                            <span class="skill-name">⚡ 雷击</span>
+                            <span class="skill-cost">MP 不足</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 逃跑确认弹窗 -->
+            <div class="escape-confirm-overlay hidden" id="escapeConfirmOverlay">
+                <div class="escape-confirm-panel">
+                    <div class="escape-confirm-icon">
+                        <i class="fa-solid fa-person-running"></i>
+                    </div>
+                    <div class="escape-confirm-title">确认逃跑？</div>
+                    <div class="escape-confirm-desc">逃跑将不会获得任何奖励</div>
+                    <div class="escape-confirm-buttons">
+                        <button class="escape-btn cancel" onclick="hideEscapeConfirm()">
+                            <i class="fa-solid fa-xmark"></i> 取消
+                        </button>
+                        <button class="escape-btn confirm" onclick="executeEscape()">
+                            <i class="fa-solid fa-check"></i> 确认逃跑
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 伤害弹出容器 -->
+            <div class="damage-popup-container" id="damagePopupContainer"></div>
             
             <div class="result-overlay hidden" id="victoryScreen">
                 <div class="result-panel victory">
@@ -991,21 +1401,21 @@
                             </div>
                         </div>
                         
-                        <div class="exp-gain">
+                        <div class="exp-gain level-up" id="levelUpDemo">
                             <div class="avatar">
                                 <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="">
                             </div>
                             <div class="info">
                                 <div class="char-info">
                                     <span class="char-name">梅琳</span>
-                                    <span class="level">Lv.4</span>
+                                    <span class="level"><i class="fa-solid fa-arrow-up arrow-up"></i>Lv.5</span>
                                 </div>
-                                <div class="exp-bar">
-                                    <div class="exp-bar-fill" style="width: 90%"></div>
+                                <div class="exp-bar" style="position: relative;">
+                                    <div class="exp-bar-fill" style="width: 15%"></div>
                                 </div>
                                 <div class="exp-info">
                                     <span class="exp-gained">+3000 EXP</span>
-                                    <span class="exp-percent">90%</span>
+                                    <span class="exp-percent">15%</span>
                                 </div>
                             </div>
                         </div>
@@ -1017,24 +1427,173 @@
                 </div>
             </div>
             
-            <div class="level-up-overlay hidden" id="levelUpScreen">
-                <div class="level-up-banner">
+            <div class="result-overlay hidden" id="escapedScreen">
+                <div class="result-panel escaped" style="text-align: center;">
                     <div class="title">
-                        <i class="fa-solid fa-arrow-up"></i>LEVEL UP!
+                        <i class="fa-solid fa-person-running"></i>成功逃脱！
                     </div>
-                    <div class="char-name">梅琳</div>
+                    <div class="subtitle">成功脱离了战斗</div>
+                    
+                    <div style="text-align: center;">
+                        <button class="confirm-btn" onclick="document.getElementById('escapedScreen').classList.add('hidden');">确认</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-overlay hidden" id="defeatScreen">
+                <div class="result-panel defeat" style="text-align: center;">
+                    <div class="title">
+                        <i class="fa-solid fa-skull"></i>战败...
+                    </div>
+                    <div class="subtitle">队伍全灭，战斗失败...</div>
+                    
+                    <div style="text-align: center;">
+                        <button class="confirm-btn" onclick="document.getElementById('defeatScreen').classList.add('hidden');">确认</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div style="position: fixed; bottom: 16px; left: 16px; z-index: 1000; display: flex; gap: 8px;">
+    <div style="position: fixed; bottom: 16px; left: 16px; z-index: 1000; display: flex; gap: 8px; flex-wrap: wrap;">
         <button onclick="document.getElementById('victoryScreen').classList.toggle('hidden')" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             切换胜利界面
         </button>
-        <button onclick="document.getElementById('levelUpScreen').classList.toggle('hidden')" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        <button onclick="document.getElementById('escapedScreen').classList.toggle('hidden')" style="padding: 8px 16px; background: #0891b2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            切换逃脱界面
+        </button>
+        <button onclick="document.getElementById('defeatScreen').classList.toggle('hidden')" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            切换战败界面
+        </button>
+        <button onclick="toggleLevelUpDemo()" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             切换升级动画
         </button>
+        <button onclick="showSkillOverlay()" style="padding: 8px 16px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            技能覆盖层
+        </button>
+        <button onclick="showEscapeConfirm()" style="padding: 8px 16px; background: #854d0e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            逃跑确认
+        </button>
+        <button onclick="demoDamage()" style="padding: 8px 16px; background: #be123c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            随机伤害弹出
+        </button>
+        <button onclick="showDamagePopup(500, 250, '256!', 'critical')" style="padding: 8px 16px; background: #ca8a04; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            暴击弹出
+        </button>
+        <button onclick="showDamagePopup(500, 250, '+50', 'hp-heal')" style="padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            治疗弹出
+        </button>
     </div>
+    
+    <script>
+        // 技能覆盖层
+        function showSkillOverlay() {
+            document.getElementById('skillOverlay').classList.remove('hidden');
+        }
+        
+        function hideSkillOverlay() {
+            document.getElementById('skillOverlay').classList.add('hidden');
+        }
+        
+        function selectSkill(skillId) {
+            console.log('选择技能:', skillId);
+            hideSkillOverlay();
+            // 模拟伤害弹出
+            showDamagePopup(450, 200, '-128', 'hp-damage');
+        }
+        
+        // 逃跑确认
+        function showEscapeConfirm() {
+            document.getElementById('escapeConfirmOverlay').classList.remove('hidden');
+        }
+        
+        function hideEscapeConfirm() {
+            document.getElementById('escapeConfirmOverlay').classList.add('hidden');
+        }
+        
+        function executeEscape() {
+            hideEscapeConfirm();
+            document.getElementById('escapedScreen').classList.remove('hidden');
+        }
+        
+        // 伤害弹出系统
+        function showDamagePopup(x, y, value, type) {
+            const container = document.getElementById('damagePopupContainer');
+            const popup = document.createElement('div');
+            popup.className = `damage-popup ${type}`;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            popup.textContent = value;
+            container.appendChild(popup);
+            
+            setTimeout(() => popup.remove(), 1200);
+        }
+        
+        // 演示伤害弹出（仅三种类型：伤害/治疗/暴击）
+        function demoDamage() {
+            const types = ['hp-damage', 'hp-heal', 'critical'];
+            const values = ['-128', '+50', '256!'];
+            const randomIndex = Math.floor(Math.random() * types.length);
+            const x = 300 + Math.random() * 400;
+            const y = 200 + Math.random() * 200;
+            showDamagePopup(x, y, values[randomIndex], types[randomIndex]);
+        }
+        
+        // 受伤抖动效果
+        function shakeElement(element) {
+            element.classList.add('shake');
+            setTimeout(() => element.classList.remove('shake'), 400);
+        }
+        
+        // 死亡淡出效果
+        function fadeOutElement(element) {
+            element.classList.add('fade-out');
+        }
+        
+        // 战斗光标
+        function showBattleCursor(x, y) {
+            let cursor = document.querySelector('.battle-cursor');
+            if (!cursor) {
+                cursor = document.createElement('div');
+                cursor.className = 'battle-cursor';
+                cursor.innerHTML = '<i class="fa-solid fa-hand-pointer"></i>';
+                document.querySelector('.battle-scene').appendChild(cursor);
+            }
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+            cursor.style.display = 'block';
+        }
+        
+        function hideBattleCursor() {
+            const cursor = document.querySelector('.battle-cursor');
+            if (cursor) cursor.style.display = 'none';
+        }
+        
+        // 敌人点击效果
+        document.querySelectorAll('.enemy-unit.targetable').forEach(enemy => {
+            enemy.addEventListener('click', function(e) {
+                const rect = this.getBoundingClientRect();
+                const sceneRect = document.querySelector('.battle-scene').getBoundingClientRect();
+                showBattleCursor(rect.left + rect.width / 2, rect.top);
+                
+                // 同步执行：抖动 + 伤害弹出（以目标为焦点）
+                const sprite = this.querySelector('.sprite');
+                const popupX = rect.left - sceneRect.left + rect.width / 2;
+                const popupY = rect.top - sceneRect.top + rect.height / 3;
+                
+                // 立即同步执行
+                shakeElement(sprite);
+                showDamagePopup(popupX, popupY, '-128', 'hp-damage');
+            });
+        });
+        
+        // 升级动画切换
+        function toggleLevelUpDemo() {
+            const levelUpDemo = document.getElementById('levelUpDemo');
+            if (levelUpDemo) {
+                levelUpDemo.classList.toggle('level-up');
+            }
+        }
+    </script>
 </body>
 </html>
