@@ -12,12 +12,11 @@ import {
   createBattleManager,
   ActionExecutionResult
 } from '../battle-system/BattleManager';
-import { createPlayerUnit } from '../battle-system/player-unit-factory';
+import { createPlayerBattleUnit } from '../battle-system/player-unit-factory';
 import { createEnemyBattleUnit } from '../battle-system/enemy-unit-factory';
 import { PlayerCommand, BattleEndReason, getSelectableTargets } from '../battle-system/player-commands';
 import { SKILLS } from '../data/battle-data/skills';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../types';
-import { CHARACTERS } from '../data/scenarioData';
 
 interface UseBattleSystemOptions {
   battleParty: BattlePartySlots;
@@ -59,9 +58,6 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     const partyMembers = battleParty.filter((id): id is string => id !== null);
     
     partyMembers.forEach((characterId, index) => {
-      const charData = CHARACTERS[characterId];
-      if (!charData) return;
-      
       const stats = characterStats[characterId] || { level: 1, affinity: 0, exp: 0 };
       const equipment = characterEquipments[characterId] || {
         weaponId: null,
@@ -70,15 +66,15 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         accessory2Id: null
       };
       
-      const unit = createPlayerUnit(
+      const unit = createPlayerBattleUnit({
         characterId,
-        charData.name,
-        stats.level,
-        charData.battleData,
-        equipment,
-        index
-      );
-      playerUnits.push(unit);
+        level: stats.level,
+        position: index,
+        equipment
+      });
+      if (unit) {
+        playerUnits.push(unit);
+      }
     });
     
     if (playerUnits.length === 0) {
