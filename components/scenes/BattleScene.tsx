@@ -389,6 +389,15 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     return allyScopes.includes(skill.scope as SkillScope);
   }, [selectedCommand, selectedSkill]);
   
+  const isReviveTargeting = useMemo(() => {
+    if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
+      return false;
+    }
+    const skill = SKILLS.find(s => s.id === selectedSkill);
+    if (!skill) return false;
+    return skill.scope === 9;
+  }, [selectedCommand, selectedSkill]);
+  
   const isEnemyTargeting = useMemo(() => {
     if (selectedCommand === PlayerCommand.ATTACK) return true;
     if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
@@ -452,6 +461,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               selectedTarget={selectedTarget}
               onTargetSelect={handleTargetSelect}
               isAllyTargeting={isAllyTargeting}
+              isReviveTargeting={isReviveTargeting}
             />
 
             <CommandMenu

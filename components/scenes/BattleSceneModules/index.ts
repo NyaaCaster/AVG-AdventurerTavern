@@ -10,6 +10,7 @@ export { default as TurnOrderPanel } from './TurnOrderPanel';
 export { default as BattleLog } from './BattleLog';
 export { default as VictoryScreen } from './VictoryScreen';
 export { default as ResultScreen } from './ResultScreen';
+export { default as StatusIcons } from './StatusIcons';
 
 export * from './types';
 export * from './animations';

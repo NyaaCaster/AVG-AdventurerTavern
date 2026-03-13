@@ -16,9 +16,11 @@ import {
   getEvasionBonus,
   checkWakeOnPhysicalHit,
   checkRemoveOnDamage,
-  getDamageReceivedMultiplier
+  getDamageReceivedMultiplier,
+  createStatusEffectInstance
 } from './status-effects';
 import { EVASION_CONFIG } from '../data/battle-data/evasion-config';
+import { STATUS_EFFECTS } from '../data/battle-data/status_effects';
 
 /**
  * 伤害计算参数接口
@@ -385,16 +387,18 @@ export function applyDamageToTarget(
   const actualDamage = Math.min(damage, target.stats.hp);
   target.stats.hp = Math.max(0, target.stats.hp - actualDamage);
   
-  // 如果物理攻击，唤醒目标 (如睡眠状态)
   const wokenEffects = isPhysical ? checkWakeOnPhysicalHit(target) : [];
   
   const removedEffects = checkRemoveOnDamage(target);
   
-  // 检查是否死亡
   let targetDied = false;
   if (target.stats.hp === 0) {
     target.isAlive = false;
     targetDied = true;
+    
+    const deadEffectDef = STATUS_EFFECTS.dead;
+    const deadEffect = createStatusEffectInstance(deadEffectDef);
+    target.statusEffects = [deadEffect];
   }
   
   return {

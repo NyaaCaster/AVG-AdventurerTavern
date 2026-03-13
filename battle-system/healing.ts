@@ -9,6 +9,8 @@ import {
   ElementType
 } from './types';
 import { getEffectiveStats, calculateDamageVariance } from './damage';
+import { removeStatusEffect, hasStatusEffect } from './status-effects';
+import { STATUS_EFFECT_ID_MAP } from '../data/battle-data/status_effects';
 
 /**
  * 治疗计算参数接口
@@ -136,6 +138,11 @@ export function reviveUnit(
   const hpToRecover = Math.floor(target.stats.maxHp * (hpPercentage / 100));
   target.stats.hp = hpToRecover;
   target.isAlive = true;
+  
+  const deadEffectId = STATUS_EFFECT_ID_MAP[1];
+  if (deadEffectId && hasStatusEffect(target, 1)) {
+    removeStatusEffect(target, 1);
+  }
   
   return { success: true, hpRecovered: hpToRecover };
 }

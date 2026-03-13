@@ -15,14 +15,44 @@ const SkillList: React.FC<SkillListProps> = ({
   onSkillSelect,
   onClose
 }) => {
-  const getScopeText = (scope?: SkillScope) => {
-    switch (scope) {
-      case SkillScope.ENEMY_SINGLE: return '敌方单体';
-      case SkillScope.ENEMY_ALL: return '敌方全体';
-      case SkillScope.ALLY_SINGLE: return '我方单体';
-      case SkillScope.ALLY_ALL: return '我方全体';
-      case SkillScope.SELF: return '自身';
-      default: return '';
+  const getScopeText = (scope?: SkillScope | number) => {
+    const scopeValue = typeof scope === 'number' ? scope : scope;
+    switch (scopeValue) {
+      case SkillScope.ENEMY_SINGLE:
+      case 1:
+        return '敌方单体';
+      case SkillScope.ENEMY_ALL:
+      case 2:
+        return '敌方全体';
+      case SkillScope.ENEMY_ALL_CONTINUOUS:
+      case 3:
+        return '敌方全体(连续)';
+      case SkillScope.ENEMY_RANDOM_SINGLE:
+      case 4:
+        return '敌方随机1体';
+      case SkillScope.ENEMY_RANDOM_X2:
+      case 5:
+        return '敌方随机2体';
+      case SkillScope.ALLY_SINGLE:
+      case 6:
+        return '我方单体';
+      case SkillScope.ALLY_ALL:
+      case 7:
+        return '我方全体';
+      case SkillScope.ALLY_ALL_CONTINUOUS:
+      case 8:
+        return '我方全体(连续)';
+      case SkillScope.SELF:
+      case 9:
+        return '自身';
+      case SkillScope.SELF_AFFECT_ALLY_ALL:
+      case 10:
+        return '自身影响我方全体';
+      case SkillScope.ENEMY_SINGLE_CONTINUOUS:
+      case 11:
+        return '敌方单体(连续)';
+      default:
+        return '';
     }
   };
   

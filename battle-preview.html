@@ -258,6 +258,37 @@
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
         }
         
+        .status-icons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 2px;
+            pointer-events: none;
+        }
+        
+        .status-icons .status-row {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+        }
+        
+        .status-icons .status-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 2px;
+            font-size: 10px;
+            line-height: 1;
+            backdrop-filter: blur(1px);
+        }
+        
         .enemy-unit .enemy-name { text-align: center; }
         .enemy-unit .enemy-name span {
             color: white;
@@ -501,8 +532,8 @@
         
         .battle-log {
             position: absolute;
-            left: 16px;
-            bottom: 128px;
+            right: 16px;
+            bottom: 16px;
             z-index: 40;
             width: 320px;
         }
@@ -840,6 +871,28 @@
         .skill-panel .skill-btn .skill-cost { color: #0891b2; font-size: 12px; }
         .skill-panel .skill-btn.disabled .skill-cost { color: #ef4444; }
         
+        .skill-panel .skill-btn .skill-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .skill-panel .skill-btn .skill-desc {
+            font-size: 11px;
+            color: #5c4d45;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        
+        .skill-panel .skill-btn .skill-scope {
+            font-size: 10px;
+            color: #9b7a4c;
+            margin-top: 2px;
+        }
+        
+        .skill-panel .skill-btn .skill-scope i {
+            margin-right: 4px;
+        }
+        
         /* 逃跑确认弹窗 */
         .escape-confirm-overlay {
             position: absolute;
@@ -1027,6 +1080,20 @@
             animation: fadeOut 0.5s ease-out forwards;
         }
         
+        @keyframes statusFlash {
+            0% { opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+        
+        .status-flash-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(168, 85, 247, 0.4) 100%);
+            pointer-events: none;
+            animation: statusFlash 0.6s ease-out forwards;
+        }
+        
         @media (max-width: 767px) {
             .battle-log { display: none; }
             
@@ -1138,6 +1205,11 @@
                 <div class="enemy-unit servant targetable">
                     <div class="sprite">
                         <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="光孢怪">
+                        <div class="status-icons">
+                            <div class="status-row">
+                                <div class="status-icon" title="中毒 (2回合)">☠️</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="enemy-name">
                         <span>光孢怪</span>
@@ -1147,6 +1219,12 @@
                 <div class="enemy-unit master targetable">
                     <div class="sprite">
                         <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_002.png" alt="光孢王">
+                        <div class="status-icons">
+                            <div class="status-row">
+                                <div class="status-icon" title="弱点暴露 (3回合)">🎯</div>
+                                <div class="status-icon" title="防御下降 (2回合)">📉</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="enemy-name">
                         <span>光孢王</span>
@@ -1200,6 +1278,12 @@
                             <div class="card-content">
                                 <div class="avatar">
                                     <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="莉莉">
+                                    <div class="status-icons">
+                                        <div class="status-row">
+                                            <div class="status-icon" title="HP再生 (3回合)">💚</div>
+                                            <div class="status-icon" title="回避率提升 (2回合)">💨</div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="char-name">莉莉</div>
                                 <div class="stats">
@@ -1229,6 +1313,17 @@
                             <div class="card-content">
                                 <div class="avatar">
                                     <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="梅琳">
+                                    <div class="status-icons">
+                                        <div class="status-row">
+                                            <div class="status-icon" title="中毒 (2回合)">☠️</div>
+                                            <div class="status-icon" title="睡眠 (1回合)">💤</div>
+                                            <div class="status-icon" title="暗闇 (3回合)">🌑</div>
+                                            <div class="status-icon" title="沈黙 (2回合)">🔇</div>
+                                        </div>
+                                        <div class="status-row">
+                                            <div class="status-icon" title="暴击率提升 (2回合)">💥</div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="char-name">梅琳</div>
                                 <div class="stats">
@@ -1254,20 +1349,28 @@
                             </div>
                         </div>
                         
-                        <div class="player-card">
+                        <div class="player-card" id="playerCardKael">
                             <div class="card-content">
                                 <div class="avatar">
-                                    <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/104.png" alt="凯尔">
+                                    <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/104.png" alt="凯尔" id="kaelAvatarImg" style="opacity: 0.5; filter: grayscale(100%);">
+                                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center" id="kaelDeathOverlay">
+                                        <span class="text-sm text-red-400 font-bold">✕</span>
+                                    </div>
+                                    <div class="status-icons" id="kaelStatusIcons">
+                                        <div class="status-row">
+                                            <div class="status-icon" title="死亡">⚰️</div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="char-name">凯尔</div>
                                 <div class="stats">
                                     <div>
                                         <div class="stat-row">
                                             <span>HP</span>
-                                            <span>92/100</span>
+                                            <span id="kaelHpText">0/100</span>
                                         </div>
                                         <div class="hp-bar">
-                                            <div class="hp-bar-fill high" style="width: 92%"></div>
+                                            <div class="hp-bar-fill" id="kaelHpBar" style="width: 0%"></div>
                                         </div>
                                     </div>
                                     <div>
@@ -1341,19 +1444,43 @@
                     </div>
                     <div class="skill-list custom-scrollbar">
                         <button class="skill-btn" onclick="selectSkill('fireball')">
-                            <span class="skill-name">🔥 火球术</span>
+                            <div class="skill-info">
+                                <div class="skill-name">火球术</div>
+                                <div class="skill-desc">发射火球攻击敌人，造成火焰属性伤害</div>
+                                <div class="skill-scope"><i class="fa-solid fa-crosshairs"></i> 敌方单体</div>
+                            </div>
                             <span class="skill-cost">MP 15</span>
                         </button>
                         <button class="skill-btn" onclick="selectSkill('icebolt')">
-                            <span class="skill-name">❄️ 冰箭</span>
+                            <div class="skill-info">
+                                <div class="skill-name">冰箭</div>
+                                <div class="skill-desc">发射冰箭攻击敌人，造成冰冻属性伤害</div>
+                                <div class="skill-scope"><i class="fa-solid fa-crosshairs"></i> 敌方单体</div>
+                            </div>
                             <span class="skill-cost">MP 10</span>
                         </button>
                         <button class="skill-btn" onclick="selectSkill('heal')">
-                            <span class="skill-name">💚 治愈术</span>
+                            <div class="skill-info">
+                                <div class="skill-name">治愈术</div>
+                                <div class="skill-desc">恢复我方单体目标的HP</div>
+                                <div class="skill-scope"><i class="fa-solid fa-crosshairs"></i> 我方单体</div>
+                            </div>
                             <span class="skill-cost">MP 20</span>
                         </button>
+                        <button class="skill-btn" onclick="selectSkill('thunder')">
+                            <div class="skill-info">
+                                <div class="skill-name">雷击</div>
+                                <div class="skill-desc">召唤雷电攻击敌方全体</div>
+                                <div class="skill-scope"><i class="fa-solid fa-crosshairs"></i> 敌方全体</div>
+                            </div>
+                            <span class="skill-cost">MP 35</span>
+                        </button>
                         <button class="skill-btn disabled">
-                            <span class="skill-name">⚡ 雷击</span>
+                            <div class="skill-info">
+                                <div class="skill-name">圣光</div>
+                                <div class="skill-desc">恢复我方全体HP</div>
+                                <div class="skill-scope"><i class="fa-solid fa-crosshairs"></i> 我方全体</div>
+                            </div>
                             <span class="skill-cost">MP 不足</span>
                         </button>
                     </div>
@@ -1517,6 +1644,15 @@
         </button>
         <button onclick="demoTurnChange()" style="padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             回合切换演示
+        </button>
+        <button onclick="demoStatusFlash()" style="padding: 8px 16px; background: #a855f7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            异常状态附加动画
+        </button>
+        <button onclick="togglePlayerDeath()" style="padding: 8px 16px; background: #64748b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            切换凯尔死亡状态
+        </button>
+        <button onclick="demoReviveTargeting()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            复活目标选择演示
         </button>
     </div>
     
@@ -1757,6 +1893,82 @@
                 
                 currentTurnIndex = (currentTurnIndex + 1) % turnOrderData.length;
             }, 400);
+        }
+        
+        function demoStatusFlash() {
+            const avatars = document.querySelectorAll('.player-card .avatar');
+            const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+            
+            const flashOverlay = document.createElement('div');
+            flashOverlay.className = 'status-flash-overlay';
+            randomAvatar.appendChild(flashOverlay);
+            
+            setTimeout(() => flashOverlay.remove(), 600);
+        }
+        
+        let kaelIsDead = true;
+        function togglePlayerDeath() {
+            const kaelCard = document.getElementById('playerCardKael');
+            if (!kaelCard) return;
+            
+            kaelIsDead = !kaelIsDead;
+            
+            const avatarImg = document.getElementById('kaelAvatarImg');
+            const deathOverlay = document.getElementById('kaelDeathOverlay');
+            const statusIcons = document.getElementById('kaelStatusIcons');
+            const hpText = document.getElementById('kaelHpText');
+            const hpBar = document.getElementById('kaelHpBar');
+            
+            if (kaelIsDead) {
+                if (avatarImg) {
+                    avatarImg.style.opacity = '0.5';
+                    avatarImg.style.filter = 'grayscale(100%)';
+                }
+                if (deathOverlay) deathOverlay.style.display = 'flex';
+                if (statusIcons) {
+                    statusIcons.innerHTML = '<div class="status-row"><div class="status-icon" title="死亡">⚰️</div></div>';
+                }
+                if (hpText) hpText.textContent = '0/100';
+                if (hpBar) hpBar.style.width = '0%';
+            } else {
+                if (avatarImg) {
+                    avatarImg.style.opacity = '1';
+                    avatarImg.style.filter = 'none';
+                }
+                if (deathOverlay) deathOverlay.style.display = 'none';
+                if (statusIcons) statusIcons.innerHTML = '';
+                if (hpText) hpText.textContent = '92/100';
+                if (hpBar) {
+                    hpBar.style.width = '92%';
+                    hpBar.className = 'hp-bar-fill high';
+                }
+            }
+        }
+        
+        let isReviveTargeting = false;
+        function demoReviveTargeting() {
+            isReviveTargeting = !isReviveTargeting;
+            
+            const playerCards = document.querySelectorAll('.player-card');
+            playerCards.forEach(card => {
+                const isDead = card.style.opacity === '0.5' || card.style.filter === 'grayscale(100%)';
+                
+                if (isReviveTargeting && isDead) {
+                    card.classList.add('revive-targetable');
+                    card.style.cursor = 'pointer';
+                    card.style.boxShadow = '0 0 0 2px #22c55e';
+                    card.onclick = function() {
+                        playerCards.forEach(c => c.classList.remove('revive-selected'));
+                        this.classList.add('revive-selected');
+                        this.style.boxShadow = '0 0 0 3px #22c55e, 0 0 12px rgba(34, 197, 94, 0.6)';
+                    };
+                } else {
+                    card.classList.remove('revive-targetable', 'revive-selected');
+                    card.style.cursor = '';
+                    card.style.boxShadow = '';
+                    card.onclick = null;
+                }
+            });
         }
     </script>
 </body>

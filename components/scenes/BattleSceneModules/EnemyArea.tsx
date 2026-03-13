@@ -1,5 +1,6 @@
 import React from 'react';
 import { EnemyUnitWithImage } from './types';
+import StatusIcons from './StatusIcons';
 
 interface EnemyAreaProps {
   enemies: (EnemyUnitWithImage | null)[];
@@ -45,13 +46,22 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
                   : 'w-16 sm:w-20 md:w-28 h-20 sm:h-28 md:h-40')
             }`}>
               {enemy.isAlive ? (
-                <img
-                  src={enemy.imageUrl}
-                  alt={enemy.name}
-                  className="w-full h-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-all"
-                />
+                <>
+                  <img
+                    src={enemy.imageUrl}
+                    alt={enemy.name}
+                    className="w-full h-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-all"
+                  />
+                  {enemy.statusEffects && enemy.statusEffects.length > 0 && (
+                    <StatusIcons 
+                      statusEffects={enemy.statusEffects} 
+                      maxIconsPerRow={isMobile ? 3 : 4}
+                      iconSize="sm"
+                    />
+                  )}
+                </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center animate-fadeOut">
                   <div className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-4xl'} text-red-500/50 font-bold`}>✕</div>
                 </div>
               )}

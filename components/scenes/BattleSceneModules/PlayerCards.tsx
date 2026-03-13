@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlayerUnitWithImage } from './types';
 import GaugeBar from './GaugeBar';
+import StatusIcons from './StatusIcons';
 
 interface PlayerCardsProps {
   players: PlayerUnitWithImage[];
@@ -11,6 +12,7 @@ interface PlayerCardsProps {
   selectedTarget: string | null;
   onTargetSelect: (targetId: string) => void;
   isAllyTargeting?: boolean;
+  isReviveTargeting?: boolean;
 }
 
 const PlayerCards: React.FC<PlayerCardsProps> = ({
@@ -21,14 +23,18 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
   selectedCommand,
   selectedTarget,
   onTargetSelect,
-  isAllyTargeting = false
+  isAllyTargeting = false,
+  isReviveTargeting = false
 }) => {
   return (
     <div className={`flex justify-center ${isMobile ? 'gap-1 mb-3' : 'gap-1 sm:gap-2 md:gap-4 mb-2 sm:mb-4'}`}>
       {players.map((player) => {
         const isCurrentTurn = currentTurnUnitId === player.id;
         const isDead = !player.isAlive;
-        const isTargetable = isAllyTargeting && selectedCommand && player.isAlive;
+        
+        const isTargetable = isReviveTargeting 
+          ? isDead 
+          : (isAllyTargeting && selectedCommand && player.isAlive);
         const isTargeted = selectedTarget === player.id;
         
         return (
@@ -49,16 +55,24 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
             
             <div className={`${isMobile ? 'p-0.5' : 'p-1 sm:p-1.5 md:p-2'}`}>
               <div className={`relative w-full aspect-square rounded overflow-hidden border border-[#c7bca8] ${isMobile ? 'mb-0.5' : 'mb-1 sm:mb-1.5'}`}>
-                <img
-                  src={resolveImgPath(player.avatarUrl)}
-                  alt={player.name}
-                  className={`w-full h-full object-cover ${isDead ? 'opacity-50' : ''}`}
-                />
-                {isDead && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className={`${isMobile ? 'text-xs' : 'text-sm sm:text-xl'} text-red-400 font-bold`}>✕</span>
-                  </div>
-                )}
+                <div className="relative w-full h-full">
+                  <img
+                    src={resolveImgPath(player.avatarUrl)}
+                    alt={player.name}
+                    className={`w-full h-full object-cover ${isDead ? 'opacity-50 grayscale' : ''}`}
+                  />
+                  {isDead && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                      <span className={`${isMobile ? 'text-xs' : 'text-sm sm:text-xl'} text-red-400 font-bold`}>✕</span>
+                    </div>
+                  )}
+                  
+                  <StatusIcons 
+                    statusEffects={player.statusEffects} 
+                    maxIconsPerRow={isMobile ? 3 : 4}
+                    iconSize="sm"
+                  />
+                </div>
               </div>
               
               <div className={`text-center ${isMobile ? 'text-[8px]' : 'text-[10px] sm:text-xs'} font-bold text-[#382b26] truncate ${isMobile ? 'mb-0.5' : 'mb-0.5 sm:mb-1'}`}>
