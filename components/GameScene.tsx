@@ -63,6 +63,10 @@ import { useCoreState } from '../hooks/useCoreState';
 import { useWorldSystem } from '../hooks/useWorldSystem';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { useDialogueSystem } from '../hooks/useDialogueSystem';
+import { useBattleSystem } from '../hooks/useBattleSystem';
+import { BattleEndReason } from '../battle-system/player-commands';
+
+import BattleScene from './scenes/BattleScene';
 
 
 
@@ -100,6 +104,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const world = useWorldSystem(core.sceneLevels, initialSaveData, checkedInCharacters);
   const audioRef = useGameAudio(world.currentSceneId, settings);
   
+  const battle = useBattleSystem({
+    battleParty: core.battleParty,
+    characterStats: core.characterStats,
+    characterEquipments: core.characterEquipments,
+    userName: '玩家'
+  });
+  
   // --- UI 本地状态 ---
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isExpansionOpen, setIsExpansionOpen] = useState(false); 
@@ -124,22 +135,74 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
     6: 6*60, 7: 7*60, 8: 8*60, 9: 9*60, 10: 10*60,
   };
+  
+  // [已弃用] 倒计时触发战斗逻辑不再使用
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     Object.values(core.questStates).forEach((state: QuestState) => {
+  //       if (state.status === 'active' && state.acceptedAt) {
+  //         const quest = QUESTS[state.questId];
+  //         if (!quest) return;
+  //         const duration = QUEST_DURATION_SECONDS_GLOBAL[quest.star] || 300;
+  //         const elapsed = Math.floor((Date.now() - state.acceptedAt) / 1000);
+  //         if (elapsed >= duration && !battle.isOpen) {
+  //           battle.startBattle(quest);
+  //         }
+  //       }
+  //     });
+  //   }, 5000);
+  //   return () => clearInterval(interval);
+  // }, [core.questStates, battle.isOpen]);
+  
+  // 战斗结算处理：仅胜利时更新任务状态
   useEffect(() => {
-    const interval = setInterval(() => {
-      Object.values(core.questStates).forEach((state: QuestState) => {
-        if (state.status === 'active' && state.acceptedAt) {
-          const quest = QUESTS[state.questId];
-          if (!quest) return;
-          const duration = QUEST_DURATION_SECONDS_GLOBAL[quest.star] || 300;
-          const elapsed = Math.floor((Date.now() - state.acceptedAt) / 1000);
-          if (elapsed >= duration) {
-            core.handleCompleteQuest(state.questId);
-          }
-        }
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [core.questStates]);
+    if (!battle.isOpen && battle.endReason === BattleEndReason.VICTORY && battle.quest) {
+      const quest = battle.quest;
+      core.handleCompleteQuest(quest.quest_id);
+      
+      if (quest.rewards?.gold) {
+        core.updateGold(core.gold + quest.rewards.gold);
+        setToasts(prev => [
+          ...prev,
+          { id: Date.now() + Math.random().toString(), type: 'gold', amount: quest.rewards!.gold }
+        ]);
+      }
+      
+      if (quest.rewards?.items) {
+        const items = quest.rewards.items.map(item => ({
+          id: item.item_id,
+          count: item.item_num
+        }));
+        core.handleAddItems(items);
+        items.forEach((item, idx) => {
+          setTimeout(() => {
+            setToasts(prev => [
+              ...prev,
+              { id: Date.now() + Math.random().toString(), type: 'item', itemId: item.id, count: item.count }
+            ]);
+          }, (idx + 1) * 600);
+        });
+      }
+      
+      if (quest.rewards?.experience) {
+        core.addCharacterExp('char_1', quest.rewards.experience);
+      }
+      
+      setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after battle victory failed:', err)), 100);
+      
+      // 胜利后打开任务详情界面
+      setHighlightQuestId(quest.quest_id);
+      setIsQuestBoardOpen(true);
+    }
+    
+    // 失败或逃跑后也打开任务详情界面
+    if (!battle.isOpen && (battle.endReason === BattleEndReason.DEFEAT || battle.endReason === BattleEndReason.ESCAPED) && battle.quest) {
+      setHighlightQuestId(battle.quest.quest_id);
+      setIsQuestBoardOpen(true);
+    }
+  }, [battle.isOpen, battle.endReason, battle.quest]);
+  
+  const [highlightQuestId, setHighlightQuestId] = useState<string | null>(null);
   
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
   const [saveLoadMode, setSaveLoadMode] = useState<'save' | 'load'>('load');
@@ -1056,6 +1119,12 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after quest complete failed:', err)), 100);
         }}
         onDeliverQuest={core.handleDeliverQuest}
+        onStartBattle={(quest) => {
+          battle.startBattle(quest);
+        }}
+        onAbandonQuest={(questId) => {
+          core.handleAbandonQuest(questId);
+        }}
         onAddGold={(amount) => core.updateGold(core.gold + amount)}
         onConsumeInspiration={handleConsumeInspiration}
         onAddItems={(items) => core.handleAddItems(items)}
@@ -1076,6 +1145,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             }, (idx + 1) * 600);
           });
         }}
+        highlightQuestId={highlightQuestId}
       />
 
       {/* ShopResModal - 市集食材店（scen_market 使用）*/}
@@ -1147,12 +1217,27 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           isOpen={isInspirationDashboardOpen} 
           onClose={() => {
               setIsInspirationDashboardOpen(false);
-              // 关闭 Modal 时刷新灵感余额
               if (onUpdateInspirationBalance) {
                   onUpdateInspirationBalance();
               }
           }} 
           userId={userId} 
+      />
+      
+      <BattleScene
+        isOpen={battle.isOpen}
+        onClose={battle.closeBattle}
+        quest={battle.quest!}
+        battleState={battle.battleState!}
+        battleParty={core.battleParty}
+        characterStats={core.characterStats}
+        characterEquipments={core.characterEquipments}
+        userName="玩家"
+        currentTurnUnit={battle.currentTurnUnit}
+        turnOrder={battle.turnOrder}
+        endReason={battle.endReason}
+        onExecuteCommand={battle.onExecuteCommand}
+        onAutoSave={handleAutoSave}
       />
     </div>
   );

@@ -28,12 +28,39 @@
             50% { transform: translateY(-10px); }
         }
         
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5px, -3px); }
+            20% { transform: translate(5px, 3px); }
+            30% { transform: translate(-4px, 2px); }
+            40% { transform: translate(4px, -2px); }
+            50% { transform: translate(-3px, 3px); }
+            60% { transform: translate(3px, -3px); }
+            70% { transform: translate(-2px, 2px); }
+            80% { transform: translate(2px, -1px); }
+            90% { transform: translate(-1px, 1px); }
+        }
+        
+        @keyframes flash-white {
+            0% { filter: invert(0); }
+            50% { filter: invert(1); }
+            100% { filter: invert(0); }
+        }
+        
         .animate-fadeIn {
             animation: fadeIn 0.3s ease-out;
         }
         
         .animate-bounce {
             animation: bounce 1s ease-in-out infinite;
+        }
+        
+        .animate-screen-shake {
+            animation: screen-shake 0.5s ease-out;
+        }
+        
+        .animate-flash-white {
+            animation: flash-white 0.3s ease-out;
         }
         
         .custom-scrollbar::-webkit-scrollbar {
@@ -74,10 +101,31 @@
             background-position: center;
         }
         
-        .battle-overlay {
+        .battle-overlay-horizontal {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.5) 100%);
+            background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, transparent 50%, rgba(0,0,0,0.5) 100%);
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .battle-overlay-vertical {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 50%, rgba(0,0,0,0.5) 100%);
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .leader-death-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(128, 128, 128, 0.5);
+            mix-blend-mode: saturation;
+            pointer-events: none;
+            z-index: 5;
         }
         
         .close-btn {
@@ -1160,8 +1208,10 @@
 </head>
 <body>
     <div class="battle-container animate-fadeIn">
-        <div class="battle-scene">
-            <div class="battle-overlay"></div>
+        <div class="battle-scene" id="battleScene">
+            <div class="leader-death-overlay" id="leaderDeathOverlay" style="display: none;"></div>
+            <div class="battle-overlay-horizontal" id="overlayHorizontal"></div>
+            <div class="battle-overlay-vertical" id="overlayVertical"></div>
             
             <button class="close-btn" onclick="alert('关闭预览')" style="display: none;">            <i class="fa-solid fa-xmark"></i>
         </button>
@@ -1970,6 +2020,43 @@
                 }
             });
         }
+        
+        function demoCriticalHit() {
+            const battleScene = document.getElementById('battleScene');
+            const overlayH = document.getElementById('overlayHorizontal');
+            const overlayV = document.getElementById('overlayVertical');
+            
+            if (battleScene) {
+                battleScene.classList.add('animate-screen-shake');
+                setTimeout(() => battleScene.classList.remove('animate-screen-shake'), 500);
+            }
+            if (overlayH) {
+                overlayH.classList.add('animate-flash-white');
+                setTimeout(() => overlayH.classList.remove('animate-flash-white'), 300);
+            }
+            if (overlayV) {
+                overlayV.classList.add('animate-flash-white');
+                setTimeout(() => overlayV.classList.remove('animate-flash-white'), 300);
+            }
+        }
+        
+        let isLeaderDeadState = false;
+        function toggleLeaderDeath() {
+            isLeaderDeadState = !isLeaderDeadState;
+            const deathOverlay = document.getElementById('leaderDeathOverlay');
+            if (deathOverlay) {
+                deathOverlay.style.display = isLeaderDeadState ? 'block' : 'none';
+            }
+        }
     </script>
+    
+    <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
+        <button onclick="demoCriticalHit()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            暴击特效
+        </button>
+        <button onclick="toggleLeaderDeath()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            队长死亡状态
+        </button>
+    </div>
 </body>
 </html>

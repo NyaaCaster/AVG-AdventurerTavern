@@ -78,8 +78,17 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, visible: false });
   const animationRef = useRef<number | null>(null);
+  
+  const [isLeaderCriticalHit, setIsLeaderCriticalHit] = useState(false);
+  const [isLeaderDead, setIsLeaderDead] = useState(false);
+  const prevBattleLogLengthRef = useRef<number>(0);
 
   const isPlayerTurn = currentTurnUnit?.faction === Faction.PLAYER;
+  
+  const leaderUnitId = battleParty[0];
+  const leaderUnit = useMemo(() => {
+    return battleState.playerUnits.find(u => u.id === leaderUnitId) || null;
+  }, [battleState.playerUnits, leaderUnitId]);
 
   const backgroundImage = useMemo(() => {
     return resolveImgPath(`img/bg/dungeon/${quest.background_image}`);
@@ -227,14 +236,53 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   }, [quest.rewards?.experience, battleParty, characterStats, userName]);
 
   useEffect(() => {
-    if (endReason === BattleEndReason.VICTORY && battleState.isEnded) {
-      const gains = calculateExpGains();
-      setExpGains(gains);
-      setShowVictoryScreen(true);
-      setAnimatingExpIndex(0);
-      setCurrentExpPercent(0);
+    if (!leaderUnit) return;
+    const wasDead = isLeaderDead;
+    const isNowDead = !leaderUnit.isAlive;
+    
+    if (!wasDead && isNowDead) {
+      setIsLeaderDead(true);
+    } else if (wasDead && !isNowDead) {
+      setIsLeaderDead(false);
     }
-  }, [endReason, battleState.isEnded, calculateExpGains]);
+  }, [leaderUnit?.isAlive]);
+
+  useEffect(() => {
+    if (!leaderUnitId) return;
+    
+    const currentLogLength = battleState.battleLog.length;
+    if (currentLogLength > prevBattleLogLengthRef.current) {
+      const newLogs = battleState.battleLog.slice(prevBattleLogLengthRef.current);
+      
+      for (const log of newLogs) {
+        if (log.type === 'damage' && log.target) {
+          const targetUnit = battleState.playerUnits.find(u => u.name === log.target);
+          if (targetUnit && targetUnit.id === leaderUnitId) {
+            const isCritical = log.description.includes('暴击') || (log.details && (log.details as any)?.isCritical);
+            if (isCritical) {
+              setIsLeaderCriticalHit(true);
+              setTimeout(() => setIsLeaderCriticalHit(false), 500);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    prevBattleLogLengthRef.current = currentLogLength;
+  }, [battleState.battleLog, leaderUnitId, battleState.playerUnits]);
+
+  useEffect(() => {
+    if (!leaderUnit) return;
+    const wasDead = isLeaderDead;
+    const isNowDead = !leaderUnit.isAlive;
+    
+    if (!wasDead && isNowDead) {
+      setIsLeaderDead(true);
+    } else if (wasDead && !isNowDead) {
+      setIsLeaderDead(false);
+    }
+  }, [leaderUnit?.isAlive]);
 
   useEffect(() => {
     if (!showVictoryScreen || expGains.length === 0) return;
@@ -416,14 +464,19 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fadeIn font-sans">
       <div 
-        className="relative w-full h-full overflow-hidden"
+        className={`relative w-full h-full overflow-hidden ${isLeaderCriticalHit ? 'animate-screen-shake' : ''}`}
         style={{
           backgroundImage: `url(${backgroundImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/50" />
+        {isLeaderDead && (
+          <div className="absolute inset-0 bg-gray-500/50 z-[5]" style={{ mixBlendMode: 'saturation' }} />
+        )}
+        
+        <div className={`absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10 ${isLeaderCriticalHit ? 'animate-flash-white' : ''}`} />
+        <div className={`absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 mix-blend-multiply pointer-events-none z-10 ${isLeaderCriticalHit ? 'animate-flash-white' : ''}`} />
 
         <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-40 bg-[#2c241b]/90 rounded px-2 sm:px-4 py-1.5 sm:py-2 border border-[#9b7a4c] shadow-lg">
           <div className="text-[#f0e6d2] text-xs sm:text-sm font-bold tracking-wide">

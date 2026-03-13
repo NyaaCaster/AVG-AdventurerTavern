@@ -412,6 +412,24 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
+  const handleAbandonQuest = (questId: string) => {
+      // 放弃任务，重置为可接受状态
+      setQuestStates(prev => {
+          const next = { ...prev };
+          delete next[questId];
+          return next;
+      });
+  };
+
+  const handleAbandonQuest = (questId: string) => {
+      // 放弃任务，重置为可接受状态
+      setQuestStates(prev => {
+          const next = { ...prev };
+          delete next[questId];
+          return next;
+      });
+  };
+
   const addCharacterExp = (characterId: string, gainedExp: number) => {
       if (!characterId || gainedExp <= 0) return;
 
@@ -593,6 +611,7 @@ export const useCoreState = (initialSaveData?: any) => {
       handleAcceptQuest,
       handleCompleteQuest,
       handleDeliverQuest,
+      handleAbandonQuest,
       battleParty,
       setBattleParty,
       addToBattleParty,

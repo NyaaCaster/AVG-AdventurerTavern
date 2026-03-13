@@ -303,13 +303,16 @@ export class BattleManager {
     if (skillResult.success) {
       for (const targetResult of skillResult.targets) {
         if (targetResult.damage && targetResult.damage.value > 0) {
+          const isCritical = targetResult.damage.isCritical;
+          const critText = isCritical ? '【暴击】' : '';
           this.addLogEntry({
             turn: this.state.turnNumber,
             type: 'damage',
             source: currentUnit.name,
             target: targetResult.targetName,
             value: targetResult.damage.value,
-            description: `${currentUnit.name} 对 ${targetResult.targetName} 造成 ${targetResult.damage.value} 点伤害`
+            description: `${critText}${currentUnit.name} 对 ${targetResult.targetName} 造成 ${targetResult.damage.value} 点伤害`,
+            details: { isCritical }
           });
         }
       }

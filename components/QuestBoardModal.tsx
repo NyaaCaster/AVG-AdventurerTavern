@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuestList, QuestStateMap, QuestStatus, QuestState } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
@@ -13,6 +13,8 @@ interface QuestBoardModalProps {
   onAcceptQuest: (questId: string) => void;
   onCompleteQuest: (questId: string) => void;
   onDeliverQuest: (questId: string) => void;
+  onStartBattle: (quest: QuestList) => void;
+  onAbandonQuest: (questId: string) => void;
   currentGold: number;
   inspirationBalance: number;
   onAddGold: (amount: number) => void;
@@ -20,14 +22,16 @@ interface QuestBoardModalProps {
   onAddItems: (items: { id: string; count: number }[]) => void;
   onAddCharacterExp: (exp: number) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
+  highlightQuestId?: string | null;
 }
-// 统一倒计时（秒）: 1星=1分钟, 10星=10分钟
-const QUEST_DURATION_SECONDS: Record<number, number> = {
-  1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
-  6: 6*60, 7: 7*60, 8: 8*60, 9: 9*60, 10: 10*60,
-};
 
-const QUEST_LIST_DURATION_SECONDS = QUEST_DURATION_SECONDS;
+// 统一倒计时（秒）: 1星=1分钟, 10星=10分钟
+// [已弃用] 倒计时系统不再使用，战斗触发改为手动进入
+// const QUEST_DURATION_SECONDS: Record<number, number> = {
+//   1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
+//   6: 6*60, 7: 7*60, 8: 8*60, 9: 9*60, 10: 10*60,
+// };
+// const QUEST_LIST_DURATION_SECONDS = QUEST_DURATION_SECONDS;
 
 const RANK_COLORS: Record<string, string> = {
   E: 'text-slate-400 border-slate-400/50 bg-slate-400/10',
@@ -79,26 +83,27 @@ function renderStars(count: number, large = false): React.ReactNode {
   );
 }
 // 倒计时 hook
-function useCountdown(acceptedAt: number | undefined, durationSeconds: number): number {
-  const [remaining, setRemaining] = useState<number>(() => {
-    if (!acceptedAt) return durationSeconds;
-    const elapsed = Math.floor((Date.now() - acceptedAt) / 1000);
-    return Math.max(0, durationSeconds - elapsed);
-  });
-
-  useEffect(() => {
-    if (!acceptedAt) return;
-    const tick = () => {
-      const elapsed = Math.floor((Date.now() - acceptedAt) / 1000);
-      setRemaining(Math.max(0, durationSeconds - elapsed));
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [acceptedAt, durationSeconds]);
-
-  return remaining;
-}
+// [已弃用] 倒计时系统不再使用
+// function useCountdown(acceptedAt: number | undefined, durationSeconds: number): number {
+//   const [remaining, setRemaining] = useState<number>(() => {
+//     if (!acceptedAt) return durationSeconds;
+//     const elapsed = Math.floor((Date.now() - acceptedAt) / 1000);
+//     return Math.max(0, durationSeconds - elapsed);
+//   });
+// 
+//   useEffect(() => {
+//     if (!acceptedAt) return;
+//     const tick = () => {
+//       const elapsed = Math.floor((Date.now() - acceptedAt) / 1000);
+//       setRemaining(Math.max(0, durationSeconds - elapsed));
+//     };
+//     tick();
+//     const id = setInterval(tick, 1000);
+//     return () => clearInterval(id);
+//   }, [acceptedAt, durationSeconds]);
+// 
+//   return remaining;
+// }
 
 // 一级列表条目
 interface QuestListItemProps {
@@ -109,8 +114,9 @@ interface QuestListItemProps {
 }
 
 const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt, onClick }) => {
-  const listDuration = QUEST_LIST_DURATION_SECONDS[quest.star] || 60;
-  const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, listDuration);
+  // [已弃用] 倒计时不再使用
+  // const listDuration = QUEST_LIST_DURATION_SECONDS[quest.star] || 60;
+  // const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, listDuration);
 
   const statusBadge = () => {
     if (status === 'completed') {
@@ -122,9 +128,8 @@ const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt
     }
     if (status === 'active') {
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-300 border border-amber-600 whitespace-nowrap font-mono">
-          <i className="fa-solid fa-hourglass-half text-[9px] animate-pulse"></i>
-          {formatTime(remaining)}
+        <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-300 border border-amber-600 whitespace-nowrap">
+          <i className="fa-solid fa-swords text-[9px]"></i>进行中
         </span>
       );
     }
@@ -207,15 +212,19 @@ interface QuestDetailModalProps {
   onAccept: () => void;
   onComplete: () => void;
   onInstantComplete: () => void;
+  onEnterBattle: () => void;
+  onAbandon: () => void;
   onClose: () => void;
 }
 
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
-  quest, status, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onClose
+  quest, status, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onEnterBattle, onAbandon, onClose
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
-  const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
-  const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, duration);
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
+  // [已弃用] 倒计时不再使用
+  // const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
+  // const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, duration);
 
   const statusSeal = () => {
     if (status === 'completed') {
@@ -357,34 +366,41 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
               </div>
             )}
             {status === 'active' && (
-              <div className="text-center">
-                <div className="text-3xl font-bold font-mono text-amber-500 tracking-widest">{formatTime(remaining)}</div>
-                <p className="text-[11px] text-[#8c7b70] mt-1">倒计时结束后任务自动完成</p>
+              <div className="space-y-2">
+                <button
+                  onClick={onEnterBattle}
+                  className="w-full py-3 rounded-lg font-bold tracking-widest text-sm border-2 bg-red-900 text-red-100 border-red-600 hover:bg-red-800 hover:scale-[1.01] active:scale-[0.98] transition-all"
+                >
+                  <i className="fa-solid fa-swords mr-2"></i>进入战斗
+                </button>
+                
                 {(() => {
-                  // 计算灵感消耗：金币奖励的50%换算为灵感
                   const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
                   const canAfford = inspirationBalance >= inspirationCost;
                   return (
                     <button
                       onClick={() => setShowConfirm(true)}
                       disabled={!canAfford}
-                      className={`mt-3 w-full py-2 rounded-lg font-bold text-sm border-2 transition-all ${
+                      className={`w-full py-2 rounded-lg font-bold text-sm border-2 transition-all ${
                         canAfford
                           ? 'bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]'
                           : 'bg-[#1a1512] text-slate-500 border-slate-700 cursor-not-allowed opacity-70'
                       }`}
                     >
-                      <svg className="inline-block w-3.5 h-3.5 mr-1.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
-                        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
-                      </svg>
-                      立刻完成
+                      <i className="fa-solid fa-bolt mr-2"></i>立刻完成
                       <span className={`ml-2 text-xs font-mono ${
                         canAfford ? 'text-cyan-400/80' : 'text-red-400'
                       }`}>(-{inspirationCost.toFixed(2)}I)</span>
                     </button>
                   );
                 })()}
+                
+                <button
+                  onClick={() => setShowAbandonConfirm(true)}
+                  className="w-full py-2 rounded-lg font-bold text-sm border-2 bg-slate-800/50 text-slate-400 border-slate-600 hover:bg-slate-700/50 hover:text-slate-300 active:scale-[0.98] transition-all"
+                >
+                  <i className="fa-solid fa-xmark mr-2"></i>放弃任务
+                </button>
               </div>
             )}
 {status === 'completed' && (
@@ -492,6 +508,65 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
           </div>
         );
       })()}
+      
+      {showAbandonConfirm && (
+        <div
+          className="absolute inset-0 z-[140] flex items-center justify-center pointer-events-auto animate-fadeIn"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowAbandonConfirm(false)}
+        >
+          <div
+            className="relative w-full max-w-xs rounded-2xl p-6 flex flex-col"
+            style={{
+              background: 'rgba(30,30,30,0.95)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(239,68,68,0.1)',
+              backdropFilter: 'blur(16px)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+              style={{
+                width: '40px',
+                height: '2px',
+                marginTop: '-1px',
+                background: 'linear-gradient(to right, transparent, rgba(239,68,68,0.8), transparent)',
+              }}
+            />
+            
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                }}
+              >
+                <i className="fa-solid fa-triangle-exclamation text-red-400 text-xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-red-300">放弃任务</h3>
+              <p className="text-sm text-slate-400 mt-2">确定要放弃这个任务吗？<br/>放弃后需要重新接受委托。</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAbandonConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg font-medium text-sm text-slate-400 bg-slate-500/10 border border-slate-500/30 hover:bg-slate-500/20 transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  setShowAbandonConfirm(false);
+                  onAbandon();
+                }}
+                className="flex-1 py-2.5 rounded-lg font-medium text-sm text-red-400 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-400 transition-all"
+              >
+                确认放弃
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -552,8 +627,9 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 );
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
-  isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest,
-  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts
+  isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
+  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts,
+  highlightQuestId
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
   const [rewardQuestId, setRewardQuestId] = useState<string | null>(null);
@@ -565,23 +641,30 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   // 有进行中任务
   const hasActiveQuest = Object.values(questStates as QuestStateMap).some(s => s.status === 'active');
 
-  // 检查进行中任务是否已完成（倒计时归零）
+  // 当 highlightQuestId 变化时，自动打开任务详情
   useEffect(() => {
-    const interval = setInterval(() => {
-      Object.values(questStates as QuestStateMap).forEach((state: QuestState) => {
-        if (state.status === 'active' && state.acceptedAt) {
-          const quest = QUESTS[state.questId];
-          if (!quest) return;
-          const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
-          const elapsed = Math.floor((Date.now() - state.acceptedAt) / 1000);
-          if (elapsed >= duration) {
-            onCompleteQuest(state.questId);
-          }
-        }
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [questStates, onCompleteQuest]);
+    if (highlightQuestId && isOpen) {
+      setSelectedQuestId(highlightQuestId);
+    }
+  }, [highlightQuestId, isOpen]);
+
+  // [已弃用] 倒计时检查不再使用
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     Object.values(questStates as QuestStateMap).forEach((state: QuestState) => {
+  //       if (state.status === 'active' && state.acceptedAt) {
+  //         const quest = QUESTS[state.questId];
+  //         if (!quest) return;
+  //         const duration = QUEST_DURATION_SECONDS[quest.star] || 300;
+  //         const elapsed = Math.floor((Date.now() - state.acceptedAt) / 1000);
+  //         if (elapsed >= duration) {
+  //           onCompleteQuest(state.questId);
+  //         }
+  //       }
+  //     });
+  //   }, 1000);
+  //   return () => clearInterval(interval);
+  // }, [questStates, onCompleteQuest]);
 
 
 
@@ -606,6 +689,19 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
 
   const handleAccept = (questId: string) => {
     onAcceptQuest(questId);
+    // 不再关闭详情窗口
+    // setSelectedQuestId(null);
+  };
+
+  const handleEnterBattle = (questId: string) => {
+    const quest = QUESTS[questId];
+    if (!quest) return;
+    setSelectedQuestId(null);
+    onStartBattle(quest);
+  };
+
+  const handleAbandon = (questId: string) => {
+    onAbandonQuest(questId);
     setSelectedQuestId(null);
   };
 
@@ -766,6 +862,8 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             onAccept={() => handleAccept(selectedQuest.quest_id)}
             onComplete={() => handleDeliverClick(selectedQuest.quest_id)}
             onInstantComplete={() => handleInstantComplete(selectedQuest.quest_id)}
+            onEnterBattle={() => handleEnterBattle(selectedQuest.quest_id)}
+            onAbandon={() => handleAbandon(selectedQuest.quest_id)}
             onClose={() => setSelectedQuestId(null)}
           />
         )}
