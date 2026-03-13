@@ -33,6 +33,7 @@ COPY utils/ ./utils/
 COPY hooks/ ./hooks/
 COPY data/ ./data/
 COPY scripts/ ./scripts/
+COPY battle-system/ ./battle-system/
 
 # Copy root source files
 COPY *.tsx *.ts *.html *.css ./

@@ -317,7 +317,7 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
             </div>
             <div className="flex-1 bg-[#fffef8] border border-[#d6cbb8] rounded-lg p-3">
               <div className="text-[10px] text-[#8c7b70] uppercase tracking-wider mb-1 font-bold">任务时限</div>
-              <span className="text-lg font-bold font-mono text-[#382b26]">{formatTime(duration)}</span>
+              <span className="text-lg font-bold font-mono text-[#382b26]">{quest.star}★</span>
             </div>
           </div>
 
