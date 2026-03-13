@@ -14,9 +14,11 @@ import {
 } from '../battle-system/BattleManager';
 import { createPlayerBattleUnit } from '../battle-system/player-unit-factory';
 import { createEnemyBattleUnit } from '../battle-system/enemy-unit-factory';
-import { PlayerCommand, BattleEndReason, getSelectableTargets } from '../battle-system/player-commands';
+import { PlayerCommand, BattleEndReason, getSelectableTargets, executeEscapeCommand } from '../battle-system/player-commands';
 import { SKILLS } from '../data/battle-data/skills';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../types';
+import { makeAllyDecision, BattleAI, AIDecisionContext } from '../battle-system/ai';
+import { CHARACTERS } from '../data/scenarioData';
 
 interface UseBattleSystemOptions {
   battleParty: BattlePartySlots;
@@ -140,6 +142,15 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         setTimeout(() => {
           processEnemyTurn();
         }, 500);
+      } else if (nextUnit && nextUnit.faction === Faction.PLAYER) {
+        const leaderId = battleParty[0];
+        const isPlayerControlled = nextUnit.id === leaderId || (nextUnit as any).characterId === leaderId;
+        
+        if (!isPlayerControlled) {
+          setTimeout(() => {
+            processAllyTurn();
+          }, 500);
+        }
       }
     } else {
       const turnResult = manager.endTurn();
@@ -163,11 +174,20 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
             setTimeout(() => {
               processEnemyTurn();
             }, 500);
+          } else if (actionQueue[0].faction === Faction.PLAYER) {
+            const leaderId = battleParty[0];
+            const isPlayerControlled = actionQueue[0].id === leaderId || (actionQueue[0] as any).characterId === leaderId;
+            
+            if (!isPlayerControlled) {
+              setTimeout(() => {
+                processAllyTurn();
+              }, 500);
+            }
           }
         }
       }
     }
-  }, [battleState]);
+  }, [battleState, battleParty]);
   
   const processEnemyTurn = useCallback(() => {
     const manager = managerRef.current;
@@ -205,6 +225,93 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       processNextTurn();
     }
   }, [battleState, processNextTurn]);
+  
+  const processAllyTurn = useCallback(() => {
+    const manager = managerRef.current;
+    if (!manager || !battleState) return;
+    
+    const currentUnit = manager.getCurrentUnit();
+    if (!currentUnit || currentUnit.faction !== Faction.PLAYER) return;
+    
+    const leaderId = battleParty[0];
+    const isPlayerControlled = currentUnit.id === leaderId || (currentUnit as any).characterId === leaderId;
+    if (isPlayerControlled) return;
+    
+    const charId = (currentUnit as any).characterId || currentUnit.id;
+    const character = CHARACTERS[charId];
+    
+    if (!character?.battleData?.skills) {
+      const basicAttack = SKILLS.find(s => s.id === 1);
+      if (basicAttack) {
+        const aliveTargets = battleState.enemyUnits.filter(u => u.isAlive);
+        if (aliveTargets.length > 0) {
+          const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+          const result = manager.processNextAction(basicAttack, [randomTarget.id]);
+          setBattleState({ ...manager.getState()! });
+          
+          if (result.battleEnded) {
+            if (result.winner === Faction.PLAYER) {
+              setEndReason(BattleEndReason.VICTORY);
+            } else {
+              setEndReason(BattleEndReason.DEFEAT);
+            }
+            return;
+          }
+        }
+      }
+      processNextTurn();
+      return;
+    }
+    
+    const availableActions = character.battleData.skills
+      .filter(skillLearning => currentUnit.stats.level >= skillLearning.level)
+      .map(skillLearning => {
+        const skill = SKILLS.find(s => s.id === skillLearning.skillId);
+        return skill ? { skillId: skill.id, rating: 5 } : null;
+      })
+      .filter(Boolean) as Array<{ skillId: number; rating: number }>;
+    
+    const skillMap = new Map<number, SkillData>();
+    SKILLS.forEach(skill => skillMap.set(skill.id, skill));
+    
+    const aiContext: AIDecisionContext = {
+      unit: currentUnit,
+      turnNumber: battleState.turnNumber,
+      playerUnits: battleState.playerUnits,
+      enemyUnits: battleState.enemyUnits,
+      availableActions,
+      skillMap,
+      switches: new Map(),
+      variables: new Map()
+    };
+    
+    const decision = makeAllyDecision(aiContext);
+    
+    if (decision.isGuard) {
+      manager.processGuardAction();
+      setBattleState({ ...manager.getState()! });
+      processNextTurn();
+      return;
+    }
+    
+    if (decision.skill && decision.targetIds.length > 0) {
+      const result = manager.processNextAction(decision.skill, decision.targetIds);
+      setBattleState({ ...manager.getState()! });
+      
+      if (result.battleEnded) {
+        if (result.winner === Faction.PLAYER) {
+          setEndReason(BattleEndReason.VICTORY);
+        } else {
+          setEndReason(BattleEndReason.DEFEAT);
+        }
+        return;
+      }
+    } else {
+      manager.skipCurrentAction();
+    }
+    
+    processNextTurn();
+  }, [battleState, battleParty, processNextTurn]);
   
   const onExecuteCommand = useCallback((
     command: PlayerCommand,
@@ -244,29 +351,15 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       }
       
       case PlayerCommand.ESCAPE: {
-        const escapeResult = manager.executeEscapeCommand 
-          ? null 
-          : (() => {
-              const { executeEscapeCommand } = require('../battle-system/player-commands');
-              const escapeResult = executeEscapeCommand(currentTurnUnit, battleState);
-              if (escapeResult.success) {
-                setEndReason(BattleEndReason.ESCAPED);
-                setBattleState({ ...manager.getState()!, isEnded: true });
-              }
-              return null;
-            })();
-        
-        if (!escapeResult) {
-          const { executeEscapeCommand } = require('../battle-system/player-commands');
-          const escapeResult = executeEscapeCommand(currentTurnUnit, battleState);
-          if (escapeResult.success) {
-            setEndReason(BattleEndReason.ESCAPED);
-            setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
-            return;
-          }
+        const escapeResult = executeEscapeCommand(currentTurnUnit, battleState);
+        if (escapeResult.success) {
+          setEndReason(BattleEndReason.ESCAPED);
+          setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
+          return;
         }
         manager.skipCurrentAction();
-        break;
+        processNextTurn();
+        return;
       }
       
       default:

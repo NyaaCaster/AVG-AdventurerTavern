@@ -267,6 +267,24 @@ function executeSkillOnTarget(source: BattleUnit, target: BattleUnit, skill: Ski
   
   if (skill.damage) {
     damage = executeDamage(source, target, skill);
+    
+    if (damage && !damage.isHealing && !damage.isAbsorb && damage.value > 0) {
+      const hitType = skill.hitType ?? 1;
+      const isPhysical = hitType === 1;
+      applyDamageToTarget(target, damage.value, isPhysical);
+    } else if (damage && damage.isHealing && damage.value > 0) {
+      applyHealingToTarget(target, damage.value);
+    } else if (damage && damage.isAbsorb && damage.value > 0) {
+      const hitType = skill.hitType ?? 1;
+      const isPhysical = hitType === 1;
+      calculateAndExecuteAbsorb({
+        source,
+        target,
+        basePower: damage.value,
+        isPhysical,
+        isMagical: !isPhysical
+      });
+    }
   }
   
   if (skill.effects) {

@@ -369,7 +369,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               baseX + randomOffset(),
               baseY + randomOffset(),
               -Math.abs(log.value!),
-              (log.details as any)?.isCritical ? 'critical' : 'hp-damage'
+              (log.details as any)?.isCritical ? 'critical' : 'hpDamage'
             );
           }, idx * 200);
         }
@@ -386,7 +386,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               baseX + randomOffset(),
               baseY + randomOffset(),
               Math.abs(log.value!),
-              'hp-heal'
+              'hpHeal'
             );
           }, idx * 200);
         }
