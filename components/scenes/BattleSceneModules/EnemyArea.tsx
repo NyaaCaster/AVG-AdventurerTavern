@@ -57,7 +57,7 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
               )}
             </div>
             
-            <div className={`${isMobile ? 'mt-1' : 'mt-2 sm:mt-4'} text-center`}>
+            <div className={`text-center`}>
               <div className={`text-white ${isMobile ? 'text-[8px]' : 'text-[10px] sm:text-xs md:text-sm'} font-bold drop-shadow-md bg-black/40 ${isMobile ? 'px-1' : 'px-1.5 sm:px-2'} py-0.5 rounded truncate ${isMobile ? 'max-w-[56px]' : 'max-w-[60px] sm:max-w-none'}`}>
                 {enemy.name}
               </div>

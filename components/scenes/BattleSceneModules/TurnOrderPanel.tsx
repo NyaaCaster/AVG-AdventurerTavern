@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { BattleUnit } from '../../../battle-system/types';
 import { Faction } from '../../../battle-system/types';
 import { CHARACTER_IMAGES } from '../../../data/resources/characterImageResources';
@@ -13,124 +13,146 @@ interface TurnOrderPanelProps {
   isTablet: boolean;
 }
 
+interface UnitDisplay {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  enemyBattlerName: string | null;
+  isPlayer: boolean;
+  isAlive: boolean;
+  isCurrent: boolean;
+}
+
 const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   turnOrder,
   currentTurnUnitId,
   isMobile,
   isTablet
 }) => {
-  if (isMobile) {
+  const [displayUnits, setDisplayUnits] = useState<UnitDisplay[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [exitUnit, setExitUnit] = useState<UnitDisplay | null>(null);
+  const prevCurrentIdRef = useRef<string | null>(null);
+
+  const convertToDisplayUnits = (units: BattleUnit[]): UnitDisplay[] => {
+    return units.map(unit => {
+      const isPlayer = unit.faction === Faction.PLAYER;
+      const avatarUrl = isPlayer
+        ? CHARACTER_IMAGES[unit.id]?.avatarUrl || CHARACTERS[unit.id]?.avatarUrl || ''
+        : null;
+      const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
+      
+      return {
+        id: unit.id,
+        name: unit.name,
+        avatarUrl,
+        enemyBattlerName: enemyData?.battlerName || null,
+        isPlayer,
+        isAlive: unit.isAlive,
+        isCurrent: currentTurnUnitId === unit.id
+      };
+    });
+  };
+
+  useEffect(() => {
+    const newUnits = convertToDisplayUnits(turnOrder);
+    
+    if (prevCurrentIdRef.current && prevCurrentIdRef.current !== currentTurnUnitId) {
+      const prevUnit = displayUnits.find(u => u.id === prevCurrentIdRef.current);
+      if (prevUnit) {
+        setExitUnit(prevUnit);
+        setIsAnimating(true);
+        
+        setTimeout(() => {
+          setDisplayUnits(newUnits);
+          setExitUnit(null);
+          setIsAnimating(false);
+        }, 400);
+        
+        prevCurrentIdRef.current = currentTurnUnitId;
+        return;
+      }
+    }
+    
+    setDisplayUnits(newUnits);
+    prevCurrentIdRef.current = currentTurnUnitId;
+  }, [turnOrder, currentTurnUnitId]);
+
+  const getAvatarContent = (unit: UnitDisplay, size: string) => {
+    const sizeClasses: Record<string, string> = {
+      sm: 'w-6 h-6',
+      md: 'w-8 h-8',
+      lg: 'w-10 h-10'
+    };
+
     return (
-      <div className="absolute right-1 top-1/2 -translate-y-1/2 z-40">
-        <div className="bg-[#2c241b]/90 rounded-lg border border-[#9b7a4c] shadow-lg overflow-hidden">
-          <div className="bg-[#382b26] px-1.5 py-1 border-b border-[#9b7a4c]">
-            <div className="text-[#f0e6d2] text-[10px] font-bold text-center">顺序</div>
+      <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 ${
+        unit.isCurrent 
+          ? 'border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' 
+          : 'border-white/30'
+      } ${!unit.isAlive ? 'opacity-40 grayscale' : ''} bg-[#2c241b]/80 flex-shrink-0 transition-all duration-300`}>
+        {unit.isPlayer && unit.avatarUrl ? (
+          <img src={resolveImgPath(unit.avatarUrl)} alt="" className="w-full h-full object-cover" />
+        ) : !unit.isPlayer && unit.enemyBattlerName ? (
+          <img
+            src={resolveImgPath(`img/quest/${unit.enemyBattlerName}.png`)}
+            alt=""
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white/60 text-xs">
+            <i className={`fa-solid ${unit.isPlayer ? 'fa-user' : 'fa-skull'}`} />
           </div>
-          <div className="flex flex-col gap-0.5 p-1">
-            {turnOrder.slice(0, 6).map((unit, index) => {
-              const isCurrentUnit = currentTurnUnitId === unit.id;
-              const isPlayer = unit.faction === Faction.PLAYER;
-              const avatarUrl = isPlayer
-                ? CHARACTER_IMAGES[unit.id]?.avatarUrl || CHARACTERS[unit.id]?.avatarUrl || ''
-                : null;
-              const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
-              
-              return (
-                <div
-                  key={`mobile-${unit.id}-${index}`}
-                  className={`relative flex-shrink-0 transition-all ${
-                    isCurrentUnit ? 'scale-110' : ''
-                  } ${!unit.isAlive ? 'opacity-40' : ''}`}
-                >
-                  <div className={`w-6 h-6 rounded overflow-hidden border ${
-                    isCurrentUnit 
-                      ? 'border-amber-400 ring-1 ring-amber-400/50' 
-                      : 'border-[#9b7a4c]/50'
-                  } bg-[#e8dfd1]/20 flex-shrink-0`}>
-                    {isPlayer && avatarUrl ? (
-                      <img src={resolveImgPath(avatarUrl)} alt="" className="w-full h-full object-cover" />
-                    ) : !isPlayer && enemyData ? (
-                      <img
-                        src={resolveImgPath(`img/quest/${enemyData.battlerName}.png`)}
-                        alt=""
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#9b7a4c] text-[10px]">
-                        <i className={`fa-solid ${isPlayer ? 'fa-user' : 'fa-skull'}`} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {isCurrentUnit && (
-                    <div className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-2 border-t-transparent border-b-transparent border-r-amber-400" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        )}
       </div>
     );
-  }
+  };
+
+  const visibleCount = isMobile ? 5 : (isTablet ? 6 : 8);
+  const avatarSize = isMobile ? 'sm' : 'md';
+  const timelineHeight = isMobile ? '2px' : '3px';
 
   return (
-    <div className={`absolute ${isTablet ? 'right-2 sm:right-4' : 'right-2 sm:right-4 md:right-28'} top-1/2 -translate-y-1/2 z-40 w-16 sm:w-20 md:w-28`}>
-      <div className="bg-[#2c241b]/90 rounded-lg border border-[#9b7a4c] shadow-lg overflow-hidden">
-        <div className="bg-[#382b26] px-2 py-1.5 border-b border-[#9b7a4c]">
-          <div className="text-[#f0e6d2] text-xs font-bold text-center tracking-wide">
-            顺序
-          </div>
-        </div>
-        
-        <div className="max-h-48 sm:max-h-60 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-          {turnOrder.slice(0, isTablet ? 5 : 8).map((unit, index) => {
-            const isCurrentUnit = currentTurnUnitId === unit.id;
-            const isPlayer = unit.faction === Faction.PLAYER;
-            const avatarUrl = isPlayer
-              ? CHARACTER_IMAGES[unit.id]?.avatarUrl || CHARACTERS[unit.id]?.avatarUrl || ''
-              : null;
-            const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
+    <div 
+      className={`absolute right-2 sm:right-4 md:right-6 z-40 ${isMobile ? 'max-w-[200px]' : isTablet ? 'max-w-[280px]' : 'max-w-[360px]'}`}
+      style={{ top: '30px' }}
+    >
+      <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center flex-1 overflow-hidden">
+          <div 
+            className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
+            style={{
+              height: timelineHeight,
+              background: 'linear-gradient(to right, rgba(251,191,36,0.8) 0%, rgba(251,191,36,0.4) 40%, rgba(155,122,76,0.2) 70%, rgba(155,122,76,0) 100%)',
+              borderRadius: '2px'
+            }}
+          />
+          
+          <div className="relative flex items-center gap-1.5 sm:gap-2 transition-transform duration-300 ease-out">
+            {exitUnit && (
+              <div 
+                className="flex-shrink-0 animate-slideOutLeft"
+                style={{ opacity: 0, transform: 'translateX(-20px)' }}
+              >
+                {getAvatarContent(exitUnit, avatarSize)}
+              </div>
+            )}
             
-            return (
+            {displayUnits.slice(0, visibleCount).map((unit, index) => (
               <div
                 key={`${unit.id}-${index}`}
-                className={`flex items-center gap-1 p-1 rounded transition-all ${
-                  isCurrentUnit
-                    ? 'bg-[#b45309]/30 ring-1 ring-[#fcd34d]'
-                    : 'bg-[#e8dfd1]/10'
-                } ${!unit.isAlive ? 'opacity-40' : ''}`}
+                className={`flex-shrink-0 transition-all duration-300 ease-out ${
+                  isAnimating && index === 0 ? 'animate-slideInFromRight' : ''
+                }`}
+                style={{
+                  transform: isAnimating ? `translateX(-${40 + (isMobile ? 24 : 32)}px)` : 'translateX(0)',
+                  transitionDelay: isAnimating ? `${index * 50}ms` : '0ms'
+                }}
               >
-                <div className="text-[8px] text-[#9b7a4c] font-bold w-3 sm:w-4 text-center">
-                  {index + 1}
-                </div>
-                
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded overflow-hidden border border-[#9b7a4c]/50 bg-[#e8dfd1]/20 flex-shrink-0">
-                  {isPlayer && avatarUrl ? (
-                    <img src={resolveImgPath(avatarUrl)} alt="" className="w-full h-full object-cover" />
-                  ) : !isPlayer && enemyData ? (
-                    <img
-                      src={resolveImgPath(`img/quest/${enemyData.battlerName}.png`)}
-                      alt=""
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#9b7a4c] text-[8px] sm:text-xs">
-                      <i className={`fa-solid ${isPlayer ? 'fa-user' : 'fa-skull'}`} />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[8px] sm:text-[9px] font-bold truncate ${
-                    isPlayer ? 'text-[#f0e6d2]' : 'text-red-300'
-                  }`}>
-                    {unit.name}
-                  </div>
-                </div>
+                {getAvatarContent(unit, avatarSize)}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </div>

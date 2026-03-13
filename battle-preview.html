@@ -127,77 +127,85 @@
             margin-top: 2px;
         }
         
-        .turn-order-panel {
+        /* 行动顺序时间轴 - 横向设计 */
+        .turn-order-timeline {
             position: absolute;
             right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 30px;
             z-index: 40;
-            width: 112px;
+            max-width: 360px;
         }
         
-        .turn-order-panel .panel {
-            background: rgba(44, 36, 27, 0.9);
-            border-radius: 8px;
-            border: 1px solid #9b7a4c;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        .turn-order-panel .header {
-            background: rgba(56, 43, 38, 1);
-            padding: 6px 8px;
-            border-bottom: 1px solid #9b7a4c;
-        }
-        
-        .turn-order-panel .header-text {
-            color: #f0e6d2;
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .turn-order-panel .list {
-            max-height: 240px;
-            overflow-y: auto;
-            padding: 6px;
-        }
-        
-        .turn-order-item {
+        .turn-order-timeline .timeline-container {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-        }
-        
-        .turn-order-item.active {
-            background: rgba(180, 83, 9, 0.3);
-            box-shadow: inset 0 0 0 1px #fcd34d;
-        }
-        
-        .turn-order-item .number {
-            font-size: 8px;
-            color: #9b7a4c;
-            font-weight: bold;
-            width: 16px;
-            text-align: center;
-        }
-        
-        .turn-order-item .avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
             overflow: hidden;
-            border: 1px solid rgba(155, 122, 76, 0.5);
-            background: rgba(232, 223, 209, 0.2);
-            flex-shrink: 0;
         }
         
-        .turn-order-item .avatar img {
+        .turn-order-timeline .timeline-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 3px;
+            background: linear-gradient(to right, rgba(251,191,36,0.8) 0%, rgba(251,191,36,0.4) 40%, rgba(155,122,76,0.2) 70%, rgba(155,122,76,0) 100%);
+            border-radius: 2px;
+        }
+        
+        .turn-order-timeline .avatar-list {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.3s ease-out;
+        }
+        
+        .turn-order-timeline .avatar-item {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(44, 36, 27, 0.8);
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .turn-order-timeline .avatar-item.current {
+            border-color: #fbbf24;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+        }
+        
+        .turn-order-timeline .avatar-item.dead {
+            opacity: 0.4;
+            filter: grayscale(100%);
+        }
+        
+        .turn-order-timeline .avatar-item img {
             width: 100%;
             height: 100%;
+            object-fit: cover;
+        }
+        
+        @keyframes slideOutLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-40px); opacity: 0; }
+        }
+        
+        @keyframes slideInFromRight {
+            from { transform: translateX(40px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .turn-order-timeline .avatar-item.exit {
+            animation: slideOutLeft 0.4s ease-out forwards;
+        }
+        
+        .turn-order-timeline .avatar-item.enter {
+            animation: slideInFromRight 0.4s ease-out forwards;
+        }
             object-fit: cover;
         }
         
@@ -250,7 +258,7 @@
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
         }
         
-        .enemy-unit .enemy-name { margin-top: 16px; text-align: center; }
+        .enemy-unit .enemy-name { text-align: center; }
         .enemy-unit .enemy-name span {
             color: white;
             font-size: 14px;
@@ -1020,66 +1028,26 @@
         }
         
         @media (max-width: 767px) {
-            .turn-order-panel, .battle-log { display: none; }
+            .battle-log { display: none; }
             
-            /* 移动端行动顺序面板 - 只显示头像，纵向排列 */
-            .mobile-turn-order {
-                display: flex !important;
-                position: absolute;
-                right: 4px;
-                top: 50%;
-                transform: translateY(-50%);
-                z-index: 40;
+            /* 移动端行动顺序时间轴 */
+            .turn-order-timeline {
+                right: 8px;
+                top: 30px;
+                max-width: 200px;
             }
             
-            .mobile-turn-order .panel {
-                background: rgba(44, 36, 27, 0.9);
-                border-radius: 8px;
-                border: 1px solid #9b7a4c;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                overflow: hidden;
+            .turn-order-timeline .timeline-bar {
+                height: 2px;
             }
             
-            .mobile-turn-order .panel-header {
-                background: rgba(56, 43, 38, 1);
-                padding: 4px 8px;
-                border-bottom: 1px solid #9b7a4c;
+            .turn-order-timeline .avatar-list {
+                gap: 6px;
             }
             
-            .mobile-turn-order .panel-header-text {
-                color: #f0e6d2;
-                font-size: 10px;
-                font-weight: bold;
-                text-align: center;
-            }
-            
-            .mobile-turn-order .avatar-list {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                padding: 4px;
-            }
-            
-            .mobile-turn-order .avatar-item {
+            .turn-order-timeline .avatar-item {
                 width: 24px;
                 height: 24px;
-                border-radius: 4px;
-                overflow: hidden;
-                border: 1px solid rgba(155, 122, 76, 0.5);
-                background: rgba(232, 223, 209, 0.2);
-                transition: all 0.2s;
-            }
-            
-            .mobile-turn-order .avatar-item.active {
-                border-color: #fbbf24;
-                box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
-                transform: scale(1.1);
-            }
-            
-            .mobile-turn-order .avatar-item img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
             }
             
             /* 移动端敌人区域 - 位置上调，图片放大 */
@@ -1103,7 +1071,7 @@
             .player-card .char-name { font-size: 10px; margin-bottom: 2px; }
             .player-card .stat-row { font-size: 8px; }
             .player-card .mp-bar { height: 5px; }
-            .command-menu { margin-bottom: 10vh; }
+            .command-menu { margin-bottom: 5vh; }
             .command-buttons { gap: 2px; }
             .cmd-btn { width: 40px; height: 32px; }
             .cmd-btn i { font-size: 10px; }
@@ -1136,72 +1104,31 @@
                 <div class="quest-name">发光孢子的威胁</div>
             </div>
             
-            <div class="turn-order-panel">
-                <div class="panel">
-                    <div class="header">
-                        <div class="header-text">行动顺序</div>
-                    </div>
-                    <div class="list custom-scrollbar">
-                        <div class="turn-order-item player active">
-                            <div class="number">1</div>
-                            <div class="avatar">
-                                <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png" alt="">
-                            </div>
-                            <div class="name">艾莉丝</div>
+            <!-- 行动顺序时间轴 -->
+            <div class="turn-order-timeline" id="turnOrderTimeline">
+                <div class="timeline-container">
+                    <div class="timeline-bar"></div>
+                    <div class="avatar-list" id="turnOrderAvatarList">
+                        <div class="avatar-item current" data-id="101">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png" alt="艾莉丝">
                         </div>
-                        <div class="turn-order-item enemy">
-                            <div class="number">2</div>
-                            <div class="avatar">
-                                <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
-                            </div>
-                            <div class="name">光孢怪</div>
+                        <div class="avatar-item" data-id="enemy1">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="光孢怪">
                         </div>
-                        <div class="turn-order-item player">
-                            <div class="number">3</div>
-                            <div class="avatar">
-                                <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="">
-                            </div>
-                            <div class="name">莉莉</div>
+                        <div class="avatar-item" data-id="102">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="莉莉">
                         </div>
-                        <div class="turn-order-item enemy">
-                            <div class="number">4</div>
-                            <div class="avatar">
-                                <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
-                            </div>
-                            <div class="name">光孢怪</div>
+                        <div class="avatar-item" data-id="enemy2">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="光孢怪">
                         </div>
-                        <div class="turn-order-item player">
-                            <div class="number">5</div>
-                            <div class="avatar">
-                                <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="">
-                            </div>
-                            <div class="name">梅琳</div>
+                        <div class="avatar-item" data-id="103">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="梅琳">
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 移动端行动顺序面板 - 只显示头像，纵向排列 -->
-            <div class="mobile-turn-order" style="display: none;">
-                <div class="panel">
-                    <div class="panel-header">
-                        <div class="panel-header-text">顺序</div>
-                    </div>
-                    <div class="avatar-list">
-                        <div class="avatar-item active">
-                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png" alt="">
+                        <div class="avatar-item" data-id="104">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/104.png" alt="凯尔">
                         </div>
-                        <div class="avatar-item">
-                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
-                        </div>
-                        <div class="avatar-item">
-                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png" alt="">
-                        </div>
-                        <div class="avatar-item">
-                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="">
-                        </div>
-                        <div class="avatar-item">
-                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png" alt="">
+                        <div class="avatar-item" data-id="enemy3">
+                            <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_002.png" alt="光孢王">
                         </div>
                     </div>
                 </div>
@@ -1588,6 +1515,9 @@
         <button onclick="showDamagePopup(500, 250, '+50', 'hp-heal')" style="padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             治疗弹出
         </button>
+        <button onclick="demoTurnChange()" style="padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            回合切换演示
+        </button>
     </div>
     
     <script>
@@ -1781,6 +1711,52 @@
             if (levelUpDemo) {
                 levelUpDemo.classList.toggle('level-up');
             }
+        }
+        
+        // 回合切换演示
+        let currentTurnIndex = 0;
+        const turnOrderData = [
+            { id: '101', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/101.png', name: '艾莉丝' },
+            { id: 'enemy1', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png', name: '光孢怪' },
+            { id: '102', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/102.png', name: '莉莉' },
+            { id: 'enemy2', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png', name: '光孢怪' },
+            { id: '103', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/103.png', name: '梅琳' },
+            { id: '104', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/face/104.png', name: '凯尔' },
+            { id: 'enemy3', img: 'https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_002.png', name: '光孢王' }
+        ];
+        
+        function demoTurnChange() {
+            const avatarList = document.getElementById('turnOrderAvatarList');
+            const items = avatarList.querySelectorAll('.avatar-item');
+            
+            if (items.length === 0) return;
+            
+            const firstItem = items[0];
+            const itemWidth = firstItem.offsetWidth + 8;
+            
+            firstItem.classList.add('exit');
+            
+            setTimeout(() => {
+                firstItem.remove();
+                
+                const currentUnit = turnOrderData[currentTurnIndex];
+                const newItem = document.createElement('div');
+                newItem.className = 'avatar-item enter';
+                newItem.dataset.id = currentUnit.id;
+                newItem.innerHTML = `<img src="${currentUnit.img}" alt="${currentUnit.name}">`;
+                avatarList.appendChild(newItem);
+                
+                setTimeout(() => {
+                    newItem.classList.remove('enter');
+                }, 400);
+                
+                const newItems = avatarList.querySelectorAll('.avatar-item');
+                if (newItems.length > 0) {
+                    newItems[0].classList.add('current');
+                }
+                
+                currentTurnIndex = (currentTurnIndex + 1) % turnOrderData.length;
+            }, 400);
         }
     </script>
 </body>
