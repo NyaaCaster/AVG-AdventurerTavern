@@ -1224,21 +1224,23 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           userId={userId} 
       />
       
-      <BattleScene
-        isOpen={battle.isOpen}
-        onClose={battle.closeBattle}
-        quest={battle.quest!}
-        battleState={battle.battleState!}
-        battleParty={core.battleParty}
-        characterStats={core.characterStats}
-        characterEquipments={core.characterEquipments}
-        userName="玩家"
-        currentTurnUnit={battle.currentTurnUnit}
-        turnOrder={battle.turnOrder}
-        endReason={battle.endReason}
-        onExecuteCommand={battle.onExecuteCommand}
-        onAutoSave={handleAutoSave}
-      />
+      {battle.isOpen && battle.battleState && battle.quest && (
+        <BattleScene
+          isOpen={true}
+          onClose={battle.closeBattle}
+          quest={battle.quest}
+          battleState={battle.battleState}
+          battleParty={core.battleParty}
+          characterStats={core.characterStats}
+          characterEquipments={core.characterEquipments}
+          userName="玩家"
+          currentTurnUnit={battle.currentTurnUnit}
+          turnOrder={battle.turnOrder}
+          endReason={battle.endReason}
+          onExecuteCommand={battle.onExecuteCommand}
+          onAutoSave={handleAutoSave}
+        />
+      )}
     </div>
   );
 });
