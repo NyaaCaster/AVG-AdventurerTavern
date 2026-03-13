@@ -9,6 +9,7 @@ interface EnemyAreaProps {
   onTargetSelect: (targetId: string) => void;
   isMobile: boolean;
   isEnemyTargeting?: boolean;
+  onCursorChange?: (x: number, y: number, visible: boolean, isAlly?: boolean) => void;
 }
 
 const EnemyArea: React.FC<EnemyAreaProps> = ({
@@ -17,7 +18,8 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
   selectedTarget,
   onTargetSelect,
   isMobile,
-  isEnemyTargeting = false
+  isEnemyTargeting = false,
+  onCursorChange
 }) => {
   return (
     <div className={`absolute ${isMobile ? 'top-[20%]' : 'top-[15%]'} left-0 right-0 flex justify-center items-end gap-2 sm:gap-4 md:gap-8 lg:gap-16 px-2 sm:px-4 z-30`}>
@@ -30,6 +32,26 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
         
         const isTargetable = isEnemyTargeting && selectedCommand && enemy.isAlive;
         
+        const handleMouseEnter = (e: React.MouseEvent) => {
+          if (isTargetable && onCursorChange) {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const sprite = (e.currentTarget as HTMLElement).querySelector('img');
+            const spriteRect = sprite?.getBoundingClientRect() || rect;
+            onCursorChange(
+              rect.left + rect.width / 2,
+              spriteRect.top,
+              true,
+              false
+            );
+          }
+        };
+        
+        const handleMouseLeave = () => {
+          if (onCursorChange) {
+            onCursorChange(0, 0, false, false);
+          }
+        };
+        
         return (
           <div
             key={enemy.id}
@@ -37,6 +59,8 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
               isTargetable ? 'cursor-pointer hover:scale-105 active:scale-105 [-webkit-tap-highlight-color:transparent]' : ''
             }`}
             onClick={() => isTargetable && onTargetSelect(enemy.id)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             <div className={`relative ${
               isMobile 

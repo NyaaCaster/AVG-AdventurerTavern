@@ -76,7 +76,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpCharId, setLevelUpCharId] = useState<string | null>(null);
   const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, visible: false });
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, visible: false, isAlly: false });
   const animationRef = useRef<number | null>(null);
   
   const [isLeaderCriticalHit, setIsLeaderCriticalHit] = useState(false);
@@ -108,9 +108,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
   const playerUnitsWithImages: PlayerUnitWithImage[] = useMemo(() => {
     return battleState.playerUnits.map(player => {
-      const charId = player.id;
+      const charId = (player as any).characterId || player.id;
       const avatarUrl = CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || '';
-      const rawName = CHARACTERS[charId]?.name || '未知';
+      const rawName = CHARACTERS[charId]?.name || player.name || '未知';
       const name = resolveCharacterDisplayName(rawName, userName);
       return {
         ...player,
@@ -349,6 +349,53 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     setDamagePopups(prev => prev.filter(p => p.id !== id));
   }, []);
 
+  const lastLogIndexRef = useRef(0);
+  
+  useEffect(() => {
+    const newLogs = battleState.battleLog.slice(lastLogIndexRef.current);
+    if (newLogs.length === 0) return;
+    
+    newLogs.forEach((log, idx) => {
+      if (log.type === 'damage' && log.value !== undefined) {
+        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.target);
+        if (target) {
+          const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
+          const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
+          const baseY = isPlayer ? 400 : 200;
+          const randomOffset = () => (Math.random() - 0.5) * 40;
+          
+          setTimeout(() => {
+            showDamagePopup(
+              baseX + randomOffset(),
+              baseY + randomOffset(),
+              -Math.abs(log.value!),
+              (log.details as any)?.isCritical ? 'critical' : 'hp-damage'
+            );
+          }, idx * 200);
+        }
+      } else if (log.type === 'heal' && log.value !== undefined) {
+        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.target);
+        if (target) {
+          const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
+          const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
+          const baseY = isPlayer ? 400 : 200;
+          const randomOffset = () => (Math.random() - 0.5) * 40;
+          
+          setTimeout(() => {
+            showDamagePopup(
+              baseX + randomOffset(),
+              baseY + randomOffset(),
+              Math.abs(log.value!),
+              'hp-heal'
+            );
+          }, idx * 200);
+        }
+      }
+    });
+    
+    lastLogIndexRef.current = battleState.battleLog.length;
+  }, [battleState.battleLog, battleState.playerUnits, battleState.enemyUnits, showDamagePopup]);
+
   const handleCommandSelect = useCallback((command: PlayerCommand) => {
     setSelectedCommand(command);
     setSelectedTarget(null);
@@ -408,6 +455,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     setSelectedSkill(null);
     setShowSkillOverlay(false);
     setShowEscapeConfirm(false);
+  }, []);
+
+  const handleCursorChange = useCallback((x: number, y: number, visible: boolean, isAlly: boolean = false) => {
+    setCursorPosition({ x, y, visible, isAlly });
   }, []);
 
   const handleClose = useCallback(() => {
@@ -501,6 +552,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           onTargetSelect={handleTargetSelect}
           isMobile={isMobile}
           isEnemyTargeting={isEnemyTargeting}
+          onCursorChange={handleCursorChange}
         />
 
         <div className="absolute bottom-0 left-0 right-0 z-30">
@@ -563,6 +615,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           x={cursorPosition.x}
           y={cursorPosition.y}
           visible={cursorPosition.visible}
+          isAllyTarget={cursorPosition.isAlly}
         />
 
         {battleState.isEnded && endReason && (
