@@ -108,7 +108,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     battleParty: core.battleParty,
     characterStats: core.characterStats,
     characterEquipments: core.characterEquipments,
-    userName: '玩家'
+    userName: settings.userName
   });
   
   // --- UI 本地状态 ---
@@ -1233,7 +1233,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           battleParty={core.battleParty}
           characterStats={core.characterStats}
           characterEquipments={core.characterEquipments}
-          userName="玩家"
+          userName={settings.userName}
           currentTurnUnit={battle.currentTurnUnit}
           turnOrder={battle.turnOrder}
           endReason={battle.endReason}
