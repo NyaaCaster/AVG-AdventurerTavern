@@ -1,6 +1,6 @@
 ---
 name: "battle-scene-sync"
-description: "Syncs BattleScene.tsx UI changes to battle-preview.html. Invoke when BattleScene.tsx is modified or user asks to sync battle preview."
+description: "MUST invoke after ANY modification to BattleScene.tsx or BattleSceneModules/*. Syncs UI changes to battle-preview.html for visual preview."
 ---
 
 # Battle Scene Sync
@@ -9,18 +9,19 @@ This skill ensures the battle UI preview HTML file stays synchronized with the R
 
 ## Trigger Conditions
 
-**Invoke this skill IMMEDIATELY when:**
-- `components/scenes/BattleScene.tsx` is modified (UI/layout changes)
-- User mentions syncing battle preview
+**Invoke this skill IMMEDIATELY and MANDATORILY when:**
+- `components/scenes/BattleScene.tsx` is modified
+- ANY file in `components/scenes/BattleSceneModules/` is modified (PlayerCards.tsx, EnemyArea.tsx, CommandMenu.tsx, etc.)
+- User mentions "战斗场景" or "battle scene" modifications
 - User asks to update `battle-preview.html`
-- Changes to battle UI components, styles, or layout
 
 ## Files Involved
 
 | File | Purpose |
 |------|---------|
 | `components/scenes/BattleScene.tsx` | React battle scene component (source of truth) |
-| `battle-preview.html` | Static HTML preview for UI design reference |
+| `components/scenes/BattleSceneModules/*.tsx` | Sub-components for battle UI (MUST sync when modified) |
+| `battle-preview.html` | Static HTML preview for UI design reference (target) |
 
 ## Sync Checklist
 

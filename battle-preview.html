@@ -235,26 +235,8 @@
             transition: all 0.3s;
         }
         
-        .enemy-unit.targetable { cursor: pointer; }
+        .enemy-unit.targetable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .enemy-unit.targetable:hover { transform: scale(1.05); }
-        
-        .enemy-unit .boss-tag {
-            position: absolute;
-            top: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #b45309;
-            color: white;
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            border: 1px solid rgba(252, 211, 77, 0.5);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            white-space: nowrap;
-        }
-        
-        .enemy-unit .boss-tag i { margin-right: 4px; }
         
         .enemy-unit.master .sprite { width: 144px; height: 192px; }
         .enemy-unit.servant .sprite { width: 112px; height: 160px; }
@@ -266,42 +248,6 @@
             height: 100%;
             object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
-        }
-        
-        .enemy-unit .hp-container {
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 112px;
-        }
-        
-        .hp-bar {
-            width: 100%;
-            height: 8px;
-            background: #d6cbb8;
-            border-radius: 9999px;
-            overflow: hidden;
-            border: 1px solid #c7bca8;
-        }
-        
-        .hp-bar-fill {
-            height: 100%;
-            border-radius: 9999px;
-            transition: width 0.5s ease-out;
-        }
-        
-        .hp-bar-fill.high { background: linear-gradient(90deg, #10b981, #34d399); }
-        .hp-bar-fill.medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .hp-bar-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
-        
-        .hp-text {
-            text-align: center;
-            font-size: 10px;
-            color: white;
-            font-weight: bold;
-            margin-top: 2px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
         
         .enemy-unit .enemy-name { margin-top: 16px; text-align: center; }
@@ -364,6 +310,7 @@
             font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             white-space: nowrap;
+            z-index: 10;
         }
         
         .player-card .card-content { padding: 8px; }
@@ -404,6 +351,24 @@
             color: #5c4d45;
             margin-bottom: 2px;
         }
+        
+        .player-card .hp-bar {
+            height: 6px;
+            background: #d6cbb8;
+            border-radius: 9999px;
+            overflow: hidden;
+            border: 1px solid #c7bca8;
+        }
+        
+        .player-card .hp-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .player-card .hp-bar-fill.high { background: linear-gradient(90deg, #10b981, #34d399); }
+        .player-card .hp-bar-fill.medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .player-card .hp-bar-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
         
         .player-card .mp-bar {
             height: 6px;
@@ -992,7 +957,7 @@
         .battle-cursor {
             position: absolute;
             pointer-events: none;
-            z-index: 90;
+            z-index: 35;
             animation: cursorFloat 0.8s ease-in-out infinite;
         }
         
@@ -1001,10 +966,34 @@
             50% { transform: translateY(-8px); }
         }
         
-        .battle-cursor i {
-            font-size: 24px;
-            color: #fbbf24;
-            text-shadow: 0 0 10px rgba(251,191,36,0.8);
+        .battle-cursor .triangle {
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 16px solid #fbbf24;
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+        }
+        
+        .battle-cursor .triangle.ally {
+            border-top-color: #22c55e;
+            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.8));
+        }
+        
+        .player-card.ally-targetable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .player-card.ally-targetable:hover {
+            transform: scale(1.05);
+            border-color: #22c55e;
+        }
+        
+        .player-card.ally-targetable.selected {
+            border-color: #22c55e;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
         }
         
         /* 受伤抖动动画 */
@@ -1098,9 +1087,8 @@
                 top: 20% !important; 
                 gap: 4px; 
             }
-            .enemy-unit.master .sprite { width: 80px !important; height: 96px !important; }
-            .enemy-unit.servant .sprite { width: 72px !important; height: 80px !important; }
-            .enemy-unit .hp-container { width: 56px; }
+            .enemy-unit.master .sprite { width: 120px !important; height: 144px !important; }
+            .enemy-unit.servant .sprite { width: 108px !important; height: 120px !important; }
             
             /* 移动端玩家区域 - 位置上调 */
             .player-area {
@@ -1110,11 +1098,11 @@
                 padding-top: 16px !important;
             }
             .player-cards { gap: 2px; margin-bottom: 12px; }
-            .player-card { width: 56px; }
-            .player-card .card-content { padding: 2px; }
-            .player-card .char-name { font-size: 8px; margin-bottom: 2px; }
-            .player-card .stat-row { font-size: 7px; }
-            .player-card .mp-bar { height: 4px; }
+            .player-card { width: 84px; }
+            .player-card .card-content { padding: 4px; }
+            .player-card .char-name { font-size: 10px; margin-bottom: 2px; }
+            .player-card .stat-row { font-size: 8px; }
+            .player-card .mp-bar { height: 5px; }
             .command-menu { margin-bottom: 10vh; }
             .command-buttons { gap: 2px; }
             .cmd-btn { width: 40px; height: 32px; }
@@ -1223,12 +1211,6 @@
                 <div class="enemy-unit servant targetable">
                     <div class="sprite">
                         <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="光孢怪">
-                        <div class="hp-container">
-                            <div class="hp-bar">
-                                <div class="hp-bar-fill high" style="width: 75%"></div>
-                            </div>
-                            <div class="hp-text">150/200</div>
-                        </div>
                     </div>
                     <div class="enemy-name">
                         <span>光孢怪</span>
@@ -1236,17 +1218,8 @@
                 </div>
                 
                 <div class="enemy-unit master targetable">
-                    <div class="boss-tag">
-                        <i class="fa-solid fa-crown"></i>BOSS
-                    </div>
                     <div class="sprite">
                         <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_002.png" alt="光孢王">
-                        <div class="hp-container">
-                            <div class="hp-bar">
-                                <div class="hp-bar-fill medium" style="width: 45%"></div>
-                            </div>
-                            <div class="hp-text">450/1000</div>
-                        </div>
                     </div>
                     <div class="enemy-name">
                         <span>光孢王</span>
@@ -1256,12 +1229,6 @@
                 <div class="enemy-unit servant targetable">
                     <div class="sprite">
                         <img src="https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/img/quest/monster_001.png" alt="光孢怪">
-                        <div class="hp-container">
-                            <div class="hp-bar">
-                                <div class="hp-bar-fill low" style="width: 20%"></div>
-                            </div>
-                            <div class="hp-text">40/200</div>
-                        </div>
                     </div>
                     <div class="enemy-name">
                         <span>光孢怪</span>
@@ -1629,6 +1596,8 @@
             document.getElementById('skillOverlay').classList.remove('hidden');
         }
         
+        let currentSkillTargetType = null;
+        
         function hideSkillOverlay() {
             document.getElementById('skillOverlay').classList.add('hidden');
         }
@@ -1636,8 +1605,81 @@
         function selectSkill(skillId) {
             console.log('选择技能:', skillId);
             hideSkillOverlay();
-            // 模拟伤害弹出
-            showDamagePopup(450, 200, '-128', 'hp-damage');
+            
+            if (skillId === 'heal') {
+                currentSkillTargetType = 'ally';
+                enableAllyTargeting();
+            } else if (skillId === 'fireball' || skillId === 'icebolt') {
+                currentSkillTargetType = 'enemy';
+                enableEnemyTargeting();
+            }
+        }
+        
+        function enableAllyTargeting() {
+            const playerCards = document.querySelectorAll('.player-card');
+            const battleScene = document.querySelector('.battle-scene');
+            playerCards.forEach(card => {
+                card.classList.add('ally-targetable');
+                card.onclick = function() {
+                    playerCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    const rect = this.getBoundingClientRect();
+                    const sceneRect = battleScene.getBoundingClientRect();
+                    const cardCenterX = rect.left - sceneRect.left + rect.width / 2;
+                    const cardTopY = rect.top - sceneRect.top;
+                    showBattleCursor(cardCenterX, cardTopY - 10, true);
+                    setTimeout(() => {
+                        showDamagePopup(cardCenterX, cardTopY + rect.height / 2, '+50', 'hp-heal');
+                        disableTargeting();
+                    }, 500);
+                };
+            });
+        }
+        
+        function enableEnemyTargeting() {
+            const enemies = document.querySelectorAll('.enemy-unit.targetable');
+            const battleScene = document.querySelector('.battle-scene');
+            enemies.forEach(enemy => {
+                enemy.onclick = function() {
+                    const sprite = this.querySelector('.sprite');
+                    const rect = this.getBoundingClientRect();
+                    const spriteRect = sprite.getBoundingClientRect();
+                    const sceneRect = battleScene.getBoundingClientRect();
+                    const enemyCenterX = rect.left - sceneRect.left + rect.width / 2;
+                    const spriteTopY = spriteRect.top - sceneRect.top;
+                    showBattleCursor(enemyCenterX, spriteTopY - 10, false);
+                    setTimeout(() => {
+                        showDamagePopup(
+                            enemyCenterX,
+                            spriteTopY + spriteRect.height / 2,
+                            '-128',
+                            'hp-damage'
+                        );
+                        disableTargeting();
+                    }, 500);
+                };
+            });
+        }
+        
+        function disableTargeting() {
+            currentSkillTargetType = null;
+            const playerCards = document.querySelectorAll('.player-card');
+            playerCards.forEach(card => {
+                card.classList.remove('ally-targetable', 'selected');
+                card.onclick = null;
+            });
+            const enemies = document.querySelectorAll('.enemy-unit');
+            enemies.forEach(enemy => {
+                enemy.onclick = null;
+            });
+            hideBattleCursor();
+        }
+        
+        function hideBattleCursor() {
+            const cursor = document.querySelector('.battle-cursor');
+            if (cursor) {
+                cursor.style.display = 'none';
+            }
         }
         
         // 逃跑确认
@@ -1689,16 +1731,24 @@
         }
         
         // 战斗光标
-        function showBattleCursor(x, y) {
+        function showBattleCursor(x, y, isAlly = false) {
             let cursor = document.querySelector('.battle-cursor');
             if (!cursor) {
                 cursor = document.createElement('div');
                 cursor.className = 'battle-cursor';
-                cursor.innerHTML = '<i class="fa-solid fa-hand-pointer"></i>';
+                cursor.innerHTML = '<div class="triangle"></div>';
                 document.querySelector('.battle-scene').appendChild(cursor);
             }
+            const triangle = cursor.querySelector('.triangle');
+            if (isAlly) {
+                triangle.classList.add('ally');
+            } else {
+                triangle.classList.remove('ally');
+            }
+            const isMobile = window.innerWidth < 768;
+            const yOffset = isMobile && !isAlly ? -10 : 0;
             cursor.style.left = x + 'px';
-            cursor.style.top = y + 'px';
+            cursor.style.top = (y + yOffset) + 'px';
             cursor.style.display = 'block';
         }
         

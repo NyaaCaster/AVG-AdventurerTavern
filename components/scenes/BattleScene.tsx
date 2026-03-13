@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { BattleUnit, BattleState, Faction, SkillScope, SkillData as BattleSkillData } from '../../battle-system/types';
+import {
+  BattleUnit, BattleState, Faction, SkillScope, SkillData as BattleSkillData, SkillScope as BattleSkillScope
+} from '../../battle-system/types';
 import { PlayerCommand, getSelectableTargets, checkSkillAvailability, BattleEndReason } from '../../battle-system/player-commands';
 import { ENEMIES } from '../../data/battle-data/enemies';
 import { CHARACTERS } from '../../data/scenarioData';
@@ -370,6 +372,37 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const enemyLayout = getEnemyLayout();
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   const isTablet = typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false;
+  
+  const isAllyTargeting = useMemo(() => {
+    if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
+      return false;
+    }
+    const skill = SKILLS.find(s => s.id === selectedSkill);
+    if (!skill) return false;
+    const allyScopes = [
+      SkillScope.ALLY_SINGLE,
+      SkillScope.ALLY_ALL,
+      SkillScope.ALLY_ALL_CONTINUOUS,
+      SkillScope.SELF,
+      SkillScope.SELF_AFFECT_ALLY_ALL
+    ];
+    return allyScopes.includes(skill.scope as SkillScope);
+  }, [selectedCommand, selectedSkill]);
+  
+  const isEnemyTargeting = useMemo(() => {
+    if (selectedCommand === PlayerCommand.ATTACK) return true;
+    if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
+      return false;
+    }
+    const skill = SKILLS.find(s => s.id === selectedSkill);
+    if (!skill) return false;
+    const enemyScopes = [
+      SkillScope.ENEMY_SINGLE,
+      SkillScope.ENEMY_ALL,
+      SkillScope.ENEMY_ALL_CONTINUOUS
+    ];
+    return enemyScopes.includes(skill.scope as SkillScope);
+  }, [selectedCommand, selectedSkill]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fadeIn font-sans">
@@ -405,6 +438,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           selectedTarget={selectedTarget}
           onTargetSelect={handleTargetSelect}
           isMobile={isMobile}
+          isEnemyTargeting={isEnemyTargeting}
         />
 
         <div className="absolute bottom-0 left-0 right-0 z-30">
@@ -414,6 +448,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               currentTurnUnitId={currentTurnUnit?.id || null}
               resolveImgPath={resolveImgPath}
               isMobile={isMobile}
+              selectedCommand={selectedCommand}
+              selectedTarget={selectedTarget}
+              onTargetSelect={handleTargetSelect}
+              isAllyTargeting={isAllyTargeting}
             />
 
             <CommandMenu
