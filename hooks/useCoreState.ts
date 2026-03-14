@@ -434,6 +434,25 @@ export const useCoreState = (initialSaveData?: any) => {
       });
   };
 
+  const addBattlePartyExp = (party: BattlePartySlots, gainedExp: number) => {
+    if (gainedExp <= 0) return;
+    
+    const validMemberIds = party.filter((id): id is string => id !== null);
+    if (validMemberIds.length === 0) return;
+
+    setCharacterStats(prev => {
+      const next = { ...prev };
+      
+      validMemberIds.forEach(characterId => {
+        const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+        const updated = applyExpGainToStat(characterId, current, gainedExp);
+        next[characterId] = updated;
+      });
+      
+      return next;
+    });
+  };
+
   const removeFromBattleParty = (slotIndex: number) => {
       if (slotIndex < 1 || slotIndex > 3) return;
       setBattleParty(prev => {
@@ -583,6 +602,7 @@ export const useCoreState = (initialSaveData?: any) => {
       handleRenameRecipe,
       handleAddItems,
       addCharacterExp,
+      addBattlePartyExp,
       updateGold,
       updateInventoryItem,
       updateCharacterUnlock,

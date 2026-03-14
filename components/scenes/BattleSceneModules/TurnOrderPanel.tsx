@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { BattleUnit } from '../../../battle-system/types';
 import { Faction } from '../../../battle-system/types';
 import { CHARACTER_IMAGES } from '../../../data/resources/characterImageResources';
@@ -20,7 +20,6 @@ interface UnitDisplay {
   enemyBattlerName: string | null;
   isPlayer: boolean;
   isAlive: boolean;
-  isCurrent: boolean;
 }
 
 const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
@@ -29,78 +28,61 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   isMobile,
   isTablet
 }) => {
-  const [displayUnits, setDisplayUnits] = useState<UnitDisplay[]>([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [exitUnit, setExitUnit] = useState<UnitDisplay | null>(null);
-  const prevCurrentIdRef = useRef<string | null>(null);
+  const [exitingUnit, setExitingUnit] = useState<UnitDisplay | null>(null);
+  const [enteringUnit, setEnteringUnit] = useState<UnitDisplay | null>(null);
+  const prevTurnUnitIdRef = useRef<string | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const convertToDisplayUnits = useCallback((units: BattleUnit[], currentId: string | null): UnitDisplay[] => {
-    return units.map(unit => {
-      const isPlayer = unit.faction === Faction.PLAYER;
-      const charId = (unit as any).characterId || unit.id;
-      const avatarUrl = isPlayer
-        ? CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || ''
-        : null;
-      const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
-      
-      return {
-        id: unit.id,
-        name: unit.name,
-        avatarUrl,
-        enemyBattlerName: enemyData?.battlerName || null,
-        isPlayer,
-        isAlive: unit.isAlive,
-        isCurrent: currentId === unit.id
-      };
-    });
-  }, []);
+  const convertToDisplayUnit = (unit: BattleUnit): UnitDisplay => {
+    const isPlayer = unit.faction === Faction.PLAYER;
+    const charId = (unit as any).characterId || unit.id;
+    const avatarUrl = isPlayer
+      ? CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || ''
+      : null;
+    const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
+    
+    return {
+      id: unit.id,
+      name: unit.name,
+      avatarUrl,
+      enemyBattlerName: enemyData?.battlerName || null,
+      isPlayer,
+      isAlive: unit.isAlive
+    };
+  };
+
+  const visibleUnits = useMemo(() => {
+    return turnOrder.slice(0, isMobile ? 5 : (isTablet ? 6 : 8)).map(convertToDisplayUnit);
+  }, [turnOrder, isMobile, isTablet]);
 
   useEffect(() => {
-    const prevId = prevCurrentIdRef.current;
+    const prevId = prevTurnUnitIdRef.current;
     
-    if (prevId && prevId !== currentTurnUnitId && displayUnits.length > 0) {
-      const prevUnit = displayUnits.find(u => u.id === prevId);
+    if (prevId && prevId !== currentTurnUnitId && turnOrder.length > 0) {
+      const prevUnit = turnOrder.find(u => u.id === prevId);
       
-      if (prevUnit && !isAnimating) {
+      if (prevUnit) {
         if (animationTimeoutRef.current) {
           clearTimeout(animationTimeoutRef.current);
         }
         
-        setExitUnit(prevUnit);
-        setIsAnimating(true);
+        setExitingUnit(convertToDisplayUnit(prevUnit));
         
-        const updatedUnits = displayUnits.map(u => ({
-          ...u,
-          isCurrent: currentTurnUnitId === u.id
-        }));
-        
-        const prevIndex = updatedUnits.findIndex(u => u.id === prevId);
-        if (prevIndex > -1) {
-          const movedUnit = { ...updatedUnits[prevIndex], isCurrent: false };
-          const remainingUnits = updatedUnits.filter(u => u.id !== prevId);
-          setDisplayUnits([...remainingUnits, movedUnit]);
-        } else {
-          setDisplayUnits(updatedUnits);
+        const nextUnit = turnOrder[turnOrder.length - 1];
+        if (nextUnit && nextUnit.id !== prevUnit.id) {
+          setEnteringUnit(convertToDisplayUnit(nextUnit));
         }
         
         animationTimeoutRef.current = setTimeout(() => {
-          const newUnits = convertToDisplayUnits(turnOrder, currentTurnUnitId);
-          setDisplayUnits(newUnits);
-          setExitUnit(null);
-          setIsAnimating(false);
+          setExitingUnit(null);
+          setEnteringUnit(null);
           animationTimeoutRef.current = null;
         }, 400);
-        
-        prevCurrentIdRef.current = currentTurnUnitId;
-        return;
       }
     }
     
-    const newUnits = convertToDisplayUnits(turnOrder, currentTurnUnitId);
-    setDisplayUnits(newUnits);
-    prevCurrentIdRef.current = currentTurnUnitId;
-  }, [turnOrder, currentTurnUnitId, displayUnits, isAnimating, convertToDisplayUnits]);
+    prevTurnUnitIdRef.current = currentTurnUnitId;
+  }, [currentTurnUnitId, turnOrder]);
 
   useEffect(() => {
     return () => {
@@ -110,7 +92,7 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
     };
   }, []);
 
-  const getAvatarContent = (unit: UnitDisplay, size: string) => {
+  const getAvatarContent = (unit: UnitDisplay, size: string, isCurrent: boolean = false) => {
     const sizeClasses: Record<string, string> = {
       sm: 'w-6 h-6',
       md: 'w-8 h-8',
@@ -119,10 +101,10 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
 
     return (
       <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 ${
-        unit.isCurrent 
+        isCurrent 
           ? 'border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' 
           : 'border-white/30'
-      } ${!unit.isAlive ? 'opacity-40 grayscale' : ''} bg-[#2c241b]/80 flex-shrink-0 transition-all duration-300`}>
+      } ${!unit.isAlive ? 'opacity-40 grayscale' : ''} bg-[#2c241b]/80 flex-shrink-0`}>
         {unit.isPlayer && unit.avatarUrl ? (
           <img src={resolveImgPath(unit.avatarUrl)} alt="" className="w-full h-full object-cover" />
         ) : !unit.isPlayer && unit.enemyBattlerName ? (
@@ -140,10 +122,8 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
     );
   };
 
-  const visibleCount = isMobile ? 5 : (isTablet ? 6 : 8);
   const avatarSize = isMobile ? 'sm' : 'md';
   const timelineHeight = isMobile ? '2px' : '3px';
-  const unitWidth = isMobile ? 32 : 40;
 
   return (
     <div 
@@ -161,29 +141,33 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
             }}
           />
           
-          <div className="relative flex items-center gap-1.5 sm:gap-2 transition-transform duration-300 ease-out">
-            {exitUnit && (
+          <div className="relative flex items-center gap-1.5 sm:gap-2">
+            {exitingUnit && (
               <div 
                 className="flex-shrink-0 animate-slideOutLeft"
+                key={`exit-${exitingUnit.id}`}
               >
-                {getAvatarContent(exitUnit, avatarSize)}
+                {getAvatarContent(exitingUnit, avatarSize, false)}
               </div>
             )}
             
-            {displayUnits.slice(0, visibleCount).map((unit, index) => (
+            {visibleUnits.map((unit, index) => (
               <div
-                key={`${unit.id}-${index}`}
-                className={`flex-shrink-0 transition-all duration-300 ease-out ${
-                  isAnimating && index === 0 ? 'animate-slideInFromRight' : ''
-                }`}
-                style={{
-                  transform: isAnimating ? `translateX(-${unitWidth}px)` : 'translateX(0)',
-                  transitionDelay: isAnimating ? `${index * 50}ms` : '0ms'
-                }}
+                key={unit.id}
+                className="flex-shrink-0"
               >
-                {getAvatarContent(unit, avatarSize)}
+                {getAvatarContent(unit, avatarSize, index === 0)}
               </div>
             ))}
+            
+            {enteringUnit && (
+              <div 
+                className="flex-shrink-0 animate-slideInFromRight"
+                key={`enter-${enteringUnit.id}`}
+              >
+                {getAvatarContent(enteringUnit, avatarSize, false)}
+              </div>
+            )}
           </div>
         </div>
       </div>

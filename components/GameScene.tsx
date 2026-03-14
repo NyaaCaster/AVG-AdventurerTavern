@@ -172,12 +172,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       // 胜利后打开任务详情界面
       setHighlightQuestId(quest.quest_id);
       setIsQuestBoardOpen(true);
+      
+      // 清除战斗结果状态
+      battle.clearBattleResult();
     }
     
     // 失败或逃跑后也打开任务详情界面
     if (!battle.isOpen && (battle.endReason === BattleEndReason.DEFEAT || battle.endReason === BattleEndReason.ESCAPED) && battle.quest) {
       setHighlightQuestId(battle.quest.quest_id);
       setIsQuestBoardOpen(true);
+      
+      // 清除战斗结果状态
+      battle.clearBattleResult();
     }
   }, [battle.isOpen, battle.endReason, battle.quest]);
   
@@ -1097,7 +1103,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           core.handleCompleteQuest(questId);
           setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after quest complete failed:', err)), 100);
         }}
-        onDeliverQuest={core.handleDeliverQuest}
+        onDeliverQuest={(questId) => {
+          core.handleDeliverQuest(questId);
+          setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after quest deliver failed:', err)), 100);
+        }}
         onStartBattle={(quest) => {
           battle.startBattle(quest);
         }}
@@ -1108,7 +1117,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onConsumeInspiration={handleConsumeInspiration}
         onAddItems={(items) => core.handleAddItems(items)}
         battleParty={core.battleParty}
-        onAddCharacterExp={(characterId, exp) => core.addCharacterExp(characterId, exp)}
+        onAddBattlePartyExp={(party, exp) => core.addBattlePartyExp(party, exp)}
         onShowRewardToasts={(gold, items) => {
           // 金币通知
           setToasts(prev => [

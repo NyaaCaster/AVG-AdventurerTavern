@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { EnemyUnitWithImage } from './types';
 import StatusIcons from './StatusIcons';
 
@@ -27,10 +27,16 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
   damageFlashUnits = new Set(),
   statusFlashUnits = new Set()
 }) => {
+  const [deathAnimationComplete, setDeathAnimationComplete] = useState<Set<string>>(new Set());
+
   const getHpBarColor = (percent: number) => {
     if (percent > 60) return 'from-green-500 to-emerald-400';
     if (percent > 30) return 'from-yellow-500 to-amber-400';
     return 'from-red-500 to-rose-400';
+  };
+
+  const handleDeathAnimationEnd = (enemyId: string) => {
+    setDeathAnimationComplete(prev => new Set(prev).add(enemyId));
   };
 
   return (
@@ -39,6 +45,14 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
         if (!enemy) {
           return (
             <div key={`empty-${index}`} className={`${isMobile ? 'w-16' : 'w-16 sm:w-24 md:w-32'} ${isMobile ? 'h-20' : 'h-20 sm:h-32 md:h-40'}`} />
+          );
+        }
+        
+        const isDeadAndHidden = !enemy.isAlive && deathAnimationComplete.has(enemy.id);
+        
+        if (isDeadAndHidden) {
+          return (
+            <div key={enemy.id} className={`${isMobile ? 'w-16' : 'w-16 sm:w-24 md:w-32'} ${isMobile ? 'h-20' : 'h-20 sm:h-32 md:h-40'}`} />
           );
         }
         
@@ -98,6 +112,11 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
                 } ${
                   !enemy.isAlive ? 'animate-enemyDeath' : ''
                 }`}
+                onAnimationEnd={(e) => {
+                  if (!enemy.isAlive && e.animationName === 'enemyDeath') {
+                    handleDeathAnimationEnd(enemy.id);
+                  }
+                }}
               />
               {enemy.isAlive && enemy.statusEffects && enemy.statusEffects.length > 0 && (
                 <StatusIcons 

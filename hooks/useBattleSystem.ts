@@ -66,6 +66,7 @@ interface UseBattleSystemReturn {
   
   startBattle: (quest: QuestList) => void;
   closeBattle: () => void;
+  clearBattleResult: () => void;
   onExecuteCommand: (command: PlayerCommand, targetIds?: string[], skillId?: number, itemId?: string) => void;
 }
 
@@ -171,9 +172,12 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     setBattleState(null);
     setCurrentTurnUnit(null);
     setTurnOrder([]);
+    managerRef.current = null;
+  }, []);
+  
+  const clearBattleResult = useCallback(() => {
     setEndReason(null);
     setQuest(null);
-    managerRef.current = null;
   }, []);
   
   const processNextTurn = useCallback(() => {
@@ -209,6 +213,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       
       setBattleState({ 
         ...newState,
+        playerUnits: newState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+        enemyUnits: newState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
         battleLog: [...newState.battleLog]
       });
       
@@ -324,6 +330,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     const newState = manager.getState()!;
     setBattleState({ 
       ...newState,
+      playerUnits: newState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+      enemyUnits: newState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
       battleLog: [...newState.battleLog]
     });
     
@@ -364,6 +372,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
           const newState = manager.getState()!;
           setBattleState({ 
             ...newState,
+            playerUnits: newState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+            enemyUnits: newState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
             battleLog: [...newState.battleLog]
           });
           
@@ -425,6 +435,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       const newState = manager.getState()!;
       setBattleState({ 
         ...newState,
+        playerUnits: newState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+        enemyUnits: newState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
         battleLog: [...newState.battleLog]
       });
       
@@ -525,6 +537,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
             
             setBattleState({ 
               ...managerState,
+              playerUnits: managerState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+              enemyUnits: managerState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
               battleLog: updatedLog
             });
             manager.skipCurrentAction();
@@ -545,6 +559,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       const newState = manager.getState()!;
       setBattleState({ 
         ...newState,
+        playerUnits: newState.playerUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
+        enemyUnits: newState.enemyUnits.map(u => ({...u, stats: {...u.stats}, statusEffects: [...u.statusEffects]})),
         battleLog: [...newState.battleLog]
       });
       
@@ -570,6 +586,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     quest,
     startBattle,
     closeBattle,
+    clearBattleResult,
     onExecuteCommand
   };
 }

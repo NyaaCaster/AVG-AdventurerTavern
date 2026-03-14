@@ -21,7 +21,7 @@ interface QuestBoardModalProps {
   onAddGold: (amount: number) => void;
   onConsumeInspiration: (amount: number) => void;
   onAddItems: (items: { id: string; count: number }[]) => void;
-  onAddCharacterExp: (characterId: string, exp: number) => void;
+  onAddBattlePartyExp: (party: BattlePartySlots, exp: number) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
   highlightQuestId?: string | null;
 }
@@ -631,7 +631,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
-  currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts,
+  currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddBattlePartyExp, onShowRewardToasts,
   highlightQuestId
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
@@ -732,11 +732,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
     
     const questExp = quest.rewards.experience || 0;
     if (questExp > 0) {
-      battleParty.forEach((characterId) => {
-        if (characterId) {
-          onAddCharacterExp(characterId, questExp);
-        }
-      });
+      onAddBattlePartyExp(battleParty, questExp);
     }
     
     onShowRewardToasts(
