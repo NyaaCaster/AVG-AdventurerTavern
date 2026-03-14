@@ -157,7 +157,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
   const currentCharacterSkills: SkillWithAvailability[] = useMemo(() => {
     if (!currentTurnUnit || currentTurnUnit.faction !== Faction.PLAYER) return [];
-    const charId = currentTurnUnit.id;
+    const charId = (currentTurnUnit as any).characterId || currentTurnUnit.id;
     const character = CHARACTERS[charId];
     if (!character?.battleData?.skills) return [];
     
@@ -166,6 +166,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
       .map(skillLearning => {
         const skill = SKILLS.find(s => s.id === skillLearning.skillId);
         if (!skill) return null;
+        
+        const isPassive = skill.note?.includes('<Passive State:') || skill.scope === 0;
+        if (isPassive) return null;
         
         const skillForCheck = { id: skill.id, mpCost: skill.mpCost };
         const availability = checkSkillAvailability(currentTurnUnit, skillForCheck as BattleSkillData);

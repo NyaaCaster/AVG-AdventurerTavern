@@ -77,6 +77,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
   const [quest, setQuest] = useState<QuestList | null>(null);
   
   const managerRef = useRef<BattleManager | null>(null);
+  const processEnemyTurnRef = useRef<() => void>(() => {});
+  const processAllyTurnRef = useRef<() => void>(() => {});
   
   const startBattle = useCallback((questData: QuestList) => {
     const manager = createBattleManager();
@@ -143,6 +145,21 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     if (actionQueue.length > 0) {
       setCurrentTurnUnit(actionQueue[0]);
+      
+      if (actionQueue[0].faction === Faction.ENEMY) {
+        setTimeout(() => {
+          processEnemyTurnRef.current();
+        }, 500);
+      } else if (actionQueue[0].faction === Faction.PLAYER) {
+        const leaderId = battleParty[0];
+        const isPlayerControlled = actionQueue[0].id === leaderId || (actionQueue[0] as any).characterId === leaderId;
+        
+        if (!isPlayerControlled) {
+          setTimeout(() => {
+            processAllyTurnRef.current();
+          }, 500);
+        }
+      }
     }
   }, [battleParty, characterStats, characterEquipments]);
   
@@ -352,6 +369,11 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     processNextTurn();
   }, [battleState, battleParty, processNextTurn]);
+  
+  useEffect(() => {
+    processEnemyTurnRef.current = processEnemyTurn;
+    processAllyTurnRef.current = processAllyTurn;
+  }, [processEnemyTurn, processAllyTurn]);
   
   const onExecuteCommand = useCallback((
     command: PlayerCommand,

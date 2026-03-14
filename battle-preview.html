@@ -254,8 +254,6 @@
         .turn-order-timeline .avatar-item.enter {
             animation: slideInFromRight 0.4s ease-out forwards;
         }
-            object-fit: cover;
-        }
         
         .turn-order-item .name {
             flex: 1;
@@ -1920,6 +1918,10 @@
             const firstItem = items[0];
             const itemWidth = firstItem.offsetWidth + 8;
             
+            if (items.length > 1) {
+                items[1].classList.add('current');
+            }
+            firstItem.classList.remove('current');
             firstItem.classList.add('exit');
             
             setTimeout(() => {
@@ -1935,11 +1937,6 @@
                 setTimeout(() => {
                     newItem.classList.remove('enter');
                 }, 400);
-                
-                const newItems = avatarList.querySelectorAll('.avatar-item');
-                if (newItems.length > 0) {
-                    newItems[0].classList.add('current');
-                }
                 
                 currentTurnIndex = (currentTurnIndex + 1) % turnOrderData.length;
             }, 400);

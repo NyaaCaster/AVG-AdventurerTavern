@@ -37,8 +37,9 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   const convertToDisplayUnits = (units: BattleUnit[]): UnitDisplay[] => {
     return units.map(unit => {
       const isPlayer = unit.faction === Faction.PLAYER;
+      const charId = (unit as any).characterId || unit.id;
       const avatarUrl = isPlayer
-        ? CHARACTER_IMAGES[unit.id]?.avatarUrl || CHARACTERS[unit.id]?.avatarUrl || ''
+        ? CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || ''
         : null;
       const enemyData = !isPlayer ? ENEMIES.find(e => e.id === parseInt(unit.id.split('_')[1])) : null;
       
@@ -62,6 +63,12 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
       if (prevUnit) {
         setExitUnit(prevUnit);
         setIsAnimating(true);
+        
+        const updatedUnits = displayUnits.map(u => ({
+          ...u,
+          isCurrent: currentTurnUnitId === u.id
+        }));
+        setDisplayUnits(updatedUnits);
         
         setTimeout(() => {
           setDisplayUnits(newUnits);
