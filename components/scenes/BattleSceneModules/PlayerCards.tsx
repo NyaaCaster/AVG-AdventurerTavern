@@ -52,6 +52,7 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
         return (
           <div
             key={player.id}
+            data-unit-id={player.id}
             className={`relative ${isMobile ? 'w-[84px]' : 'w-16 sm:w-20 md:w-28'} bg-[#e8dfd1] rounded-lg border-2 shadow-lg transition-all duration-300 ${
               isCurrentTurn ? 'border-[#b45309] scale-105 ring-2 ring-[#fcd34d]/50' : 'border-[#9b7a4c]'
             } ${isDead ? 'opacity-50 grayscale' : ''} ${

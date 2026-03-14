@@ -72,6 +72,7 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
         return (
           <div
             key={enemy.id}
+            data-unit-id={enemy.id}
             className={`relative flex flex-col items-center transition-all duration-300 ${
               isTargetable ? 'cursor-pointer hover:scale-105 active:scale-105 [-webkit-tap-highlight-color:transparent]' : ''
             }`}

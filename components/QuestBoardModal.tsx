@@ -374,33 +374,35 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                   <i className="fa-solid fa-swords mr-2"></i>进入战斗
                 </button>
                 
-                {(() => {
-                  const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
-                  const canAfford = inspirationBalance >= inspirationCost;
-                  return (
-                    <button
-                      onClick={() => setShowConfirm(true)}
-                      disabled={!canAfford}
-                      className={`w-full py-2 rounded-lg font-bold text-sm border-2 transition-all ${
-                        canAfford
-                          ? 'bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]'
-                          : 'bg-[#1a1512] text-slate-500 border-slate-700 cursor-not-allowed opacity-70'
-                      }`}
-                    >
-                      <i className="fa-solid fa-bolt mr-2"></i>立刻完成
-                      <span className={`ml-2 text-xs font-mono ${
-                        canAfford ? 'text-cyan-400/80' : 'text-red-400'
-                      }`}>(-{inspirationCost.toFixed(2)}I)</span>
-                    </button>
-                  );
-                })()}
-                
-                <button
-                  onClick={() => setShowAbandonConfirm(true)}
-                  className="w-full py-2 rounded-lg font-bold text-sm border-2 bg-slate-800/50 text-slate-400 border-slate-600 hover:bg-slate-700/50 hover:text-slate-300 active:scale-[0.98] transition-all"
-                >
-                  <i className="fa-solid fa-xmark mr-2"></i>放弃任务
-                </button>
+                <div className="flex gap-2">
+                  {(() => {
+                    const inspirationCost = goldToInspiration(Math.floor(quest.rewards.gold * 0.5));
+                    const canAfford = inspirationBalance >= inspirationCost;
+                    return (
+                      <button
+                        onClick={() => setShowConfirm(true)}
+                        disabled={!canAfford}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs border-2 transition-all ${
+                          canAfford
+                            ? 'bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]'
+                            : 'bg-[#1a1512] text-slate-500 border-slate-700 cursor-not-allowed opacity-70'
+                        }`}
+                      >
+                        <i className="fa-solid fa-bolt mr-1"></i>立刻完成
+                        <span className={`ml-1 text-[10px] font-mono ${
+                          canAfford ? 'text-cyan-400/80' : 'text-red-400'
+                        }`}>(-{inspirationCost.toFixed(1)}I)</span>
+                      </button>
+                    );
+                  })()}
+                  
+                  <button
+                    onClick={() => setShowAbandonConfirm(true)}
+                    className="flex-1 py-2 rounded-lg font-bold text-xs border-2 bg-blue-900/60 text-blue-200 border-blue-600 hover:bg-blue-800/60 hover:text-blue-100 active:scale-[0.98] transition-all"
+                  >
+                    <i className="fa-solid fa-xmark mr-1"></i>放弃任务
+                  </button>
+                </div>
               </div>
             )}
 {status === 'completed' && (

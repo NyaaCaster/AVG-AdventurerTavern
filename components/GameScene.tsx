@@ -161,41 +161,11 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   //   return () => clearInterval(interval);
   // }, [core.questStates, battle.isOpen]);
   
-  // 战斗结算处理：仅胜利时更新任务状态
+  // 战斗结算处理：仅胜利时更新任务状态（奖励在交付时发放）
   useEffect(() => {
     if (!battle.isOpen && battle.endReason === BattleEndReason.VICTORY && battle.quest) {
       const quest = battle.quest;
       core.handleCompleteQuest(quest.quest_id);
-      
-      if (quest.rewards?.gold) {
-        core.updateGold(core.gold + quest.rewards.gold);
-        setToasts(prev => [
-          ...prev,
-          { id: Date.now() + Math.random().toString(), type: 'gold', amount: quest.rewards!.gold }
-        ]);
-      }
-      
-      if (quest.rewards?.items) {
-        const items = quest.rewards.items.map(item => ({
-          id: item.item_id,
-          count: item.item_num
-        }));
-        core.handleAddItems(items);
-        items.forEach((item, idx) => {
-          setTimeout(() => {
-            setToasts(prev => [
-              ...prev,
-              { id: Date.now() + Math.random().toString(), type: 'item', itemId: item.id, count: item.count }
-            ]);
-          }, (idx + 1) * 600);
-        });
-      }
-      
-      if (quest.rewards?.experience) {
-        core.battleParty.filter((charId): charId is string => charId !== null).forEach((charId) => {
-          core.addCharacterExp(charId, quest.rewards!.experience);
-        });
-      }
       
       setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after battle victory failed:', err)), 100);
       

@@ -205,6 +205,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       });
       
       if (turnResult.battleEnded) {
+        setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
         const winner = turnResult.winner;
         if (winner === Faction.PLAYER) {
           setEndReason(BattleEndReason.VICTORY);
@@ -290,12 +291,21 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       
       const decision = makeEnemyDecision(aiContext);
       
-      if (decision.isGuard) {
-        manager.processGuardAction();
-      } else if (decision.skill && decision.targetIds.length > 0) {
+      if (decision.skill && decision.targetIds.length > 0) {
         manager.processNextAction(decision.skill, decision.targetIds);
       } else {
-        manager.skipCurrentAction();
+        const basicAttack = SKILLS.find(s => s.id === 1);
+        if (basicAttack) {
+          const aliveTargets = battleState.playerUnits.filter(u => u.isAlive);
+          if (aliveTargets.length > 0) {
+            const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+            manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
+          } else {
+            manager.skipCurrentAction();
+          }
+        } else {
+          manager.skipCurrentAction();
+        }
       }
     }
     
@@ -307,6 +317,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     const endCheck = manager.checkBattleEnd();
     if (endCheck.isEnded) {
+      setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
       if (endCheck.winner === Faction.PLAYER) {
         setEndReason(BattleEndReason.VICTORY);
       } else {
@@ -397,17 +408,6 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     const decision = makeAllyDecision(aiContext);
     
-    if (decision.isGuard) {
-      manager.processGuardAction();
-      const newState = manager.getState()!;
-      setBattleState({ 
-        ...newState,
-        battleLog: [...newState.battleLog]
-      });
-      processNextTurn();
-      return;
-    }
-    
     if (decision.skill && decision.targetIds.length > 0) {
       manager.processNextAction(decision.skill, decision.targetIds);
       const newState = manager.getState()!;
@@ -418,6 +418,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       
       const endCheck = manager.checkBattleEnd();
       if (endCheck.isEnded) {
+        setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
         if (endCheck.winner === Faction.PLAYER) {
           setEndReason(BattleEndReason.VICTORY);
         } else {
@@ -426,7 +427,18 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         return;
       }
     } else {
-      manager.skipCurrentAction();
+      const basicAttack = SKILLS.find(s => s.id === 1);
+      if (basicAttack) {
+        const aliveTargets = battleState.enemyUnits.filter(u => u.isAlive);
+        if (aliveTargets.length > 0) {
+          const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+          manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
+        } else {
+          manager.skipCurrentAction();
+        }
+      } else {
+        manager.skipCurrentAction();
+      }
     }
     
     processNextTurn();

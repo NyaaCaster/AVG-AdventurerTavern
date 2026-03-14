@@ -1,10 +1,8 @@
 import React from 'react';
 import { PlayerCommand } from '../../../battle-system/player-commands';
-import { Faction } from '../../../battle-system/types';
 
 interface CommandMenuProps {
-  isPlayerTurn: boolean;
-  currentTurnUnitFaction: Faction | null;
+  isLeaderTurn: boolean;
   selectedCommand: PlayerCommand | null;
   onCommandSelect: (command: PlayerCommand) => void;
   onSkillClick: () => void;
@@ -14,8 +12,7 @@ interface CommandMenuProps {
 }
 
 const CommandMenu: React.FC<CommandMenuProps> = ({
-  isPlayerTurn,
-  currentTurnUnitFaction,
+  isLeaderTurn,
   selectedCommand,
   onCommandSelect,
   onSkillClick,
@@ -23,7 +20,7 @@ const CommandMenu: React.FC<CommandMenuProps> = ({
   onEscapeClick,
   isMobile = false
 }) => {
-  if (!isPlayerTurn || currentTurnUnitFaction !== Faction.PLAYER) {
+  if (!isLeaderTurn) {
     return null;
   }
   

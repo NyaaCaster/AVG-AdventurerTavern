@@ -94,9 +94,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [healFlashUnits, setHealFlashUnits] = useState<Set<string>>(new Set());
   const [statusFlashUnits, setStatusFlashUnits] = useState<Set<string>>(new Set());
 
-  const isPlayerTurn = currentTurnUnit?.faction === Faction.PLAYER;
-  
   const leaderUnitId = battleParty[0];
+  const isLeaderTurn = currentTurnUnit?.faction === Faction.PLAYER && 
+    (currentTurnUnit?.id === leaderUnitId || (currentTurnUnit as any)?.characterId === leaderUnitId);
+  
   const leaderUnit = useMemo(() => {
     return battleState.playerUnits.find(u => u.id === leaderUnitId) || null;
   }, [battleState.playerUnits, leaderUnitId]);
@@ -383,15 +384,20 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     const newLogs = battleState.battleLog.slice(lastLogIndexRef.current);
     if (newLogs.length === 0) return;
     
+    const getUnitElementPosition = (unitId: string): { x: number; y: number } | null => {
+      const element = document.querySelector(`[data-unit-id="${unitId}"]`);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 3
+      };
+    };
+    
     newLogs.forEach((log, idx) => {
       if (log.type === 'damage' && log.value !== undefined && log.targetId) {
         const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.targetId);
         if (target) {
-          const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
-          const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
-          const baseY = isPlayer ? 400 : 200;
-          const randomOffset = () => (Math.random() - 0.5) * 40;
-          
           const isCritical = (log.details as any)?.isCritical;
           if (isCritical && target.id === leaderUnitId) {
             setIsLeaderCriticalHit(true);
@@ -399,9 +405,14 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           }
           
           setTimeout(() => {
+            const position = getUnitElementPosition(target.id);
+            const randomOffset = () => (Math.random() - 0.5) * 30;
+            const x = position ? position.x + randomOffset() : 200 + randomOffset();
+            const y = position ? position.y + randomOffset() : 300 + randomOffset();
+            
             showDamagePopup(
-              baseX + randomOffset(),
-              baseY + randomOffset(),
+              x,
+              y,
               -Math.abs(log.value!),
               isCritical ? 'critical' : 'hpDamage'
             );
@@ -412,14 +423,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.targetId);
         if (target) {
           const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
-          const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
-          const baseY = isPlayer ? 400 : 200;
-          const randomOffset = () => (Math.random() - 0.5) * 40;
           
           setTimeout(() => {
+            const position = getUnitElementPosition(target.id);
+            const randomOffset = () => (Math.random() - 0.5) * 30;
+            const x = position ? position.x + randomOffset() : 200 + randomOffset();
+            const y = position ? position.y + randomOffset() : 300 + randomOffset();
+            
             showDamagePopup(
-              baseX + randomOffset(),
-              baseY + randomOffset(),
+              x,
+              y,
               Math.abs(log.value!),
               'hpHeal'
             );
@@ -642,8 +655,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             />
 
             <CommandMenu
-              isPlayerTurn={isPlayerTurn}
-              currentTurnUnitFaction={currentTurnUnit?.faction || null}
+              isLeaderTurn={isLeaderTurn}
               selectedCommand={selectedCommand}
               onCommandSelect={handleCommandSelect}
               onSkillClick={() => setShowSkillOverlay(true)}

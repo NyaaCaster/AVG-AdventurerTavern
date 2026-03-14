@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { BattleUnit } from '../../../battle-system/types';
 import { Faction } from '../../../battle-system/types';
 import { CHARACTER_IMAGES } from '../../../data/resources/characterImageResources';
@@ -33,8 +33,9 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [exitUnit, setExitUnit] = useState<UnitDisplay | null>(null);
   const prevCurrentIdRef = useRef<string | null>(null);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const convertToDisplayUnits = (units: BattleUnit[]): UnitDisplay[] => {
+  const convertToDisplayUnits = useCallback((units: BattleUnit[], currentId: string | null): UnitDisplay[] => {
     return units.map(unit => {
       const isPlayer = unit.faction === Faction.PLAYER;
       const charId = (unit as any).characterId || unit.id;
@@ -50,17 +51,22 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
         enemyBattlerName: enemyData?.battlerName || null,
         isPlayer,
         isAlive: unit.isAlive,
-        isCurrent: currentTurnUnitId === unit.id
+        isCurrent: currentId === unit.id
       };
     });
-  };
+  }, []);
 
   useEffect(() => {
-    const newUnits = convertToDisplayUnits(turnOrder);
+    const prevId = prevCurrentIdRef.current;
     
-    if (prevCurrentIdRef.current && prevCurrentIdRef.current !== currentTurnUnitId) {
-      const prevUnit = displayUnits.find(u => u.id === prevCurrentIdRef.current);
-      if (prevUnit) {
+    if (prevId && prevId !== currentTurnUnitId && displayUnits.length > 0) {
+      const prevUnit = displayUnits.find(u => u.id === prevId);
+      
+      if (prevUnit && !isAnimating) {
+        if (animationTimeoutRef.current) {
+          clearTimeout(animationTimeoutRef.current);
+        }
+        
         setExitUnit(prevUnit);
         setIsAnimating(true);
         
@@ -68,12 +74,22 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
           ...u,
           isCurrent: currentTurnUnitId === u.id
         }));
-        setDisplayUnits(updatedUnits);
         
-        setTimeout(() => {
+        const prevIndex = updatedUnits.findIndex(u => u.id === prevId);
+        if (prevIndex > -1) {
+          const movedUnit = { ...updatedUnits[prevIndex], isCurrent: false };
+          const remainingUnits = updatedUnits.filter(u => u.id !== prevId);
+          setDisplayUnits([...remainingUnits, movedUnit]);
+        } else {
+          setDisplayUnits(updatedUnits);
+        }
+        
+        animationTimeoutRef.current = setTimeout(() => {
+          const newUnits = convertToDisplayUnits(turnOrder, currentTurnUnitId);
           setDisplayUnits(newUnits);
           setExitUnit(null);
           setIsAnimating(false);
+          animationTimeoutRef.current = null;
         }, 400);
         
         prevCurrentIdRef.current = currentTurnUnitId;
@@ -81,9 +97,18 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
       }
     }
     
+    const newUnits = convertToDisplayUnits(turnOrder, currentTurnUnitId);
     setDisplayUnits(newUnits);
     prevCurrentIdRef.current = currentTurnUnitId;
-  }, [turnOrder, currentTurnUnitId]);
+  }, [turnOrder, currentTurnUnitId, displayUnits, isAnimating, convertToDisplayUnits]);
+
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getAvatarContent = (unit: UnitDisplay, size: string) => {
     const sizeClasses: Record<string, string> = {
@@ -118,6 +143,7 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   const visibleCount = isMobile ? 5 : (isTablet ? 6 : 8);
   const avatarSize = isMobile ? 'sm' : 'md';
   const timelineHeight = isMobile ? '2px' : '3px';
+  const unitWidth = isMobile ? 32 : 40;
 
   return (
     <div 
@@ -152,7 +178,7 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
                   isAnimating && index === 0 ? 'animate-slideInFromRight' : ''
                 }`}
                 style={{
-                  transform: isAnimating ? `translateX(-${40 + (isMobile ? 24 : 32)}px)` : 'translateX(0)',
+                  transform: isAnimating ? `translateX(-${unitWidth}px)` : 'translateX(0)',
                   transitionDelay: isAnimating ? `${index * 50}ms` : '0ms'
                 }}
               >
