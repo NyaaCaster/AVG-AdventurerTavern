@@ -372,6 +372,17 @@ export class BattleManager {
     }
 
     const endCheck = checkBattleEnd(this.state);
+    
+    if (endCheck.isEnded) {
+      this.state.isEnded = true;
+      this.state.winner = endCheck.winner;
+      
+      this.addLogEntry({
+        turn: this.state.turnNumber,
+        type: 'system',
+        description: endCheck.winner === 'player' ? '战斗胜利！' : '战斗失败...'
+      });
+    }
 
     return {
       success: skillResult.success,

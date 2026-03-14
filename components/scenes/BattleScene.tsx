@@ -142,7 +142,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   }, [enemyUnitsWithImages]);
 
   const getEnemyLayout = useCallback(() => {
-    const enemies = sortedEnemiesByPosition.filter(e => e.isAlive);
+    const enemies = sortedEnemiesByPosition;
     const masters = enemies.filter(e => e.role === 'master');
     const servants = enemies.filter(e => e.role === 'servant');
     

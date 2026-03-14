@@ -165,7 +165,6 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
             {exitUnit && (
               <div 
                 className="flex-shrink-0 animate-slideOutLeft"
-                style={{ opacity: 0, transform: 'translateX(-20px)' }}
               >
                 {getAvatarContent(exitUnit, avatarSize)}
               </div>

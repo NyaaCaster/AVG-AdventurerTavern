@@ -73,10 +73,11 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
           <div
             key={enemy.id}
             data-unit-id={enemy.id}
+            data-unit-dead={!enemy.isAlive}
             className={`relative flex flex-col items-center transition-all duration-300 ${
-              isTargetable ? 'cursor-pointer hover:scale-105 active:scale-105 [-webkit-tap-highlight-color:transparent]' : ''
-            }`}
-            onClick={() => isTargetable && onTargetSelect(enemy.id)}
+              enemy.isAlive && isTargetable ? 'cursor-pointer hover:scale-105 active:scale-105 [-webkit-tap-highlight-color:transparent]' : ''
+            } ${!enemy.isAlive ? 'pointer-events-none' : ''}`}
+            onClick={() => isTargetable && enemy.isAlive && onTargetSelect(enemy.id)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -87,33 +88,27 @@ const EnemyArea: React.FC<EnemyAreaProps> = ({
                   ? 'w-20 sm:w-28 md:w-36 h-24 sm:h-36 md:h-48' 
                   : 'w-16 sm:w-20 md:w-28 h-20 sm:h-28 md:h-40')
             }`}>
-              {enemy.isAlive ? (
-                <>
-                  <img
-                    src={enemy.imageUrl}
-                    alt={enemy.name}
-                    className={`w-full h-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-all ${
-                      isDamageFlashing ? 'animate-damageFlashFilter' : ''
-                    } ${
-                      isStatusFlashing ? 'animate-statusFlashFilter' : ''
-                    }`}
-                  />
-                  {enemy.statusEffects && enemy.statusEffects.length > 0 && (
-                    <StatusIcons 
-                      statusEffects={enemy.statusEffects} 
-                      maxIconsPerRow={isMobile ? 3 : 4}
-                      iconSize="sm"
-                    />
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center animate-fadeOut">
-                  <div className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-4xl'} text-red-500/50 font-bold`}>✕</div>
-                </div>
+              <img
+                src={enemy.imageUrl}
+                alt={enemy.name}
+                className={`w-full h-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-all ${
+                  isDamageFlashing ? 'animate-damageFlashFilter' : ''
+                } ${
+                  isStatusFlashing ? 'animate-statusFlashFilter' : ''
+                } ${
+                  !enemy.isAlive ? 'animate-enemyDeath' : ''
+                }`}
+              />
+              {enemy.isAlive && enemy.statusEffects && enemy.statusEffects.length > 0 && (
+                <StatusIcons 
+                  statusEffects={enemy.statusEffects} 
+                  maxIconsPerRow={isMobile ? 3 : 4}
+                  iconSize="sm"
+                />
               )}
             </div>
             
-            <div className={`text-center`}>
+            <div className={`text-center ${!enemy.isAlive ? 'opacity-40' : ''}`}>
               <div className={`text-white ${isMobile ? 'text-[8px]' : 'text-[10px] sm:text-xs md:text-sm'} font-bold drop-shadow-md bg-black/40 ${isMobile ? 'px-1' : 'px-1.5 sm:px-2'} py-0.5 rounded truncate ${isMobile ? 'max-w-[56px]' : 'max-w-[60px] sm:max-w-none'}`}>
                 {enemy.name}
               </div>

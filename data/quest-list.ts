@@ -32,7 +32,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0001",
@@ -77,7 +77,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0002",
@@ -122,7 +122,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0003",
@@ -167,7 +167,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0002",
@@ -212,7 +212,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0001",
@@ -257,7 +257,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0001",
@@ -302,7 +302,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0003",
@@ -347,7 +347,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 3000,
-    "experience": 3000,
+    "experience": 50,
     "items": [
       {
         "item_id": "res-0001",
@@ -392,7 +392,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0001",
@@ -437,7 +437,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0002",
@@ -482,7 +482,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0003",
@@ -527,7 +527,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0001",
@@ -572,7 +572,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0001",
@@ -617,7 +617,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0001",
@@ -662,7 +662,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0002",
@@ -707,7 +707,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0001",
@@ -752,7 +752,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 6000,
-    "experience": 6600,
+    "experience": 110,
     "items": [
       {
         "item_id": "res-0003",
@@ -797,7 +797,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0001",
@@ -842,7 +842,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0001",
@@ -887,7 +887,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0003",
@@ -932,7 +932,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0001",
@@ -977,7 +977,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0001",
@@ -1022,7 +1022,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0002",
@@ -1067,7 +1067,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0003",
@@ -1112,7 +1112,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 9000,
-    "experience": 10800,
+    "experience": 180,
     "items": [
       {
         "item_id": "res-0002",
@@ -1157,7 +1157,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0001",
@@ -1202,7 +1202,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0002",
@@ -1247,7 +1247,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0001",
@@ -1292,7 +1292,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0001",
@@ -1337,7 +1337,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0002",
@@ -1382,7 +1382,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0003",
@@ -1427,7 +1427,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 12000,
-    "experience": 15600,
+    "experience": 260,
     "items": [
       {
         "item_id": "res-0001",
@@ -1472,7 +1472,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0003",
@@ -1517,7 +1517,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0001",
@@ -1562,7 +1562,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0001",
@@ -1607,7 +1607,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0002",
@@ -1652,7 +1652,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0003",
@@ -1697,7 +1697,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 15000,
-    "experience": 21000,
+    "experience": 350,
     "items": [
       {
         "item_id": "res-0002",
@@ -1742,7 +1742,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 18000,
-    "experience": 27000,
+    "experience": 450,
     "items": [
       {
         "item_id": "res-0001",
@@ -1787,7 +1787,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 18000,
-    "experience": 27000,
+    "experience": 450,
     "items": [
       {
         "item_id": "res-0003",
@@ -1832,7 +1832,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 18000,
-    "experience": 27000,
+    "experience": 450,
     "items": [
       {
         "item_id": "res-0001",
@@ -1877,7 +1877,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 18000,
-    "experience": 27000,
+    "experience": 450,
     "items": [
       {
         "item_id": "res-0002",
@@ -1922,7 +1922,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 18000,
-    "experience": 27000,
+    "experience": 450,
     "items": [
       {
         "item_id": "res-0003",
@@ -1967,7 +1967,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0001",
@@ -2012,7 +2012,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0001",
@@ -2057,7 +2057,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0003",
@@ -2102,7 +2102,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0001",
@@ -2147,7 +2147,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0002",
@@ -2192,7 +2192,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 21000,
-    "experience": 33600,
+    "experience": 560,
     "items": [
       {
         "item_id": "res-0003",
@@ -2237,7 +2237,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 24000,
-    "experience": 40800,
+    "experience": 680,
     "items": [
       {
         "item_id": "res-0003",
@@ -2282,7 +2282,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 24000,
-    "experience": 40800,
+    "experience": 680,
     "items": [
       {
         "item_id": "res-0001",
@@ -2327,7 +2327,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 24000,
-    "experience": 40800,
+    "experience": 680,
     "items": [
       {
         "item_id": "res-0001",
@@ -2372,7 +2372,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 24000,
-    "experience": 40800,
+    "experience": 680,
     "items": [
       {
         "item_id": "res-0003",
@@ -2417,7 +2417,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 24000,
-    "experience": 40800,
+    "experience": 680,
     "items": [
       {
         "item_id": "res-0002",
@@ -2462,7 +2462,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 27000,
-    "experience": 48600,
+    "experience": 810,
     "items": [
       {
         "item_id": "res-0002",
@@ -2507,7 +2507,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 27000,
-    "experience": 48600,
+    "experience": 810,
     "items": [
       {
         "item_id": "res-0001",
@@ -2552,7 +2552,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 30000,
-    "experience": 57000,
+    "experience": 950,
     "items": [
       {
         "item_id": "res-0003",
@@ -2597,7 +2597,7 @@ export const QUESTS: QuestMap = {
   },
   "rewards": {
     "gold": 30000,
-    "experience": 57000,
+    "experience": 950,
     "items": [
       {
         "item_id": "res-0001",

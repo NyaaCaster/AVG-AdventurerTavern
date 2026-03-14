@@ -1107,7 +1107,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onAddGold={(amount) => core.updateGold(core.gold + amount)}
         onConsumeInspiration={handleConsumeInspiration}
         onAddItems={(items) => core.handleAddItems(items)}
-        onAddCharacterExp={(exp) => core.addCharacterExp('char_1', exp)}
+        battleParty={core.battleParty}
+        onAddCharacterExp={(characterId, exp) => core.addCharacterExp(characterId, exp)}
         onShowRewardToasts={(gold, items) => {
           // 金币通知
           setToasts(prev => [

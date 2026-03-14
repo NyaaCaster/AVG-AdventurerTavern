@@ -29,6 +29,8 @@ import { makeAllyDecision, makeEnemyDecision, BattleAI, AIDecisionContext } from
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
 
+const DEATH_ANIMATION_DELAY = 800;
+
 function toBattleSkillData(skill: SkillData): BattleSkillData {
   return {
     id: skill.id,
@@ -178,6 +180,8 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     const manager = managerRef.current;
     if (!manager || !battleState) return;
     
+    const prevDeadEnemies = battleState.enemyUnits.filter(e => !e.isAlive).map(e => e.id);
+    
     if (manager.hasMoreActions()) {
       const nextUnit = manager.getCurrentUnit();
       setCurrentTurnUnit(nextUnit);
@@ -199,6 +203,10 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     } else {
       const turnResult = manager.endTurn();
       const newState = manager.getState()!;
+      
+      const newDeadEnemies = newState.enemyUnits.filter(e => !e.isAlive).map(e => e.id);
+      const hasNewDeath = newDeadEnemies.some(id => !prevDeadEnemies.includes(id));
+      
       setBattleState({ 
         ...newState,
         battleLog: [...newState.battleLog]
@@ -213,27 +221,31 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
           setEndReason(BattleEndReason.DEFEAT);
         }
       } else {
-        const actionQueue = manager.startTurn();
-        setTurnOrder(actionQueue);
+        const delay = hasNewDeath ? DEATH_ANIMATION_DELAY : 0;
         
-        if (actionQueue.length > 0) {
-          setCurrentTurnUnit(actionQueue[0]);
+        setTimeout(() => {
+          const actionQueue = manager.startTurn();
+          setTurnOrder(actionQueue);
           
-          if (actionQueue[0].faction === Faction.ENEMY) {
-            setTimeout(() => {
-              processEnemyTurn();
-            }, 500);
-          } else if (actionQueue[0].faction === Faction.PLAYER) {
-            const leaderId = battleParty[0];
-            const isPlayerControlled = actionQueue[0].id === leaderId || (actionQueue[0] as any).characterId === leaderId;
+          if (actionQueue.length > 0) {
+            setCurrentTurnUnit(actionQueue[0]);
             
-            if (!isPlayerControlled) {
+            if (actionQueue[0].faction === Faction.ENEMY) {
               setTimeout(() => {
-                processAllyTurn();
+                processEnemyTurn();
               }, 500);
+            } else if (actionQueue[0].faction === Faction.PLAYER) {
+              const leaderId = battleParty[0];
+              const isPlayerControlled = actionQueue[0].id === leaderId || (actionQueue[0] as any).characterId === leaderId;
+              
+              if (!isPlayerControlled) {
+                setTimeout(() => {
+                  processAllyTurn();
+                }, 500);
+              }
             }
           }
-        }
+        }, delay);
       }
     }
   }, [battleState, battleParty]);
@@ -537,6 +549,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       });
       
       if (result.battleEnded) {
+        setBattleState(prev => prev ? { ...prev, isEnded: true } : null);
         if (result.winner === Faction.PLAYER) {
           setEndReason(BattleEndReason.VICTORY);
         } else {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QuestList, QuestStateMap, QuestStatus, QuestState } from '../types';
+import { QuestList, QuestStateMap, QuestStatus, QuestState, BattlePartySlots } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
 import { ITEM_TAGS } from '../data/item-type';
@@ -17,10 +17,11 @@ interface QuestBoardModalProps {
   onAbandonQuest: (questId: string) => void;
   currentGold: number;
   inspirationBalance: number;
+  battleParty: BattlePartySlots;
   onAddGold: (amount: number) => void;
   onConsumeInspiration: (amount: number) => void;
   onAddItems: (items: { id: string; count: number }[]) => void;
-  onAddCharacterExp: (exp: number) => void;
+  onAddCharacterExp: (characterId: string, exp: number) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
   highlightQuestId?: string | null;
 }
@@ -391,7 +392,7 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                         <i className="fa-solid fa-bolt mr-1"></i>立刻完成
                         <span className={`ml-1 text-[10px] font-mono ${
                           canAfford ? 'text-cyan-400/80' : 'text-red-400'
-                        }`}>(-{inspirationCost.toFixed(1)}I)</span>
+                        }`}>(-{inspirationCost.toFixed(2)}I)</span>
                       </button>
                     );
                   })()}
@@ -630,7 +631,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
-  currentGold, inspirationBalance, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts,
+  currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddCharacterExp, onShowRewardToasts,
   highlightQuestId
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
@@ -728,7 +729,16 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
     if (!quest) return;
     onAddGold(quest.rewards.gold);
     onAddItems(quest.rewards.items.map(i => ({ id: i.item_id, count: i.item_num })));
-    onAddCharacterExp(quest.rewards.experience || 0);
+    
+    const questExp = quest.rewards.experience || 0;
+    if (questExp > 0) {
+      battleParty.forEach((characterId) => {
+        if (characterId) {
+          onAddCharacterExp(characterId, questExp);
+        }
+      });
+    }
+    
     onShowRewardToasts(
       quest.rewards.gold,
       quest.rewards.items.map(i => ({ id: i.item_id, count: i.item_num }))
