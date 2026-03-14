@@ -474,7 +474,7 @@ export class BattleManager {
     const endCheck = checkBattleEnd(this.state);
     if (endCheck.isEnded) {
       this.state.isEnded = true;
-      this.state.winner = endCheck.winner === 'player' ? Faction.PLAYER : Faction.ENEMY;
+      this.state.winner = endCheck.winner;
       
       this.addLogEntry({
         turn: this.state.turnNumber,

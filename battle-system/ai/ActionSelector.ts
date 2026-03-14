@@ -170,11 +170,9 @@ export class ActionSelector {
       }
     }
 
-    if (this.config.level < 100) {
-      const ignoreChance = (100 - this.config.level) / 100;
-      if (Math.random() < ignoreChance) {
-        return true;
-      }
+    const shouldCheckConditions = this.shouldCheckConditionsByLevel();
+    if (!shouldCheckConditions) {
+      return true;
     }
 
     const evalContext: EvaluationContext = {
@@ -199,6 +197,17 @@ export class ActionSelector {
       evaluator.evaluateAny(aiConfig.anyConditions);
 
     return anyConditionsMet;
+  }
+
+  private shouldCheckConditionsByLevel(): boolean {
+    if (this.config.level >= 100) {
+      return true;
+    }
+    if (this.config.level <= 0) {
+      return false;
+    }
+    const checkChance = this.config.level / 100;
+    return Math.random() < checkChance;
   }
 
   /**

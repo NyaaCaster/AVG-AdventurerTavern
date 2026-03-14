@@ -25,12 +25,14 @@ export interface BattleSceneProps {
   battleParty: BattlePartySlots;
   characterStats: Record<string, CharacterStat>;
   characterEquipments: Record<string, CharacterEquipment>;
+  inventory: Record<string, number>;
   userName: string;
   currentTurnUnit: BattleUnit | null;
   turnOrder: BattleUnit[];
   endReason: BattleEndReason | null;
   onExecuteCommand: (command: PlayerCommand, targetIds?: string[], skillId?: number, itemId?: string) => void;
   onAutoSave: () => void;
+  enableDebug?: boolean;
 }
 
 export interface EnemyUnitWithImage extends BattleUnit {
@@ -77,4 +79,6 @@ export interface BattleCursorProps {
   x: number;
   y: number;
   visible: boolean;
+  isAllyTarget?: boolean;
+  isMobile?: boolean;
 }

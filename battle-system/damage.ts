@@ -21,6 +21,7 @@ import {
 } from './status-effects';
 import { EVASION_CONFIG } from '../data/battle-data/evasion-config';
 import { STATUS_EFFECTS } from '../data/battle-data/status_effects';
+import { CRITICAL_CONFIG } from '../data/battle-data/critical-config';
 
 /**
  * 伤害计算参数接口
@@ -66,12 +67,6 @@ export interface HitResult {
 
 /** 最小伤害值 */
 const MIN_DAMAGE = 100;
-/** 基础暴击率 1% */
-const BASE_CRITICAL_CHANCE = 0.01;
-/** 幸运差值因子 0.05% */
-const CRITICAL_LUK_FACTOR = 0.0005;
-/** 最大暴击率 30% */
-const MAX_CRITICAL_CHANCE = 0.30;
 /** 伤害浮动比例 20% */
 const DAMAGE_VARIANCE = 0.20;
 
@@ -89,8 +84,11 @@ export function calculateCriticalChance(
   critBonus: number = 0
 ): number {
   const lukDifference = attackerLuk - defenderLuk;
-  const chance = BASE_CRITICAL_CHANCE + lukDifference * CRITICAL_LUK_FACTOR + critBonus;
-  return Math.max(0, Math.min(MAX_CRITICAL_CHANCE, chance));
+  const chance = CRITICAL_CONFIG.baseCriticalChance + lukDifference * CRITICAL_CONFIG.lukDifferenceFactor + critBonus;
+  return Math.max(
+    CRITICAL_CONFIG.minCriticalChance,
+    Math.min(CRITICAL_CONFIG.maxCriticalChance, chance)
+  );
 }
 
 /**
@@ -332,7 +330,7 @@ export function calculateDamage(params: DamageCalculationParams): DamageResult {
   }
   
   if (criticalResult.isCritical) {
-    baseDamage = Math.floor(baseDamage * 3);
+    baseDamage = Math.floor(baseDamage * CRITICAL_CONFIG.criticalDamageMultiplier);
   }
   
   let varianceFactor = 1;

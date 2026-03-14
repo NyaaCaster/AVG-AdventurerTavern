@@ -108,6 +108,26 @@ export function applyStatusEffect(
     };
   }
   
+  if (definition.id === 'dead') {
+    unit.statusEffects = unit.statusEffects.filter(effect => effect.persistAfterBattle);
+    const instance = createStatusEffectInstance(definition);
+    unit.statusEffects.push(instance);
+    return {
+      type: EffectCode.ADD_STATE,
+      name: definition.name,
+      value: 1,
+      duration: definition.defaultDuration,
+      success: true
+    };
+  }
+  
+  const mutexIds = getMutexStatusIds(dataId);
+  for (const mutexId of mutexIds) {
+    if (hasStatusEffect(unit, mutexId)) {
+      removeStatusEffect(unit, mutexId);
+    }
+  }
+  
   if (hasStatusEffect(unit, dataId)) {
     if (!definition.canStack) {
       const existingEffect = getStatusEffect(unit, dataId);
@@ -118,8 +138,19 @@ export function applyStatusEffect(
         );
       }
     } else {
-      const instance = createStatusEffectInstance(definition);
-      unit.statusEffects.push(instance);
+      const stackCount = unit.statusEffects.filter(e => e.effectId === dataId).length;
+      if (stackCount >= MAX_STATUS_STACKS) {
+        const existingEffect = getStatusEffect(unit, dataId);
+        if (existingEffect) {
+          existingEffect.turnsRemaining = Math.max(
+            existingEffect.turnsRemaining,
+            definition.defaultDuration
+          );
+        }
+      } else {
+        const instance = createStatusEffectInstance(definition);
+        unit.statusEffects.push(instance);
+      }
     }
   } else {
     const instance = createStatusEffectInstance(definition);
@@ -255,21 +286,34 @@ export function processStatusEffectTurn(unit: BattleUnit): {
   let healingReceived = 0;
   const effectsExpired: string[] = [];
   
+  const drainEffects: Array<{ effect: StatusEffectInstance; index: number }> = [];
+  const regenEffects: Array<{ effect: StatusEffectInstance; index: number }> = [];
+  
   for (let i = unit.statusEffects.length - 1; i >= 0; i--) {
     const effect = unit.statusEffects[i];
-    
     if (effect.hpDrainPercent > 0) {
-      const damage = Math.floor(unit.stats.maxHp * effect.hpDrainPercent);
-      unit.stats.hp = Math.max(0, unit.stats.hp - damage);
-      damageTaken += damage;
+      drainEffects.push({ effect, index: i });
     }
-    
     if (effect.hpRegenPercent > 0) {
-      const healing = Math.floor(unit.stats.maxHp * effect.hpRegenPercent);
-      const actualHealing = Math.min(healing, unit.stats.maxHp - unit.stats.hp);
-      unit.stats.hp = Math.min(unit.stats.maxHp, unit.stats.hp + actualHealing);
-      healingReceived += actualHealing;
+      regenEffects.push({ effect, index: i });
     }
+  }
+  
+  for (const { effect } of regenEffects) {
+    const healing = Math.floor(unit.stats.maxHp * effect.hpRegenPercent);
+    const actualHealing = Math.min(healing, unit.stats.maxHp - unit.stats.hp);
+    unit.stats.hp = Math.min(unit.stats.maxHp, unit.stats.hp + actualHealing);
+    healingReceived += actualHealing;
+  }
+  
+  for (const { effect } of drainEffects) {
+    const damage = Math.floor(unit.stats.maxHp * effect.hpDrainPercent);
+    unit.stats.hp = Math.max(0, unit.stats.hp - damage);
+    damageTaken += damage;
+  }
+  
+  for (let i = unit.statusEffects.length - 1; i >= 0; i--) {
+    const effect = unit.statusEffects[i];
     
     if (effect.turnsRemaining > 0) {
       effect.turnsRemaining--;
@@ -379,6 +423,23 @@ export const STATUS_DATA_IDS = {
   CRIT_UP: 1105,
   COUNTER_UP: 1107
 } as const;
+
+const MUTEX_STATUS_GROUPS: number[][] = [
+  [STATUS_DATA_IDS.SLEEP, STATUS_DATA_IDS.CONFUSE, STATUS_DATA_IDS.CHARM, 
+   STATUS_DATA_IDS.BERSERK, STATUS_DATA_IDS.STUN, STATUS_DATA_IDS.PARALYZE]
+];
+
+const MAX_STATUS_STACKS = 5;
+
+function getMutexStatusIds(effectId: number): number[] {
+  const result: number[] = [];
+  for (const group of MUTEX_STATUS_GROUPS) {
+    if (group.includes(effectId)) {
+      result.push(...group.filter(id => id !== effectId));
+    }
+  }
+  return result;
+}
 
 export function isDead(unit: BattleUnit): boolean {
   return hasStatusEffect(unit, STATUS_DATA_IDS.DEAD);

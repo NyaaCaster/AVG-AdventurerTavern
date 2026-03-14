@@ -45,9 +45,9 @@ export class TargetSelector {
   ): TargetSelectionResult {
     const effectiveStrategy = strategy || this.config.defaultStrategy!;
     
-    const candidates = this.getCandidates(skill.scope, user, playerUnits, enemyUnits);
+    const candidates = this.getCandidates(skill.scope, user, playerUnits, enemyUnits, skill);
     
-    const validCandidates = candidates.filter(unit => unit.isAlive);
+    const validCandidates = candidates.filter(unit => unit.isAlive || this.isReviveSkill(skill));
     
     if (validCandidates.length === 0) {
       return {
@@ -71,16 +71,22 @@ export class TargetSelector {
     };
   }
 
-  /**
-   * 根据技能范围获取候选目标
-   */
+  private isReviveSkill(skill: SkillData): boolean {
+    return skill.effects?.some(
+      effect => effect.code === 22 && effect.dataId === 1
+    ) || false;
+  }
+
   private getCandidates(
     scope: SkillScope,
     user: BattleUnit,
     playerUnits: BattleUnit[],
-    enemyUnits: BattleUnit[]
+    enemyUnits: BattleUnit[],
+    skill: SkillData
   ): BattleUnit[] {
     const isPlayer = user.faction === 'player';
+    const isRevive = this.isReviveSkill(skill);
+    
     switch (scope) {
       case SkillScope.SELF:
         return [user];
@@ -96,6 +102,11 @@ export class TargetSelector {
       case SkillScope.ALLY_SINGLE:
       case SkillScope.ALLY_ALL:
       case SkillScope.ALLY_ALL_CONTINUOUS:
+        if (isRevive) {
+          return isPlayer
+            ? playerUnits.filter(u => !u.isAlive)
+            : enemyUnits.filter(u => !u.isAlive);
+        }
         return isPlayer
           ? playerUnits.filter(u => u.isAlive)
           : enemyUnits.filter(u => u.isAlive);

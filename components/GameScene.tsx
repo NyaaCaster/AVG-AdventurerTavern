@@ -107,7 +107,13 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     battleParty: core.battleParty,
     characterStats: core.characterStats,
     characterEquipments: core.characterEquipments,
-    userName: settings.userName
+    userName: settings.userName,
+    onItemConsumed: (itemId: string) => {
+      const currentCount = core.inventory[itemId] || 0;
+      if (currentCount > 0) {
+        core.updateInventoryItem(itemId, currentCount - 1);
+      }
+    }
   });
   
   const audioRef = useGameAudio(world.currentSceneId, settings, battle.isOpen);
@@ -186,7 +192,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       }
       
       if (quest.rewards?.experience) {
-        core.addCharacterExp('char_1', quest.rewards.experience);
+        core.battleParty.filter((charId): charId is string => charId !== null).forEach((charId) => {
+          core.addCharacterExp(charId, quest.rewards!.experience);
+        });
       }
       
       setTimeout(() => handleAutoSave().catch(err => console.error('Auto-save after battle victory failed:', err)), 100);

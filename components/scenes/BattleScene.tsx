@@ -89,7 +89,6 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   
   const [isLeaderCriticalHit, setIsLeaderCriticalHit] = useState(false);
   const [isLeaderDead, setIsLeaderDead] = useState(false);
-  const prevBattleLogLengthRef = useRef<number>(0);
   
   const [damageFlashUnits, setDamageFlashUnits] = useState<Set<string>>(new Set());
   const [healFlashUnits, setHealFlashUnits] = useState<Set<string>>(new Set());
@@ -263,41 +262,12 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   }, [leaderUnit?.isAlive]);
 
   useEffect(() => {
-    if (!leaderUnitId) return;
-    
-    const currentLogLength = battleState.battleLog.length;
-    if (currentLogLength > prevBattleLogLengthRef.current) {
-      const newLogs = battleState.battleLog.slice(prevBattleLogLengthRef.current);
-      
-      for (const log of newLogs) {
-        if (log.type === 'damage' && log.target) {
-          const targetUnit = battleState.playerUnits.find(u => u.name === log.target);
-          if (targetUnit && targetUnit.id === leaderUnitId) {
-            const isCritical = log.description.includes('暴击') || (log.details && (log.details as any)?.isCritical);
-            if (isCritical) {
-              setIsLeaderCriticalHit(true);
-              setTimeout(() => setIsLeaderCriticalHit(false), 500);
-              break;
-            }
-          }
-        }
-      }
+    if (endReason === BattleEndReason.VICTORY && battleState.isEnded) {
+      const gains = calculateExpGains();
+      setExpGains(gains);
+      setShowVictoryScreen(true);
     }
-    
-    prevBattleLogLengthRef.current = currentLogLength;
-  }, [battleState.battleLog, leaderUnitId, battleState.playerUnits]);
-
-  useEffect(() => {
-    if (!leaderUnit) return;
-    const wasDead = isLeaderDead;
-    const isNowDead = !leaderUnit.isAlive;
-    
-    if (!wasDead && isNowDead) {
-      setIsLeaderDead(true);
-    } else if (wasDead && !isNowDead) {
-      setIsLeaderDead(false);
-    }
-  }, [leaderUnit?.isAlive]);
+  }, [endReason, battleState.isEnded, calculateExpGains]);
 
   useEffect(() => {
     if (!showVictoryScreen || expGains.length === 0) return;
@@ -366,6 +336,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
   const lastLogIndexRef = useRef(0);
   
+  useEffect(() => {
+    if (isOpen) {
+      lastLogIndexRef.current = 0;
+      setDamagePopups([]);
+      setDamageFlashUnits(new Set());
+      setHealFlashUnits(new Set());
+      setStatusFlashUnits(new Set());
+    }
+  }, [isOpen]);
+  
   const triggerDamageFlash = useCallback((unitId: string) => {
     setDamageFlashUnits(prev => new Set(prev).add(unitId));
     setTimeout(() => {
@@ -412,12 +392,18 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           const baseY = isPlayer ? 400 : 200;
           const randomOffset = () => (Math.random() - 0.5) * 40;
           
+          const isCritical = (log.details as any)?.isCritical;
+          if (isCritical && target.id === leaderUnitId) {
+            setIsLeaderCriticalHit(true);
+            setTimeout(() => setIsLeaderCriticalHit(false), 500);
+          }
+          
           setTimeout(() => {
             showDamagePopup(
               baseX + randomOffset(),
               baseY + randomOffset(),
               -Math.abs(log.value!),
-              (log.details as any)?.isCritical ? 'critical' : 'hpDamage'
+              isCritical ? 'critical' : 'hpDamage'
             );
             triggerDamageFlash(target.id);
           }, idx * 200);
@@ -450,7 +436,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     });
     
     lastLogIndexRef.current = battleState.battleLog.length;
-  }, [battleState.battleLog, battleState.playerUnits, battleState.enemyUnits, showDamagePopup, triggerDamageFlash, triggerHealFlash, triggerStatusFlash]);
+  }, [battleState.battleLog, battleState.playerUnits, battleState.enemyUnits, showDamagePopup, triggerDamageFlash, triggerHealFlash, triggerStatusFlash, leaderUnitId]);
 
   const handleCommandSelect = useCallback((command: PlayerCommand) => {
     setSelectedCommand(command);
@@ -571,7 +557,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     }
     const skill = SKILLS.find(s => s.id === selectedSkill);
     if (!skill) return false;
-    return skill.scope === 9;
+    const hasReviveEffect = skill.effects?.some(
+      effect => effect.code === 22 && effect.dataId === 1
+    );
+    return hasReviveEffect || false;
   }, [selectedCommand, selectedSkill, selectedItem]);
   
   const isEnemyTargeting = useMemo(() => {

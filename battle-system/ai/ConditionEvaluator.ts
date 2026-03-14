@@ -149,10 +149,7 @@ export class ConditionEvaluator {
       case 'user':
         return this.context.user;
       case 'target':
-        if (this.context.target) {
-          return this.context.target;
-        }
-        return this.getEnemies()[0] || null;
+        return this.context.target || null;
       case 'lowest':
         return this.findLowestHPUnit();
       case 'highest':

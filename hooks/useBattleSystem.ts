@@ -25,7 +25,7 @@ import {
 } from '../battle-system/player-commands';
 import { SKILLS, SkillData } from '../data/battle-data/skills';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../types';
-import { makeAllyDecision, BattleAI, AIDecisionContext } from '../battle-system/ai';
+import { makeAllyDecision, makeEnemyDecision, BattleAI, AIDecisionContext } from '../battle-system/ai';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
 
@@ -51,6 +51,7 @@ interface UseBattleSystemOptions {
   characterStats: Record<string, CharacterStat>;
   characterEquipments: Record<string, CharacterEquipment>;
   userName: string;
+  onItemConsumed?: (itemId: string) => void;
 }
 
 interface UseBattleSystemReturn {
@@ -67,7 +68,7 @@ interface UseBattleSystemReturn {
 }
 
 export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSystemReturn {
-  const { battleParty, characterStats, characterEquipments, userName } = options;
+  const { battleParty, characterStats, characterEquipments, userName, onItemConsumed } = options;
   
   const [isOpen, setIsOpen] = useState(false);
   const [battleState, setBattleState] = useState<BattleState | null>(null);
@@ -197,11 +198,15 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       }
     } else {
       const turnResult = manager.endTurn();
-      setBattleState({ ...manager.getState()! });
+      const newState = manager.getState()!;
+      setBattleState({ 
+        ...newState,
+        battleLog: [...newState.battleLog]
+      });
       
       if (turnResult.battleEnded) {
         const winner = turnResult.winner;
-        if (winner === 'player') {
+        if (winner === Faction.PLAYER) {
           setEndReason(BattleEndReason.VICTORY);
         } else {
           setEndReason(BattleEndReason.DEFEAT);
@@ -239,27 +244,70 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     const currentUnit = manager.getCurrentUnit();
     if (!currentUnit || currentUnit.faction !== Faction.ENEMY) return;
     
-    const basicAttack = SKILLS.find(s => s.id === 1);
-    if (!basicAttack) {
-      manager.skipCurrentAction();
-      processNextTurn();
-      return;
+    const enemyUnit = currentUnit as any;
+    const enemyActions = enemyUnit.actions || [];
+    
+    if (enemyActions.length === 0) {
+      const basicAttack = SKILLS.find(s => s.id === 1);
+      if (!basicAttack) {
+        manager.skipCurrentAction();
+        processNextTurn();
+        return;
+      }
+      
+      const aliveTargets = battleState.playerUnits.filter(u => u.isAlive);
+      if (aliveTargets.length === 0) {
+        manager.skipCurrentAction();
+        processNextTurn();
+        return;
+      }
+      
+      const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+      manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
+    } else {
+      const availableActions = enemyActions.map((action: any) => ({
+        skillId: action.skillId,
+        rating: action.rating,
+        conditionType: action.conditionType,
+        conditionParam1: action.conditionParam1,
+        conditionParam2: action.conditionParam2,
+        source: 'enemy' as const
+      }));
+      
+      const skillMap = new Map<number, BattleSkillData>();
+      SKILLS.forEach(skill => skillMap.set(skill.id, toBattleSkillData(skill)));
+      
+      const aiContext: AIDecisionContext = {
+        unit: currentUnit,
+        turnNumber: battleState.turnNumber,
+        playerUnits: battleState.playerUnits,
+        enemyUnits: battleState.enemyUnits,
+        availableActions,
+        skillMap,
+        switches: new Map(),
+        variables: new Map()
+      };
+      
+      const decision = makeEnemyDecision(aiContext);
+      
+      if (decision.isGuard) {
+        manager.processGuardAction();
+      } else if (decision.skill && decision.targetIds.length > 0) {
+        manager.processNextAction(decision.skill, decision.targetIds);
+      } else {
+        manager.skipCurrentAction();
+      }
     }
     
-    const aliveTargets = battleState.playerUnits.filter(u => u.isAlive);
-    if (aliveTargets.length === 0) {
-      manager.skipCurrentAction();
-      processNextTurn();
-      return;
-    }
+    const newState = manager.getState()!;
+    setBattleState({ 
+      ...newState,
+      battleLog: [...newState.battleLog]
+    });
     
-    const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-    
-    const result = manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
-    setBattleState({ ...manager.getState()! });
-    
-    if (result.battleEnded) {
-      if (result.winner === Faction.PLAYER) {
+    const endCheck = manager.checkBattleEnd();
+    if (endCheck.isEnded) {
+      if (endCheck.winner === Faction.PLAYER) {
         setEndReason(BattleEndReason.VICTORY);
       } else {
         setEndReason(BattleEndReason.DEFEAT);
@@ -289,11 +337,16 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         const aliveTargets = battleState.enemyUnits.filter(u => u.isAlive);
         if (aliveTargets.length > 0) {
           const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-          const result = manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
-          setBattleState({ ...manager.getState()! });
+          manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
+          const newState = manager.getState()!;
+          setBattleState({ 
+            ...newState,
+            battleLog: [...newState.battleLog]
+          });
           
-          if (result.battleEnded) {
-            if (result.winner === Faction.PLAYER) {
+          const endCheck = manager.checkBattleEnd();
+          if (endCheck.isEnded) {
+            if (endCheck.winner === Faction.PLAYER) {
               setEndReason(BattleEndReason.VICTORY);
             } else {
               setEndReason(BattleEndReason.DEFEAT);
@@ -346,17 +399,26 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     if (decision.isGuard) {
       manager.processGuardAction();
-      setBattleState({ ...manager.getState()! });
+      const newState = manager.getState()!;
+      setBattleState({ 
+        ...newState,
+        battleLog: [...newState.battleLog]
+      });
       processNextTurn();
       return;
     }
     
     if (decision.skill && decision.targetIds.length > 0) {
-      const result = manager.processNextAction(decision.skill, decision.targetIds);
-      setBattleState({ ...manager.getState()! });
+      manager.processNextAction(decision.skill, decision.targetIds);
+      const newState = manager.getState()!;
+      setBattleState({ 
+        ...newState,
+        battleLog: [...newState.battleLog]
+      });
       
-      if (result.battleEnded) {
-        if (result.winner === Faction.PLAYER) {
+      const endCheck = manager.checkBattleEnd();
+      if (endCheck.isEnded) {
+        if (endCheck.winner === Faction.PLAYER) {
           setEndReason(BattleEndReason.VICTORY);
         } else {
           setEndReason(BattleEndReason.DEFEAT);
@@ -430,11 +492,17 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
           if (target) {
             const itemResult = executeItemUse(currentTurnUnit, target, itemId, battleState);
             
-            for (const log of itemResult.logEntries) {
-              battleState.battleLog.push(log);
+            if (itemResult.success && onItemConsumed) {
+              onItemConsumed(itemId);
             }
             
-            setBattleState({ ...manager.getState()! });
+            const managerState = manager.getState()!;
+            const updatedLog = [...managerState.battleLog, ...itemResult.logEntries];
+            
+            setBattleState({ 
+              ...managerState,
+              battleLog: updatedLog
+            });
             manager.skipCurrentAction();
             processNextTurn();
             return;
@@ -450,7 +518,11 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     }
     
     if (result) {
-      setBattleState({ ...manager.getState()! });
+      const newState = manager.getState()!;
+      setBattleState({ 
+        ...newState,
+        battleLog: [...newState.battleLog]
+      });
       
       if (result.battleEnded) {
         if (result.winner === Faction.PLAYER) {

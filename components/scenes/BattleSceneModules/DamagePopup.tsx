@@ -27,12 +27,11 @@ const DamagePopup: React.FC<DamagePopupProps> = ({ popup, onAnimationEnd }) => {
     return () => clearTimeout(timer);
   }, [popup.id, onAnimationEnd]);
   
-  const getStyle = () => {
+  const getStyle = (): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
+      position: 'fixed',
       left: popup.x,
       top: popup.y,
-      transform: 'translate(-50%, -50%)',
-      position: 'fixed',
       zIndex: 100,
       pointerEvents: 'none',
       fontWeight: 'bold',
@@ -67,21 +66,19 @@ const DamagePopup: React.FC<DamagePopupProps> = ({ popup, onAnimationEnd }) => {
   const getDisplayText = () => {
     switch (popup.type) {
       case 'hpDamage':
-        return `-${popup.value}`;
+        return `-${Math.abs(popup.value)}`;
       case 'hpHeal':
-        return `+${popup.value}`;
+        return `+${Math.abs(popup.value)}`;
       case 'critical':
-        return `${popup.value}!`;
+        return `${Math.abs(popup.value)}!`;
       default:
-        return popup.value.toString();
+        return Math.abs(popup.value).toString();
     }
   };
   
   return (
     <div
-      className={`transition-all duration-300 ${
-        isVisible ? 'animate-damagePopup' : 'opacity-0'
-      }`}
+      className={`damage-popup ${popup.type === 'hpDamage' ? 'hp-damage' : popup.type === 'hpHeal' ? 'hp-heal' : 'critical'} ${isVisible ? '' : 'opacity-0'}`}
       style={getStyle()}
     >
       {getDisplayText()}
