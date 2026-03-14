@@ -1241,6 +1241,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           endReason={battle.endReason}
           onExecuteCommand={battle.onExecuteCommand}
           onAutoSave={handleAutoSave}
+          enableDebug={settings.enableDebug}
         />
       )}
     </div>

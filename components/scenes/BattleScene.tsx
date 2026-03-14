@@ -50,6 +50,7 @@ interface BattleSceneProps {
   endReason: BattleEndReason | null;
   onExecuteCommand: (command: PlayerCommand, targetIds?: string[], skillId?: number, itemId?: string) => void;
   onAutoSave: () => void;
+  enableDebug?: boolean;
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -66,7 +67,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   turnOrder,
   endReason,
   onExecuteCommand,
-  onAutoSave
+  onAutoSave,
+  enableDebug = false
 }) => {
   const [selectedCommand, setSelectedCommand] = useState<PlayerCommand | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
@@ -88,6 +90,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [isLeaderCriticalHit, setIsLeaderCriticalHit] = useState(false);
   const [isLeaderDead, setIsLeaderDead] = useState(false);
   const prevBattleLogLengthRef = useRef<number>(0);
+  
+  const [damageFlashUnits, setDamageFlashUnits] = useState<Set<string>>(new Set());
+  const [healFlashUnits, setHealFlashUnits] = useState<Set<string>>(new Set());
+  const [statusFlashUnits, setStatusFlashUnits] = useState<Set<string>>(new Set());
 
   const isPlayerTurn = currentTurnUnit?.faction === Faction.PLAYER;
   
@@ -360,13 +366,46 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
   const lastLogIndexRef = useRef(0);
   
+  const triggerDamageFlash = useCallback((unitId: string) => {
+    setDamageFlashUnits(prev => new Set(prev).add(unitId));
+    setTimeout(() => {
+      setDamageFlashUnits(prev => {
+        const next = new Set(prev);
+        next.delete(unitId);
+        return next;
+      });
+    }, 300);
+  }, []);
+  
+  const triggerHealFlash = useCallback((unitId: string) => {
+    setHealFlashUnits(prev => new Set(prev).add(unitId));
+    setTimeout(() => {
+      setHealFlashUnits(prev => {
+        const next = new Set(prev);
+        next.delete(unitId);
+        return next;
+      });
+    }, 300);
+  }, []);
+  
+  const triggerStatusFlash = useCallback((unitId: string) => {
+    setStatusFlashUnits(prev => new Set(prev).add(unitId));
+    setTimeout(() => {
+      setStatusFlashUnits(prev => {
+        const next = new Set(prev);
+        next.delete(unitId);
+        return next;
+      });
+    }, 600);
+  }, []);
+  
   useEffect(() => {
     const newLogs = battleState.battleLog.slice(lastLogIndexRef.current);
     if (newLogs.length === 0) return;
     
     newLogs.forEach((log, idx) => {
-      if (log.type === 'damage' && log.value !== undefined) {
-        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.target);
+      if (log.type === 'damage' && log.value !== undefined && log.targetId) {
+        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.targetId);
         if (target) {
           const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
           const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
@@ -380,10 +419,11 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               -Math.abs(log.value!),
               (log.details as any)?.isCritical ? 'critical' : 'hpDamage'
             );
+            triggerDamageFlash(target.id);
           }, idx * 200);
         }
-      } else if (log.type === 'heal' && log.value !== undefined) {
-        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.target);
+      } else if (log.type === 'heal' && log.value !== undefined && log.targetId) {
+        const target = [...battleState.playerUnits, ...battleState.enemyUnits].find(u => u.id === log.targetId);
         if (target) {
           const isPlayer = battleState.playerUnits.some(u => u.id === target.id);
           const baseX = isPlayer ? 150 + (target.position || 0) * 120 : 300 + (target.position || 0) * 150;
@@ -397,13 +437,20 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               Math.abs(log.value!),
               'hpHeal'
             );
+            if (isPlayer) {
+              triggerHealFlash(target.id);
+            }
           }, idx * 200);
         }
+      } else if ((log.type === 'buff' || log.type === 'debuff') && log.targetId) {
+        setTimeout(() => {
+          triggerStatusFlash(log.targetId!);
+        }, idx * 200);
       }
     });
     
     lastLogIndexRef.current = battleState.battleLog.length;
-  }, [battleState.battleLog, battleState.playerUnits, battleState.enemyUnits, showDamagePopup]);
+  }, [battleState.battleLog, battleState.playerUnits, battleState.enemyUnits, showDamagePopup, triggerDamageFlash, triggerHealFlash, triggerStatusFlash]);
 
   const handleCommandSelect = useCallback((command: PlayerCommand) => {
     setSelectedCommand(command);
@@ -583,6 +630,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           isMobile={isMobile}
           isEnemyTargeting={isEnemyTargeting}
           onCursorChange={handleCursorChange}
+          enableDebug={enableDebug}
+          damageFlashUnits={damageFlashUnits}
+          statusFlashUnits={statusFlashUnits}
         />
 
         <div className="absolute bottom-0 left-0 right-0 z-30">
@@ -597,6 +647,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               onTargetSelect={handleTargetSelect}
               isAllyTargeting={isAllyTargeting}
               isReviveTargeting={isReviveTargeting}
+              damageFlashUnits={damageFlashUnits}
+              healFlashUnits={healFlashUnits}
+              statusFlashUnits={statusFlashUnits}
             />
 
             <CommandMenu

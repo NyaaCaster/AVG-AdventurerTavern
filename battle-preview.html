@@ -346,6 +346,42 @@
             border-radius: 4px;
         }
         
+        @keyframes damageFlashFilter {
+            0% { filter: brightness(1) sepia(0) saturate(1); }
+            20% { filter: brightness(0.8) sepia(0.9) saturate(2.5) hue-rotate(0deg); }
+            50% { filter: brightness(0.7) sepia(1) saturate(3.5) hue-rotate(5deg); }
+            80% { filter: brightness(0.8) sepia(0.9) saturate(2.5) hue-rotate(0deg); }
+            100% { filter: brightness(1) sepia(0) saturate(1); }
+        }
+        
+        @keyframes healFlashFilter {
+            0% { filter: brightness(1) sepia(0) saturate(1); }
+            20% { filter: brightness(1.1) sepia(0.5) saturate(1.5) hue-rotate(50deg); }
+            50% { filter: brightness(1.2) sepia(0.7) saturate(2) hue-rotate(60deg); }
+            80% { filter: brightness(1.1) sepia(0.5) saturate(1.5) hue-rotate(50deg); }
+            100% { filter: brightness(1) sepia(0) saturate(1); }
+        }
+        
+        @keyframes statusFlashFilter {
+            0% { filter: brightness(1) sepia(0) saturate(1); }
+            20% { filter: brightness(1.2) sepia(0.6) saturate(2) hue-rotate(270deg); }
+            50% { filter: brightness(1.3) sepia(0.8) saturate(2.5) hue-rotate(280deg); }
+            80% { filter: brightness(1.2) sepia(0.6) saturate(2) hue-rotate(270deg); }
+            100% { filter: brightness(1) sepia(0) saturate(1); }
+        }
+        
+        .animate-damageFlashFilter {
+            animation: damageFlashFilter 0.3s ease-out;
+        }
+        
+        .animate-healFlashFilter {
+            animation: healFlashFilter 0.3s ease-out;
+        }
+        
+        .animate-statusFlashFilter {
+            animation: statusFlashFilter 0.6s ease-out;
+        }
+        
         .player-area {
             position: absolute;
             bottom: 0;
@@ -1702,6 +1738,12 @@
         <button onclick="demoReviveTargeting()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             复活目标选择演示
         </button>
+        <button onclick="demoDamageFlash()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            受伤特效演示
+        </button>
+        <button onclick="demoHealFlash()" style="padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            治疗特效演示
+        </button>
     </div>
     
     <script>
@@ -1943,14 +1985,22 @@
         }
         
         function demoStatusFlash() {
-            const avatars = document.querySelectorAll('.player-card .avatar');
-            const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+            const enemyImgs = document.querySelectorAll('.enemy-unit .sprite img');
+            const playerImgs = document.querySelectorAll('.player-card .avatar img');
             
-            const flashOverlay = document.createElement('div');
-            flashOverlay.className = 'status-flash-overlay';
-            randomAvatar.appendChild(flashOverlay);
+            enemyImgs.forEach((img, i) => {
+                setTimeout(() => {
+                    img.classList.add('animate-statusFlashFilter');
+                    setTimeout(() => img.classList.remove('animate-statusFlashFilter'), 600);
+                }, i * 200);
+            });
             
-            setTimeout(() => flashOverlay.remove(), 600);
+            playerImgs.forEach((img, i) => {
+                setTimeout(() => {
+                    img.classList.add('animate-statusFlashFilter');
+                    setTimeout(() => img.classList.remove('animate-statusFlashFilter'), 600);
+                }, i * 200 + 300);
+            });
         }
         
         let kaelIsDead = true;
@@ -2045,15 +2095,35 @@
                 deathOverlay.style.display = isLeaderDeadState ? 'block' : 'none';
             }
         }
+        
+        function demoDamageFlash() {
+            const enemyImgs = document.querySelectorAll('.enemy-unit .sprite img');
+            const playerImgs = document.querySelectorAll('.player-card .avatar img');
+            
+            enemyImgs.forEach((img, i) => {
+                setTimeout(() => {
+                    img.classList.add('animate-damageFlashFilter');
+                    setTimeout(() => img.classList.remove('animate-damageFlashFilter'), 300);
+                }, i * 150);
+            });
+            
+            playerImgs.forEach((img, i) => {
+                setTimeout(() => {
+                    img.classList.add('animate-damageFlashFilter');
+                    setTimeout(() => img.classList.remove('animate-damageFlashFilter'), 300);
+                }, i * 150 + 500);
+            });
+        }
+        
+        function demoHealFlash() {
+            const playerImgs = document.querySelectorAll('.player-card .avatar img');
+            playerImgs.forEach((img, i) => {
+                setTimeout(() => {
+                    img.classList.add('animate-healFlashFilter');
+                    setTimeout(() => img.classList.remove('animate-healFlashFilter'), 300);
+                }, i * 200);
+            });
+        }
     </script>
-    
-    <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
-        <button onclick="demoCriticalHit()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            暴击特效
-        </button>
-        <button onclick="toggleLeaderDeath()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            队长死亡状态
-        </button>
-    </div>
 </body>
 </html>

@@ -376,8 +376,12 @@ export interface BattleLogEntry {
   type: 'damage' | 'heal' | 'effect' | 'death' | 'revive' | 'buff' | 'debuff' | 'system';
   /** 来源单位 */
   source?: string;
+  /** 来源单位ID */
+  sourceId?: string;
   /** 目标单位 */
   target?: string;
+  /** 目标单位ID */
+  targetId?: string;
   /** 数值 */
   value?: number;
   /** 描述 */

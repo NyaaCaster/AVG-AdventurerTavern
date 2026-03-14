@@ -305,15 +305,39 @@ export class BattleManager {
         if (targetResult.damage && targetResult.damage.value > 0) {
           const isCritical = targetResult.damage.isCritical;
           const critText = isCritical ? '【暴击】' : '';
+          const logType = targetResult.damage.isHealing ? 'heal' : 'damage';
+          const actionText = targetResult.damage.isHealing ? '恢复了' : '造成';
           this.addLogEntry({
             turn: this.state.turnNumber,
-            type: 'damage',
+            type: logType,
             source: currentUnit.name,
+            sourceId: currentUnit.id,
             target: targetResult.targetName,
+            targetId: targetResult.targetId,
             value: targetResult.damage.value,
-            description: `${critText}${currentUnit.name} 对 ${targetResult.targetName} 造成 ${targetResult.damage.value} 点伤害`,
+            description: `${critText}${currentUnit.name} 对 ${targetResult.targetName} ${actionText} ${targetResult.damage.value} 点${targetResult.damage.isHealing ? '生命值' : '伤害'}`,
             details: { isCritical }
           });
+        }
+        
+        if (targetResult.effects && targetResult.effects.length > 0) {
+          for (const effect of targetResult.effects) {
+            if (effect.success) {
+              const EffectCode = { ADD_STATE: 21, ADD_BUFF: 31, ADD_DEBUFF: 32 };
+              const isDebuff = effect.type === EffectCode.ADD_DEBUFF || effect.type === EffectCode.ADD_STATE;
+              this.addLogEntry({
+                turn: this.state.turnNumber,
+                type: isDebuff ? 'debuff' : 'buff',
+                source: currentUnit.name,
+                sourceId: currentUnit.id,
+                target: targetResult.targetName,
+                targetId: targetResult.targetId,
+                value: effect.value,
+                description: `${targetResult.targetName} 获得了 ${effect.name} 效果`,
+                details: { effectName: effect.name, duration: effect.duration }
+              });
+            }
+          }
         }
       }
     }

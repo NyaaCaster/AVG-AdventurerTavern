@@ -14,6 +14,9 @@ interface PlayerCardsProps {
   onTargetSelect: (targetId: string) => void;
   isAllyTargeting?: boolean;
   isReviveTargeting?: boolean;
+  damageFlashUnits?: Set<string>;
+  healFlashUnits?: Set<string>;
+  statusFlashUnits?: Set<string>;
 }
 
 const PlayerCards: React.FC<PlayerCardsProps> = ({
@@ -25,7 +28,10 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
   selectedTarget,
   onTargetSelect,
   isAllyTargeting = false,
-  isReviveTargeting = false
+  isReviveTargeting = false,
+  damageFlashUnits = new Set(),
+  healFlashUnits = new Set(),
+  statusFlashUnits = new Set()
 }) => {
   return (
     <div className={`flex justify-center ${isMobile ? 'gap-1 mb-3' : 'gap-1 sm:gap-2 md:gap-4 mb-2 sm:mb-4'}`}>
@@ -38,6 +44,10 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
           ? isDead 
           : (isAllyTargeting && selectedCommand && player.isAlive);
         const isTargeted = selectedTarget === player.id;
+        
+        const isDamageFlashing = damageFlashUnits.has(player.id);
+        const isHealFlashing = healFlashUnits.has(player.id);
+        const isStatusFlashing = statusFlashUnits.has(player.id);
         
         return (
           <div
@@ -67,7 +77,13 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
                   <img
                     src={resolveImgPath(player.avatarUrl)}
                     alt={player.name}
-                    className={`w-full h-full object-cover ${isDead ? 'opacity-50 grayscale' : ''}`}
+                    className={`w-full h-full object-cover ${isDead ? 'opacity-50 grayscale' : ''} ${
+                      isDamageFlashing ? 'animate-damageFlashFilter' : ''
+                    } ${
+                      isHealFlashing ? 'animate-healFlashFilter' : ''
+                    } ${
+                      isStatusFlashing ? 'animate-statusFlashFilter' : ''
+                    }`}
                   />
                   {isDead && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
