@@ -1,10 +1,14 @@
 
 import { useRef, useEffect } from 'react';
 import { GameSettings, SceneId } from '../types';
-import { SCENE_BGM } from '../data/resources/audioResources';
+import { SCENE_BGM, BATTLE_BGM } from '../data/resources/audioResources';
 import { resolveImgPath } from '../utils/imagePath';
 
-export const useGameAudio = (currentSceneId: SceneId, settings: GameSettings) => {
+export const useGameAudio = (
+  currentSceneId: SceneId, 
+  settings: GameSettings,
+  isInBattle: boolean = false
+) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -20,7 +24,7 @@ export const useGameAudio = (currentSceneId: SceneId, settings: GameSettings) =>
     const audio = audioRef.current;
     if (!audio) return;
 
-    const bgmFile = SCENE_BGM[currentSceneId];
+    const bgmFile = isInBattle ? BATTLE_BGM : SCENE_BGM[currentSceneId];
     const targetSrc = bgmFile ? resolveImgPath(bgmFile) : "";
     const maxVolume = settings.isMuted ? 0 : Math.max(0, Math.min(1, settings.masterVolume / 100));
 
@@ -93,7 +97,7 @@ export const useGameAudio = (currentSceneId: SceneId, settings: GameSettings) =>
         startFadeIn();
     }
 
-  }, [currentSceneId]);
+  }, [currentSceneId, isInBattle]);
 
   return audioRef;
 };

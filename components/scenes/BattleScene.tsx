@@ -11,12 +11,14 @@ import { resolveCharacterDisplayName } from '../../utils/playerText';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../../types';
 import { SKILLS, SkillData } from '../../data/battle-data/skills';
 import { EXP_TABLE } from '../../data/battle-data/exp_table';
+import { ITEMS } from '../../data/items';
 
 import {
   EnemyArea,
   PlayerCards,
   CommandMenu,
   SkillList,
+  ItemSelect,
   EscapeConfirmModal,
   DamagePopup,
   BattleCursor,
@@ -41,6 +43,7 @@ interface BattleSceneProps {
   battleParty: BattlePartySlots;
   characterStats: Record<string, CharacterStat>;
   characterEquipments: Record<string, CharacterEquipment>;
+  inventory: Record<string, number>;
   userName: string;
   currentTurnUnit: BattleUnit | null;
   turnOrder: BattleUnit[];
@@ -57,6 +60,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   battleParty,
   characterStats,
   characterEquipments,
+  inventory,
   userName,
   currentTurnUnit,
   turnOrder,
@@ -67,7 +71,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [selectedCommand, setSelectedCommand] = useState<PlayerCommand | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [showSkillOverlay, setShowSkillOverlay] = useState(false);
+  const [showItemOverlay, setShowItemOverlay] = useState(false);
   const [showEscapeConfirm, setShowEscapeConfirm] = useState(false);
   const [showVictoryScreen, setShowVictoryScreen] = useState(false);
   const [expGains, setExpGains] = useState<ExpGainInfo[]>([]);
@@ -432,6 +438,14 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     }
   }, [currentTurnUnit, battleState, onExecuteCommand]);
 
+  const handleItemSelect = useCallback((itemId: string) => {
+    if (!currentTurnUnit) return;
+    
+    setSelectedItem(itemId);
+    setShowItemOverlay(false);
+    setSelectedCommand(PlayerCommand.ITEM);
+  }, [currentTurnUnit]);
+
   const handleTargetSelect = useCallback((targetId: string) => {
     if (!selectedCommand) return;
     
@@ -439,9 +453,11 @@ const BattleScene: React.FC<BattleSceneProps> = ({
       onExecuteCommand(selectedCommand, [targetId]);
     } else if (selectedCommand === PlayerCommand.SKILL && selectedSkill) {
       onExecuteCommand(selectedCommand, [targetId], selectedSkill);
+    } else if (selectedCommand === PlayerCommand.ITEM && selectedItem) {
+      onExecuteCommand(selectedCommand, [targetId], undefined, selectedItem);
     }
     resetCommandState();
-  }, [selectedCommand, selectedSkill, onExecuteCommand]);
+  }, [selectedCommand, selectedSkill, selectedItem, onExecuteCommand]);
 
   const handleEscapeConfirm = useCallback(() => {
     setShowEscapeConfirm(false);
@@ -453,7 +469,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     setSelectedCommand(null);
     setSelectedTarget(null);
     setSelectedSkill(null);
+    setSelectedItem(null);
     setShowSkillOverlay(false);
+    setShowItemOverlay(false);
     setShowEscapeConfirm(false);
   }, []);
 
@@ -473,6 +491,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const isTablet = typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false;
   
   const isAllyTargeting = useMemo(() => {
+    if (selectedCommand === PlayerCommand.ITEM) {
+      return true;
+    }
     if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
       return false;
     }
@@ -489,13 +510,19 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   }, [selectedCommand, selectedSkill]);
   
   const isReviveTargeting = useMemo(() => {
+    if (selectedCommand === PlayerCommand.ITEM && selectedItem) {
+      const item = ITEMS[selectedItem];
+      if (item?.consumableEffects?.revive) {
+        return true;
+      }
+    }
     if (!selectedCommand || selectedCommand !== PlayerCommand.SKILL || !selectedSkill) {
       return false;
     }
     const skill = SKILLS.find(s => s.id === selectedSkill);
     if (!skill) return false;
     return skill.scope === 9;
-  }, [selectedCommand, selectedSkill]);
+  }, [selectedCommand, selectedSkill, selectedItem]);
   
   const isEnemyTargeting = useMemo(() => {
     if (selectedCommand === PlayerCommand.ATTACK) return true;
@@ -575,6 +602,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               selectedCommand={selectedCommand}
               onCommandSelect={handleCommandSelect}
               onSkillClick={() => setShowSkillOverlay(true)}
+              onItemClick={() => setShowItemOverlay(true)}
               onEscapeClick={() => setShowEscapeConfirm(true)}
               isMobile={isMobile}
             />
@@ -592,6 +620,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             currentMp={currentTurnUnit?.stats.mp || 0}
             onSkillSelect={handleSkillSelect}
             onClose={() => setShowSkillOverlay(false)}
+          />
+        )}
+
+        {showItemOverlay && currentTurnUnit && (
+          <ItemSelect
+            inventory={inventory}
+            battleState={battleState}
+            currentUser={currentTurnUnit}
+            onItemSelect={handleItemSelect}
+            onClose={() => setShowItemOverlay(false)}
           />
         )}
 

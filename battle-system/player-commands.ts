@@ -3,8 +3,13 @@
  * 处理玩家角色在战斗中的指令输入和执行
  */
 
-import { BattleUnit, BattleState, SkillData, SkillScope } from './types';
+import { BattleUnit, BattleState, SkillData, SkillScope, BattleLogEntry } from './types';
 import { selectTargetsByScope, selectDeadAllyTarget, getAliveUnits, getDeadUnits } from './targeting';
+import { applyHealingToTarget, reviveUnit } from './healing';
+import { applyMpRecovery } from './healing';
+import { removeStatusEffect, applyStatusEffect, getStatusEffectDefinition } from './status-effects';
+import { ConsumableEffects } from '../types';
+import { ITEMS } from '../data/items';
 
 /**
  * 玩家指令类型
@@ -394,4 +399,259 @@ export function checkBattleEnd(state: BattleState): BattleEndReason | null {
   }
   
   return null;
+}
+
+/**
+ * 道具使用结果
+ */
+export interface ItemUseResult {
+  /** 是否成功 */
+  success: boolean;
+  /** 日志条目列表 */
+  logEntries: BattleLogEntry[];
+  /** HP回复量 */
+  hpRecovered?: number;
+  /** MP回复量 */
+  mpRecovered?: number;
+  /** 是否复活 */
+  revived?: boolean;
+  /** 解除的状态列表 */
+  removedStatuses?: string[];
+  /** 添加的状态列表 */
+  appliedStatuses?: string[];
+}
+
+/**
+ * 获取道具可选目标
+ * 
+ * @param item 道具数据
+ * @param state 战斗状态
+ * @param user 使用者
+ * @returns 可选目标列表
+ */
+export function getItemSelectableTargets(
+  item: { consumableEffects?: ConsumableEffects },
+  state: BattleState,
+  user: BattleUnit
+): BattleUnit[] {
+  const effects = item.consumableEffects;
+  if (!effects) return [];
+  
+  // 复活道具 - 选择死亡队友
+  if (effects.revive) {
+    return getDeadUnits(state.playerUnits);
+  }
+  
+  // HP回复道具 - 选择HP不足的存活队友
+  if (effects.recoverHpPercent !== undefined && effects.recoverHpPercent > 0) {
+    return getAliveUnits(state.playerUnits).filter(u => u.stats.hp < u.stats.maxHp);
+  }
+  
+  // MP回复道具 - 选择MP不足的存活队友
+  if (effects.recoverMpPercent !== undefined && effects.recoverMpPercent > 0) {
+    return getAliveUnits(state.playerUnits).filter(u => u.stats.mp < u.stats.maxMp);
+  }
+  
+  // 状态解除道具 - 选择有对应状态的存活队友
+  if (effects.removeStatus && effects.removeStatus.length > 0) {
+    return getAliveUnits(state.playerUnits).filter(u => 
+      u.statusEffects.some(e => effects.removeStatus!.includes(e.name.toLowerCase()))
+    );
+  }
+  
+  // 默认返回所有存活队友
+  return getAliveUnits(state.playerUnits);
+}
+
+/**
+ * 执行道具使用
+ * 
+ * 处理道具的所有效果：
+ * 1. HP回复（百分比）
+ * 2. MP回复（百分比）
+ * 3. 复活
+ * 4. 状态解除
+ * 5. 状态附加
+ * 
+ * @param user 使用者
+ * @param target 目标
+ * @param itemId 道具ID
+ * @param state 战斗状态
+ * @returns 道具使用结果
+ */
+export function executeItemUse(
+  user: BattleUnit,
+  target: BattleUnit,
+  itemId: string,
+  state: BattleState
+): ItemUseResult {
+  const item = ITEMS[itemId];
+  if (!item) {
+    return {
+      success: false,
+      logEntries: [{
+        turn: state.turnNumber,
+        type: 'system',
+        description: `道具 ${itemId} 不存在`
+      }]
+    };
+  }
+  
+  const effects = item.consumableEffects;
+  if (!effects) {
+    return {
+      success: false,
+      logEntries: [{
+        turn: state.turnNumber,
+        type: 'system',
+        description: `${item.name} 不是可使用的道具`
+      }]
+    };
+  }
+  
+  const logEntries: BattleLogEntry[] = [];
+  let hpRecovered = 0;
+  let mpRecovered = 0;
+  let revived = false;
+  const removedStatuses: string[] = [];
+  const appliedStatuses: string[] = [];
+  
+  // 处理复活
+  if (effects.revive && !target.isAlive) {
+    const revivePercent = (effects.recoverHpPercent ?? 0.25) * 100;
+    const reviveResult = reviveUnit(target, revivePercent);
+    if (reviveResult.success) {
+      revived = true;
+      hpRecovered = reviveResult.hpRecovered;
+      logEntries.push({
+        turn: state.turnNumber,
+        type: 'revive',
+        source: user.name,
+        target: target.name,
+        value: hpRecovered,
+        description: `${user.name} 使用 ${item.name} 复活了 ${target.name}，恢复 ${hpRecovered} HP`
+      });
+    }
+  } else if (effects.recoverHpPercent !== undefined && effects.recoverHpPercent > 0 && target.isAlive) {
+    // 处理HP回复（非复活情况）
+    const healAmount = Math.floor(target.stats.maxHp * effects.recoverHpPercent);
+    hpRecovered = applyHealingToTarget(target, healAmount);
+    if (hpRecovered > 0) {
+      logEntries.push({
+        turn: state.turnNumber,
+        type: 'heal',
+        source: user.name,
+        target: target.name,
+        value: hpRecovered,
+        description: `${user.name} 使用 ${item.name} 为 ${target.name} 恢复 ${hpRecovered} HP`
+      });
+    }
+  }
+  
+  // 处理MP回复
+  if (effects.recoverMpPercent !== undefined && effects.recoverMpPercent > 0 && target.isAlive) {
+    const mpPercent = effects.recoverMpPercent * 100;
+    mpRecovered = applyMpRecovery(target, mpPercent, true);
+    if (mpRecovered > 0) {
+      logEntries.push({
+        turn: state.turnNumber,
+        type: 'heal',
+        source: user.name,
+        target: target.name,
+        value: mpRecovered,
+        description: `${user.name} 使用 ${item.name} 为 ${target.name} 恢复 ${mpRecovered} MP`
+      });
+    }
+  }
+  
+  // 处理状态解除
+  if (effects.removeStatus && effects.removeStatus.length > 0) {
+    for (const statusName of effects.removeStatus) {
+      const statusDef = getStatusEffectByName(statusName);
+      if (statusDef && target.statusEffects.some(e => e.effectId === statusDef.effectId)) {
+        const removed = removeStatusEffect(target, statusDef.effectId);
+        if (removed) {
+          removedStatuses.push(statusDef.name);
+        }
+      }
+    }
+    if (removedStatuses.length > 0) {
+      logEntries.push({
+        turn: state.turnNumber,
+        type: 'effect',
+        source: user.name,
+        target: target.name,
+        description: `${user.name} 使用 ${item.name} 解除了 ${target.name} 的 ${removedStatuses.join('、')} 状态`
+      });
+    }
+  }
+  
+  // 处理状态附加
+  if (effects.applyStatus && effects.applyStatus.length > 0) {
+    for (const statusName of effects.applyStatus) {
+      const statusDef = getStatusEffectDefinitionByName(statusName);
+      if (statusDef) {
+        const result = applyStatusEffect(target, statusDef, 1);
+        if (result.success) {
+          appliedStatuses.push(statusDef.name);
+        }
+      }
+    }
+    if (appliedStatuses.length > 0) {
+      logEntries.push({
+        turn: state.turnNumber,
+        type: 'effect',
+        source: user.name,
+        target: target.name,
+        description: `${target.name} 进入了 ${appliedStatuses.join('、')} 状态`
+      });
+    }
+  }
+  
+  return {
+    success: true,
+    logEntries,
+    hpRecovered,
+    mpRecovered,
+    revived,
+    removedStatuses,
+    appliedStatuses
+  };
+}
+
+/**
+ * 根据状态名称获取状态效果定义（用于道具系统）
+ * 道具配置中使用状态名称字符串，需要转换为状态效果定义
+ */
+function getStatusEffectByName(statusName: string): { effectId: number; name: string } | null {
+  const statusMap: Record<string, { effectId: number; name: string }> = {
+    'dead': { effectId: 1, name: '死亡' },
+    'poison': { effectId: 4, name: '中毒' },
+    'blind': { effectId: 5, name: '暗闇' },
+    'silence': { effectId: 6, name: '沈黙' },
+    'berserk': { effectId: 7, name: '激昂' },
+    'confuse': { effectId: 8, name: '混乱' },
+    'charm': { effectId: 9, name: '魅惑' },
+    'sleep': { effectId: 10, name: '睡眠' },
+    'provoke': { effectId: 11, name: '挑衅' },
+    'paralyze': { effectId: 12, name: '麻痺' },
+    'stun': { effectId: 13, name: '晕眩' },
+    'hp_regen': { effectId: 15, name: 'HP再生' },
+    'horny': { effectId: 1000, name: '发情' },
+    'weakness': { effectId: 1001, name: '弱点' },
+    'evasion_up': { effectId: 1103, name: '回避提升' },
+    'crit_up': { effectId: 1105, name: '暴击提升' },
+    'counter_up': { effectId: 1107, name: '反击提升' }
+  };
+  
+  return statusMap[statusName.toLowerCase()] || null;
+}
+
+/**
+ * 根据状态名称获取完整的状态效果定义
+ */
+function getStatusEffectDefinitionByName(statusName: string) {
+  const statusInfo = getStatusEffectByName(statusName);
+  if (!statusInfo) return null;
+  return getStatusEffectDefinition(statusInfo.effectId);
 }

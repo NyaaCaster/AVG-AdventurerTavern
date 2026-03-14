@@ -17,3 +17,5 @@ export const SCENE_BGM: Record<SceneId, string> = {
   'scen_guild': 'audio/bgm/bgm_event_001.ogg', // 暂用冒险者公会事件 BGM
   'scen_market': 'audio/bgm/_title.ogg', // 暂用标题 BGM
 };
+
+export const BATTLE_BGM = 'audio/bgm/bgm_battle_6.ogg';

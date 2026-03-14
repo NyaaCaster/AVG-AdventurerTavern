@@ -3,7 +3,7 @@ import {
   BattleState,
   BattleUnit,
   Faction,
-  SkillData,
+  SkillData as BattleSkillData,
   BattleLogEntry,
   SkillScope
 } from '../battle-system/types';
@@ -14,11 +14,37 @@ import {
 } from '../battle-system/BattleManager';
 import { createPlayerBattleUnit } from '../battle-system/player-unit-factory';
 import { createEnemyBattleUnit } from '../battle-system/enemy-unit-factory';
-import { PlayerCommand, BattleEndReason, getSelectableTargets, executeEscapeCommand } from '../battle-system/player-commands';
-import { SKILLS } from '../data/battle-data/skills';
+import { 
+  PlayerCommand, 
+  BattleEndReason, 
+  getSelectableTargets, 
+  executeEscapeCommand,
+  executeItemUse,
+  getItemSelectableTargets,
+  ItemUseResult
+} from '../battle-system/player-commands';
+import { SKILLS, SkillData } from '../data/battle-data/skills';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../types';
 import { makeAllyDecision, BattleAI, AIDecisionContext } from '../battle-system/ai';
 import { CHARACTERS } from '../data/scenarioData';
+import { ITEMS } from '../data/items';
+
+function toBattleSkillData(skill: SkillData): BattleSkillData {
+  return {
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+    scope: skill.scope as SkillScope,
+    mpCost: skill.mpCost,
+    damage: skill.damage,
+    effects: skill.effects,
+    speed: skill.speed,
+    successRate: skill.successRate,
+    repeats: skill.repeats ?? 1,
+    hitType: skill.hitType,
+    note: skill.note
+  };
+}
 
 interface UseBattleSystemOptions {
   battleParty: BattlePartySlots;
@@ -212,7 +238,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     
     const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
     
-    const result = manager.processNextAction(basicAttack, [randomTarget.id]);
+    const result = manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
     setBattleState({ ...manager.getState()! });
     
     if (result.battleEnded) {
@@ -246,7 +272,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         const aliveTargets = battleState.enemyUnits.filter(u => u.isAlive);
         if (aliveTargets.length > 0) {
           const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-          const result = manager.processNextAction(basicAttack, [randomTarget.id]);
+          const result = manager.processNextAction(toBattleSkillData(basicAttack), [randomTarget.id]);
           setBattleState({ ...manager.getState()! });
           
           if (result.battleEnded) {
@@ -264,15 +290,29 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     }
     
     const availableActions = character.battleData.skills
-      .filter(skillLearning => currentUnit.stats.level >= skillLearning.level)
+      .filter(skillLearning => currentUnit.level >= skillLearning.level)
       .map(skillLearning => {
         const skill = SKILLS.find(s => s.id === skillLearning.skillId);
-        return skill ? { skillId: skill.id, rating: 5 } : null;
+        return skill ? { 
+          skillId: skill.id, 
+          rating: 5,
+          conditionType: 0,
+          conditionParam1: 0,
+          conditionParam2: 0,
+          source: 'player' as const
+        } : null;
       })
-      .filter(Boolean) as Array<{ skillId: number; rating: number }>;
+      .filter(Boolean) as Array<{ 
+        skillId: number; 
+        rating: number;
+        conditionType: number;
+        conditionParam1: number;
+        conditionParam2: number;
+        source: 'player'
+      }>;
     
-    const skillMap = new Map<number, SkillData>();
-    SKILLS.forEach(skill => skillMap.set(skill.id, skill));
+    const skillMap = new Map<number, BattleSkillData>();
+    SKILLS.forEach(skill => skillMap.set(skill.id, toBattleSkillData(skill)));
     
     const aiContext: AIDecisionContext = {
       unit: currentUnit,
@@ -330,7 +370,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       case PlayerCommand.ATTACK: {
         const attackSkill = SKILLS.find(s => s.id === 1);
         if (attackSkill && targetIds) {
-          result = manager.processNextAction(attackSkill, targetIds);
+          result = manager.processNextAction(toBattleSkillData(attackSkill), targetIds);
         }
         break;
       }
@@ -339,7 +379,7 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         if (skillId !== undefined) {
           const skill = SKILLS.find(s => s.id === skillId);
           if (skill) {
-            result = manager.processNextAction(skill, targetIds);
+            result = manager.processNextAction(toBattleSkillData(skill), targetIds);
           }
         }
         break;
@@ -362,6 +402,27 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
         return;
       }
       
+      case PlayerCommand.ITEM: {
+        if (itemId && targetIds && targetIds.length > 0) {
+          const target = battleState.playerUnits.find(u => u.id === targetIds[0]);
+          if (target) {
+            const itemResult = executeItemUse(currentTurnUnit, target, itemId, battleState);
+            
+            for (const log of itemResult.logEntries) {
+              battleState.battleLog.push(log);
+            }
+            
+            setBattleState({ ...manager.getState()! });
+            manager.skipCurrentAction();
+            processNextTurn();
+            return;
+          }
+        }
+        manager.skipCurrentAction();
+        processNextTurn();
+        return;
+      }
+      
       default:
         manager.skipCurrentAction();
     }
@@ -378,8 +439,6 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
       } else {
         processNextTurn();
       }
-    } else if (command !== PlayerCommand.ESCAPE) {
-      processNextTurn();
     }
   }, [battleState, currentTurnUnit, processNextTurn]);
   

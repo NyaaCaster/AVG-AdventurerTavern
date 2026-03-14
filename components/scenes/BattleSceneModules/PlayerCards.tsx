@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerUnitWithImage } from './types';
 import GaugeBar from './GaugeBar';
 import StatusIcons from './StatusIcons';
+import { getRestrictionType } from '../../../battle-system/player-commands';
 
 interface PlayerCardsProps {
   players: PlayerUnitWithImage[];
@@ -31,6 +32,7 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
       {players.map((player) => {
         const isCurrentTurn = currentTurnUnitId === player.id;
         const isDead = !player.isAlive;
+        const restriction = getRestrictionType(player);
         
         const isTargetable = isReviveTargeting 
           ? isDead 
@@ -50,6 +52,12 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
             {isCurrentTurn && (
               <div className={`absolute z-10 ${isMobile ? '-top-1.5' : '-top-2 sm:-top-3'} left-1/2 -translate-x-1/2 bg-[#b45309] text-white ${isMobile ? 'text-[7px] px-1' : 'text-[8px] sm:text-[10px] px-1.5 sm:px-2'} py-0.5 rounded font-bold shadow-md whitespace-nowrap`}>
                 行动中
+              </div>
+            )}
+            
+            {restriction && isCurrentTurn && (
+              <div className={`absolute z-10 ${isMobile ? '-bottom-3' : '-bottom-4 sm:-bottom-5'} left-1/2 -translate-x-1/2 bg-red-900/90 text-white ${isMobile ? 'text-[6px] px-1' : 'text-[7px] sm:text-[9px] px-1.5 sm:px-2'} py-0.5 rounded font-bold shadow-md whitespace-nowrap`}>
+                {restriction}
               </div>
             )}
             

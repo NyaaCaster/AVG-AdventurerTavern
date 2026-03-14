@@ -8,6 +8,7 @@ interface CommandMenuProps {
   selectedCommand: PlayerCommand | null;
   onCommandSelect: (command: PlayerCommand) => void;
   onSkillClick: () => void;
+  onItemClick: () => void;
   onEscapeClick: () => void;
   isMobile?: boolean;
 }
@@ -18,6 +19,7 @@ const CommandMenu: React.FC<CommandMenuProps> = ({
   selectedCommand,
   onCommandSelect,
   onSkillClick,
+  onItemClick,
   onEscapeClick,
   isMobile = false
 }) => {
@@ -28,7 +30,7 @@ const CommandMenu: React.FC<CommandMenuProps> = ({
   const commands = [
     { cmd: PlayerCommand.ATTACK, icon: 'fa-sword', label: '攻击', onClick: () => onCommandSelect(PlayerCommand.ATTACK) },
     { cmd: PlayerCommand.SKILL, icon: 'fa-wand-magic-sparkles', label: '技能', onClick: onSkillClick },
-    { cmd: PlayerCommand.ITEM, icon: 'fa-bag-shopping', label: '道具', onClick: () => {}, disabled: true },
+    { cmd: PlayerCommand.ITEM, icon: 'fa-bag-shopping', label: '道具', onClick: onItemClick },
     { cmd: PlayerCommand.GUARD, icon: 'fa-shield-halved', label: '防御', onClick: () => onCommandSelect(PlayerCommand.GUARD) },
     { cmd: 'TALK', icon: 'fa-comments', label: '对话', onClick: () => {}, disabled: true },
     { cmd: PlayerCommand.ESCAPE, icon: 'fa-person-running', label: '逃跑', onClick: onEscapeClick }

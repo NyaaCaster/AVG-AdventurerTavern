@@ -3,6 +3,7 @@ export { default as EnemyArea } from './EnemyArea';
 export { default as PlayerCards } from './PlayerCards';
 export { default as CommandMenu } from './CommandMenu';
 export { default as SkillList } from './SkillList';
+export { default as ItemSelect } from './ItemSelect';
 export { default as EscapeConfirmModal } from './EscapeConfirmModal';
 export { default as DamagePopup } from './DamagePopup';
 export { default as BattleCursor } from './BattleCursor';

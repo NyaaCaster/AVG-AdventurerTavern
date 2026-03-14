@@ -57,6 +57,8 @@ export interface SkillData {
   successRate: number;
   /** TP获取量 */
   tpGain: number;
+  /** 重复次数，默认为1 */
+  repeats?: number;
 }
 
 export const SKILLS: SkillData[] = [

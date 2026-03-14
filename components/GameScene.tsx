@@ -102,7 +102,6 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     return INITIAL_CHECKED_IN_CHARACTERS;
   });
   const world = useWorldSystem(core.sceneLevels, initialSaveData, checkedInCharacters);
-  const audioRef = useGameAudio(world.currentSceneId, settings);
   
   const battle = useBattleSystem({
     battleParty: core.battleParty,
@@ -110,6 +109,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     characterEquipments: core.characterEquipments,
     userName: settings.userName
   });
+  
+  const audioRef = useGameAudio(world.currentSceneId, settings, battle.isOpen);
   
   // --- UI 本地状态 ---
   const [isManagementOpen, setIsManagementOpen] = useState(false);
@@ -1233,6 +1234,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           battleParty={core.battleParty}
           characterStats={core.characterStats}
           characterEquipments={core.characterEquipments}
+          inventory={core.inventory}
           userName={settings.userName}
           currentTurnUnit={battle.currentTurnUnit}
           turnOrder={battle.turnOrder}
