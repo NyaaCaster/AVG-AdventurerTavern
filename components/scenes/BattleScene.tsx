@@ -79,13 +79,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const [showEscapeConfirm, setShowEscapeConfirm] = useState(false);
   const [showVictoryScreen, setShowVictoryScreen] = useState(false);
   const [expGains, setExpGains] = useState<ExpGainInfo[]>([]);
-  const [animatingExpIndex, setAnimatingExpIndex] = useState(0);
-  const [currentExpPercent, setCurrentExpPercent] = useState(0);
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [levelUpCharId, setLevelUpCharId] = useState<string | null>(null);
   const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, visible: false, isAlly: false });
-  const animationRef = useRef<number | null>(null);
   
   const [isLeaderCriticalHit, setIsLeaderCriticalHit] = useState(false);
   const [isLeaderDead, setIsLeaderDead] = useState(false);
@@ -196,11 +191,19 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     const questExp = quest.rewards?.experience || 0;
     const gains: ExpGainInfo[] = [];
     
+    console.log('[calculateExpGains] questExp:', questExp, 'battleParty:', battleParty, 'characterStats keys:', Object.keys(characterStats));
+    
     battleParty.forEach((characterId) => {
-      if (!characterId) return;
+      if (!characterId) {
+        console.log('[calculateExpGains] skipping null slot');
+        return;
+      }
       
       const stat = characterStats[characterId];
-      if (!stat) return;
+      if (!stat) {
+        console.log('[calculateExpGains] no stat for:', characterId);
+        return;
+      }
       
       const currentLevel = stat.level || 1;
       const currentExp = stat.exp || 0;
@@ -219,6 +222,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
           break;
         }
       }
+      
+      console.log('[calculateExpGains]', characterId, 'currentLevel:', currentLevel, 'finalLevel:', finalLevel, 'leveledUp:', finalLevel > currentLevel);
       
       const finalNextTotalExp = EXP_TABLE[finalLevel + 1] || EXP_TABLE[finalLevel];
       const finalCurrentTotalExp = EXP_TABLE[finalLevel] || 0;
@@ -265,66 +270,17 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   useEffect(() => {
     if (endReason === BattleEndReason.VICTORY && battleState.isEnded) {
       const gains = calculateExpGains();
+      console.log('[VictoryScreen] expGains calculated:', gains.map(g => ({
+        id: g.characterId,
+        name: g.name,
+        leveledUp: g.leveledUp,
+        currentLevel: g.currentLevel,
+        finalLevel: g.finalLevel
+      })));
       setExpGains(gains);
       setShowVictoryScreen(true);
     }
   }, [endReason, battleState.isEnded, calculateExpGains]);
-
-  useEffect(() => {
-    if (!showVictoryScreen || expGains.length === 0) return;
-    if (animatingExpIndex >= expGains.length) return;
-    
-    const currentGain = expGains[animatingExpIndex];
-    if (!currentGain) return;
-    
-    const startPercent = currentGain.expPercentBefore;
-    const targetPercent = currentGain.expPercentAfter;
-    const duration = 1500;
-    const startTime = Date.now();
-    
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      
-      const currentPercent = startPercent + (targetPercent - startPercent) * easeProgress;
-      setCurrentExpPercent(currentPercent);
-      
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        if (currentGain.leveledUp) {
-          setShowLevelUp(true);
-          setLevelUpCharId(currentGain.characterId);
-          setTimeout(() => {
-            setShowLevelUp(false);
-            setLevelUpCharId(null);
-            setTimeout(() => {
-              if (animatingExpIndex < expGains.length - 1) {
-                setAnimatingExpIndex(prev => prev + 1);
-                setCurrentExpPercent(0);
-              }
-            }, 300);
-          }, 1500);
-        } else {
-          setTimeout(() => {
-            if (animatingExpIndex < expGains.length - 1) {
-              setAnimatingExpIndex(prev => prev + 1);
-              setCurrentExpPercent(0);
-            }
-          }, 500);
-        }
-      }
-    };
-    
-    animationRef.current = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [showVictoryScreen, expGains, animatingExpIndex]);
 
   const showDamagePopup = useCallback((x: number, y: number, value: number, type: DamagePopupType) => {
     const id = `damage-${Date.now()}-${Math.random()}`;

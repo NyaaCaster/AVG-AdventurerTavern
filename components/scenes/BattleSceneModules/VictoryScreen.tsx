@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ExpGainInfo } from './types';
-import GaugeBar from './GaugeBar';
 import { resolveImgPath } from '../../../utils/imagePath';
 
 interface VictoryScreenProps {
@@ -8,57 +7,75 @@ interface VictoryScreenProps {
   onClose: () => void;
 }
 
+interface AnimationState {
+  currentPercent: number;
+  displayLevel: number;
+  isLevelingUp: boolean;
+  animationComplete: boolean;
+}
+
 const VictoryScreen: React.FC<VictoryScreenProps> = ({ expGains, onClose }) => {
-  const [animatingExpIndex, setAnimatingExpIndex] = useState(0);
-  const [currentExpPercent, setCurrentExpPercent] = useState(0);
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [levelUpCharId, setLevelUpCharId] = useState<string | null>(null);
+  const [animationStates, setAnimationStates] = useState<Record<string, AnimationState>>({});
   const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  
+  const ANIMATION_DURATION = 1500;
+  const LEVEL_UP_DISPLAY_DURATION = 1500;
   
   useEffect(() => {
     if (expGains.length === 0) return;
-    if (animatingExpIndex >= expGains.length) return;
     
-    const currentGain = expGains[animatingExpIndex];
-    if (!currentGain) return;
+    const initialStates: Record<string, AnimationState> = {};
+    expGains.forEach(gain => {
+      initialStates[gain.characterId] = {
+        currentPercent: gain.expPercentBefore,
+        displayLevel: gain.currentLevel,
+        isLevelingUp: false,
+        animationComplete: false
+      };
+    });
+    setAnimationStates(initialStates);
     
-    const startPercent = currentGain.expPercentBefore;
-    const targetPercent = currentGain.expPercentAfter;
-    const duration = 1500;
-    const startTime = Date.now();
+    startTimeRef.current = Date.now();
     
     const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+      const elapsed = Date.now() - startTimeRef.current!;
+      const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       
-      const currentPercent = startPercent + (targetPercent - startPercent) * easeProgress;
-      setCurrentExpPercent(currentPercent);
+      setAnimationStates(prev => {
+        const next = { ...prev };
+        
+        expGains.forEach(gain => {
+          const currentState = prev[gain.characterId];
+          if (!currentState || currentState.animationComplete) return;
+          
+          const currentPercent = gain.expPercentBefore + (gain.expPercentAfter - gain.expPercentBefore) * easeProgress;
+          
+          next[gain.characterId] = {
+            ...currentState,
+            currentPercent,
+            displayLevel: progress >= 1 ? gain.finalLevel : gain.currentLevel,
+            isLevelingUp: progress >= 1 && gain.leveledUp,
+            animationComplete: progress >= 1
+          };
+        });
+        
+        return next;
+      });
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        if (currentGain.leveledUp) {
-          setShowLevelUp(true);
-          setLevelUpCharId(currentGain.characterId);
-          setTimeout(() => {
-            setShowLevelUp(false);
-            setLevelUpCharId(null);
-            setTimeout(() => {
-              if (animatingExpIndex < expGains.length - 1) {
-                setAnimatingExpIndex(prev => prev + 1);
-                setCurrentExpPercent(0);
-              }
-            }, 300);
-          }, 1500);
-        } else {
-          setTimeout(() => {
-            if (animatingExpIndex < expGains.length - 1) {
-              setAnimatingExpIndex(prev => prev + 1);
-              setCurrentExpPercent(0);
-            }
-          }, 500);
-        }
+        setTimeout(() => {
+          setAnimationStates(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(id => {
+              next[id] = { ...next[id], isLevelingUp: false };
+            });
+            return next;
+          });
+        }, LEVEL_UP_DISPLAY_DURATION);
       }
     };
     
@@ -69,7 +86,7 @@ const VictoryScreen: React.FC<VictoryScreenProps> = ({ expGains, onClose }) => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [expGains, animatingExpIndex]);
+  }, [expGains]);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-2 sm:p-4">
@@ -91,19 +108,20 @@ const VictoryScreen: React.FC<VictoryScreenProps> = ({ expGains, onClose }) => {
           </div>
           
           <div className="space-y-2 sm:space-y-3">
-            {expGains.map((gain, index) => {
-              const isCurrentAnimating = index === animatingExpIndex;
-              const isCompleted = index < animatingExpIndex;
-              const displayPercent = isCurrentAnimating ? currentExpPercent : (isCompleted ? gain.expPercentAfter : gain.expPercentBefore);
-              const displayLevel = isCompleted ? gain.finalLevel : gain.currentLevel;
-              const isLevelingUp = showLevelUp && levelUpCharId === gain.characterId;
+            {expGains.map((gain) => {
+              const state = animationStates[gain.characterId];
+              if (!state) return null;
+              
+              const displayPercent = state.currentPercent;
+              const displayLevel = state.displayLevel;
+              const isLevelingUp = state.isLevelingUp;
               
               return (
                 <div
                   key={gain.characterId}
                   className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-all ${
-                    isCurrentAnimating ? 'bg-[#382b26]/50 ring-1 ring-[#9b7a4c]' : ''
-                  } ${isLevelingUp ? 'ring-2 ring-amber-400 bg-amber-500/20' : ''}`}
+                    isLevelingUp ? 'ring-2 ring-amber-400 bg-amber-500/20' : ''
+                  }`}
                 >
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded overflow-hidden border flex-shrink-0 transition-all ${
                     isLevelingUp ? 'border-amber-400 ring-2 ring-amber-400/50 scale-110' : 'border-[#9b7a4c]'

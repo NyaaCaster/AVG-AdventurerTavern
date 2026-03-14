@@ -52,8 +52,22 @@ const TurnOrderPanel: React.FC<TurnOrderPanelProps> = ({
   };
 
   const visibleUnits = useMemo(() => {
-    return turnOrder.slice(0, isMobile ? 5 : (isTablet ? 6 : 8)).map(convertToDisplayUnit);
-  }, [turnOrder, isMobile, isTablet]);
+    if (!turnOrder.length) return [];
+    
+    const currentUnitIndex = turnOrder.findIndex(u => u.id === currentTurnUnitId);
+    
+    if (currentUnitIndex === -1) {
+      return turnOrder.slice(0, isMobile ? 5 : (isTablet ? 6 : 8)).map(convertToDisplayUnit);
+    }
+    
+    const reordered = [
+      turnOrder[currentUnitIndex],
+      ...turnOrder.slice(currentUnitIndex + 1),
+      ...turnOrder.slice(0, currentUnitIndex)
+    ];
+    
+    return reordered.slice(0, isMobile ? 5 : (isTablet ? 6 : 8)).map(convertToDisplayUnit);
+  }, [turnOrder, currentTurnUnitId, isMobile, isTablet]);
 
   useEffect(() => {
     const prevId = prevTurnUnitIdRef.current;
