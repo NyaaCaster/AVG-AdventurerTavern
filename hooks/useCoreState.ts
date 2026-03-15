@@ -11,7 +11,8 @@ import { CHARACTERS } from '../data/scenarioData';
 import { 
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
-    INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD, INITIAL_BATTLE_PARTY
+    INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD, INITIAL_BATTLE_PARTY,
+    INITIAL_CHARACTER_SKILLS
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
@@ -103,15 +104,20 @@ export const useCoreState = (initialSaveData?: any) => {
 
       Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
           const raw = rawSkills?.[charId] || {};
+          const defaultSkills = INITIAL_CHARACTER_SKILLS[charId] || {
+              slot1: null, slot2: null, slot3: null, slot4: null,
+              slot5: null, slot6: null, slot7: null, slot8: null
+          };
+          
           normalized[charId] = {
-              slot1: typeof raw.slot1 === 'number' ? raw.slot1 : null,
-              slot2: typeof raw.slot2 === 'number' ? raw.slot2 : null,
-              slot3: typeof raw.slot3 === 'number' ? raw.slot3 : null,
-              slot4: typeof raw.slot4 === 'number' ? raw.slot4 : null,
-              slot5: typeof raw.slot5 === 'number' ? raw.slot5 : null,
-              slot6: typeof raw.slot6 === 'number' ? raw.slot6 : null,
-              slot7: typeof raw.slot7 === 'number' ? raw.slot7 : null,
-              slot8: typeof raw.slot8 === 'number' ? raw.slot8 : null
+              slot1: typeof raw.slot1 === 'number' ? raw.slot1 : defaultSkills.slot1,
+              slot2: typeof raw.slot2 === 'number' ? raw.slot2 : defaultSkills.slot2,
+              slot3: typeof raw.slot3 === 'number' ? raw.slot3 : defaultSkills.slot3,
+              slot4: typeof raw.slot4 === 'number' ? raw.slot4 : defaultSkills.slot4,
+              slot5: typeof raw.slot5 === 'number' ? raw.slot5 : defaultSkills.slot5,
+              slot6: typeof raw.slot6 === 'number' ? raw.slot6 : defaultSkills.slot6,
+              slot7: typeof raw.slot7 === 'number' ? raw.slot7 : defaultSkills.slot7,
+              slot8: typeof raw.slot8 === 'number' ? raw.slot8 : defaultSkills.slot8
           };
       });
 
@@ -169,7 +175,7 @@ export const useCoreState = (initialSaveData?: any) => {
     return initialStats;
   });
   const [characterEquipments, setCharacterEquipments] = useState<Record<string, CharacterEquipment>>(() => normalizeCharacterEquipments());
-  const [characterSkills, setCharacterSkills] = useState<Record<string, CharacterSkills>>({});
+  const [characterSkills, setCharacterSkills] = useState<Record<string, CharacterSkills>>(() => normalizeCharacterSkills());
   const [characterUnlocks, setCharacterUnlocks] = useState<Record<string, CharacterUnlocks>>({});
   const [managementStats, setManagementStats] = useState<ManagementStats>(() => {
     // Calculate initial values based on facility levels

@@ -1,4 +1,4 @@
-﻿import { SceneId, ManagementStats, CharacterUnlocks, CharacterEquipment, BattlePartySlots } from '../types';
+﻿import { SceneId, ManagementStats, CharacterUnlocks, CharacterEquipment, BattlePartySlots, CharacterSkills } from '../types';
 
 export const SCENE_NAMES: Record<SceneId, string> = {
   'scen_1': '柜台',
@@ -16,6 +16,8 @@ export const SCENE_NAMES: Record<SceneId, string> = {
   'scen_guild': '冒险者公会',
   'scen_market': '市集',
 };
+
+
 
 export const INITIAL_SCENE_LEVELS: Record<string, number> = {
   'scen_1': 1, // 柜台
@@ -192,3 +194,113 @@ export const INITIAL_CHARACTER_UNLOCKS: Record<string, Partial<CharacterUnlocks>
         accept_nsfw_topic: 1            // 色情话题
     }
 };
+
+/**
+ * 角色初始技能配置
+ * 仅用于初始化新角色数据，后续用户变更后不再取用
+ * char_1 不进行此逻辑的初始化，保持全 null 状态，这是特殊的玩家角色，留给用户自己配置
+ * char_101 和 char_102 为非战斗人员，不配置初始技能
+ */
+export const INITIAL_CHARACTER_SKILLS: Record<string, CharacterSkills> = {
+    // 欧若拉 - 元素法师 (Lv.2)
+    'char_103': {
+        slot1: 551,  // 火焰Ⅰ
+        slot2: 552,  // 冻结Ⅰ
+        slot3: 553,  // 雷电Ⅰ
+        slot4: 542,  // 圣光术
+        slot5: 545,  // 暗影
+        slot6: 727,  // 魔法伤害率-10%
+        slot7: 728,  // 魔法回避率+10%
+        slot8: 802,  // 魔法防御+20%
+    },
+    // 朱迪斯 - 枪手 (Lv.4)
+    'char_104': {
+        slot1: 529,  // 全体攻击
+        slot2: 526,  // 蓄力攻击
+        slot3: 521,  // 强击
+        slot4: 531,  // 治疗Ⅰ
+        slot5: 534,  // 恢复Ⅰ
+        slot6: 537,  // 治愈Ⅰ
+        slot7: 771,  // 攻击力+10%
+        slot8: 781,  // 防御力+10%
+    },
+    // 莲华 - 武术家 (Lv.9)
+    'char_105': {
+        slot1: 521,  // 强击
+        slot2: 568,  // 愤怒一击
+        slot3: 567,  // 舍身攻击
+        slot4: 772,  // 攻击力+20%
+        slot5: 751,  // 最大HP+10%
+        slot6: 781,  // 防御力+10%
+        slot7: 722,  // 反击率+10%
+        slot8: 511,  // 冥想
+    },
+    // 艾琳 - 枪术大师 (Lv.7)
+    'char_106': {
+        slot1: 529,  // 全体攻击
+        slot2: 517,  // 乱突
+        slot3: 568,  // 愤怒一击
+        slot4: 567,  // 舍身攻击
+        slot5: 524,  // 破防
+        slot6: 771,  // 攻击力+10%
+        slot7: 724,  // 暴击率+10%
+        slot8: 722,  // 反击率+10%
+    },
+    // 菲洛 - 炼金术士 (Lv.7)
+    'char_107': {
+        slot1: 552,  // 冻结Ⅰ
+        slot2: 553,  // 雷电Ⅰ
+        slot3: 534,  // 恢复Ⅰ
+        slot4: 540,  // 复活Ⅰ
+        slot5: 791,  // 魔法力+10%
+        slot6: 802,  // 魔法防御+20%
+        slot7: 723,  // 魔法反射+10%
+        slot8: 710,  // 状态异常无效
+    },
+    // 卡特琳娜 - 守护者 (Lv.7)
+    'char_108': {
+        slot1: 518,  // 剑闪乱舞
+        slot2: 567,  // 舍身攻击
+        slot3: 527,  // 力量提升
+        slot4: 568,  // 愤怒一击
+        slot5: 782,  // 防御力+20%
+        slot6: 752,  // 最大HP+20%
+        slot7: 561,  // 挑衅
+        slot8: 563,  // 吸引敌人
+    },
+    // 莱拉 - 粉碎者 (Lv.5)
+    'char_109': {
+        slot1: 525,  // 力量破碎
+        slot2: 567,  // 舍身攻击
+        slot3: 568,  // 愤怒一击
+        slot4: 579,  // 弱点解放
+        slot5: 772,  // 攻击力+20%
+        slot6: 722,  // 反击率+10%
+        slot7: 751,  // 最大HP+10%
+        slot8: 710,  // 状态异常无效
+    },
+    // 琉卡 - 猎人 (Lv.9)
+    'char_110': {
+        slot1: 529,  // 全体攻击
+        slot2: 575,  // 烈风箭阵
+        slot3: 526,  // 蓄力攻击
+        slot4: 514,  // 生命偷取
+        slot5: 576,  // 生命吸收
+        slot6: 512,  // 应急处理
+        slot7: 771,  // 攻击力+10%
+        slot8: 724,  // 暴击率+10%
+    },
+    // 吉娜 - 机械师 (Lv.9)
+    'char_111': {
+        slot1: 524,  // 破防
+        slot2: 525,  // 力量破碎
+        slot3: 579,  // 弱点解放
+        slot4: 512,  // 应急处理
+        slot5: 531,  // 治疗Ⅰ
+        slot6: 581,  // 力量提升
+        slot7: 724,  // 暴击率+10%
+        slot8: 710,  // 状态异常无效
+    }
+};
+
+
