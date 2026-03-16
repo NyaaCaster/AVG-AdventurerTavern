@@ -14,7 +14,7 @@
 ```
 第一层：工作记忆 (Working Memory)
 ├─ chat_messages 表
-├─ 最近 10-30 条完整对话
+├─ 最近 15 条完整对话
 └─ 滑动窗口，自动淘汰旧对话
 
 第二层：核心记忆 (Core Memory)
@@ -25,7 +25,7 @@
 第三层：历史摘要 (Summary Memory)
 ├─ character_memories 表 (type: summary)
 ├─ 滚动更新的对话摘要
-└─ 每 20 条对话触发一次，永远保持 150 字
+└─ 每 10 条对话触发一次，永远保持 150 字
 ```
 
 ---
@@ -90,12 +90,12 @@ aiMemory.triggerSummaryIfNeeded(characterId);
 
 ### 3. 摘要压缩（自动触发）
 ```
-对话数量达到 30 条时：
-1. 取出最老的 20 条对话
+对话数量达到 15 条时：
+1. 取出最老的 10 条对话
 2. 调用 LLM 生成摘要（融合旧摘要）
 3. 更新数据库中的摘要
-4. 删除已总结的 20 条对话
-5. 保留最新的 10 条作为工作记忆
+4. 删除已总结的 10 条对话
+5. 保留最新的 5 条作为工作记忆
 ```
 
 ### 4. 存档同步（时间线一致）
@@ -118,12 +118,12 @@ if (slotId >= 1 && slotId <= 3) {
 | 工作记忆 | 150,000 | $1.50 | 50% |
 | **工作记忆+摘要** | **155,500** | **$1.56** | **48%** |
 
-**摘要额外成本**：每 20 条对话增加 1,100 tokens（仅 4% 成本增加）
+**摘要额外成本**：每 10 条对话增加约 600 tokens（仅 4% 成本增加）
 
 ### 配置参数
 ```typescript
-const MAX_WORKING_MEMORY = 30;  // 工作记忆上限
-const SUMMARIZE_BATCH = 20;      // 每次总结的对话数量
+const MAX_WORKING_MEMORY = 15;  // 工作记忆上限（与 getMemoryContext 获取数量一致）
+const SUMMARIZE_BATCH = 10;      // 每次总结的对话数量
 const SUMMARY_MAX_LENGTH = 150;  // 摘要最大字数
 ```
 
@@ -152,8 +152,8 @@ npm run dev
 ## 🧪 测试清单
 
 ### 基础功能测试
-- [ ] 对话 31 轮，查看 Console 是否触发摘要
-- [ ] 查看数据库，确认只剩 11 条对话 + 1 条摘要
+- [ ] 对话 16 轮，查看 Console 是否触发摘要
+- [ ] 查看数据库，确认只剩 5-6 条对话 + 1 条摘要
 - [ ] 手动存档到 Slot 1，继续对话，读取 Slot 1，验证记忆回滚
 
 ### 数据库验证
@@ -176,7 +176,7 @@ SELECT content FROM character_memories WHERE memory_type = 'core_fact';
 **检查**：
 - `apiConfig` 是否正确传递给 `useAIMemory`
 - 浏览器 Console 是否有错误日志
-- 对话数量是否真的超过 30 条
+- 对话数量是否真的超过 15 条
 
 ### 问题 2：读档后记忆错乱
 **检查**：
@@ -185,8 +185,8 @@ SELECT content FROM character_memories WHERE memory_type = 'core_fact';
 
 ### 问题 3：Token 使用量仍然很高
 **解决**：
-- 减少 `MAX_WORKING_MEMORY` 从 30 改为 20
-- 增加 `SUMMARIZE_BATCH` 从 20 改为 25
+- 减少 `MAX_WORKING_MEMORY` 从 15 改为 10
+- 增加 `SUMMARIZE_BATCH` 从 10 改为 12
 
 ---
 

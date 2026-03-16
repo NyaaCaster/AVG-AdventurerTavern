@@ -30,8 +30,8 @@ interface UseAIMemoryProps {
 }
 
 // 配置常量
-const MAX_WORKING_MEMORY = 30;  // 工作记忆上限
-const SUMMARIZE_BATCH = 20;      // 每次总结的对话数量
+const MAX_WORKING_MEMORY = 15;  // 工作记忆上限（与 getMemoryContext 获取数量一致）
+const SUMMARIZE_BATCH = 10;      // 每次总结的对话数量
 const SUMMARY_MAX_LENGTH = 150;  // 摘要最大字数
 
 /**
