@@ -43,5 +43,11 @@ module.exports = {
     AUTH: {
         ENABLE_PASSWORD_LOGIN: false, // 关闭账号密码登录
         FORCE_DISCORD_BIND: false // 关闭强制绑定（已无密码登录，无需绑定）
+    },
+
+    // 游戏常量（与前端 gameConstants.ts 保持同步）
+    GAME_CONSTANTS: {
+        INITIAL_INSPIRATION: 10,           // 初始灵感
+        INSPIRATION_TO_SANITY_RATIO: 10000 // 灵感转理智比例
     }
 };

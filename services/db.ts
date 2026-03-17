@@ -5,6 +5,7 @@ import {
     CharacterBattleStatsResult
 } from './characterBattleStats';
 import { AppConfig } from '../config';
+import { INITIAL_GOLD } from '../utils/gameConstants';
 
 // 配置服务器地址
 // 从 config.ts 中读取配置，方便统一管理
@@ -241,7 +242,7 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             slotId: s.slotId,
             label: s.label,
             savedAt: s.savedAt,
-            gold: s.gold || 0,
+            gold: s.gold ?? INITIAL_GOLD,
             currentSceneId: s.currentSceneId || '',
             worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
             characterStats: s.characterStats || {},

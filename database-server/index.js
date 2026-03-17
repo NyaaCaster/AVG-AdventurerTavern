@@ -768,11 +768,12 @@ app.get('/auth/discord/callback', async (req, res) => {
                                 const newUid = this.lastID;
                                 console.log(`[Discord] 创建新用户: ${username} (uid=${newUid})`);
                                 
+                                const initialSanity = config.GAME_CONSTANTS.INITIAL_INSPIRATION * config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
                                 const initStmt = db.prepare(
                                     `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-                                     VALUES (?, 'recharge', 100000, 'Discord新账号注册赠送', ?, ?)`
+                                     VALUES (?, 'recharge', ?, 'Discord新账号注册赠送', ?, ?)`
                                 );
-                                initStmt.run(newUid, getClientIp(req), Date.now());
+                                initStmt.run(newUid, initialSanity, getClientIp(req), Date.now());
                                 initStmt.finalize();
                                 stmt.finalize();
                                 

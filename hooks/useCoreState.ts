@@ -59,8 +59,10 @@ export const useCoreState = (initialSaveData?: any) => {
       Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
           const raw = rawStats?.[charId] || {};
           const maxLevel = getMaxLevelByCharacter(charId);
-          const safeLevel = Math.max(1, Math.min(maxLevel, Number(raw.level) || 1));
-          const safeAffinity = Math.max(0, Math.min(100, Number(raw.affinity) || 0));
+          const initialLevel = INITIAL_CHARACTER_LEVEL[charId] || 1;
+          const initialAffinity = INITIAL_CHARACTER_AFFINITY[charId] || 0;
+          const safeLevel = Math.max(1, Math.min(maxLevel, Number(raw.level) || initialLevel));
+          const safeAffinity = Math.max(0, Math.min(100, Number(raw.affinity) ?? initialAffinity));
           const safeExp = safeLevel >= maxLevel ? 0 : Math.max(0, Number(raw.exp) || 0);
 
           normalized[charId] = {
@@ -167,8 +169,8 @@ export const useCoreState = (initialSaveData?: any) => {
     const initialStats: Record<string, CharacterStat> = {};
     Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
       initialStats[charId] = {
-        level: 1,
-        affinity: INITIAL_CHARACTER_AFFINITY[charId],
+        level: INITIAL_CHARACTER_LEVEL[charId] || 1,
+        affinity: INITIAL_CHARACTER_AFFINITY[charId] || 0,
         exp: 0
       };
     });
@@ -435,7 +437,11 @@ export const useCoreState = (initialSaveData?: any) => {
       if (!characterId || gainedExp <= 0) return;
 
       setCharacterStats(prev => {
-          const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+          const current = prev[characterId] || { 
+              level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+              affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0, 
+              exp: 0 
+          };
           const updated = applyExpGainToStat(characterId, current, gainedExp);
           return {
               ...prev,
@@ -454,7 +460,11 @@ export const useCoreState = (initialSaveData?: any) => {
       const next = { ...prev };
       
       validMemberIds.forEach(characterId => {
-        const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+        const current = prev[characterId] || { 
+            level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+            affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0, 
+            exp: 0 
+        };
         const updated = applyExpGainToStat(characterId, current, gainedExp);
         next[characterId] = updated;
       });

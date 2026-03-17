@@ -28,6 +28,7 @@ import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '
 import { makeAllyDecision, makeEnemyDecision, BattleAI, AIDecisionContext } from '../battle-system/ai';
 import { CHARACTERS } from '../data/scenarioData';
 import { ITEMS } from '../data/items';
+import { INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_CHARACTER_EQUIPMENT } from '../utils/gameConstants';
 
 const DEATH_ANIMATION_DELAY = 800;
 
@@ -92,13 +93,18 @@ export function useBattleSystem(options: UseBattleSystemOptions): UseBattleSyste
     const partyMembers = battleParty.filter((id): id is string => id !== null);
     
     partyMembers.forEach((characterId, index) => {
-      const stats = characterStats[characterId] || { level: 1, affinity: 0, exp: 0 };
-      const equipment = characterEquipments[characterId] || {
-        weaponId: null,
-        armorId: null,
-        accessory1Id: null,
-        accessory2Id: null
+      const stats = characterStats[characterId] || { 
+          level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+          affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0, 
+          exp: 0 
       };
+      const equipment = characterEquipments[characterId] || 
+          INITIAL_CHARACTER_EQUIPMENT[characterId] || {
+            weaponId: null,
+            armorId: null,
+            accessory1Id: null,
+            accessory2Id: null
+          };
       
       const unit = createPlayerBattleUnit({
         characterId,
