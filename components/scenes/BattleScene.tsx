@@ -625,6 +625,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         <BattleLog
           logs={battleState.battleLog.map(log => ({ turn: log.turn, description: log.description }))}
           isMobile={isMobile}
+          userName={userName}
         />
 
         {showSkillOverlay && (

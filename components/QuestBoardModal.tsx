@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QuestList, QuestStateMap, QuestStatus, QuestState, BattlePartySlots } from '../types';
+import { QuestList, QuestStateMap, QuestStatus, QuestState, BattlePartySlots, CompletedQuests } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
 import { ITEM_TAGS } from '../data/item-type';
@@ -10,6 +10,7 @@ interface QuestBoardModalProps {
   isOpen: boolean;
   onClose: () => void;
   questStates: QuestStateMap;
+  completedQuests: CompletedQuests;
   onAcceptQuest: (questId: string) => void;
   onCompleteQuest: (questId: string) => void;
   onDeliverQuest: (questId: string) => void;
@@ -51,6 +52,8 @@ const RANK_SEAL_COLORS: Record<string, string> = {
   A: 'border-red-600 text-red-400',
   S: 'border-amber-500 text-amber-400',
 };
+
+const CLEAR_STAMP_STYLE = 'border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/50';
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -110,11 +113,12 @@ function renderStars(count: number, large = false): React.ReactNode {
 interface QuestListItemProps {
   quest: QuestList;
   status: QuestStatus;
+  isCompleted: boolean;
   acceptedAt?: number;
   onClick: () => void;
 }
 
-const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt, onClick }) => {
+const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, isCompleted, acceptedAt, onClick }) => {
   // [已弃用] 倒计时不再使用
   // const listDuration = QUEST_LIST_DURATION_SECONDS[quest.star] || 60;
   // const remaining = useCountdown(status === 'active' ? acceptedAt : undefined, listDuration);
@@ -152,6 +156,13 @@ const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt
         }
       `}
     >
+      {/* CLEAR 印章 - 已完成任务 */}
+      {isCompleted && (
+        <div className={`absolute -top-2 -right-2 w-20 h-8 rounded-lg border-2 flex items-center justify-center rotate-[-15deg] opacity-80 pointer-events-none z-20 ${CLEAR_STAMP_STYLE}`}>
+          <span className="text-xs font-bold tracking-widest text-center">CLEAR</span>
+        </div>
+      )}
+
       {/* 左侧星级 */}
       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[#382b26] to-[#1a1512] border border-[#9b7a4c]/80 shadow-inner flex flex-col items-center justify-center gap-0.5 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1/2 bg-white/5 pointer-events-none"></div>
@@ -206,6 +217,7 @@ const QuestListItem: React.FC<QuestListItemProps> = ({ quest, status, acceptedAt
 interface QuestDetailModalProps {
   quest: QuestList;
   status: QuestStatus;
+  isCompleted: boolean;
   acceptedAt?: number;
   hasActiveQuest: boolean;
   currentGold: number;
@@ -219,7 +231,7 @@ interface QuestDetailModalProps {
 }
 
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
-  quest, status, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onEnterBattle, onAbandon, onClose
+  quest, status, isCompleted, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onEnterBattle, onAbandon, onClose
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
@@ -296,6 +308,14 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
             style={{ maxHeight: '220px' }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
+          {/* CLEAR 印章 - 已完成任务 */}
+          {isCompleted && (
+            <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none`}>
+              <div className={`w-32 h-16 rounded-lg border-2 flex items-center justify-center rotate-[-15deg] opacity-70 ${CLEAR_STAMP_STYLE}`}>
+                <span className="text-lg font-bold tracking-widest text-center">CLEAR</span>
+              </div>
+            </div>
+          )}
           <div className="absolute bottom-2 left-0 right-0 text-center z-20">
             <span className="text-[10px] text-[#d6cbb8] tracking-widest uppercase bg-[#1a1512]/60 px-3 py-1 rounded-full border border-[#9b7a4c]/30 backdrop-blur-sm">TARGET: {quest.target}</span>
           </div>
@@ -630,7 +650,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 );
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
-  isOpen, onClose, questStates, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
+  isOpen, onClose, questStates, completedQuests, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
   currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddBattlePartyExp, onShowRewardToasts,
   highlightQuestId
 }) => {
@@ -833,11 +853,13 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             sortedQuests.map(quest => {
               const state = questStates[quest.quest_id];
               const status: QuestStatus = state?.status || 'available';
+              const isCompleted = completedQuests.includes(quest.quest_id);
               return (
                 <QuestListItem
                   key={quest.quest_id}
                   quest={quest}
                   status={status}
+                  isCompleted={isCompleted}
                   acceptedAt={state?.acceptedAt}
                   onClick={() => setSelectedQuestId(quest.quest_id)}
                 />
@@ -863,6 +885,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
           <QuestDetailModal
             quest={selectedQuest}
             status={selectedState.status}
+            isCompleted={completedQuests.includes(selectedQuest.quest_id)}
             acceptedAt={selectedState.acceptedAt}
             hasActiveQuest={hasActiveQuest && selectedState.status !== 'active'}
             currentGold={currentGold}

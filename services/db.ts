@@ -1,4 +1,4 @@
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots, AdventurerRank, CompletedQuests } from '../types';
 import {
     buildCharacterBattleStats,
     getCharacterBattleStatsFromSaveData,
@@ -27,6 +27,7 @@ export interface GameSaveData {
   battleParty?: BattlePartySlots;
   checkedInCharacters?: string[];
   sceneLevels?: Record<string, number>;
+  adventurerRank?: AdventurerRank;
 }
 
 // --- API 辅助函数 ---
@@ -152,6 +153,8 @@ export const saveGame = async (
     checkedInCharacters?: string[];
     questStates?: QuestStateMap;
     settings?: GameSettings;
+    adventurerRank?: AdventurerRank;
+    completedQuests?: CompletedQuests;
   }
 ) => {
     const res = await apiCall('/save', {
@@ -245,7 +248,8 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             characterEquipments: s.characterEquipments || {},
             battleParty: s.battleParty,
             checkedInCharacters: s.checkedInCharacters,
-            sceneLevels: s.sceneLevels
+            sceneLevels: s.sceneLevels,
+            adventurerRank: s.adventurerRank
         }));
     }
     return [];
