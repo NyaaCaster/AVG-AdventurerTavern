@@ -1110,6 +1110,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         onClose={() => setIsQuestBoardOpen(false)}
         questStates={core.questStates}
         completedQuests={core.completedQuests}
+        adventurerRank={core.adventurerRank}
         currentGold={core.gold}
         inspirationBalance={inspirationBalance}
         onAcceptQuest={(questId) => {

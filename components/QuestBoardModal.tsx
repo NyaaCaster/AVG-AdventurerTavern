@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QuestList, QuestStateMap, QuestStatus, QuestState, BattlePartySlots, CompletedQuests } from '../types';
+import { QuestList, QuestStateMap, QuestStatus, QuestState, BattlePartySlots, CompletedQuests, AdventurerRank, ADVENTURER_RANKS } from '../types';
 import { QUESTS } from '../data/quest-list';
 import { ITEMS } from '../data/items';
 import { ITEM_TAGS } from '../data/item-type';
@@ -11,6 +11,7 @@ interface QuestBoardModalProps {
   onClose: () => void;
   questStates: QuestStateMap;
   completedQuests: CompletedQuests;
+  adventurerRank: AdventurerRank;
   onAcceptQuest: (questId: string) => void;
   onCompleteQuest: (questId: string) => void;
   onDeliverQuest: (questId: string) => void;
@@ -650,7 +651,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 );
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
-  isOpen, onClose, questStates, completedQuests, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
+  isOpen, onClose, questStates, completedQuests, adventurerRank, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
   currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddBattlePartyExp, onShowRewardToasts,
   highlightQuestId
 }) => {
@@ -660,6 +661,11 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   const [filterOpen, setFilterOpen] = useState(false);
 
   const allQuests = Object.values(QUESTS);
+
+  // 根据冒险者评级过滤可见任务
+  const rankIndex = ADVENTURER_RANKS.indexOf(adventurerRank);
+  const visibleRanks = ADVENTURER_RANKS.slice(0, rankIndex + 1);
+  const rankFilteredQuests = allQuests.filter(q => visibleRanks.includes(q.rank as AdventurerRank));
 
   // 有进行中任务
   const hasActiveQuest = Object.values(questStates as QuestStateMap).some(s => s.status === 'active');
@@ -692,8 +698,8 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
 
 
   const filteredQuests = starFilter.length === 0
-    ? allQuests
-    : allQuests.filter(q => starFilter.includes(q.star));
+    ? rankFilteredQuests
+    : rankFilteredQuests.filter(q => starFilter.includes(q.star));
 
   // 排序：进行中 > 已完成 > 未接受，同状态按星级升序
   const sortedQuests = [...filteredQuests].sort((a, b) => {
