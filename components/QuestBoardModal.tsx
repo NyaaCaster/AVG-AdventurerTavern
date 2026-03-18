@@ -665,7 +665,11 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   // 根据冒险者评级过滤可见任务
   const rankIndex = ADVENTURER_RANKS.indexOf(adventurerRank);
   const visibleRanks = ADVENTURER_RANKS.slice(0, rankIndex + 1);
-  const rankFilteredQuests = allQuests.filter(q => visibleRanks.includes(q.rank as AdventurerRank));
+  const rankFilteredQuests = allQuests.filter(q => {
+    const status = questStates[q.quest_id]?.status;
+    if (status === 'active' || status === 'completed') return true;
+    return visibleRanks.includes(q.rank as AdventurerRank);
+  });
 
   // 有进行中任务
   const hasActiveQuest = Object.values(questStates as QuestStateMap).some(s => s.status === 'active');
