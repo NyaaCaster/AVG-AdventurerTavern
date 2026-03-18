@@ -18,18 +18,18 @@ This skill handles the complete git commit and push workflow with optimized comm
 
 ### CRITICAL: Command Execution Rules
 
-1. **Use batch commands instead of per-file operations**
-   - ✅ `git diff --stat` - View all changes summary
-   - ✅ `git diff` - View all changes at once
-   - ❌ `git diff file1.ts`, `git diff file2.ts` - DO NOT run per-file
-
-2. **Serial execution, NOT parallel**
+1. **Serial execution, NOT parallel**
    - Wait for each command to complete before running the next
    - Never run multiple git commands simultaneously
 
-3. **Set appropriate timeouts**
+2. **Set appropriate timeouts**
    - Use `wait_ms_before_check` for status polling
    - Handle long-running operations gracefully
+
+3. **Avoid `git diff` commands**
+   - `git diff` outputs ALL file contents which can cause terminal buffer overflow
+   - `git status` provides sufficient information for commit decisions
+   - Only use `git diff` when user explicitly requests to view changes
 
 ## Workflow Steps
 
@@ -74,31 +74,65 @@ npx tsc --noEmit
 - 如果编译通过：继续执行后续步骤
 - 这确保不会提交有类型错误的代码
 
-### Step 2: Check Repository Status
+### Step 2: Check Submodule Status (REQUIRED for projects with submodules)
+
+**检查子模块状态：**
+```bash
+git submodule status
+```
+
+如果本项目包含子模块（如 `file-server`），需要：
+1. 检查子模块是否有未提交的更改
+2. 如果有更改，先处理子项目的提交推送
+3. 子项目处理完成后再处理主项目
+
+**子模块处理流程：**
+```bash
+# 进入子模块目录
+cd file-server
+
+# 检查状态
+git status
+
+# 如果有更改，提交推送
+git add .
+git commit -m '[类型]描述'
+git push origin main
+
+# 返回主项目
+cd ..
+```
+
+**重要**：子项目的修改必须先同步到子项目的远程仓库，再提交主项目的子模块引用更新。
+
+**子模块 .gitignore 检查**：
+在处理子模块前，确认子项目的 `.gitignore` 已正确配置：
+- `node_modules/` 必须被排除（否则会导致 git 操作缓慢和 index.lock 问题）
+- `coverage/` 测试覆盖率报告
+- 其他大目录或临时文件
+
+**index.lock 问题处理**：
+如果遇到 `index.lock` 文件残留导致 git 命令失败：
+1. 检查是否有其他 git 进程在运行
+2. 提醒用户手动删除锁文件：
+   ```powershell
+   Remove-Item -Force ".git/modules/file-server/index.lock"
+   ```
+3. 检查子项目的 `.gitignore` 是否正确配置
+
+### Step 3: Check Repository Status
 ```bash
 git status
 ```
-Wait for result, analyze changes.
+Wait for result, analyze changes. This provides sufficient information for commit decisions.
 
-### Step 3: View Changes Summary
-```bash
-git diff --stat
-```
-Get overview of modified files and line counts.
-
-### Step 4: View Detailed Changes (if needed)
-```bash
-git diff
-```
-View all changes in one command. DO NOT run per-file.
-
-### Step 5: Stage Changes
+### Step 4: Stage Changes
 ```bash
 git add .
 ```
 Or stage specific files if user requests.
 
-### Step 6: Commit
+### Step 5: Commit
 ```bash
 git commit -m '[类型]描述'
 ```
@@ -118,13 +152,13 @@ git commit -m '[类型]描述'
 
 Commit message 必须使用中文编写，简洁明了地描述本次更改内容。
 
-### Step 7: Push to Remote
+### Step 6: Push to Remote
 ```bash
 git push origin <branch>
 ```
 Push to the current branch.
 
-### Step 8: Check Database Server Rebuild Requirement
+### Step 7: Check Database Server Rebuild Requirement
 
 **判断是否需要重建数据库服务器：**
 
@@ -177,11 +211,11 @@ Push to the current branch.
 ## Output Format
 
 Provide clear summary after completion:
+- Submodule status (if applicable)
 - Unit test status (passed/skipped/failed)
 - Commit hash
 - Commit message
 - Files changed count
-- Lines added/removed
 - Push status
 - Database rebuild warning (if applicable)
 
@@ -190,12 +224,12 @@ Provide clear summary after completion:
 ```markdown
 ## 提交推送完成
 
+**子模块**: ✅ file-server 已同步
 **单元测试**: ✅ 868 passed (17 files)
 **TypeScript**: ✅ 无错误
 **Commit**: abc1234
 **Message**: [功能] 添加战斗视觉效果单元测试
 **Files**: 7 changed
-**Lines**: +1,234 / -56
 **Push**: ✅ 成功推送到 origin/main
 
 ⚠️ 需要重建数据库服务器以应用更改！

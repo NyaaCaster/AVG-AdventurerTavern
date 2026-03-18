@@ -101,6 +101,9 @@ temp
 # 数据库服务器目录（已分离）
 database-server/
 
+# 文件服务器目录（Git Submodule，独立构建）
+file-server/
+
 # SSL 证书目录
 SSL/
 

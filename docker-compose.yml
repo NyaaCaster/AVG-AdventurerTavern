@@ -1,5 +1,4 @@
 services:
-  # 前端客户端服务
   client:
     image: honywen/adv-tavern
     container_name: adventurertavern
@@ -34,10 +33,52 @@ services:
     networks:
       - app-network
 
-  # 数据库服务器（需要本地构建）
-  # 请进入 database-server/ 目录使用独立的 docker-compose.yml 部署
-  # cd database-server && docker-compose up -d
+  database-server:
+    build:
+      context: ./database-server
+      dockerfile: Dockerfile
+    image: adventurertavern-database:latest
+    container_name: adventurertavern-db
+    ports:
+      - "3097:3097"
+    volumes:
+      - database-data:/app/data
+      - ./database-server/SSL:/app/SSL:ro
+    restart: unless-stopped
+    env_file:
+      - ./database-server/.env
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('https').get('https://localhost:3097/api/health', {rejectUnauthorized: false}, (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "adventurertavern-database"
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  database-data:
+    driver: local

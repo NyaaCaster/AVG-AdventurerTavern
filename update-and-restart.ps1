@@ -2,6 +2,9 @@
 Write-Host "Pulling latest code..." -ForegroundColor Cyan
 git pull
 
+Write-Host "`nUpdating submodules..." -ForegroundColor Cyan
+git submodule update --init --recursive
+
 Write-Host "`nPulling latest images..." -ForegroundColor Cyan
 docker compose pull
 

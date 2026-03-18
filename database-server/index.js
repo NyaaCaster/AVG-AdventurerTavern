@@ -6,11 +6,55 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
-const config = require('./config'); // 引入配置文件
-const discordAuth = require('./discord-auth'); // Discord 认证模块
+const multer = require('multer');
+const config = require('./config');
+const discordAuth = require('./discord-auth');
 
 const app = express();
 const PORT = config.PORT;
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/app/uploads';
+const FILE_SERVER_BASE_URL = process.env.FILE_SERVER_BASE_URL || 'https://localhost:5102/files';
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const subDir = req.body.category || 'general';
+        const uploadPath = path.join(UPLOAD_DIR, subDir);
+        fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        const ext = path.extname(originalName);
+        const baseName = path.basename(originalName, ext);
+        const safeBaseName = baseName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_');
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${safeBaseName}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowedMimes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'application/pdf',
+        'text/plain', 'text/markdown',
+        'application/json'
+    ];
+    
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`不支持的文件类型: ${file.mimetype}`), false);
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    }
+});
 
 // Middleware
 // 使用配置文件中的 CORS 设置
@@ -1910,6 +1954,175 @@ app.post('/api/character_skills/get_all', (req, res) => {
             res.json({ success: true, data });
         }
     );
+});
+
+// ----------------- 文件上传 API -----------------
+
+// 13. 单文件上传
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '未收到文件' 
+        });
+    }
+    
+    const subDir = req.body.category || 'general';
+    const relativePath = `${subDir}/${req.file.filename}`;
+    const fileUrl = `${FILE_SERVER_BASE_URL}/${relativePath}`;
+    
+    console.log(`[上传] 用户上传文件: ${req.file.originalname} -> ${fileUrl}`);
+    
+    res.json({
+        success: true,
+        filename: req.file.filename,
+        originalName: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        path: relativePath,
+        url: fileUrl
+    });
+});
+
+// 14. 多文件上传
+app.post('/api/upload/multiple', upload.array('files', 10), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '未收到文件' 
+        });
+    }
+    
+    const subDir = req.body.category || 'general';
+    const files = req.files.map(file => {
+        const relativePath = `${subDir}/${file.filename}`;
+        return {
+            filename: file.filename,
+            originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
+            size: file.size,
+            mimeType: file.mimetype,
+            path: relativePath,
+            url: `${FILE_SERVER_BASE_URL}/${relativePath}`
+        };
+    });
+    
+    console.log(`[上传] 用户上传 ${files.length} 个文件`);
+    
+    res.json({
+        success: true,
+        count: files.length,
+        files
+    });
+});
+
+// 15. 删除文件
+app.post('/api/upload/delete', (req, res) => {
+    const { path: filePath } = req.body;
+    
+    if (!filePath) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '缺少文件路径' 
+        });
+    }
+    
+    const fullPath = path.join(UPLOAD_DIR, filePath);
+    
+    if (!fullPath.startsWith(UPLOAD_DIR)) {
+        return res.status(403).json({ 
+            success: false, 
+            message: '非法路径' 
+        });
+    }
+    
+    fs.unlink(fullPath, (err) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: '文件不存在' 
+                });
+            }
+            return res.status(500).json({ 
+                success: false, 
+                message: '删除失败: ' + err.message 
+            });
+        }
+        
+        console.log(`[上传] 删除文件: ${filePath}`);
+        res.json({ success: true, message: '文件已删除' });
+    });
+});
+
+// 16. 列出文件
+app.post('/api/upload/list', (req, res) => {
+    const { category = '' } = req.body;
+    const listPath = path.join(UPLOAD_DIR, category);
+    
+    if (!listPath.startsWith(UPLOAD_DIR)) {
+        return res.status(403).json({ 
+            success: false, 
+            message: '非法路径' 
+        });
+    }
+    
+    fs.readdir(listPath, (err, files) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                return res.json({ success: true, files: [] });
+            }
+            return res.status(500).json({ 
+                success: false, 
+                message: '读取目录失败: ' + err.message 
+            });
+        }
+        
+        const fileInfos = files.map(file => {
+            const filePath = path.join(listPath, file);
+            const stats = fs.statSync(filePath);
+            return {
+                name: file,
+                size: stats.size,
+                createdAt: stats.birthtime,
+                modifiedAt: stats.mtime,
+                isDirectory: stats.isDirectory(),
+                url: `${FILE_SERVER_BASE_URL}/${category ? category + '/' : ''}${file}`
+            };
+        });
+        
+        res.json({ success: true, files: fileInfos });
+    });
+});
+
+// 上传错误处理
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ 
+                success: false, 
+                message: '文件大小超过限制（最大 10MB）' 
+            });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ 
+                success: false, 
+                message: '文件数量超过限制（最多 10 个）' 
+            });
+        }
+        return res.status(400).json({ 
+            success: false, 
+            message: '上传错误: ' + err.message 
+        });
+    }
+    
+    if (err.message && err.message.includes('不支持的文件类型')) {
+        return res.status(400).json({ 
+            success: false, 
+            message: err.message 
+        });
+    }
+    
+    next(err);
 });
 
 // 创建服务器 (支持 HTTPS)

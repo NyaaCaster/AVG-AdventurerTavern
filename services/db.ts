@@ -7,9 +7,7 @@ import {
 import { AppConfig } from '../config';
 import { INITIAL_GOLD } from '../utils/gameConstants';
 
-// 配置服务器地址
-// 从 config.ts 中读取配置，方便统一管理
-const API_BASE_URL = AppConfig.apiBaseUrl;
+const API_BASE_URL = AppConfig.database.apiBaseUrl;
 
 // --- 接口定义 ---
 

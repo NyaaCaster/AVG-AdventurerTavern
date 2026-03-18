@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { gitVersionPlugin } from './scripts/vite-plugin-git-version';
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+    
     return {
       server: {
         port: 3000,
@@ -15,6 +17,9 @@ export default defineConfig(() => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      define: {
+        __FILE_SERVER_API_KEY__: JSON.stringify(env.FILE_SERVER_API_KEY || ''),
       }
     };
 });

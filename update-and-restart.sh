@@ -5,6 +5,10 @@ echo "Pulling latest code..."
 git pull
 
 echo ""
+echo "Updating submodules..."
+git submodule update --init --recursive
+
+echo ""
 echo "Pulling latest images..."
 docker compose pull
 
