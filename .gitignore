@@ -68,5 +68,12 @@ database-server/SSL/*
 database-server/.env
 database-server/.env.local
 
+# File Server 文件服务器
+# 保留目录结构，但排除文件服务器存储的文件和 SSL 证书
+file-server/Files/*
+!file-server/Files/README.txt
+file-server/SSL/*
+!file-server/SSL/.gitkeep
+
 
 
