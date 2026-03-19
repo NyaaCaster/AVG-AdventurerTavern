@@ -1,5 +1,4 @@
 services:
-  # 前端客户端服务
   client:
     image: honywen/adv-tavern
     container_name: adventurertavern
@@ -33,10 +32,6 @@ services:
         tag: "adventurertavern-client"
     networks:
       - app-network
-
-  # 数据库服务器（需要本地构建）
-  # 请进入 database-server/ 目录使用独立的 docker-compose.yml 部署
-  # cd database-server && docker-compose up -d
 
 networks:
   app-network:

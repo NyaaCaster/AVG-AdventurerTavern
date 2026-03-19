@@ -4,6 +4,7 @@ import { getSaveSlots, GameSaveData } from '../services/db';
 import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
 import { getEligibleCheckInCharacters } from './RoomCheckInSystem';
 import { resolveImgPath } from '../utils/imagePath';
+import { AdventurerRank } from '../types';
 
 interface SaveLoadModalProps {
   isOpen: boolean;
@@ -295,6 +296,10 @@ const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                         <span className="flex items-center gap-2">
                           <i className="fa-solid fa-venus text-purple-400/80"></i>
                           {getCharacterCount(data)} 位角色
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <i className="fa-solid fa-star-half-stroke text-amber-400/80"></i>
+                          {data.adventurerRank || 'E'} 级
                         </span>
                       </div>
                     </div>

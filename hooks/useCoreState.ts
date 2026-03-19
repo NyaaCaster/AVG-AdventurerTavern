@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
     ManagementStats, RevenueLog, UserRecipe, SceneId, CharacterUnlocks, TavernMenuState,
     QuestStateMap, QuestStatus, CharacterStat, CharacterEquipment, BattlePartySlots, CharacterSkills,
-    PlayerLearnedSkills
+    PlayerLearnedSkills, AdventurerRank, CompletedQuests
 } from '../types';
 import { ITEMS } from '../data/items';
 import { getDefaultUnlocks } from '../data/unlockConditions';
@@ -12,7 +12,7 @@ import {
     INITIAL_INVENTORY, INITIAL_SCENE_LEVELS, 
     INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY, INITIAL_MANAGEMENT_STATS, INITIAL_GOLD,
     INITIAL_CHARACTER_UNLOCKS, INITIAL_CHARACTER_EQUIPMENT, MAX_GOLD, INITIAL_BATTLE_PARTY,
-    INITIAL_CHARACTER_SKILLS
+    INITIAL_CHARACTER_SKILLS, INITIAL_ADVENTURER_RANK, INITIAL_COMPLETED_QUESTS, RANK_PROMOTION_REQUIREMENTS
 } from '../utils/gameConstants';
 import { calculateRoomPrice, calculateMaxOccupancy } from '../data/facilityData';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
@@ -59,8 +59,10 @@ export const useCoreState = (initialSaveData?: any) => {
       Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
           const raw = rawStats?.[charId] || {};
           const maxLevel = getMaxLevelByCharacter(charId);
-          const safeLevel = Math.max(1, Math.min(maxLevel, Number(raw.level) || 1));
-          const safeAffinity = Math.max(0, Math.min(100, Number(raw.affinity) || 0));
+          const initialLevel = INITIAL_CHARACTER_LEVEL[charId] || 1;
+          const initialAffinity = INITIAL_CHARACTER_AFFINITY[charId] || 0;
+          const safeLevel = Math.max(1, Math.min(maxLevel, Number(raw.level) || initialLevel));
+          const safeAffinity = Math.max(0, Math.min(100, Number(raw.affinity) ?? initialAffinity));
           const safeExp = safeLevel >= maxLevel ? 0 : Math.max(0, Number(raw.exp) || 0);
 
           normalized[charId] = {
@@ -167,8 +169,8 @@ export const useCoreState = (initialSaveData?: any) => {
     const initialStats: Record<string, CharacterStat> = {};
     Object.keys(INITIAL_CHARACTER_LEVEL).forEach(charId => {
       initialStats[charId] = {
-        level: 1,
-        affinity: INITIAL_CHARACTER_AFFINITY[charId],
+        level: INITIAL_CHARACTER_LEVEL[charId] || 1,
+        affinity: INITIAL_CHARACTER_AFFINITY[charId] || 0,
         exp: 0
       };
     });
@@ -190,6 +192,8 @@ export const useCoreState = (initialSaveData?: any) => {
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>([]);
   const [questStates, setQuestStates] = useState<QuestStateMap>({});
   const [playerLearnedSkills, setPlayerLearnedSkills] = useState<PlayerLearnedSkills>([]);
+  const [adventurerRank, setAdventurerRank] = useState<AdventurerRank>(INITIAL_ADVENTURER_RANK);
+  const [completedQuests, setCompletedQuests] = useState<CompletedQuests>(INITIAL_COMPLETED_QUESTS);
 
   // Apply loaded data
   useEffect(() => {
@@ -250,6 +254,8 @@ export const useCoreState = (initialSaveData?: any) => {
       if (data.tavernMenu) setTavernMenu(data.tavernMenu);
       if (data.questStates) setQuestStates(data.questStates);
       if (data.playerLearnedSkills !== undefined) setPlayerLearnedSkills(normalizePlayerLearnedSkills(data.playerLearnedSkills));
+      if (data.adventurerRank !== undefined && data.adventurerRank !== null) setAdventurerRank(data.adventurerRank);
+      if (data.completedQuests !== undefined) setCompletedQuests(data.completedQuests);
   };
 
   // --- Handlers ---
@@ -410,7 +416,7 @@ export const useCoreState = (initialSaveData?: any) => {
   };
 
   const handleDeliverQuest = (questId: string) => {
-      // 交付后从状态中移除（重置为可接受）
+      markQuestCompleted(questId);
       setQuestStates(prev => {
           const next = { ...prev };
           delete next[questId];
@@ -431,7 +437,11 @@ export const useCoreState = (initialSaveData?: any) => {
       if (!characterId || gainedExp <= 0) return;
 
       setCharacterStats(prev => {
-          const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+          const current = prev[characterId] || { 
+              level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+              affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0, 
+              exp: 0 
+          };
           const updated = applyExpGainToStat(characterId, current, gainedExp);
           return {
               ...prev,
@@ -450,7 +460,11 @@ export const useCoreState = (initialSaveData?: any) => {
       const next = { ...prev };
       
       validMemberIds.forEach(characterId => {
-        const current = prev[characterId] || { level: 1, affinity: 0, exp: 0 };
+        const current = prev[characterId] || { 
+            level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+            affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0, 
+            exp: 0 
+        };
         const updated = applyExpGainToStat(characterId, current, gainedExp);
         next[characterId] = updated;
       });
@@ -568,6 +582,41 @@ export const useCoreState = (initialSaveData?: any) => {
       return playerLearnedSkills.includes(skillId);
   }, [playerLearnedSkills]);
 
+  const markQuestCompleted = (questId: string) => {
+      if (!completedQuests.includes(questId)) {
+          setCompletedQuests(prev => [...prev, questId]);
+      }
+  };
+
+  const isQuestCompleted = (questId: string): boolean => {
+      return completedQuests.includes(questId);
+  };
+
+  const getCompletedCountByRank = useCallback((rank: AdventurerRank, allQuests: { id: string; rank: string }[]): number => {
+      return allQuests.filter(q => q.rank === rank && completedQuests.includes(q.id)).length;
+  }, [completedQuests]);
+
+  const canPromoteRank = useCallback((allQuests: { id: string; rank: string }[]): boolean => {
+      const required = RANK_PROMOTION_REQUIREMENTS[adventurerRank];
+      if (required === 0) return false;
+      const completed = getCompletedCountByRank(adventurerRank, allQuests);
+      return completed >= required;
+  }, [adventurerRank, completedQuests, getCompletedCountByRank]);
+
+  const promoteAdventurerRank = (): boolean => {
+      const currentIndex = ['E', 'D', 'C', 'B', 'A', 'S'].indexOf(adventurerRank);
+      if (currentIndex < 0 || currentIndex >= 5) return false;
+      const nextRank = ['D', 'C', 'B', 'A', 'S'][currentIndex] as AdventurerRank;
+      setAdventurerRank(nextRank);
+      return true;
+  };
+
+  const getRankProgress = useCallback((rank: AdventurerRank, allQuests: { id: string; rank: string }[]): { completed: number; required: number } => {
+      const completed = getCompletedCountByRank(rank, allQuests);
+      const required = RANK_PROMOTION_REQUIREMENTS[rank];
+      return { completed, required };
+  }, [getCompletedCountByRank]);
+
   const getCharacterLearnableSkill = useCallback((characterId: string): number | null => {
       const characterData = CHARACTERS[characterId];
       if (!characterData?.battleData?.skills) return null;
@@ -597,6 +646,8 @@ export const useCoreState = (initialSaveData?: any) => {
       managementStats, setManagementStats,
       revenueLogs, setRevenueLogs,
       playerLearnedSkills, setPlayerLearnedSkills,
+      adventurerRank, setAdventurerRank,
+      completedQuests, setCompletedQuests,
       
       // Handlers
       handleManagementAction,
@@ -632,6 +683,12 @@ export const useCoreState = (initialSaveData?: any) => {
       battleParty,
       setBattleParty,
       addToBattleParty,
-      removeFromBattleParty
+      removeFromBattleParty,
+      markQuestCompleted,
+      isQuestCompleted,
+      getCompletedCountByRank,
+      canPromoteRank,
+      promoteAdventurerRank,
+      getRankProgress
   };
 };

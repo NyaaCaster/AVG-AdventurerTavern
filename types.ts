@@ -251,6 +251,7 @@ export interface SceneProps {
   onOpenPartyFormation?: () => void;
   onOpenPartyEquipment?: () => void;
   onOpenPartySkillSet?: () => void;
+  onOpenRankAssessment?: () => void;
   // 烹饪系统相关
   onOpenCooking?: () => void;
   userRecipes?: UserRecipe[];
@@ -444,3 +445,16 @@ export interface QuestState {
 }
 
 export type QuestStateMap = Record<string, QuestState>;
+
+// --- 冒险者评级系统类型定义 ---
+
+export type AdventurerRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+
+export const ADVENTURER_RANKS: AdventurerRank[] = ['E', 'D', 'C', 'B', 'A', 'S'];
+
+export type CompletedQuests = string[];
+
+export interface AdventurerRankProgress {
+  currentRank: AdventurerRank;
+  completedQuests: CompletedQuests;
+}

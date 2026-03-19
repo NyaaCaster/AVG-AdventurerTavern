@@ -30,6 +30,7 @@ import QuestBoardModal from './QuestBoardModal';
 import InspirationDashboardModal from './InspirationDashboardModal';
 import PartyFormationModal from './PartyFormationModal';
 import PartyEquipmentModal from './PartyEquipmentModal';
+import AdventurerRankModal from './AdventurerRankModal';
 import PartySkillSetModal from './PartySkillSetModal';
 import ToastManager, { ToastData } from './ToastManager';
 import { INITIAL_CHECKED_IN_CHARACTERS } from '../utils/gameConstants';
@@ -136,6 +137,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isPartyFormationOpen, setIsPartyFormationOpen] = useState(false);
   const [isPartyEquipmentOpen, setIsPartyEquipmentOpen] = useState(false);
   const [isPartySkillSetOpen, setIsPartySkillSetOpen] = useState(false);
+  const [isRankAssessmentOpen, setIsRankAssessmentOpen] = useState(false);
 
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
@@ -687,7 +689,9 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           foodStock: core.foodStock,
           tavernMenu: core.tavernMenu,
           checkedInCharacters,
-          settings: settings
+          settings: settings,
+          adventurerRank: core.adventurerRank,
+          completedQuests: core.completedQuests
       });
       
       // 如果是手动存档（slotId 1-3），同步聊天记忆
@@ -845,7 +849,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         case 'scen_10': return <Scen10 {...commonProps} onOpenShop={(tab) => { setShopInitialTab(tab); setIsShopOpen(true); }} />;
         // --- 额外场景组（非旅店设施，不可升级）---
         case 'scen_town': return <ScenTown {...commonProps} />;
-        case 'scen_guild': return <ScenGuild {...commonProps} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} onOpenPartySkillSet={() => setIsPartySkillSetOpen(true)} />;
+        case 'scen_guild': return <ScenGuild {...commonProps} onOpenPartyFormation={() => setIsPartyFormationOpen(true)} onOpenPartyEquipment={() => setIsPartyEquipmentOpen(true)} onOpenPartySkillSet={() => setIsPartySkillSetOpen(true)} onOpenRankAssessment={() => setIsRankAssessmentOpen(true)} />;
         case 'scen_market': return <ScenMarket {...commonProps} />;
         default: return <Scen1 {...commonProps} />;
     }
@@ -1061,6 +1065,18 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after skill set modal close failed:', err))}
       />
       
+      <AdventurerRankModal
+          isOpen={isRankAssessmentOpen}
+          onClose={() => setIsRankAssessmentOpen(false)}
+          currentRank={core.adventurerRank}
+          completedQuests={core.completedQuests}
+          userName={settings.userName}
+          onPromoteRank={() => {
+            core.promoteAdventurerRank();
+            handleAutoSave().catch(err => console.error('Auto-save after rank promotion failed:', err));
+          }}
+      />
+      
       <CookingModal 
           isOpen={isCookingOpen}
           onClose={() => setIsCookingOpen(false)}
@@ -1093,6 +1109,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         isOpen={isQuestBoardOpen}
         onClose={() => setIsQuestBoardOpen(false)}
         questStates={core.questStates}
+        completedQuests={core.completedQuests}
+        adventurerRank={core.adventurerRank}
         currentGold={core.gold}
         inspirationBalance={inspirationBalance}
         onAcceptQuest={(questId) => {

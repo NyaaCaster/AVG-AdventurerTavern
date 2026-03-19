@@ -1,14 +1,13 @@
-import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots } from '../types';
+import { WorldState, ManagementStats, RevenueLog, UserRecipe, GameSettings, CharacterUnlocks, QuestStateMap, CharacterStat, CharacterEquipment, BattlePartySlots, AdventurerRank, CompletedQuests } from '../types';
 import {
     buildCharacterBattleStats,
     getCharacterBattleStatsFromSaveData,
     CharacterBattleStatsResult
 } from './characterBattleStats';
 import { AppConfig } from '../config';
+import { INITIAL_GOLD } from '../utils/gameConstants';
 
-// 配置服务器地址
-// 从 config.ts 中读取配置，方便统一管理
-const API_BASE_URL = AppConfig.apiBaseUrl;
+const API_BASE_URL = AppConfig.database.apiBaseUrl;
 
 // --- 接口定义 ---
 
@@ -27,6 +26,7 @@ export interface GameSaveData {
   battleParty?: BattlePartySlots;
   checkedInCharacters?: string[];
   sceneLevels?: Record<string, number>;
+  adventurerRank?: AdventurerRank;
 }
 
 // --- API 辅助函数 ---
@@ -152,6 +152,8 @@ export const saveGame = async (
     checkedInCharacters?: string[];
     questStates?: QuestStateMap;
     settings?: GameSettings;
+    adventurerRank?: AdventurerRank;
+    completedQuests?: CompletedQuests;
   }
 ) => {
     const res = await apiCall('/save', {
@@ -238,14 +240,15 @@ export const getSaveSlots = async (userId: number): Promise<GameSaveData[]> => {
             slotId: s.slotId,
             label: s.label,
             savedAt: s.savedAt,
-            gold: s.gold || 0,
+            gold: s.gold ?? INITIAL_GOLD,
             currentSceneId: s.currentSceneId || '',
             worldState: s.worldState || { dateStr: '', timeStr: '', sceneName: '' },
             characterStats: s.characterStats || {},
             characterEquipments: s.characterEquipments || {},
             battleParty: s.battleParty,
             checkedInCharacters: s.checkedInCharacters,
-            sceneLevels: s.sceneLevels
+            sceneLevels: s.sceneLevels,
+            adventurerRank: s.adventurerRank
         }));
     }
     return [];

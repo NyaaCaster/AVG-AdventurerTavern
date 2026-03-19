@@ -6,7 +6,7 @@ import {
 import { llmService } from '../services/llmService';
 import { USER_INFO_TEMPLATE, generateSystemPrompt, CHARACTERS } from '../data/scenarioData';
 import { getCharacterSprite } from '../utils/gameLogic';
-import { SCENE_NAMES } from '../utils/gameConstants';
+import { SCENE_NAMES, INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY } from '../utils/gameConstants';
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 import { useAIMemory } from './useAIMemory';
@@ -90,7 +90,10 @@ export const useDialogueSystem = ({
     const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
     
     // Get current affinity
-    const stats = characterStats[char.id] || { level: 1, affinity: 0 };
+    const stats = characterStats[char.id] || { 
+        level: INITIAL_CHARACTER_LEVEL[char.id] || 1, 
+        affinity: INITIAL_CHARACTER_AFFINITY[char.id] || 0 
+    };
     
     let systemPrompt = generateSystemPrompt(char, dynamicUserInfo, settings.innName, settings.enableNSFW, unlocks, stats.affinity, settings.isBloodRelated);
     systemPrompt = formatTemplateText(systemPrompt);
@@ -136,7 +139,10 @@ export const useDialogueSystem = ({
     setIsDialogueMode(true);
     setIsDialogueEnding(false);
     
-    const stats = characterStats[characterId] || { level: 1, affinity: 0 };
+    const stats = characterStats[characterId] || { 
+        level: INITIAL_CHARACTER_LEVEL[characterId] || 1, 
+        affinity: INITIAL_CHARACTER_AFFINITY[characterId] || 0 
+    };
     
         if (settings.apiConfig.apiKey) {
         setIsLoading(true);
@@ -481,7 +487,10 @@ export const useDialogueSystem = ({
   const handleEndDialogueGeneration = async () => {
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
-    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
+    const stats = characterStats[activeCharacter.id] || { 
+        level: INITIAL_CHARACTER_LEVEL[activeCharacter.id] || 1, 
+        affinity: INITIAL_CHARACTER_AFFINITY[activeCharacter.id] || 0 
+    };
     setIsLoading(true);
 
     try {
@@ -548,7 +557,10 @@ export const useDialogueSystem = ({
   const handleEndDialogueGenerationWithMove = async (targetSceneId: SceneId) => {
     if (isLoading || isDialogueEnding || !activeCharacter) return;
     
-    const stats = characterStats[activeCharacter.id] || { level: 1, affinity: 0 };
+    const stats = characterStats[activeCharacter.id] || { 
+        level: INITIAL_CHARACTER_LEVEL[activeCharacter.id] || 1, 
+        affinity: INITIAL_CHARACTER_AFFINITY[activeCharacter.id] || 0 
+    };
     const targetSceneName = SCENE_NAMES[targetSceneId] || '未知场景';
     setIsLoading(true);
 
@@ -636,7 +648,10 @@ export const useDialogueSystem = ({
           // 加载角色记忆（有 character_id 隔离，安全）
           const memoryContext = await aiMemory.getMemoryContext(char.id);
 
-          const stats = characterStats[char.id] || { level: 1, affinity: 0 };
+          const stats = characterStats[char.id] || { 
+              level: INITIAL_CHARACTER_LEVEL[char.id] || 1, 
+              affinity: INITIAL_CHARACTER_AFFINITY[char.id] || 0 
+          };
           const unlocks = characterUnlocks[char.id] || getDefaultUnlocks();
           const dynamicUserInfo = formatTemplateText(USER_INFO_TEMPLATE);
 

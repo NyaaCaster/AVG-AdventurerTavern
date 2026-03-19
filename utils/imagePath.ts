@@ -4,7 +4,7 @@
  */
 
 // 项目资源根目录
-const PROJECT_BASE_URL = "https://h.hony-wen.com:5100/files/AVG-AdventurerTavern/";
+const PROJECT_BASE_URL = "https://h.hony-wen.com:5102/files/";
 
 let isHDMode = false;
 

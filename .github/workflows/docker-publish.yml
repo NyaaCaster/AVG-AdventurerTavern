@@ -1,4 +1,4 @@
-﻿name: Docker Build and Push - Client Only
+name: Docker Build and Push - Client Only
 
 on:
   push:
@@ -57,6 +57,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
             VITE_QWEATHER_HOST=${{ secrets.QWEATHER_HOST }}
             VITE_QWEATHER_KEY=${{ secrets.QWEATHER_KEY }}
+            FILE_SERVER_API_KEY=${{ secrets.FILE_SERVER_API_KEY }}
             GIT_COMMIT_HASH=${{ steps.git.outputs.hash }}
           secrets: |
             ssl_cert=${{ secrets.SSL_CERTIFICATE_CRT }}

@@ -48,12 +48,17 @@ https://localhost:3096  # HTTPS
 打开终端（Terminal）或命令行工具，运行以下命令：
 
 ```bash
-# 克隆项目代码
-git clone https://github.com/NyaaCaster/AVG-AdventurerTavern.git
+# 克隆项目代码（包含 submodule）
+git clone --recursive https://github.com/NyaaCaster/AVG-AdventurerTavern.git
 
 # 进入项目目录
 cd AVG-AdventurerTavern
 ```
+
+> **💡 关于 `--recursive` 参数**：本项目包含 `file-server` 子模块（文件服务器），使用 `--recursive` 可自动拉取子模块代码。如果已克隆但 `file-server` 目录为空，请运行：
+> ```bash
+> git submodule update --init --recursive
+> ```
 
 ### 3. 安装依赖
 在项目根目录下运行：
@@ -267,6 +272,7 @@ AVG-AdventurerTavern/
 ├── types/                  # TypeScript 类型定义
 ├── utils/                  # 工具函数
 ├── database-server/        # 后端数据库服务（独立部署）
+├── file-server/            # 文件服务器（Git Submodule）
 ├── .github/workflows/      # GitHub Actions CI/CD
 │   └── docker-publish.yml # 客户端自动构建
 ├── Dockerfile              # 客户端镜像构建配置
@@ -281,9 +287,26 @@ AVG-AdventurerTavern/
 *   **前端框架**: React 19 + TypeScript
 *   **构建工具**: Vite 6
 *   **容器化**: Docker + Nginx
+*   **文件服务**: [file-server](https://github.com/NyaaCaster/file-server)（独立子模块）
 *   **CI/CD**: GitHub Actions
 *   **镜像托管**: Docker Hub
 *   **AI 集成**: OpenAI 兼容 API (GPT-4, Claude, DeepSeek 等)
+
+## 📦 子模块
+
+本项目包含以下 Git Submodule：
+
+### file-server（文件服务器）
+
+独立的文件上传服务，提供：
+- 文件上传/删除/列表 API
+- API Key 鉴权
+- HTTPS 安全传输
+- 多目录分类存储
+
+**项目地址**：https://github.com/NyaaCaster/file-server
+
+**技术文档**：[文件上传服务技术标准](./Doc/Technical/FILE_UPLOAD_STANDARD.md)
 
 ## 📚 相关文档
 

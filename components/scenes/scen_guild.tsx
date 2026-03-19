@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SceneProps } from '../../types';
 import SceneActionBtn from '../SceneActionBtn';
 
-const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onAction, onEnterDialogue, isMenuVisible, presentCharacters, onOpenPartyFormation, onOpenPartyEquipment, onOpenPartySkillSet }) => {
+const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onAction, onEnterDialogue, isMenuVisible, presentCharacters, onOpenPartyFormation, onOpenPartyEquipment, onOpenPartySkillSet, onOpenRankAssessment }) => {
   const [menuLayer, setMenuLayer] = useState<'main' | 'party'>('main');
   
   if (!isMenuVisible) return null;
@@ -56,12 +56,11 @@ const ScenGuild: React.FC<SceneProps> = ({ onNavigate, onAction, onEnterDialogue
         </>
       )}
 
-      {/* 评级鉴定（预留，暂未实现） */}
+      {/* 评级鉴定 */}
       <SceneActionBtn
         label="评级鉴定"
         icon="fa-star-half-stroke"
-        onClick={() => {}}
-        disabled
+        onClick={() => onOpenRankAssessment && onOpenRankAssessment()}
       />
 
       <div className="h-px w-32 bg-white/10 my-2"></div>

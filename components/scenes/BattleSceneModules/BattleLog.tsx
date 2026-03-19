@@ -8,10 +8,15 @@ interface BattleLogEntry {
 interface BattleLogProps {
   logs: BattleLogEntry[];
   isMobile: boolean;
+  userName: string;
 }
 
-const BattleLog: React.FC<BattleLogProps> = ({ logs, isMobile }) => {
+const BattleLog: React.FC<BattleLogProps> = ({ logs, isMobile, userName }) => {
   if (isMobile || logs.length === 0) return null;
+  
+  const formatDescription = (description: string): string => {
+    return description.replace(/{{user}}/g, userName);
+  };
   
   return (
     <div className="absolute right-4 bottom-4 z-40 w-64 md:w-80">
@@ -28,7 +33,7 @@ const BattleLog: React.FC<BattleLogProps> = ({ logs, isMobile }) => {
               key={`log-${index}`}
               className="text-[10px] text-[#f0e6d2]/80 leading-relaxed"
             >
-              <span className="text-[#9b7a4c]">[{log.turn}]</span> {log.description}
+              <span className="text-[#9b7a4c]">[{log.turn}]</span> {formatDescription(log.description)}
             </div>
           ))}
         </div>

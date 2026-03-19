@@ -8,6 +8,7 @@ interface SceneActionBtnProps {
   subLabel?: string;
   variant?: 'default' | 'primary' | 'danger' | 'special';
   disabled?: boolean;
+  showGlow?: boolean;
 }
 
 const SceneActionBtn: React.FC<SceneActionBtnProps> = ({ 
@@ -16,7 +17,8 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
   onClick, 
   subLabel,
   variant = 'default',
-  disabled = false
+  disabled = false,
+  showGlow = false
 }) => {
   // 状态管理：检测是否为移动端，以及移动端的展开状态
   const [isMobile, setIsMobile] = useState(false);
@@ -106,6 +108,14 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
         ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}
       `}
     >
+      {/* 流光特效 */}
+      {showGlow && !disabled && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/10 to-transparent animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+        </>
+      )}
+      
       <div className={`flex items-center h-full ${isContentVisible ? 'justify-between px-5' : 'justify-center px-0'}`}>
         
         {/* 左侧：图标与文字 */}
@@ -136,5 +146,26 @@ const SceneActionBtn: React.FC<SceneActionBtnProps> = ({
     </button>
   );
 };
+
+// CSS 动画定义
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+`;
+if (!document.getElementById('scene-action-btn-styles')) {
+  style.id = 'scene-action-btn-styles';
+  document.head.appendChild(style);
+}
 
 export default SceneActionBtn;

@@ -2,7 +2,7 @@ import { getBaseStats, BaseStats } from '../data/battle-data/base_stats_table';
 import { ITEMS_EQUIP } from '../data/item-equip';
 import { CHARACTERS } from '../data/scenarioData';
 import { CharacterEquipment } from '../types';
-import { INITIAL_CHARACTER_EQUIPMENT } from '../utils/gameConstants';
+import { INITIAL_CHARACTER_EQUIPMENT, INITIAL_CHARACTER_LEVEL } from '../utils/gameConstants';
 
 type StatKey = keyof BaseStats;
 
@@ -56,7 +56,8 @@ const normalizeEquipment = (characterId: string, equipment?: Partial<CharacterEq
 
 const getSafeLevel = (characterId: string, rawLevel: unknown): number => {
   const maxLevel = CHARACTERS[characterId]?.battleData?.maxLevel ?? 100;
-  const level = Number(rawLevel) || 1;
+  const initialLevel = INITIAL_CHARACTER_LEVEL[characterId] || 1;
+  const level = Number(rawLevel) || initialLevel;
   return Math.max(1, Math.min(maxLevel, Math.floor(level)));
 };
 
@@ -124,7 +125,8 @@ export const getCharacterBattleStatsFromSaveData = (
   saveData: any,
   characterId: string
 ): CharacterBattleStatsResult => {
-  const level = saveData?.characterStats?.[characterId]?.level ?? 1;
+  const initialLevel = INITIAL_CHARACTER_LEVEL[characterId] || 1;
+  const level = saveData?.characterStats?.[characterId]?.level ?? initialLevel;
   const equipment = saveData?.characterEquipments?.[characterId] || null;
   return buildCharacterBattleStats(characterId, level, equipment);
 };

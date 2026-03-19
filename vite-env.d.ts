@@ -1,4 +1,9 @@
 /// <reference types="vite/client" />
 
-// Git commit hash injected by vite-plugin-git-version
-declare const __GIT_COMMIT_HASH__: string;
+/**
+ * 全局类型声明
+ * 
+ * 由 Vite define 注入的构建时变量
+ */
+
+declare const __FILE_SERVER_API_KEY__: string;
