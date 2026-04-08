@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 
 interface ImageCropperProps {
   image: string;
@@ -320,34 +320,65 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     img.src = image;
   };
 
-  const renderResizeHandle = (position: string) => {
-    const handleStyle: React.CSSProperties = {
+  const getHandleStyle = (position: string): React.CSSProperties => {
+    const cursors: Record<string, string> = {
+      nw: 'nwse-resize',
+      ne: 'nesw-resize',
+      sw: 'nesw-resize',
+      se: 'nwse-resize',
+    };
+
+    return {
       position: 'absolute',
       width: '24px',
       height: '24px',
       background: 'rgba(255, 255, 255, 0.9)',
       border: '3px solid #f59e0b',
       borderRadius: '4px',
-      zIndex: 20,
+      zIndex: 30,
       touchAction: 'none',
+      cursor: cursors[position],
+      pointerEvents: 'auto',
     };
-
-    const positions: Record<string, React.CSSProperties> = {
-      nw: { top: -12, left: -12, cursor: 'nwse-resize' },
-      ne: { top: -12, right: -12, cursor: 'nesw-resize' },
-      sw: { bottom: -12, left: -12, cursor: 'nesw-resize' },
-      se: { bottom: -12, right: -12, cursor: 'nwse-resize' },
-    };
-
-    return (
-      <div
-        key={position}
-        style={{ ...handleStyle, ...positions[position] }}
-        onMouseDown={(e) => handleStart(e, position)}
-        onTouchStart={(e) => handleStart(e, position)}
-      />
-    );
   };
+
+  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent, position: string) => {
+    console.log('[ImageCropper] handleResizeStart triggered', {
+      position,
+      eventType: e.type,
+      target: (e.target as HTMLElement).tagName,
+      targetClass: (e.target as HTMLElement).className,
+      currentTarget: (e.currentTarget as HTMLElement).tagName,
+    });
+    e.preventDefault();
+    e.stopPropagation();
+    handleStart(e, position);
+  };
+
+  const handleCropAreaStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isHandle = target.closest('[data-resize-handle]');
+    console.log('[ImageCropper] handleCropAreaStart triggered', {
+      eventType: e.type,
+      target: target.tagName,
+      targetClass: target.className,
+      isHandle: !!isHandle,
+      handlePosition: isHandle?.getAttribute('data-resize-handle'),
+    });
+    if (isHandle) {
+      console.log('[ImageCropper] handleCropAreaStart: ignored, clicked on handle');
+      return;
+    }
+    console.log('[ImageCropper] handleCropAreaStart: starting drag');
+    handleStart(e);
+  };
+
+  const resizeHandles = useMemo(() => [
+    { position: 'nw' as const, style: getHandleStyle('nw') },
+    { position: 'ne' as const, style: getHandleStyle('ne') },
+    { position: 'sw' as const, style: getHandleStyle('sw') },
+    { position: 'se' as const, style: getHandleStyle('se') },
+  ], []);
 
   if (!imageLoaded) {
     return (
@@ -386,7 +417,15 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
             ref={containerRef}
             className="flex-1 overflow-auto flex items-center justify-center p-4 bg-slate-950/80 min-h-0"
           >
-            <div className="relative inline-block" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+            <div 
+              className="relative inline-block" 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%',
+                padding: '12px',
+                margin: '-12px',
+              }}
+            >
               <img
                 ref={imageRef}
                 src={image}
@@ -397,16 +436,41 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
               />
 
               <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  zIndex: -1,
+                  background: `linear-gradient(to right, rgba(0,0,0,0.6) ${displayCropArea.x}px, transparent ${displayCropArea.x}px, transparent ${displayCropArea.x + displayCropArea.width}px, rgba(0,0,0,0.6) ${displayCropArea.x + displayCropArea.width}px)`,
+                }}
+              >
+                <div
+                  className="absolute left-0 right-0"
+                  style={{
+                    top: 0,
+                    height: displayCropArea.y,
+                    background: 'rgba(0,0,0,0.6)',
+                  }}
+                />
+                <div
+                  className="absolute left-0 right-0"
+                  style={{
+                    top: displayCropArea.y + displayCropArea.height,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                  }}
+                />
+              </div>
+
+              <div
                 className="absolute border-2 border-amber-500 cursor-move"
                 style={{
                   left: displayCropArea.x,
                   top: displayCropArea.y,
                   width: displayCropArea.width,
                   height: displayCropArea.height,
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+                  zIndex: 10,
                 }}
-                onMouseDown={(e) => handleStart(e)}
-                onTouchStart={(e) => handleStart(e)}
+                onMouseDown={handleCropAreaStart}
+                onTouchStart={handleCropAreaStart}
               >
                 <div className="absolute inset-0 border border-amber-500/30 pointer-events-none">
                   <div className="absolute top-1/3 left-0 right-0 border-t border-amber-500/30"></div>
@@ -415,7 +479,27 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
                   <div className="absolute left-2/3 top-0 bottom-0 border-l border-amber-500/30"></div>
                 </div>
 
-                {['nw', 'ne', 'sw', 'se'].map(renderResizeHandle)}
+                {resizeHandles.map(({ position, style }) => {
+                  const handleStyles: Record<string, React.CSSProperties> = {
+                    nw: { top: 0, left: 0, marginLeft: -12, marginTop: -12, cursor: 'nwse-resize' },
+                    ne: { top: 0, right: 0, marginRight: -12, marginTop: -12, cursor: 'nesw-resize' },
+                    sw: { bottom: 0, left: 0, marginLeft: -12, marginBottom: -12, cursor: 'nesw-resize' },
+                    se: { bottom: 0, right: 0, marginRight: -12, marginBottom: -12, cursor: 'nwse-resize' },
+                  };
+                  return (
+                    <div
+                      key={position}
+                      data-resize-handle={position}
+                      style={{
+                        ...style,
+                        ...handleStyles[position],
+                        zIndex: 30,
+                      }}
+                      onMouseDown={(e) => handleResizeStart(e, position)}
+                      onTouchStart={(e) => handleResizeStart(e, position)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>
