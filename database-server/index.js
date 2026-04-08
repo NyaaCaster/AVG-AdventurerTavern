@@ -2161,22 +2161,35 @@ app.post('/api/user/update_username', (req, res) => {
         return res.json({ success: false, message: '用户名长度必须在 2-20 个字符之间' });
     }
     
-    db.run(
-        "UPDATE users SET username = ? WHERE id = ?",
+    // 先检查用户名是否已被其他用户使用
+    db.get(
+        "SELECT id FROM users WHERE username = ? AND id != ?",
         [trimmedUsername, userId],
-        function(err) {
+        (err, row) => {
             if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.json({ success: false, message: '用户名已被使用' });
+                return res.json({ success: false, message: '查询失败' });
+            }
+            
+            if (row) {
+                return res.json({ success: false, message: '用户名已存在' });
+            }
+            
+            // 用户名可用，执行更新
+            db.run(
+                "UPDATE users SET username = ? WHERE id = ?",
+                [trimmedUsername, userId],
+                function(err) {
+                    if (err) {
+                        return res.json({ success: false, message: '更新失败: ' + err.message });
+                    }
+                    
+                    if (this.changes === 0) {
+                        return res.json({ success: false, message: '用户不存在' });
+                    }
+                    
+                    res.json({ success: true, message: '用户名更新成功' });
                 }
-                return res.json({ success: false, message: '更新失败: ' + err.message });
-            }
-            
-            if (this.changes === 0) {
-                return res.json({ success: false, message: '用户不存在' });
-            }
-            
-            res.json({ success: true, message: '用户名更新成功' });
+            );
         }
     );
 });

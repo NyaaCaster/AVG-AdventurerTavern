@@ -228,16 +228,16 @@ describe('updateUsername - 更新用户名', () => {
   });
 
   describe('错误处理测试', () => {
-    it('应该处理用户名已被使用的情况', async () => {
+    it('应该处理用户名已存在的情况', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ success: false, message: '用户名已被使用' })
+        json: () => Promise.resolve({ success: false, message: '用户名已存在' })
       });
 
       const result = await updateUsername(1, 'existinguser');
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe('用户名已被使用');
+      expect(result.message).toBe('用户名已存在');
     });
 
     it('应该处理用户名长度不足的情况', async () => {
