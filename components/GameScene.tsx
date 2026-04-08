@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { getSceneBackground } from '../utils/sceneUtils';
 import { calculateCharacterLocations } from '../utils/gameLogic';
-import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks, consumeSanity } from '../services/db';
+import { saveGame, loadGame, deleteGame, syncChatSlot, updateCharacterUnlocks, consumeSanity, getUserInfo, UserInfo } from '../services/db';
 import { inspirationToSanity } from '../data/currency-value-table'; 
 
 import DialogueBox from './DialogueBox'; 
@@ -91,6 +91,18 @@ export interface GameSceneRef {
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, currentSlotId, onBackToMenu, onOpenSettings, onSettingsChange, settings, initialSaveData, inspirationBalance, onUpdateInspirationBalance }, ref) => {
+  // --- 用户信息状态 ---
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  
+  // 获取用户信息
+  useEffect(() => {
+    if (userId) {
+      getUserInfo(userId).then(info => {
+        if (info) setUserInfo(info);
+      });
+    }
+  }, [userId]);
+  
   // --- 核心 Hooks ---
   const core = useCoreState(initialSaveData);
   const [checkedInCharacters, setCheckedInCharacters] = useState<string[]>(() => {
@@ -291,6 +303,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
       characterUnlocks: core.characterUnlocks,
       userId,
       currentSlotId,
+      playerAvatarInfo: userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined,
       onItemsGained: handleItemsGained,
       onCharacterMove: handleCharacterMove,
       onAffinityChange: handleAffinityChange,
@@ -832,7 +845,8 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         characterEquipments: core.characterEquipments,
         battleParty: core.battleParty,
         userRecipes: core.userRecipes,
-        foodStock: core.foodStock
+        foodStock: core.foodStock,
+        playerAvatarInfo: userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined
     };
 
     switch(world.currentSceneId) {

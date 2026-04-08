@@ -3,10 +3,21 @@
  * 视觉小说资源路径解析工具
  */
 
+import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
+import { fileUploadService } from '../services/fileUpload';
+
 // 项目资源根目录
 const PROJECT_BASE_URL = "https://h.hony-wen.com:5102/files/";
 
 let isHDMode = false;
+
+/**
+ * 用户头像信息接口
+ */
+export interface PlayerAvatarInfo {
+    has_custom_avatar: boolean;
+    custom_avatar_url?: string;
+}
 
 /**
  * 设置是否开启高清模式
@@ -51,4 +62,24 @@ export const resolveImgPath = (path: string): string => {
   
   // 其他情况（虽然目前没有其他资源类型），默认直接拼接
   return normalizedPath;
+};
+
+/**
+ * 获取玩家头像 URL
+ * @param avatarInfo 用户头像信息，包含 has_custom_avatar 和 custom_avatar_url
+ * @param timestamp 可选的时间戳，用于避免浏览器缓存
+ * @returns 完整的头像 URL
+ */
+export const getPlayerAvatarUrl = (
+    avatarInfo: PlayerAvatarInfo | null | undefined,
+    timestamp?: number
+): string => {
+    if (avatarInfo?.has_custom_avatar && avatarInfo.custom_avatar_url) {
+        const baseUrl = fileUploadService.getFileUrl(avatarInfo.custom_avatar_url);
+        if (timestamp) {
+            return `${baseUrl}?t=${timestamp}`;
+        }
+        return baseUrl;
+    }
+    return resolveImgPath(PLAYER_AVATAR_URL);
 };

@@ -10,8 +10,8 @@ import { SCENE_NAMES, INITIAL_CHARACTER_LEVEL, INITIAL_CHARACTER_AFFINITY } from
 import { getDefaultUnlocks } from '../data/unlockConditions';
 import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/db';
 import { useAIMemory } from './useAIMemory';
-import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 import { applyPlayerTextTemplate, resolveCharacterDisplayName } from '../utils/playerText';
+import { getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
@@ -20,6 +20,7 @@ interface UseDialogueSystemProps {
     characterUnlocks: Record<string, CharacterUnlocks>;
     userId: number;
     currentSlotId: number;
+    playerAvatarInfo?: PlayerAvatarInfo;
     onItemsGained: (items: { id: string; count: number }[]) => void;
     onCharacterMove: (charId: string, targetId: SceneId) => void;
     onAffinityChange: (charId: string, change: number) => void;
@@ -28,7 +29,7 @@ interface UseDialogueSystemProps {
 }
 
 export const useDialogueSystem = ({ 
-    settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate, onSkillLearned 
+    settings, worldState, characterStats, characterUnlocks, userId, currentSlotId, playerAvatarInfo, onItemsGained, onCharacterMove, onAffinityChange, onUnlockUpdate, onSkillLearned 
 }: UseDialogueSystemProps) => {
   // AI 记忆系统
   const aiMemory = useAIMemory({ 
@@ -222,7 +223,7 @@ export const useDialogueSystem = ({
     const userMessage = inputText;
     setInputText('');
     setIsLoading(true);
-    setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: PLAYER_AVATAR_URL }]);
+    setHistory(prev => [...prev, { speaker: settings.userName, text: userMessage, timestamp: Date.now(), type: 'user', avatarUrl: getPlayerAvatarUrl(playerAvatarInfo) }]);
 
     try {
       const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;

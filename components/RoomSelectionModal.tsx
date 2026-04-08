@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { resolveImgPath } from '../utils/imagePath';
+import { resolveImgPath, getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
 import { CHARACTERS } from '../data/scenarioData';
 import { SceneId } from '../types';
-import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 
 
 interface RoomSelectionModalProps {
@@ -11,6 +10,7 @@ interface RoomSelectionModalProps {
   onClose: () => void;
   onNavigate: (sceneId: SceneId, params?: any) => void;
   checkedInCharacters: string[];
+  playerAvatarInfo?: PlayerAvatarInfo;
 }
 
 const ROOM_MAPPING = [
@@ -29,7 +29,7 @@ const ROOM_MAPPING = [
 
 
 
-const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose, onNavigate, checkedInCharacters }) => {
+const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose, onNavigate, checkedInCharacters, playerAvatarInfo }) => {
   if (!isOpen) return null;
 
   const handleRoomClick = (charId?: string) => {
@@ -80,8 +80,7 @@ const RoomSelectionModal: React.FC<RoomSelectionModalProps> = ({ isOpen, onClose
                         <i className="fa-solid fa-house-user"></i>
                     </div>
                     <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-[#9b7a4c]/50 overflow-hidden mb-2 shadow-lg group-hover:border-[#f0e6d2] transition-colors bg-black/30">
-                         {/* Placeholder for User Avatar if available, or just icon */}
-                         <img src={resolveImgPath(PLAYER_AVATAR_URL)} alt="User" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                         <img src={getPlayerAvatarUrl(playerAvatarInfo)} alt="User" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <span className="text-[#f0e6d2] font-bold text-sm md:text-base tracking-widest group-hover:text-amber-400 transition-colors bg-black/40 px-3 py-0.5 rounded-full border border-[#9b7a4c]/30">
                         自室

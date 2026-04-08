@@ -259,6 +259,8 @@ export interface SceneProps {
   // 酒场菜单系统
   onOpenTavernMenu?: () => void;
   tavernMenu?: TavernMenuState;
+  // 玩家头像信息
+  playerAvatarInfo?: { has_custom_avatar: boolean; custom_avatar_url?: string };
 }
 
 // --- 道具系统类型定义 ---
