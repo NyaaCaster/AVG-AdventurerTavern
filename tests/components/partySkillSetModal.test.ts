@@ -690,3 +690,95 @@ describe('PartySkillSetModal - 技能槽配置', () => {
     });
   });
 });
+
+describe('PartySkillSetModal - partyMembers 玩家头像处理', () => {
+  interface PlayerAvatarInfo {
+    has_custom_avatar: boolean;
+    custom_avatar_url?: string;
+  }
+
+  const PLAYER_AVATAR_URL = 'img/face/1.png';
+  const CHARACTER_IMAGES: Record<string, { avatarUrl: string }> = {
+    char_1: { avatarUrl: 'img/face/1.png' },
+    char_101: { avatarUrl: 'img/face/101.png' },
+    char_102: { avatarUrl: 'img/face/102.png' },
+  };
+
+  const mockFileUploadService = {
+    getFileUrl: (path: string) => `https://test-server.com/files/${path}`,
+  };
+
+  const resolveImgPath = (path: string): string => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `https://h.hony-wen.com:5102/files/${path}`;
+  };
+
+  const getPlayerAvatarUrl = (avatarInfo: PlayerAvatarInfo | null | undefined): string => {
+    if (avatarInfo?.has_custom_avatar && avatarInfo.custom_avatar_url) {
+      return mockFileUploadService.getFileUrl(avatarInfo.custom_avatar_url);
+    }
+    return resolveImgPath(PLAYER_AVATAR_URL);
+  };
+
+  const calculatePartyMemberAvatar = (
+    memberId: string,
+    playerAvatarInfo?: PlayerAvatarInfo
+  ): string => {
+    const isPlayer = memberId === 'char_1';
+    
+    if (isPlayer) {
+      return getPlayerAvatarUrl(playerAvatarInfo);
+    }
+    
+    return CHARACTER_IMAGES[memberId]?.avatarUrl || '';
+  };
+
+  describe('partyMembers 头像计算', () => {
+    it('玩家角色应该使用自定义头像', () => {
+      const playerAvatarInfo: PlayerAvatarInfo = {
+        has_custom_avatar: true,
+        custom_avatar_url: 'img/face/userFace/456_face.png',
+      };
+      
+      const result = calculatePartyMemberAvatar('char_1', playerAvatarInfo);
+      
+      expect(result).toBe('https://test-server.com/files/img/face/userFace/456_face.png');
+    });
+
+    it('玩家角色无自定义头像时应该使用默认头像', () => {
+      const playerAvatarInfo: PlayerAvatarInfo = {
+        has_custom_avatar: false,
+      };
+      
+      const result = calculatePartyMemberAvatar('char_1', playerAvatarInfo);
+      
+      expect(result).toContain('img/face/1.png');
+    });
+
+    it('非玩家角色应该使用角色默认头像', () => {
+      const playerAvatarInfo: PlayerAvatarInfo = {
+        has_custom_avatar: true,
+        custom_avatar_url: 'img/face/userFace/123_face.png',
+      };
+      
+      const result = calculatePartyMemberAvatar('char_101', playerAvatarInfo);
+      
+      expect(result).toBe('img/face/101.png');
+    });
+
+    it('非玩家角色不受 playerAvatarInfo 影响', () => {
+      const result1 = calculatePartyMemberAvatar('char_102', { has_custom_avatar: true, custom_avatar_url: 'custom.png' });
+      const result2 = calculatePartyMemberAvatar('char_102', undefined);
+      
+      expect(result1).toBe('img/face/102.png');
+      expect(result2).toBe('img/face/102.png');
+    });
+
+    it('玩家头像信息为undefined时应该使用默认头像', () => {
+      const result = calculatePartyMemberAvatar('char_1', undefined);
+      
+      expect(result).toContain('img/face/1.png');
+    });
+  });
+});

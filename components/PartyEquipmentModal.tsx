@@ -664,9 +664,12 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
   const partyMembers = useMemo(() => {
     return battleParty.map((memberId, idx) => {
       if (!memberId) return null;
+      const isPlayer = memberId === 'char_1';
       const character = CHARACTERS[memberId];
       const stat = characterStats[memberId];
-      const avatarUrl = CHARACTER_IMAGES[memberId]?.avatarUrl || character?.avatarUrl || '';
+      const avatarUrl = isPlayer 
+        ? getPlayerAvatarUrl(playerAvatarInfo)
+        : (CHARACTER_IMAGES[memberId]?.avatarUrl || character?.avatarUrl || '');
       const rawName = character?.name || '未知角色';
       const displayName = resolveCharacterDisplayName(rawName, userName);
       const equipment = characterEquipments[memberId];
@@ -682,7 +685,7 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
         weaponName: weaponItem?.name || '未装备'
       };
     });
-  }, [battleParty, characterStats, characterEquipments, userName]);
+  }, [battleParty, characterStats, characterEquipments, userName, playerAvatarInfo]);
 
   const equipmentList = useMemo(() => {
     return getAllEquipmentsInInventory(inventory);

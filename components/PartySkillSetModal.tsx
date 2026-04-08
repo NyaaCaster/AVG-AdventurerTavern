@@ -437,9 +437,12 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
   const partyMembers = useMemo(() => {
     return battleParty.map((memberId) => {
       if (!memberId) return null;
+      const isPlayer = memberId === 'char_1';
       const character = CHARACTERS[memberId];
       const stat = characterStats[memberId];
-      const avatarUrl = CHARACTER_IMAGES[memberId]?.avatarUrl || character?.avatarUrl || '';
+      const avatarUrl = isPlayer 
+        ? getPlayerAvatarUrl(playerAvatarInfo)
+        : (CHARACTER_IMAGES[memberId]?.avatarUrl || character?.avatarUrl || '');
       const rawName = character?.name || '未知角色';
       const displayName = resolveCharacterDisplayName(rawName, userName);
 
@@ -451,7 +454,7 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
         className: character?.battleData?.className || '未知职业'
       };
     });
-  }, [battleParty, characterStats, userName]);
+  }, [battleParty, characterStats, userName, playerAvatarInfo]);
 
   const standbyCharacters = useMemo(() => {
     const partySet = new Set(battleParty.filter(Boolean));
