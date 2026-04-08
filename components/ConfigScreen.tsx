@@ -210,6 +210,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
 
   // 点击计数器 Refs
   const headerClickRef = useRef({ count: 0, startTime: 0 });
@@ -322,6 +323,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
             custom_avatar_url: avatarUrl,
             has_custom_avatar: true
           } : null);
+          setAvatarTimestamp(Date.now());
         } else {
           alert(updateResult.message || '头像更新失败');
         }
@@ -346,7 +348,8 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   // 获取用户头像URL
   const getUserAvatarUrl = () => {
     if (userInfo?.has_custom_avatar && userInfo.custom_avatar_url) {
-      return fileUploadService.getFileUrl(userInfo.custom_avatar_url);
+      const baseUrl = fileUploadService.getFileUrl(userInfo.custom_avatar_url);
+      return `${baseUrl}?t=${avatarTimestamp}`;
     }
     return resolveImgPath(PLAYER_AVATAR_URL);
   };
