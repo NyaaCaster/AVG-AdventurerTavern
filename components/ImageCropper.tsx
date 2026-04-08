@@ -28,11 +28,9 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 100, height: 100 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
 
-  // 所有在 handleMove 中使用的值都用 ref 存储，避免闭包陷阱
+  const aspectRatio = targetWidth / targetHeight;
+
   const cropAreaRef = useRef<CropArea>(cropArea);
   const initialCropAreaRef = useRef<CropArea | null>(null);
   const imageSizeRef = useRef(imageSize);
@@ -41,10 +39,11 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const resizeHandleRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
   const isResizingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const pendingUpdateRef = useRef<CropArea | null>(null);
+  const isInteractingRef = useRef(false);
+  const boundEventsRef = useRef(false);
 
-  const aspectRatio = targetWidth / targetHeight;
-
-  // 同步 ref
   useEffect(() => {
     cropAreaRef.current = cropArea;
   }, [cropArea]);
@@ -56,18 +55,6 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   useEffect(() => {
     displaySizeRef.current = displaySize;
   }, [displaySize]);
-
-  useEffect(() => {
-    isDraggingRef.current = isDragging;
-  }, [isDragging]);
-
-  useEffect(() => {
-    isResizingRef.current = isResizing;
-  }, [isResizing]);
-
-  useEffect(() => {
-    resizeHandleRef.current = resizeHandle;
-  }, [resizeHandle]);
 
   useEffect(() => {
     const img = new Image();
@@ -109,11 +96,150 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     setDisplaySize({ width: rect.width, height: rect.height });
   };
 
-  const getEventPosition = (e: React.MouseEvent | React.TouchEvent) => {
+  const getEventPosition = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): { x: number; y: number } | null => {
     if ('touches' in e) {
+      if (e.touches.length === 0) return null;
       return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
     return { x: e.clientX, y: e.clientY };
+  };
+
+  const flushUpdate = () => {
+    if (pendingUpdateRef.current) {
+      setCropArea(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
+    rafRef.current = null;
+  };
+
+  const scheduleUpdate = (newArea: CropArea) => {
+    pendingUpdateRef.current = newArea;
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(flushUpdate);
+    }
+  };
+
+  const handleMove = (e: MouseEvent | TouchEvent) => {
+    if (!isInteractingRef.current) return;
+
+    e.preventDefault();
+    
+    const pos = getEventPosition(e);
+    if (!pos) return;
+    
+    const currentResizeHandle = resizeHandleRef.current;
+    const currentDragStart = dragStartRef.current;
+    const currentDisplaySize = displaySizeRef.current;
+    const currentImageSize = imageSizeRef.current;
+    const initial = initialCropAreaRef.current;
+
+    if (!initial) return;
+
+    const deltaX = pos.x - currentDragStart.x;
+    const deltaY = pos.y - currentDragStart.y;
+
+    const scaleX = currentDisplaySize.width > 0 ? currentImageSize.width / currentDisplaySize.width : 1;
+    const scaleY = currentDisplaySize.height > 0 ? currentImageSize.height / currentDisplaySize.height : 1;
+
+    if (isDraggingRef.current) {
+      const scaledDeltaX = deltaX * scaleX;
+      const scaledDeltaY = deltaY * scaleY;
+
+      let newX = initial.x + scaledDeltaX;
+      let newY = initial.y + scaledDeltaY;
+
+      newX = Math.max(0, Math.min(currentImageSize.width - initial.width, newX));
+      newY = Math.max(0, Math.min(currentImageSize.height - initial.height, newY));
+
+      scheduleUpdate({ ...initial, x: newX, y: newY });
+    } else if (isResizingRef.current && currentResizeHandle) {
+      const scaledDeltaX = deltaX * scaleX;
+      const scaledDeltaY = deltaY * scaleY;
+      const minSize = 50;
+
+      let newWidth = initial.width;
+      let newHeight = initial.height;
+      let newX = initial.x;
+      let newY = initial.y;
+
+      if (currentResizeHandle.includes('e')) {
+        newWidth = Math.max(minSize, initial.width + scaledDeltaX);
+        newHeight = newWidth / aspectRatio;
+        
+        if (newX + newWidth > currentImageSize.width) {
+          newWidth = currentImageSize.width - newX;
+          newHeight = newWidth / aspectRatio;
+        }
+      } else if (currentResizeHandle.includes('w')) {
+        const potentialWidth = initial.width - scaledDeltaX;
+        if (potentialWidth >= minSize && initial.x + scaledDeltaX >= 0) {
+          newWidth = potentialWidth;
+          newHeight = newWidth / aspectRatio;
+          newX = initial.x + scaledDeltaX;
+        }
+      }
+
+      if (currentResizeHandle.includes('s')) {
+        const potentialHeight = initial.height + scaledDeltaY;
+        if (potentialHeight >= minSize) {
+          newHeight = Math.min(potentialHeight, currentImageSize.height - newY);
+          newWidth = newHeight * aspectRatio;
+        }
+      } else if (currentResizeHandle.includes('n')) {
+        const potentialHeight = initial.height - scaledDeltaY;
+        if (potentialHeight >= minSize && initial.y + scaledDeltaY >= 0) {
+          newHeight = potentialHeight;
+          newWidth = newHeight * aspectRatio;
+          newY = initial.y + scaledDeltaY;
+        }
+      }
+
+      if (newX < 0) {
+        newWidth += newX;
+        newX = 0;
+        newHeight = newWidth / aspectRatio;
+      }
+      if (newY < 0) {
+        newHeight += newY;
+        newY = 0;
+        newWidth = newHeight * aspectRatio;
+      }
+      if (newX + newWidth > currentImageSize.width) {
+        newWidth = currentImageSize.width - newX;
+        newHeight = newWidth / aspectRatio;
+      }
+      if (newY + newHeight > currentImageSize.height) {
+        newHeight = currentImageSize.height - newY;
+        newWidth = newHeight * aspectRatio;
+      }
+
+      scheduleUpdate({ x: newX, y: newY, width: newWidth, height: newHeight });
+    }
+  };
+
+  const handleEnd = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (pendingUpdateRef.current) {
+      setCropArea(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
+    
+    isDraggingRef.current = false;
+    isResizingRef.current = false;
+    isInteractingRef.current = false;
+    resizeHandleRef.current = null;
+    initialCropAreaRef.current = null;
+
+    if (boundEventsRef.current) {
+      boundEventsRef.current = false;
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+    }
   };
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent, handle?: string) => {
@@ -121,148 +247,42 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     e.stopPropagation();
     
     const pos = getEventPosition(e);
+    if (!pos) return;
     
-    // 直接更新 ref，确保立即生效
     dragStartRef.current = { x: pos.x, y: pos.y };
     initialCropAreaRef.current = { ...cropAreaRef.current };
 
     if (handle) {
-      setIsResizing(true);
-      setResizeHandle(handle);
-      // 同时更新 ref，确保 handleMove 能立即获取
       isResizingRef.current = true;
       resizeHandleRef.current = handle;
     } else {
-      setIsDragging(true);
       isDraggingRef.current = true;
     }
-  };
+    
+    isInteractingRef.current = true;
 
-  // handleMove 完全通过 ref 获取值，不依赖任何会频繁变化的 state
-  const handleMove = useCallback(
-    (e: MouseEvent | TouchEvent) => {
-      e.preventDefault();
-      
-      // 从 ref 获取最新值，避免闭包陷阱
-      const currentIsDragging = isDraggingRef.current;
-      const currentIsResizing = isResizingRef.current;
-      const currentResizeHandle = resizeHandleRef.current;
-      const currentDragStart = dragStartRef.current;
-      const currentDisplaySize = displaySizeRef.current;
-      const currentImageSize = imageSizeRef.current;
-      const initial = initialCropAreaRef.current;
-
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      
-      const deltaX = clientX - currentDragStart.x;
-      const deltaY = clientY - currentDragStart.y;
-
-      const scaleX = currentDisplaySize.width > 0 ? currentImageSize.width / currentDisplaySize.width : 1;
-      const scaleY = currentDisplaySize.height > 0 ? currentImageSize.height / currentDisplaySize.height : 1;
-
-      if (currentIsDragging && initial) {
-        const scaledDeltaX = deltaX * scaleX;
-        const scaledDeltaY = deltaY * scaleY;
-
-        let newX = initial.x + scaledDeltaX;
-        let newY = initial.y + scaledDeltaY;
-
-        newX = Math.max(0, Math.min(currentImageSize.width - initial.width, newX));
-        newY = Math.max(0, Math.min(currentImageSize.height - initial.height, newY));
-
-        setCropArea(prev => ({ ...prev, x: newX, y: newY }));
-      } else if (currentIsResizing && currentResizeHandle && initial) {
-        const scaledDeltaX = deltaX * scaleX;
-        const scaledDeltaY = deltaY * scaleY;
-        const minSize = 50;
-
-        let newWidth = initial.width;
-        let newHeight = initial.height;
-        let newX = initial.x;
-        let newY = initial.y;
-
-        if (currentResizeHandle.includes('e')) {
-          newWidth = Math.max(minSize, initial.width + scaledDeltaX);
-          newHeight = newWidth / aspectRatio;
-          
-          if (newX + newWidth > currentImageSize.width) {
-            newWidth = currentImageSize.width - newX;
-            newHeight = newWidth / aspectRatio;
-          }
-        } else if (currentResizeHandle.includes('w')) {
-          const potentialWidth = initial.width - scaledDeltaX;
-          if (potentialWidth >= minSize && initial.x + scaledDeltaX >= 0) {
-            newWidth = potentialWidth;
-            newHeight = newWidth / aspectRatio;
-            newX = initial.x + scaledDeltaX;
-          }
-        }
-
-        if (currentResizeHandle.includes('s')) {
-          const potentialHeight = initial.height + scaledDeltaY;
-          if (potentialHeight >= minSize) {
-            newHeight = Math.min(potentialHeight, currentImageSize.height - newY);
-            newWidth = newHeight * aspectRatio;
-          }
-        } else if (currentResizeHandle.includes('n')) {
-          const potentialHeight = initial.height - scaledDeltaY;
-          if (potentialHeight >= minSize && initial.y + scaledDeltaY >= 0) {
-            newHeight = potentialHeight;
-            newWidth = newHeight * aspectRatio;
-            newY = initial.y + scaledDeltaY;
-          }
-        }
-
-        if (newX < 0) {
-          newWidth += newX;
-          newX = 0;
-          newHeight = newWidth / aspectRatio;
-        }
-        if (newY < 0) {
-          newHeight += newY;
-          newY = 0;
-          newWidth = newHeight * aspectRatio;
-        }
-        if (newX + newWidth > currentImageSize.width) {
-          newWidth = currentImageSize.width - newX;
-          newHeight = newWidth / aspectRatio;
-        }
-        if (newY + newHeight > currentImageSize.height) {
-          newHeight = currentImageSize.height - newY;
-          newWidth = newHeight * aspectRatio;
-        }
-
-        setCropArea({ x: newX, y: newY, width: newWidth, height: newHeight });
-      }
-    },
-    [aspectRatio] // 只依赖常量，不依赖会变化的 state
-  );
-
-  const handleEnd = useCallback(() => {
-    setIsDragging(false);
-    setIsResizing(false);
-    setResizeHandle(null);
-    isDraggingRef.current = false;
-    isResizingRef.current = false;
-    resizeHandleRef.current = null;
-    initialCropAreaRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (isDragging || isResizing) {
+    if (!boundEventsRef.current) {
+      boundEventsRef.current = true;
       window.addEventListener('mousemove', handleMove);
       window.addEventListener('mouseup', handleEnd);
       window.addEventListener('touchmove', handleMove, { passive: false });
       window.addEventListener('touchend', handleEnd);
     }
+  };
+
+  useEffect(() => {
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+      if (boundEventsRef.current) {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleEnd);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleEnd);
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, [isDragging, isResizing, handleMove, handleEnd]);
+  }, []);
 
   const handleSave = () => {
     const canvas = document.createElement('canvas');
