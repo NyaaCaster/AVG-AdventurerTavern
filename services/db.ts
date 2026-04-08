@@ -716,3 +716,37 @@ export const getAllCharacterSkills = async (
     console.error('Failed to get all character skills:', res.message);
     return {};
 };
+
+// --- 用户信息服务 ---
+
+export interface UserInfo {
+    id: number;
+    username: string;
+    discord_username?: string;
+    discord_avatar?: string;
+    is_discord_bound: boolean;
+    custom_avatar_url?: string;
+    has_custom_avatar: boolean;
+    created_at: number;
+}
+
+export const getUserInfo = async (userId: number): Promise<UserInfo | null> => {
+    const res = await apiCall('/user/info', { userId });
+    
+    if (res.success && res.user) {
+        return res.user;
+    }
+    
+    console.error('Failed to get user info:', res.message);
+    return null;
+};
+
+export const updateUsername = async (userId: number, newUsername: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiCall('/user/update_username', { userId, newUsername });
+    return res;
+};
+
+export const updateUserAvatar = async (userId: number, avatarUrl: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiCall('/user/update_avatar', { userId, avatarUrl });
+    return res;
+};

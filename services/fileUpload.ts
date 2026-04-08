@@ -57,6 +57,15 @@ class FileUploadService {
     return response.json();
   }
 
+  async uploadBlob(
+    blob: Blob,
+    filename: string,
+    category: string = 'general'
+  ): Promise<UploadResult | UploadError> {
+    const file = new File([blob], filename, { type: blob.type || 'image/png' });
+    return this.uploadFile(file, category);
+  }
+
   async uploadMultipleFiles(
     files: File[],
     category: string = 'general'

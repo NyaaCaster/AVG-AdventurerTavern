@@ -2,6 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings, ApiProvider, ConnectionStatus, ApiConfig, ConfigTab } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
+import { getUserInfo, updateUsername, updateUserAvatar, UserInfo } from '../services/db';
+import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
+import { fileUploadService } from '../services/fileUpload';
+import ImageCropper from './ImageCropper';
 
 interface ConfigScreenProps {
   settings: GameSettings;
@@ -195,6 +199,18 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   const [isNSFWRevealed, setIsNSFWRevealed] = useState(false);
   const [isDebugRevealed, setIsDebugRevealed] = useState(false);
 
+  // 用户信息状态
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [isRenamingUsername, setIsRenamingUsername] = useState(false);
+  const [tempUsername, setTempUsername] = useState("");
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+
+  // 头像编辑状态
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
   // 点击计数器 Refs
   const headerClickRef = useRef({ count: 0, startTime: 0 });
   const visualClickRef = useRef({ count: 0, startTime: 0 });
@@ -232,10 +248,108 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   // 初始化自动连接
   useEffect(() => {
     if (activeTab === 'api' && apiConfig.autoConnect && apiConfig.apiKey) {
-        // 如果是自动连接，我们尝试触发一次“静默”连接逻辑
+        // 如果是自动连接，我们尝试触发一次"静默"连接逻辑
         handleConnect(true);
     }
   }, [activeTab]);
+
+  // 获取用户信息
+  useEffect(() => {
+    if (currentUserId) {
+        getUserInfo(currentUserId).then(info => {
+            if (info) {
+                setUserInfo(info);
+            }
+        });
+    }
+  }, [currentUserId]);
+
+  // 处理用户名更新
+  const handleUpdateUsername = async () => {
+    if (!currentUserId || !tempUsername.trim()) return;
+    
+    setIsUpdatingUsername(true);
+    const result = await updateUsername(currentUserId, tempUsername.trim());
+    setIsUpdatingUsername(false);
+    
+    if (result.success) {
+        setUserInfo(prev => prev ? { ...prev, username: tempUsername.trim() } : null);
+        setIsRenamingUsername(false);
+    } else {
+        alert(result.message || '更新失败');
+    }
+  };
+
+  // 处理文件选择
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(jpeg|png)$/)) {
+      alert('请选择 JPG 或 PNG 格式的图片');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setSelectedImage(dataUrl);
+      setIsCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    e.target.value = '';
+  };
+
+  // 处理裁剪完成
+  const handleCropSave = async (croppedBlob: Blob) => {
+    if (!currentUserId) return;
+
+    setIsCropperOpen(false);
+    setIsUploadingAvatar(true);
+
+    try {
+      const filename = `${currentUserId}_face.png`;
+      const result = await fileUploadService.uploadBlob(croppedBlob, filename, 'img/face/userFace');
+
+      if (result.success && 'url' in result) {
+        const avatarUrl = result.path;
+        const updateResult = await updateUserAvatar(currentUserId, avatarUrl);
+
+        if (updateResult.success) {
+          setUserInfo(prev => prev ? {
+            ...prev,
+            custom_avatar_url: avatarUrl,
+            has_custom_avatar: true
+          } : null);
+        } else {
+          alert(updateResult.message || '头像更新失败');
+        }
+      } else {
+        alert('头像上传失败');
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      alert('头像上传出错');
+    } finally {
+      setIsUploadingAvatar(false);
+      setSelectedImage(null);
+    }
+  };
+
+  // 处理裁剪取消
+  const handleCropCancel = () => {
+    setIsCropperOpen(false);
+    setSelectedImage(null);
+  };
+
+  // 获取用户头像URL
+  const getUserAvatarUrl = () => {
+    if (userInfo?.has_custom_avatar && userInfo.custom_avatar_url) {
+      return fileUploadService.getFileUrl(userInfo.custom_avatar_url);
+    }
+    return resolveImgPath(PLAYER_AVATAR_URL);
+  };
 
   // 点击外部关闭下拉列表
   useEffect(() => {
@@ -811,12 +925,82 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                 {currentUserId && (
                   <div className="p-6 bg-slate-800/40 rounded-lg border border-slate-700/30">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
-                        <i className="fa-solid fa-user text-2xl text-white"></i>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-lg border-2 border-amber-500/50 overflow-hidden bg-slate-800 shadow-lg">
+                          <img 
+                            src={getUserAvatarUrl()} 
+                            alt="玩家头像" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingAvatar}
+                          className="text-xs text-amber-500 hover:text-amber-400 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {isUploadingAvatar ? (
+                            <>
+                              <i className="fa-solid fa-spinner fa-spin"></i>
+                              上传中
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-pen"></i>
+                              编辑
+                            </>
+                          )}
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
                       </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-slate-200">用户 ID</h4>
-                        <p className="text-2xl font-mono font-bold text-amber-500">{currentUserId}</p>
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <span className="text-sm text-slate-400">用户ID: </span>
+                          <span className="text-lg font-mono font-bold text-amber-500">{currentUserId}</span>
+                        </div>
+                        {isRenamingUsername ? (
+                          <div className="flex gap-2 items-center">
+                            <input 
+                              type="text" 
+                              value={tempUsername} 
+                              onChange={e => setTempUsername(e.target.value)} 
+                              className="flex-1 bg-slate-950/50 border border-cyan-500 text-slate-100 px-3 py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                              autoFocus
+                              disabled={isUpdatingUsername}
+                              placeholder="输入新用户名"
+                            />
+                            <button 
+                              onClick={handleUpdateUsername} 
+                              disabled={isUpdatingUsername || !tempUsername.trim()}
+                              className="text-green-500 hover:text-green-400 disabled:opacity-50"
+                            >
+                              {isUpdatingUsername ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>}
+                            </button>
+                            <button 
+                              onClick={() => setIsRenamingUsername(false)} 
+                              disabled={isUpdatingUsername}
+                              className="text-red-500 hover:text-red-400 disabled:opacity-50"
+                            >
+                              <i className="fa-solid fa-xmark"></i>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-medium text-slate-200">{userInfo?.username || '加载中...'}</span>
+                            <button 
+                              onClick={() => { setIsRenamingUsername(true); setTempUsername(userInfo?.username || ''); }} 
+                              className="text-slate-500 hover:text-cyan-400 text-sm transition-colors"
+                              title="编辑用户名"
+                            >
+                              <i className="fa-solid fa-pen-to-square"></i>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -846,6 +1030,17 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
 
         </div>
       </div>
+
+      {/* 图片裁剪组件 */}
+      {isCropperOpen && selectedImage && (
+        <ImageCropper
+          image={selectedImage}
+          targetWidth={100}
+          targetHeight={100}
+          onSave={handleCropSave}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };

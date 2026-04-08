@@ -89,8 +89,22 @@ db.serialize(() => {
         discord_username TEXT,
         discord_avatar TEXT,
         is_discord_bound INTEGER DEFAULT 0,
+        custom_avatar_url TEXT,
+        has_custom_avatar INTEGER DEFAULT 0,
         created_at INTEGER
     )`);
+    
+    // 为现有用户添加新字段（如果不存在）
+    db.run(`ALTER TABLE users ADD COLUMN custom_avatar_url TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('添加 custom_avatar_url 字段失败:', err);
+        }
+    });
+    db.run(`ALTER TABLE users ADD COLUMN has_custom_avatar INTEGER DEFAULT 0`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('添加 has_custom_avatar 字段失败:', err);
+        }
+    });;
 
     // 存档表 (简化结构，直接存储 JSON 字符串)
     db.run(`CREATE TABLE IF NOT EXISTS saves (
@@ -2092,6 +2106,106 @@ app.post('/api/upload/list', (req, res) => {
         
         res.json({ success: true, files: fileInfos });
     });
+});
+
+// ----------------- 用户信息 API -----------------
+
+// 17. 获取用户信息
+app.post('/api/user/info', (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+        return res.json({ success: false, message: '缺少 userId' });
+    }
+    
+    db.get(
+        "SELECT id, username, discord_username, discord_avatar, is_discord_bound, custom_avatar_url, has_custom_avatar, created_at FROM users WHERE id = ?",
+        [userId],
+        (err, row) => {
+            if (err) {
+                return res.json({ success: false, message: '数据库错误' });
+            }
+            
+            if (!row) {
+                return res.json({ success: false, message: '用户不存在' });
+            }
+            
+            res.json({
+                success: true,
+                user: {
+                    id: row.id,
+                    username: row.username,
+                    discord_username: row.discord_username,
+                    discord_avatar: row.discord_avatar,
+                    is_discord_bound: !!row.is_discord_bound,
+                    custom_avatar_url: row.custom_avatar_url,
+                    has_custom_avatar: !!row.has_custom_avatar,
+                    created_at: row.created_at
+                }
+            });
+        }
+    );
+});
+
+// 18. 更新用户名
+app.post('/api/user/update_username', (req, res) => {
+    const { userId, newUsername } = req.body;
+    
+    if (!userId || !newUsername) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+    
+    const trimmedUsername = newUsername.trim();
+    
+    if (trimmedUsername.length < 2 || trimmedUsername.length > 20) {
+        return res.json({ success: false, message: '用户名长度必须在 2-20 个字符之间' });
+    }
+    
+    db.run(
+        "UPDATE users SET username = ? WHERE id = ?",
+        [trimmedUsername, userId],
+        function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE constraint failed')) {
+                    return res.json({ success: false, message: '用户名已被使用' });
+                }
+                return res.json({ success: false, message: '更新失败: ' + err.message });
+            }
+            
+            if (this.changes === 0) {
+                return res.json({ success: false, message: '用户不存在' });
+            }
+            
+            res.json({ success: true, message: '用户名更新成功' });
+        }
+    );
+});
+
+// 19. 更新用户头像
+app.post('/api/user/update_avatar', (req, res) => {
+    const { userId, avatarUrl } = req.body;
+    
+    if (!userId || avatarUrl === undefined) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+    
+    const hasCustomAvatar = avatarUrl ? 1 : 0;
+    
+    db.run(
+        "UPDATE users SET custom_avatar_url = ?, has_custom_avatar = ? WHERE id = ?",
+        [avatarUrl, hasCustomAvatar, userId],
+        function(err) {
+            if (err) {
+                return res.json({ success: false, message: '更新失败: ' + err.message });
+            }
+            
+            if (this.changes === 0) {
+                return res.json({ success: false, message: '用户不存在' });
+            }
+            
+            res.json({ success: true, message: '头像更新成功' });
+        }
+    );
 });
 
 // 上传错误处理
