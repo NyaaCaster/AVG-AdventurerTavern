@@ -31,6 +31,8 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
 
   const aspectRatio = targetWidth / targetHeight;
 
+  // 使用 ref 存储最新值，避免事件回调中的闭包陷阱
+  const aspectRatioRef = useRef(aspectRatio);
   const cropAreaRef = useRef<CropArea>(cropArea);
   const initialCropAreaRef = useRef<CropArea | null>(null);
   const imageSizeRef = useRef(imageSize);
@@ -43,6 +45,10 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const pendingUpdateRef = useRef<CropArea | null>(null);
   const isInteractingRef = useRef(false);
   const boundEventsRef = useRef(false);
+
+  useEffect(() => {
+    aspectRatioRef.current = aspectRatio;
+  }, [aspectRatio]);
 
   useEffect(() => {
     cropAreaRef.current = cropArea;
@@ -101,25 +107,26 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       if (e.touches.length === 0) return null;
       return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
-    return { x: e.clientX, y: e.clientY };
+    return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
   };
 
-  const flushUpdate = () => {
+  const flushUpdate = useCallback(() => {
     if (pendingUpdateRef.current) {
       setCropArea(pendingUpdateRef.current);
       pendingUpdateRef.current = null;
     }
     rafRef.current = null;
-  };
+  }, []);
 
-  const scheduleUpdate = (newArea: CropArea) => {
+  const scheduleUpdate = useCallback((newArea: CropArea) => {
     pendingUpdateRef.current = newArea;
     if (!rafRef.current) {
       rafRef.current = requestAnimationFrame(flushUpdate);
     }
-  };
+  }, [flushUpdate]);
 
-  const handleMove = (e: MouseEvent | TouchEvent) => {
+  // 使用 useCallback 包裹，确保解绑时引用一致
+  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isInteractingRef.current) return;
 
     e.preventDefault();
@@ -132,6 +139,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     const currentDisplaySize = displaySizeRef.current;
     const currentImageSize = imageSizeRef.current;
     const initial = initialCropAreaRef.current;
+    const currentAspectRatio = aspectRatioRef.current;
 
     if (!initial) return;
 
@@ -153,71 +161,64 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
 
       scheduleUpdate({ ...initial, x: newX, y: newY });
     } else if (isResizingRef.current && currentResizeHandle) {
+      // 修复的缩放逻辑：以 X 轴为主导，Y 轴做边界约束
       const scaledDeltaX = deltaX * scaleX;
-      const scaledDeltaY = deltaY * scaleY;
       const minSize = 50;
 
       let newWidth = initial.width;
-      let newHeight = initial.height;
       let newX = initial.x;
-      let newY = initial.y;
 
+      // 1. 统一用 X 轴的拖动来决定基础宽度
       if (currentResizeHandle.includes('e')) {
-        newWidth = Math.max(minSize, initial.width + scaledDeltaX);
-        newHeight = newWidth / aspectRatio;
-        
-        if (newX + newWidth > currentImageSize.width) {
-          newWidth = currentImageSize.width - newX;
-          newHeight = newWidth / aspectRatio;
+        newWidth = initial.width + scaledDeltaX;
+      } else if (currentResizeHandle.includes('w')) {
+        newWidth = initial.width - scaledDeltaX;
+      }
+
+      // 限制最小宽度
+      if (newWidth < minSize) newWidth = minSize;
+
+      // 限制左右最大边界
+      if (currentResizeHandle.includes('e')) {
+        if (initial.x + newWidth > currentImageSize.width) {
+          newWidth = currentImageSize.width - initial.x;
         }
       } else if (currentResizeHandle.includes('w')) {
-        const potentialWidth = initial.width - scaledDeltaX;
-        if (potentialWidth >= minSize && initial.x + scaledDeltaX >= 0) {
-          newWidth = potentialWidth;
-          newHeight = newWidth / aspectRatio;
-          newX = initial.x + scaledDeltaX;
+        if (initial.x - (newWidth - initial.width) < 0) {
+          newWidth = initial.width + initial.x;
         }
       }
 
+      // 2. 根据比例算出高度
+      let newHeight = newWidth / currentAspectRatio;
+
+      // 3. 限制上下最大边界 (如果高度超限，反向压缩宽度)
       if (currentResizeHandle.includes('s')) {
-        const potentialHeight = initial.height + scaledDeltaY;
-        if (potentialHeight >= minSize) {
-          newHeight = Math.min(potentialHeight, currentImageSize.height - newY);
-          newWidth = newHeight * aspectRatio;
+        if (initial.y + newHeight > currentImageSize.height) {
+          newHeight = currentImageSize.height - initial.y;
+          newWidth = newHeight * currentAspectRatio;
         }
       } else if (currentResizeHandle.includes('n')) {
-        const potentialHeight = initial.height - scaledDeltaY;
-        if (potentialHeight >= minSize && initial.y + scaledDeltaY >= 0) {
-          newHeight = potentialHeight;
-          newWidth = newHeight * aspectRatio;
-          newY = initial.y + scaledDeltaY;
+        if (initial.y - (newHeight - initial.height) < 0) {
+          newHeight = initial.height + initial.y;
+          newWidth = newHeight * currentAspectRatio;
         }
       }
 
-      if (newX < 0) {
-        newWidth += newX;
-        newX = 0;
-        newHeight = newWidth / aspectRatio;
+      // 4. 最后精准计算 X 和 Y 的坐标
+      if (currentResizeHandle.includes('w')) {
+        newX = initial.x - (newWidth - initial.width);
       }
-      if (newY < 0) {
-        newHeight += newY;
-        newY = 0;
-        newWidth = newHeight * aspectRatio;
-      }
-      if (newX + newWidth > currentImageSize.width) {
-        newWidth = currentImageSize.width - newX;
-        newHeight = newWidth / aspectRatio;
-      }
-      if (newY + newHeight > currentImageSize.height) {
-        newHeight = currentImageSize.height - newY;
-        newWidth = newHeight * aspectRatio;
+      let newY = initial.y;
+      if (currentResizeHandle.includes('n')) {
+        newY = initial.y - (newHeight - initial.height);
       }
 
       scheduleUpdate({ x: newX, y: newY, width: newWidth, height: newHeight });
     }
-  };
+  }, [scheduleUpdate]);
 
-  const handleEnd = () => {
+  const handleEnd = useCallback(() => {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -240,7 +241,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleEnd);
     }
-  };
+  }, [handleMove]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent, handle?: string) => {
     e.preventDefault();
@@ -282,7 +283,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, []);
+  }, [handleMove, handleEnd]); // 添加依赖项
 
   const handleSave = () => {
     const canvas = document.createElement('canvas');
@@ -343,13 +344,6 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   const handleResizeStart = (e: React.MouseEvent | React.TouchEvent, position: string) => {
-    console.log('[ImageCropper] handleResizeStart triggered', {
-      position,
-      eventType: e.type,
-      target: (e.target as HTMLElement).tagName,
-      targetClass: (e.target as HTMLElement).className,
-      currentTarget: (e.currentTarget as HTMLElement).tagName,
-    });
     e.preventDefault();
     e.stopPropagation();
     handleStart(e, position);
@@ -358,18 +352,9 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const handleCropAreaStart = (e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     const isHandle = target.closest('[data-resize-handle]');
-    console.log('[ImageCropper] handleCropAreaStart triggered', {
-      eventType: e.type,
-      target: target.tagName,
-      targetClass: target.className,
-      isHandle: !!isHandle,
-      handlePosition: isHandle?.getAttribute('data-resize-handle'),
-    });
     if (isHandle) {
-      console.log('[ImageCropper] handleCropAreaStart: ignored, clicked on handle');
       return;
     }
-    console.log('[ImageCropper] handleCropAreaStart: starting drag');
     handleStart(e);
   };
 
@@ -391,12 +376,15 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     );
   }
 
-  const scaleRatio = displaySize.width > 0 ? cropArea.width / displaySize.width : 0;
+  // 修复的渲染坐标计算逻辑，保证 UI 显示与底层坐标完美对应
+  const displayScaleX = imageSize.width > 0 ? displaySize.width / imageSize.width : 0;
+  const displayScaleY = imageSize.height > 0 ? displaySize.height / imageSize.height : 0;
+
   const displayCropArea = {
-    x: displaySize.width > 0 ? cropArea.x / (imageSize.width / displaySize.width) : 0,
-    y: displaySize.height > 0 ? cropArea.y / (imageSize.height / displaySize.height) : 0,
-    width: scaleRatio > 0 ? cropArea.width / scaleRatio : 0,
-    height: scaleRatio > 0 ? cropArea.height / scaleRatio : 0,
+    x: cropArea.x * displayScaleX,
+    y: cropArea.y * displayScaleY,
+    width: cropArea.width * displayScaleX,
+    height: cropArea.height * displayScaleY,
   };
 
   return (
