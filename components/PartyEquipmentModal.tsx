@@ -3,7 +3,7 @@ import { BattlePartySlots, CharacterEquipment, CharacterStat, ItemData, ItemTag 
 import { BaseStats, STAT_NAMES_CN } from '../data/battle-data/base_stats_table';
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
-import { resolveImgPath } from '../utils/imagePath';
+import { resolveImgPath, getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
 import { ITEMS_EQUIP } from '../data/item-equip';
 import { ITEM_TAGS, ITEM_CATEGORIES } from '../data/item-type';
 import { buildCharacterBattleStats, CharacterBattleStatsResult } from '../services/characterBattleStats';
@@ -19,6 +19,7 @@ interface PartyEquipmentModalProps {
   userName: string;
   onUpdateEquipment: (characterId: string, equipment: CharacterEquipment, inventoryChanges: Record<string, number>) => void;
   onAutoSave: () => void;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }
 
 type EquipmentSlotKey = 'weaponId' | 'armorId' | 'accessory1Id' | 'accessory2Id';
@@ -375,6 +376,7 @@ const CharacterDetailPanel: React.FC<{
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }> = ({
   characterId,
   characterStats,
@@ -386,7 +388,8 @@ const CharacterDetailPanel: React.FC<{
   onPrev,
   onNext,
   hasPrev,
-  hasNext
+  hasNext,
+  playerAvatarInfo
 }) => {
   const [selectingSlot, setSelectingSlot] = useState<EquipmentSlotKey | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -497,7 +500,10 @@ const CharacterDetailPanel: React.FC<{
     return getAvailableEquipment(inventory, config.category, equipableTags);
   }, [selectingSlot, inventory, equipableTags]);
 
-  const avatarUrl = CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '';
+  const isPlayer = characterId === 'char_1';
+  const avatarUrl = isPlayer 
+    ? getPlayerAvatarUrl(playerAvatarInfo)
+    : (CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '');
   const rawName = character?.name || '未知角色';
   const displayName = resolveCharacterDisplayName(rawName, userName);
 
@@ -626,7 +632,8 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
   inventory,
   userName,
   onUpdateEquipment,
-  onAutoSave
+  onAutoSave,
+  playerAvatarInfo
 }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -900,6 +907,7 @@ const PartyEquipmentModal: React.FC<PartyEquipmentModalProps> = ({
                   onNext={handleNext}
                   hasPrev={hasPrevMember}
                   hasNext={hasNextMember}
+                  playerAvatarInfo={playerAvatarInfo}
                 />
               )}
             </div>

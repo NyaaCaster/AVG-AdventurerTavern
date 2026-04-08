@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { BattlePartySlots, CharacterStat, CharacterUnlocks, CharacterSkills } from '../types';
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
-import { resolveImgPath } from '../utils/imagePath';
+import { resolveImgPath, getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
 import { SKILLS, SkillData } from '../data/battle-data/skills';
 import { resolveCharacterDisplayName } from '../utils/playerText';
 
@@ -17,6 +17,7 @@ interface PartySkillSetModalProps {
   userName: string;
   onUpdateCharacterSkills: (characterId: string, skills: CharacterSkills) => void;
   onAutoSave: () => void;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }
 
 type SkillSlotKey = 'slot1' | 'slot2' | 'slot3' | 'slot4' | 'slot5' | 'slot6' | 'slot7' | 'slot8';
@@ -188,6 +189,7 @@ const CharacterSkillPanel: React.FC<{
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }> = ({
   characterId,
   characterStats,
@@ -198,7 +200,8 @@ const CharacterSkillPanel: React.FC<{
   onPrev,
   onNext,
   hasPrev,
-  hasNext
+  hasNext,
+  playerAvatarInfo
 }) => {
   const [selectingSlot, setSelectingSlot] = useState<SkillSlotKey | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -314,7 +317,10 @@ const CharacterSkillPanel: React.FC<{
     setSelectingSlot(null);
   }, [selectingSlot, characterSkills, onUpdateSkills, isSlot8Locked]);
 
-  const avatarUrl = CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '';
+  const isPlayer = characterId === 'char_1';
+  const avatarUrl = isPlayer 
+    ? getPlayerAvatarUrl(playerAvatarInfo)
+    : (CHARACTER_IMAGES[characterId]?.avatarUrl || character?.avatarUrl || '');
   const rawName = character?.name || '未知角色';
   const displayName = resolveCharacterDisplayName(rawName, userName);
 
@@ -417,7 +423,8 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
   playerLearnedSkills,
   userName,
   onUpdateCharacterSkills,
-  onAutoSave
+  onAutoSave,
+  playerAvatarInfo
 }) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
 
@@ -662,6 +669,7 @@ const PartySkillSetModal: React.FC<PartySkillSetModalProps> = ({
                   onNext={handleNext}
                   hasPrev={hasPrevCharacter}
                   hasNext={hasNextCharacter}
+                  playerAvatarInfo={playerAvatarInfo}
                 />
               )}
             </div>

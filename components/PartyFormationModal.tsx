@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { BattlePartySlots, CharacterEquipment, CharacterStat, CharacterUnlocks } from '../types';
 import { CHARACTERS } from '../data/scenarioData';
 import { CHARACTER_IMAGES } from '../data/resources/characterImageResources';
-import { resolveImgPath } from '../utils/imagePath';
+import { resolveImgPath, getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
 import { ITEMS_EQUIP } from '../data/item-equip';
 import { ITEM_TAGS } from '../data/item-type';
 import { EXP_TABLE } from '../data/battle-data/exp_table';
@@ -19,6 +19,7 @@ interface PartyFormationModalProps {
   onRemoveMember: (slotIndex: number) => void;
   userName: string;
   onAutoSave: () => void;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }
 
 const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
@@ -31,7 +32,8 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
   onAddMember,
   onRemoveMember,
   userName,
-  onAutoSave
+  onAutoSave,
+  playerAvatarInfo
 }) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('char_1');
   const [pendingSlotIndex, setPendingSlotIndex] = useState<number | null>(null);
@@ -142,7 +144,12 @@ const PartyFormationModal: React.FC<PartyFormationModalProps> = ({
               </h3>
               <div className="grid grid-cols-4 gap-1.5 md:gap-2 mb-5">
                 {battleParty.map((memberId, idx) => {
-                  const avatar = memberId ? (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || '') : '';
+                  const isPlayer = memberId === 'char_1';
+                  const avatar = memberId 
+                    ? (isPlayer 
+                        ? getPlayerAvatarUrl(playerAvatarInfo)
+                        : (CHARACTER_IMAGES[memberId]?.avatarUrl || CHARACTERS[memberId]?.avatarUrl || ''))
+                    : '';
                   const rawName = memberId ? CHARACTERS[memberId]?.name : '空位';
                   const name = memberId ? resolveCharacterDisplayName(rawName || '未知角色', userName) : rawName;
                   const memberLevel = memberId ? (characterStats[memberId]?.level || 1) : null;

@@ -1039,6 +1039,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onRemoveMember={core.removeFromBattleParty}
           userName={settings.userName}
           onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after party formation close failed:', err))}
+          playerAvatarInfo={userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined}
       />
       <PartyEquipmentModal
           isOpen={isPartyEquipmentOpen}
@@ -1064,6 +1065,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
             }
           }}
           onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after equipment modal close failed:', err))}
+          playerAvatarInfo={userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined}
       />
       
       <PartySkillSetModal
@@ -1077,6 +1079,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           userName={settings.userName}
           onUpdateCharacterSkills={core.updateCharacterSkills}
           onAutoSave={() => handleAutoSave().catch(err => console.error('Auto-save after skill set modal close failed:', err))}
+          playerAvatarInfo={userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined}
       />
       
       <AdventurerRankModal
@@ -1262,6 +1265,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
           onExecuteCommand={battle.onExecuteCommand}
           onAutoSave={handleAutoSave}
           enableDebug={settings.enableDebug}
+          playerAvatarInfo={userInfo ? { has_custom_avatar: userInfo.has_custom_avatar, custom_avatar_url: userInfo.custom_avatar_url } : undefined}
         />
       )}
     </div>

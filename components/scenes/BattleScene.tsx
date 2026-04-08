@@ -6,7 +6,7 @@ import { PlayerCommand, getSelectableTargets, checkSkillAvailability, BattleEndR
 import { ENEMIES } from '../../data/battle-data/enemies';
 import { CHARACTERS } from '../../data/scenarioData';
 import { CHARACTER_IMAGES } from '../../data/resources/characterImageResources';
-import { resolveImgPath } from '../../utils/imagePath';
+import { resolveImgPath, getPlayerAvatarUrl, PlayerAvatarInfo } from '../../utils/imagePath';
 import { resolveCharacterDisplayName } from '../../utils/playerText';
 import { QuestList, BattlePartySlots, CharacterStat, CharacterEquipment } from '../../types';
 import { SKILLS, SkillData } from '../../data/battle-data/skills';
@@ -51,6 +51,7 @@ interface BattleSceneProps {
   onExecuteCommand: (command: PlayerCommand, targetIds?: string[], skillId?: number, itemId?: string) => void;
   onAutoSave: () => void;
   enableDebug?: boolean;
+  playerAvatarInfo?: PlayerAvatarInfo;
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -68,7 +69,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   endReason,
   onExecuteCommand,
   onAutoSave,
-  enableDebug = false
+  enableDebug = false,
+  playerAvatarInfo
 }) => {
   const [selectedCommand, setSelectedCommand] = useState<PlayerCommand | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
@@ -116,7 +118,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const playerUnitsWithImages: PlayerUnitWithImage[] = useMemo(() => {
     return battleState.playerUnits.map(player => {
       const charId = (player as any).characterId || player.id;
-      const avatarUrl = CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || '';
+      const isPlayer = charId === 'char_1';
+      const avatarUrl = isPlayer 
+        ? getPlayerAvatarUrl(playerAvatarInfo)
+        : (CHARACTER_IMAGES[charId]?.avatarUrl || CHARACTERS[charId]?.avatarUrl || '');
       const rawName = CHARACTERS[charId]?.name || player.name || '未知';
       const name = resolveCharacterDisplayName(rawName, userName);
       return {
@@ -125,7 +130,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         name
       };
     });
-  }, [battleState.playerUnits, userName]);
+  }, [battleState.playerUnits, userName, playerAvatarInfo]);
 
   const sortedEnemiesByPosition = useMemo(() => {
     return [...enemyUnitsWithImages].sort((a, b) => {
