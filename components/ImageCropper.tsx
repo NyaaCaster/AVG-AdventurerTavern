@@ -109,8 +109,8 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       const deltaX = clientX - dragStart.x;
       const deltaY = clientY - dragStart.y;
 
-      const scaleX = imageSize.width / displaySize.width;
-      const scaleY = imageSize.height / displaySize.height;
+      const scaleX = displaySize.width > 0 ? imageSize.width / displaySize.width : 1;
+      const scaleY = displaySize.height > 0 ? imageSize.height / displaySize.height : 1;
 
       if (isDragging && initialCropArea) {
         const scaledDeltaX = deltaX * scaleX;
