@@ -157,7 +157,7 @@ const list = await fileUploadService.listFiles('img/icon');
 
 ### API Key 管理
 
-1. **开发环境**：在 `file-server/upload-server/api-keys.env` 中配置
+1. **开发环境**：在 `file-server/.env` 中配置 `API_KEY`
 2. **生产环境**：使用 GitHub Actions Secrets 管理
 
 ### GitHub Actions Secrets 配置
