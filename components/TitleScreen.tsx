@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, /* registerUser, */ getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
+import { loginUser, registerUser, getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -39,9 +39,12 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
-  
-  // Auth Config
-  const [enablePasswordLogin, setEnablePasswordLogin] = useState(true);
+  const [isRegisterMode, setIsRegisterMode] = useState(false); // 账号密码模式下：登录/注册切换
+
+  // Auth Config — 由后端 .env 的 AUTH_MODE 决定唯一生效的登录系统
+  const [authMode, setAuthMode] = useState<'password' | 'discord'>('discord');
+  const [enablePasswordLogin, setEnablePasswordLogin] = useState(false);
+  const [enableDiscordLogin, setEnableDiscordLogin] = useState(true);
   const [isLoadingAuth, setIsLoadingAuth] = useState(false);
   
   // Migration States [2026-03-08 已停用账号迁移功能]
@@ -63,8 +66,10 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       const loadAuthConfig = async () => {
           const config = await getAuthConfig();
           if (config) {
+              setAuthMode(config.mode);
               setEnablePasswordLogin(config.enablePasswordLogin);
-}
+              setEnableDiscordLogin(config.enableDiscordLogin);
+          }
       };
       loadAuthConfig();
   }, []);
@@ -182,10 +187,11 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
   const handleScreenClick = () => {
       if (titleState === 'WAITING') {
-          // 如果关闭了密码登录，直接跳转 Discord
-          if (!enablePasswordLogin) {
+          // Discord 登录系统：直接跳转 Discord 授权
+          if (authMode === 'discord') {
               handleDiscordLogin();
           } else {
+              // 账号密码登录系统：展开登录/注册表单
               setTitleState('AUTH');
           }
       }
@@ -250,19 +256,37 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           setAuthError("请输入用户名和密码");
           return;
       }
-      
+
       const usernameRegex = /^[a-zA-Z0-9]+$/;
       if (!usernameRegex.test(username)) {
           setAuthError("用户名只允许字母和数字");
           return;
       }
 
-      // Login
+      setIsLoadingAuth(true);
+
+      if (isRegisterMode) {
+          // 注册
+          const result = await registerUser(username, password);
+          setIsLoadingAuth(false);
+          if (result.success && result.uid !== undefined) {
+              // 注册成功后直接登录
+              localStorage.setItem('userId', result.uid.toString());
+              onLogin(result.uid);
+              setTitleState('MENU');
+          } else {
+              setAuthError(result.message);
+          }
+          return;
+      }
+
+      // 登录
       const result = await loginUser(username, password);
+      setIsLoadingAuth(false);
       if (result.success && result.uid !== undefined) {
           localStorage.setItem('userId', result.uid.toString());
           onLogin(result.uid);
-          
+
           // 检查是否需要绑定 Discord
           if (result.needDiscordBind) {
               setAuthError('请绑定 Discord 账号以继续');
@@ -522,36 +546,33 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-[#f0e6d2] tracking-wider mb-2">
-                                冒险者登录
+                                {enablePasswordLogin
+                                    ? (isRegisterMode ? '注册冒险者' : '冒险者登录')
+                                    : '冒险者登录'}
                             </h2>
                             <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
                         </div>
 
-                        {/* Discord 登录按钮（主要登录方式） */}
-                        <div className="mb-6">
-                            <button
-                                onClick={handleDiscordLogin}
-                                disabled={isLoadingAuth}
-                                className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                <i className="fab fa-discord text-xl"></i>
-                                {isLoadingAuth ? '跳转中...' : 'Discord 登录'}
-                            </button>
-                        </div>
-
-                        {/* 分隔线 */}
-                        {enablePasswordLogin && (
-                            <div className="relative mb-6">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-slate-600"></div>
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-slate-900 px-2 text-slate-500">或使用账号密码</span>
-                                </div>
+                        {/* Discord 登录系统（仅 Discord 模式显示） */}
+                        {enableDiscordLogin && (
+                            <div className="mb-2">
+                                <button
+                                    onClick={handleDiscordLogin}
+                                    disabled={isLoadingAuth}
+                                    className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    <i className="fab fa-discord text-xl"></i>
+                                    {isLoadingAuth ? '跳转中...' : 'Discord 登录'}
+                                </button>
+                                {authError && (
+                                    <div className="text-red-400 text-xs text-center font-bold animate-pulse mt-4">
+                                        {authError}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* 账号密码登录表单 */}
+                        {/* 账号密码登录系统（仅账号密码模式显示，登录/注册共用表单） */}
                         {enablePasswordLogin && (
                             <form onSubmit={handleAuthSubmit} className="space-y-4">
                                 <div>
@@ -581,11 +602,25 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2"
+                                    className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2 disabled:opacity-50"
                                     disabled={isLoadingAuth}
                                 >
-                                    登 录
+                                    {isLoadingAuth
+                                        ? '处理中...'
+                                        : (isRegisterMode ? '注 册' : '登 录')}
                                 </button>
+
+                                {/* 登录 / 注册 切换 */}
+                                <div className="text-center text-sm text-slate-400 pt-1">
+                                    {isRegisterMode ? '已有账号？' : '还没有账号？'}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsRegisterMode(!isRegisterMode); setAuthError(null); }}
+                                        className="ml-1 text-amber-500 hover:text-amber-400 font-bold transition-colors"
+                                    >
+                                        {isRegisterMode ? '去登录' : '去注册'}
+                                    </button>
+                                </div>
                             </form>
                         )}
                     </div>

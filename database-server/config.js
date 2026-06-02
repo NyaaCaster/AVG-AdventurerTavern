@@ -6,6 +6,10 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// 登录系统模式：由 .env 的 AUTH_MODE 控制，二选一唯一生效
+// password = 账号密码登录系统  |  discord = Discord OAuth 登录系统
+const AUTH_MODE = (process.env.AUTH_MODE || 'password').toLowerCase();
+
 module.exports = {
     // 后端服务监听端口
     PORT: 3097,
@@ -39,10 +43,13 @@ module.exports = {
     },
 
     // 登录方式配置
-    // [2026-03-08] 已关闭账号密码登录，只保留 Discord 登录
+    // 由 .env 的 AUTH_MODE 单一开关控制，password / discord 互斥唯一生效
     AUTH: {
-        ENABLE_PASSWORD_LOGIN: false, // 关闭账号密码登录
-        FORCE_DISCORD_BIND: false // 关闭强制绑定（已无密码登录，无需绑定）
+        MODE: AUTH_MODE,                              // 'password' | 'discord'
+        ENABLE_PASSWORD_LOGIN: AUTH_MODE === 'password', // 账号密码登录系统是否生效
+        ENABLE_DISCORD_LOGIN: AUTH_MODE === 'discord',   // Discord 登录系统是否生效
+        // 账号密码模式下无需强制绑定 Discord；仅在确有需要时由 Discord 模式逻辑使用
+        FORCE_DISCORD_BIND: false
     },
 
     // 游戏常量（与前端 gameConstants.ts 保持同步）

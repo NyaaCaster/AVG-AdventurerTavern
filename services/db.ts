@@ -66,7 +66,7 @@ export const loginUser = async (username: string, password: string): Promise<{ s
 /**
  * 获取认证配置
  */
-export const getAuthConfig = async (): Promise<{ enablePasswordLogin: boolean; forceDiscordBind: boolean } | null> => {
+export const getAuthConfig = async (): Promise<{ mode: 'password' | 'discord'; enablePasswordLogin: boolean; enableDiscordLogin: boolean; forceDiscordBind: boolean } | null> => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/config`);
         if (!response.ok) return null;

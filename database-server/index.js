@@ -106,6 +106,19 @@ db.serialize(() => {
         }
     });;
 
+    // 账号密码模式：为历史用户（如以往仅通过 Discord 创建、password 为 NULL 者）
+    // 回填默认密码（明文 = 用户名），否则其无法用账号密码登录。
+    // discord 模式下执行无副作用，但仅在 password 模式下才有意义。
+    if (config.AUTH.ENABLE_PASSWORD_LOGIN) {
+        db.run(`UPDATE users SET password = username WHERE password IS NULL OR password = ''`, function(err) {
+            if (err) {
+                console.error('回填历史用户默认密码失败:', err);
+            } else if (this.changes > 0) {
+                console.log(`[Auth] 已为 ${this.changes} 个历史用户回填默认密码（明文=用户名）`);
+            }
+        });
+    }
+
     // 存档表 (简化结构，直接存储 JSON 字符串)
     db.run(`CREATE TABLE IF NOT EXISTS saves (
         user_id INTEGER,
@@ -686,60 +699,66 @@ app.get('/', (req, res) => {
     res.redirect('/api/health');
 });
 
-// 1. 注册 (已关闭，仅通过 Discord 注册)
-// app.post('/api/register', (req, res) => {
-//     const { username, password } = req.body;
-//     const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
-//     stmt.run(username, password, Date.now(), function(err) {
-//         if (err) {
-//             if (err.message.includes('UNIQUE constraint failed')) {
-//                 return res.json({ success: false, message: '用户名已存在' });
-//             }
-//             return res.json({ success: false, message: err.message });
-//         }
-//         const newUid = this.lastID;
-//         // 新账号注册时，赠送初始理智 10000
-//         const initStmt = db.prepare(
-//             `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-//              VALUES (?, 'recharge', 100000, '新账号注册赠送', ?, ?)`
-//         );
-//         initStmt.run(newUid, getClientIp(req), Date.now(), function(initErr) {
-//             if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
-//         });
-//         initStmt.finalize();
-//         res.json({ success: true, uid: newUid });
-//     });
-//     stmt.finalize();
-// });
+// 1. 注册（仅账号密码模式生效）
+// 密码暂以明文存储（前端约定：默认可用账号名作为密码）
+app.post('/api/register', (req, res) => {
+    if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
+        return res.json({ success: false, message: '当前为 Discord 登录模式，注册已禁用' });
+    }
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.json({ success: false, message: '用户名和密码不能为空' });
+    }
+    const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
+    stmt.run(username, password, Date.now(), function(err) {
+        if (err) {
+            if (err.message.includes('UNIQUE constraint failed')) {
+                return res.json({ success: false, message: '用户名已存在' });
+            }
+            return res.json({ success: false, message: err.message });
+        }
+        const newUid = this.lastID;
+        // 新账号注册时，赠送初始理智
+        const initialSanity = config.GAME_CONSTANTS.INITIAL_INSPIRATION * config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
+        const initStmt = db.prepare(
+            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+             VALUES (?, 'recharge', ?, '新账号注册赠送', ?, ?)`
+        );
+        initStmt.run(newUid, initialSanity, getClientIp(req), Date.now(), function(initErr) {
+            if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
+        });
+        initStmt.finalize();
+        res.json({ success: true, uid: newUid });
+    });
+    stmt.finalize();
+});
 
-// 2. 登录
-// [2026-03-08] 已停用密码登录，只保留 Discord 登录
-/*
+// 2. 登录（仅账号密码模式生效）
 app.post('/api/login', (req, res) => {
+    if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
+        return res.json({ success: false, message: '当前为 Discord 登录模式，账号密码登录已禁用' });
+    }
     const { username, password } = req.body;
     db.get("SELECT id, password, is_discord_bound FROM users WHERE username = ?", [username], (err, row) => {
         if (err) return res.json({ success: false, message: '服务器错误' });
         if (!row) return res.json({ success: false, message: '用户名不存在' });
         if (row.password !== password) return res.json({ success: false, message: '密码错误' });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             uid: row.id,
             needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
         });
     });
-});
-*/
-// 密码登录已停用，返回错误提示
-app.post('/api/login', (req, res) => {
-    res.json({ success: false, message: '密码登录已停用，请使用 Discord 登录' });
 });
 
 // 2.1 获取认证配置
 app.get('/api/auth/config', (req, res) => {
     res.json({
         success: true,
+        mode: config.AUTH.MODE,                         // 'password' | 'discord'
         enablePasswordLogin: config.AUTH.ENABLE_PASSWORD_LOGIN,
+        enableDiscordLogin: config.AUTH.ENABLE_DISCORD_LOGIN,
         forceDiscordBind: config.AUTH.FORCE_DISCORD_BIND
     });
 });
@@ -801,12 +820,13 @@ app.get('/auth/discord/callback', async (req, res) => {
                     const username = attempt === 0 ? baseUsername : `${baseUsername}_${attempt}`;
                     
                     const stmt = db.prepare(
-                        `INSERT INTO users (username, discord_id, discord_username, discord_avatar, is_discord_bound, created_at) 
-                         VALUES (?, ?, ?, ?, 1, ?)`
+                        `INSERT INTO users (username, password, discord_id, discord_username, discord_avatar, is_discord_bound, created_at)
+                         VALUES (?, ?, ?, ?, ?, 1, ?)`
                     );
-                    
+
                     stmt.run(
                         username,
+                        username, // password 默认与用户名一致（明文），便于在账号密码模式下登录
                         discordUser.id,
                         discordUser.username,
                         discordUser.avatar,
