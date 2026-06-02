@@ -64,6 +64,7 @@ WORKDIR /app
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Copy SSL certificates (from build secrets, Base64 decoded)
+# h.hony-wen.com 证书
 RUN --mount=type=secret,id=ssl_cert \
     --mount=type=secret,id=ssl_key \
     if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then \
@@ -72,6 +73,22 @@ RUN --mount=type=secret,id=ssl_cert \
         chmod 644 /etc/nginx/ssl/certificate.crt && \
         chmod 600 /etc/nginx/ssl/certificate.key && \
         chown nginx:nginx /etc/nginx/ssl/certificate.* ; \
+    fi
+
+# h.nyaa.host 证书（若未提供该域名 secret，则回退复用 h.hony-wen.com 证书，保证 nginx 可正常启动）
+RUN --mount=type=secret,id=ssl_cert_nyaa \
+    --mount=type=secret,id=ssl_key_nyaa \
+    if [ -f /run/secrets/ssl_cert_nyaa ] && [ -f /run/secrets/ssl_key_nyaa ]; then \
+        base64 -d /run/secrets/ssl_cert_nyaa > /etc/nginx/ssl/nyaa.host.crt && \
+        base64 -d /run/secrets/ssl_key_nyaa > /etc/nginx/ssl/nyaa.host.key ; \
+    elif [ -f /etc/nginx/ssl/certificate.crt ] && [ -f /etc/nginx/ssl/certificate.key ]; then \
+        cp /etc/nginx/ssl/certificate.crt /etc/nginx/ssl/nyaa.host.crt && \
+        cp /etc/nginx/ssl/certificate.key /etc/nginx/ssl/nyaa.host.key ; \
+    fi && \
+    if [ -f /etc/nginx/ssl/nyaa.host.crt ] && [ -f /etc/nginx/ssl/nyaa.host.key ]; then \
+        chmod 644 /etc/nginx/ssl/nyaa.host.crt && \
+        chmod 600 /etc/nginx/ssl/nyaa.host.key && \
+        chown nginx:nginx /etc/nginx/ssl/nyaa.host.* ; \
     fi
 
 # Copy nginx config

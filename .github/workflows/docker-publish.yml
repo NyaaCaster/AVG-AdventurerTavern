@@ -62,6 +62,8 @@ jobs:
           secrets: |
             ssl_cert=${{ secrets.SSL_CERTIFICATE_CRT }}
             ssl_key=${{ secrets.SSL_CERTIFICATE_KEY }}
+            ssl_cert_nyaa=${{ secrets.SSL_NYAA_HOST_CRT }}
+            ssl_key_nyaa=${{ secrets.SSL_NYAA_HOST_KEY }}
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@master
