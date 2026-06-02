@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings, ApiProvider, ConnectionStatus, ApiConfig, ConfigTab } from '../types';
 import { resolveImgPath } from '../utils/imagePath';
-import { getUserInfo, updateUsername, updateUserAvatar, UserInfo } from '../services/db';
+import { getUserInfo, updateUsername, updateUserAvatar, updatePassword, UserInfo } from '../services/db';
 import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 import { fileUploadService } from '../services/fileUpload';
 import ImageCropper from './ImageCropper';
@@ -212,6 +212,14 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
 
+  // 修改密码相关 State
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   // 点击计数器 Refs
   const headerClickRef = useRef({ count: 0, startTime: 0 });
   const visualClickRef = useRef({ count: 0, startTime: 0 });
@@ -278,6 +286,45 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
         setIsRenamingUsername(false);
     } else {
         alert(result.message || '更新失败');
+    }
+  };
+
+  // 关闭修改密码弹窗并重置表单
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setPasswordError(null);
+  };
+
+  // 提交修改密码
+  const handleUpdatePassword = async () => {
+    setPasswordError(null);
+
+    if (!currentUserId) return;
+
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+        setPasswordError('请填写所有密码栏');
+        return;
+    }
+
+    // 新密码与确认新密码一致性校验（不一致则不更新数据库）
+    if (newPassword !== confirmNewPassword) {
+        setPasswordError('两次密码不一致');
+        return;
+    }
+
+    setIsUpdatingPassword(true);
+    const result = await updatePassword(currentUserId, oldPassword, newPassword);
+    setIsUpdatingPassword(false);
+
+    if (result.success) {
+        alert('密码修改成功');
+        closePasswordModal();
+    } else {
+        // 旧密码错误等错误信息由后端返回（如"旧密码错误"）
+        setPasswordError(result.message || '修改失败');
     }
   };
 
@@ -1009,6 +1056,21 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                   </div>
                 )}
 
+                {/* 修改密码模块 */}
+                {currentUserId && (
+                  <div className="p-6 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                    <h4 className="text-lg font-medium text-slate-200 mb-2">修改密码</h4>
+                    <p className="text-sm text-slate-400 mb-4">修改账号登录密码，需要验证当前密码</p>
+                    <button
+                      onClick={() => { setShowPasswordModal(true); setPasswordError(null); }}
+                      className="px-6 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <i className="fa-solid fa-key"></i>
+                      修改密码
+                    </button>
+                  </div>
+                )}
+
                 {onLogout && (
                   <div className="p-6 bg-red-900/20 rounded-lg border border-red-800/50">
                     <h4 className="text-lg font-medium text-slate-200 mb-2">退出登录</h4>
@@ -1043,6 +1105,61 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           onSave={handleCropSave}
           onCancel={handleCropCancel}
         />
+      )}
+
+      {/* 修改密码弹窗（以注册账号界面为基础样式） */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900/95 border border-slate-700/50 p-8 rounded-lg shadow-2xl w-full max-w-sm relative">
+            <button
+              onClick={closePasswordModal}
+              className="absolute top-3 right-4 text-slate-500 hover:text-slate-300 transition-colors"
+              aria-label="关闭"
+            >
+              <i className="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h3 className="text-2xl font-bold text-amber-500 text-center mb-6">修改密码</h3>
+
+            <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="旧密码"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="新密码"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="确认新密码"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+
+              {passwordError && (
+                <div className="text-red-400 text-xs text-center font-bold animate-pulse">
+                  {passwordError}
+                </div>
+              )}
+
+              <button
+                onClick={handleUpdatePassword}
+                disabled={isUpdatingPassword}
+                className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2 disabled:opacity-50"
+              >
+                {isUpdatingPassword ? '处理中...' : '确认修改'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

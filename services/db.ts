@@ -750,3 +750,8 @@ export const updateUserAvatar = async (userId: number, avatarUrl: string): Promi
     const res = await apiCall('/user/update_avatar', { userId, avatarUrl });
     return res;
 };
+
+export const updatePassword = async (userId: number, oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiCall('/user/update_password', { userId, oldPassword, newPassword });
+    return res;
+};

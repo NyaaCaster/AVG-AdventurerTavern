@@ -2214,6 +2214,31 @@ app.post('/api/user/update_username', (req, res) => {
     );
 });
 
+// 18.5 修改密码（需校验旧密码，明文比对，与登录逻辑一致）
+app.post('/api/user/update_password', (req, res) => {
+    const { userId, oldPassword, newPassword } = req.body;
+
+    if (!userId || !oldPassword || !newPassword) {
+        return res.json({ success: false, message: '缺少必需参数' });
+    }
+
+    db.get("SELECT password FROM users WHERE id = ?", [userId], (err, row) => {
+        if (err) return res.json({ success: false, message: '查询失败' });
+        if (!row) return res.json({ success: false, message: '用户不存在' });
+        if (row.password !== oldPassword) return res.json({ success: false, message: '旧密码错误' });
+
+        db.run(
+            "UPDATE users SET password = ? WHERE id = ?",
+            [newPassword, userId],
+            function(err) {
+                if (err) return res.json({ success: false, message: '更新失败: ' + err.message });
+                if (this.changes === 0) return res.json({ success: false, message: '用户不存在' });
+                res.json({ success: true, message: '密码修改成功' });
+            }
+        );
+    });
+});
+
 // 19. 更新用户头像
 app.post('/api/user/update_avatar', (req, res) => {
     const { userId, avatarUrl } = req.body;

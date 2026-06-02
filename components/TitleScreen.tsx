@@ -38,6 +38,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   // Auth Form States
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // 注册时的确认密码
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRegisterMode, setIsRegisterMode] = useState(false); // 账号密码模式下：登录/注册切换
 
@@ -260,6 +261,12 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       const usernameRegex = /^[a-zA-Z0-9]+$/;
       if (!usernameRegex.test(username)) {
           setAuthError("用户名只允许字母和数字");
+          return;
+      }
+
+      // 注册时校验两次密码是否一致
+      if (isRegisterMode && password !== confirmPassword) {
+          setAuthError("两次输入的密码不一致");
           return;
       }
 
@@ -594,6 +601,19 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                     />
                                 </div>
 
+                                {/* 注册模式下显示确认密码栏 */}
+                                {isRegisterMode && (
+                                    <div>
+                                        <input
+                                            type="password"
+                                            placeholder="确认密码"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                        />
+                                    </div>
+                                )}
+
                                 {authError && (
                                     <div className="text-red-400 text-xs text-center font-bold animate-pulse">
                                         {authError}
@@ -615,7 +635,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                     {isRegisterMode ? '已有账号？' : '还没有账号？'}
                                     <button
                                         type="button"
-                                        onClick={() => { setIsRegisterMode(!isRegisterMode); setAuthError(null); }}
+                                        onClick={() => { setIsRegisterMode(!isRegisterMode); setAuthError(null); setConfirmPassword(''); }}
                                         className="ml-1 text-amber-500 hover:text-amber-400 font-bold transition-colors"
                                     >
                                         {isRegisterMode ? '去登录' : '去注册'}
