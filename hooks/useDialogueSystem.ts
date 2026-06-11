@@ -12,6 +12,7 @@ import { updateCharacterUnlocks as updateCharacterUnlocksDB } from '../services/
 import { useAIMemory } from './useAIMemory';
 import { applyPlayerTextTemplate, resolveCharacterDisplayName } from '../utils/playerText';
 import { getPlayerAvatarUrl, PlayerAvatarInfo } from '../utils/imagePath';
+import { validateAIResponse } from '../utils/aiResponseValidation';
 
 interface UseDialogueSystemProps {
     settings: GameSettings;
@@ -75,6 +76,34 @@ export const useDialogueSystem = ({
   }, []);
 
   const getSpeakerName = (character: Character) => resolveCharacterDisplayName(character.name, settings.userName);
+
+  const validateResponseForCharacter = (
+      response: Awaited<ReturnType<typeof llmService.sendMessage>>,
+      character: Character,
+      learnedSkillLocked: boolean = sessionLearnedSkill
+  ) => {
+      const stats = characterStats[character.id] || {
+          level: INITIAL_CHARACTER_LEVEL[character.id] || 1,
+          affinity: INITIAL_CHARACTER_AFFINITY[character.id] || 0,
+          exp: 0
+      };
+      const result = validateAIResponse(response, {
+          characterId: character.id,
+          currentAffinity: stats.affinity,
+          characterUnlocks: characterUnlocks[character.id] || getDefaultUnlocks(),
+          sessionLearnedSkill: learnedSkillLocked,
+          nsfwEnabled: settings.enableNSFW
+      });
+
+      if (result.warnings.length > 0) {
+          console.warn('[AI Response Validation]', {
+              characterId: character.id,
+              warnings: result.warnings
+          });
+      }
+
+      return result.response;
+  };
 
   const formatTemplateText = (text: string) => {
       return applyPlayerTextTemplate(text, {
@@ -184,7 +213,8 @@ export const useDialogueSystem = ({
 请根据你的性格、当前时间、地点、好感度以及玩家的行为，生成一句符合情境的开场白或反应。
 不需要添加任何系统前缀，直接输出角色的台词和动作描写。
 `;
-            const response = await llmService.sendMessage(contextPrompt);
+            const rawResponse = await llmService.sendMessage(contextPrompt);
+            const response = validateResponseForCharacter(rawResponse, char, false);
             const displayText = formatTemplateText(response.text);
 
             // 保存开场白到聊天记录
@@ -229,7 +259,8 @@ export const useDialogueSystem = ({
       const contextBlock = `\n[当前环境]\n场景: ${worldState.sceneName}\n时间: ${worldState.timeStr}\n衣着: ${clothingState}\n`;
       const enrichedMessage = `${contextBlock}\n用户发言: "${userMessage}"`;
       
-      const response = await llmService.sendMessage(enrichedMessage);
+      const rawResponse = await llmService.sendMessage(enrichedMessage);
+      const response = validateResponseForCharacter(rawResponse, activeCharacter);
       const displayText = formatTemplateText(response.text);
       
             // 保存用户消息和 AI 回复到聊天记录
@@ -380,7 +411,10 @@ export const useDialogueSystem = ({
      if(isLoading || !activeCharacter) return;
      setIsLoading(true);
      try {
-         const response = await llmService.redoLastMessage();
+         const rawResponse = await llmService.redoLastMessage();
+         const response = rawResponse && activeCharacter
+             ? validateResponseForCharacter(rawResponse, activeCharacter)
+             : rawResponse;
          if(response) {
             const displayText = formatTemplateText(response.text);
             setCurrentDialogue({ speaker: getSpeakerName(activeCharacter), text: displayText });
@@ -523,7 +557,8 @@ export const useDialogueSystem = ({
         let tokensUsed = 0;
 
         if (settings.apiConfig.apiKey) {
-            const response = await llmService.sendMessage(contextPrompt);
+            const rawResponse = await llmService.sendMessage(contextPrompt);
+            const response = validateResponseForCharacter(rawResponse, activeCharacter);
             displayText = formatTemplateText(response.text);
             tokensUsed = response.usage?.completion_tokens || 0;
             if (response.emotion) {
@@ -580,7 +615,8 @@ export const useDialogueSystem = ({
         let tokensUsed = 0;
 
         if (settings.apiConfig.apiKey) {
-            const response = await llmService.sendMessage(contextPrompt);
+            const rawResponse = await llmService.sendMessage(contextPrompt);
+            const response = validateResponseForCharacter(rawResponse, activeCharacter);
             displayText = formatTemplateText(response.text);
             tokensUsed = response.usage?.completion_tokens || 0;
             if (response.emotion) {

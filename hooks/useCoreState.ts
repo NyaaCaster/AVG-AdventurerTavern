@@ -389,9 +389,9 @@ export const useCoreState = (initialSaveData?: any) => {
       setInventory(prev => {
           const newInventory = { ...prev };
           items.forEach(item => {
-              if (item.id && item.count > 0) {
+              const itemData = ITEMS[item.id];
+              if (item.id && itemData && item.count > 0) {
                   const newCount = (newInventory[item.id] || 0) + item.count;
-                  const itemData = ITEMS[item.id];
                   const maxStack = itemData?.maxStack;
                   newInventory[item.id] = maxStack ? Math.min(newCount, maxStack) : newCount;
               }

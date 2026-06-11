@@ -220,8 +220,19 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
 
   // --- 对话系统事件处理 ---
   const handleItemsGained = (items: { id: string; count: number }[]) => {
-      core.handleAddItems(items);
-      const newToasts = items.map(item => ({
+      const validItems = items.flatMap(item => {
+          const count = Number.isFinite(item.count) ? Math.trunc(item.count) : 0;
+          if (!ITEMS[item.id] || count <= 0) {
+              console.warn('[AI Item Gain] Ignored invalid item gain:', item);
+              return [];
+          }
+          return [{ id: item.id, count }];
+      });
+
+      if (validItems.length === 0) return;
+
+      core.handleAddItems(validItems);
+      const newToasts = validItems.map(item => ({
           id: Date.now() + Math.random().toString(),
           type: 'item' as const,
           itemId: item.id,
