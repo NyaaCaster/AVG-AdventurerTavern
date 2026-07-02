@@ -1,6 +1,6 @@
 services:
   client:
-    image: honywen/adv-tavern
+    image: ${PRIVATE_DOCKER_REGISTRY_HOST:?PRIVATE_DOCKER_REGISTRY_HOST is required}/adv-tavern:latest
     container_name: adventurertavern
     pull_policy: always
     privileged: true

@@ -5,7 +5,7 @@
 AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色扮演游戏框架，结合 LLM 技术提供沉浸式的异世界酒馆经营与恋爱模拟体验。
 
 - 堆栈：Vite + React 19 + TypeScript + Tailwind 4
-- 部署：Docker 镜像（`honywen/adv-tavern`），从 Docker Hub 拉取
+- 部署：前端镜像**本地构建**，推送到私有镜像仓库 NyaaDockerHUB（endpoint 见 `.env` 的 `PRIVATE_DOCKER_REGISTRY_*`，不入库），容器从私有仓库拉取运行
 - 辅助服务：`database-server/` + `file-server/`（各独立管理，含子模块）
 - 仓库：https://github.com/NyaaCaster/AVG-AdventurerTavern.git
 - 主分支：master
@@ -17,12 +17,14 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 
 ## 重新编译 Docker 镜像并重启容器
 
-本项目 Docker 镜像从 Docker Hub 拉取，本地不构建：
+前端镜像**本地构建**并推送到私有镜像仓库 NyaaDockerHUB（GitHub Actions 线上构建已停用，`docker-publish.yml` 已删除）：
 
-- 仅拉取最新代码 + 最新镜像并重启：`powershell -ExecutionPolicy Bypass -File .\update-and-restart.ps1`（Windows）或 `bash ./update-and-restart.sh`（Linux/macOS）。
-- `-ExecutionPolicy Bypass` 参数在 Windows 下**必须**带上。
+- 标准流程：`python rebuild.py` —— 读 `.env`（registry 端点 + Vite build-args + SSL secrets）→ docker build（tag = git short SHA + latest）→ push 私有仓库 → 仓库端只保留当前 SHA + latest → `docker compose pull` + `up -d` 重启 → 清理本项目旧 tag 与悬空镜像。
+- 强制无缓存重建：`python rebuild.py --no-cache`。
+- 仅本地构建调试（不推送）：`python rebuild.py --skip-push`。
+- 私有仓库为 HTTP，本机 Docker 需已将 registry host 加入 `insecure-registries`（本机已配置）。
+- 仅拉取远端最新镜像并重启（不构建）：`powershell -ExecutionPolicy Bypass -File .\update-and-restart.ps1`。
 - 数据库服务和文件服务器独立管理，分别通过各自目录下的 `rebuild-and-restart.ps1` 操作。
-- 仅改 `.env` 不需要重启——但拉取脚本也会顺手处理，不必特意区分。
 
 ## Git 提交与推送
 
