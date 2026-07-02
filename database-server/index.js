@@ -9,6 +9,7 @@ const fs = require('fs');
 const multer = require('multer');
 const config = require('./config');
 const discordAuth = require('./discord-auth');
+const nyaacount = require('./nyaacount-client');
 
 const app = express();
 const PORT = config.PORT;
@@ -106,18 +107,16 @@ db.serialize(() => {
         }
     });;
 
-    // 账号密码模式：为历史用户（如以往仅通过 Discord 创建、password 为 NULL 者）
-    // 回填默认密码（明文 = 用户名），否则其无法用账号密码登录。
-    // discord 模式下执行无副作用，但仅在 password 模式下才有意义。
-    if (config.AUTH.ENABLE_PASSWORD_LOGIN) {
-        db.run(`UPDATE users SET password = username WHERE password IS NULL OR password = ''`, function(err) {
-            if (err) {
-                console.error('回填历史用户默认密码失败:', err);
-            } else if (this.changes > 0) {
-                console.log(`[Auth] 已为 ${this.changes} 个历史用户回填默认密码（明文=用户名）`);
-            }
-        });
-    }
+    // P7-2: NyaaAcount 统一账号链接列（跨项目匹配键，回填见 migrate-add-nyaa-uid.js）
+    db.run(`ALTER TABLE users ADD COLUMN nyaa_uid INTEGER`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('添加 nyaa_uid 字段失败:', err);
+        }
+    });
+    db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nyaa_uid ON users(nyaa_uid)`);
+
+    // P7-2 起登录/注册/改密经 NyaaAcount 校验，本地不再存储密码。
+    // （原"历史用户默认密码回填"逻辑已移除——它会把弃存后的 NULL 密码重新填回明文。）
 
     // 存档表 (简化结构，直接存储 JSON 字符串)
     db.run(`CREATE TABLE IF NOT EXISTS saves (
@@ -699,8 +698,21 @@ app.get('/', (req, res) => {
     res.redirect('/api/health');
 });
 
+// 初始理智赠送（注册 / JIT 建号共用）
+function grantInitialSanity(userId, req) {
+    const initialSanity = config.GAME_CONSTANTS.INITIAL_INSPIRATION * config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
+    const initStmt = db.prepare(
+        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+         VALUES (?, 'recharge', ?, '新账号注册赠送', ?, ?)`
+    );
+    initStmt.run(userId, initialSanity, getClientIp(req), Date.now(), function(initErr) {
+        if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
+    });
+    initStmt.finalize();
+}
+
 // 1. 注册（仅账号密码模式生效）
-// 密码暂以明文存储（前端约定：默认可用账号名作为密码）
+// P7-2：凭证由 NyaaAcount 统一账号平台管理，本地只存显示名 + nyaa_uid，不存密码
 app.post('/api/register', (req, res) => {
     if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
         return res.json({ success: false, message: '当前为 Discord 登录模式，注册已禁用' });
@@ -709,46 +721,90 @@ app.post('/api/register', (req, res) => {
     if (!username || !password) {
         return res.json({ success: false, message: '用户名和密码不能为空' });
     }
-    const stmt = db.prepare("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)");
-    stmt.run(username, password, Date.now(), function(err) {
-        if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-                return res.json({ success: false, message: '用户名已存在' });
-            }
-            return res.json({ success: false, message: err.message });
+    const name = String(username).trim();
+
+    // 本地显示名唯一性预检查（users.username 有 UNIQUE 约束）
+    db.get("SELECT id FROM users WHERE username = ?", [name], async (err, row) => {
+        if (err) return res.json({ success: false, message: '服务器错误' });
+        if (row) return res.json({ success: false, message: '用户名已存在' });
+
+        const r = await nyaacount.registerUser(name, password);
+        if (r.status === 409) {
+            return res.json({ success: false, message: '用户名已存在' });
         }
-        const newUid = this.lastID;
-        // 新账号注册时，赠送初始理智
-        const initialSanity = config.GAME_CONSTANTS.INITIAL_INSPIRATION * config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
-        const initStmt = db.prepare(
-            `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
-             VALUES (?, 'recharge', ?, '新账号注册赠送', ?, ?)`
+        if (!r.ok || !r.data || !r.data.uid) {
+            return res.json({ success: false, message: '账号服务暂不可用，请稍后再试' });
+        }
+
+        db.run(
+            "INSERT INTO users (username, nyaa_uid, created_at) VALUES (?, ?, ?)",
+            [name, r.data.uid, Date.now()],
+            function(insErr) {
+                if (insErr) {
+                    return res.json({ success: false, message: insErr.message });
+                }
+                const newUid = this.lastID;
+                // 新账号注册时，赠送初始理智
+                grantInitialSanity(newUid, req);
+                res.json({ success: true, uid: newUid });
+            }
         );
-        initStmt.run(newUid, initialSanity, getClientIp(req), Date.now(), function(initErr) {
-            if (initErr) console.error('[Sanity] 初始赠送写入失败:', initErr.message);
-        });
-        initStmt.finalize();
-        res.json({ success: true, uid: newUid });
     });
-    stmt.finalize();
 });
 
 // 2. 登录（仅账号密码模式生效）
-app.post('/api/login', (req, res) => {
+// P7-2：凭证转发 NyaaAcount 校验；跨平台账号首次登录时 JIT 建号
+app.post('/api/login', async (req, res) => {
     if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
         return res.json({ success: false, message: '当前为 Discord 登录模式，账号密码登录已禁用' });
     }
     const { username, password } = req.body;
-    db.get("SELECT id, password, is_discord_bound FROM users WHERE username = ?", [username], (err, row) => {
-        if (err) return res.json({ success: false, message: '服务器错误' });
-        if (!row) return res.json({ success: false, message: '用户名不存在' });
-        if (row.password !== password) return res.json({ success: false, message: '密码错误' });
+    if (!username || !password) {
+        return res.json({ success: false, message: '用户名和密码不能为空' });
+    }
 
-        res.json({
-            success: true,
-            uid: row.id,
-            needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
-        });
+    const r = await nyaacount.verifyUser(String(username).trim(), password);
+    if (r.status === 401) {
+        return res.json({ success: false, message: '用户名或密码错误' });
+    }
+    if (!r.ok || !r.data || !r.data.uid) {
+        return res.json({ success: false, message: '账号服务暂不可用，请稍后再试' });
+    }
+
+    const nyaaUid = r.data.uid;
+    const nyaaName = r.data.username;
+
+    db.get("SELECT id, is_discord_bound FROM users WHERE nyaa_uid = ?", [nyaaUid], (err, row) => {
+        if (err) return res.json({ success: false, message: '服务器错误' });
+        if (row) {
+            return res.json({
+                success: true,
+                uid: row.id,
+                needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
+            });
+        }
+
+        // JIT 建号：本平台无此账号 → 以 NyaaAcount 统一登录名建影子档案 + 默认资源
+        const insertJit = (name, retried) => {
+            db.run(
+                "INSERT INTO users (username, nyaa_uid, created_at) VALUES (?, ?, ?)",
+                [name, nyaaUid, Date.now()],
+                function(insErr) {
+                    if (insErr) {
+                        // 显示名与既有本地用户撞名 → 加后缀退避一次
+                        if (!retried && insErr.message.includes('UNIQUE constraint failed')) {
+                            return insertJit(`${nyaaName}_nyaa${nyaaUid}`, true);
+                        }
+                        return res.json({ success: false, message: insErr.message });
+                    }
+                    const newUid = this.lastID;
+                    grantInitialSanity(newUid, req);
+                    console.log(`[NyaaAcount] JIT 建号: ${name} (id=${newUid}, nyaa_uid=${nyaaUid})`);
+                    res.json({ success: true, uid: newUid, needDiscordBind: false });
+                }
+            );
+        };
+        insertJit(nyaaName, false);
     });
 });
 
@@ -2214,7 +2270,7 @@ app.post('/api/user/update_username', (req, res) => {
     );
 });
 
-// 18.5 修改密码（需校验旧密码，明文比对，与登录逻辑一致）
+// 18.5 修改密码（P7-2：经 NyaaAcount 校验旧密码并更新，本地不存密码）
 app.post('/api/user/update_password', (req, res) => {
     const { userId, oldPassword, newPassword } = req.body;
 
@@ -2222,20 +2278,19 @@ app.post('/api/user/update_password', (req, res) => {
         return res.json({ success: false, message: '缺少必需参数' });
     }
 
-    db.get("SELECT password FROM users WHERE id = ?", [userId], (err, row) => {
+    db.get("SELECT nyaa_uid FROM users WHERE id = ?", [userId], async (err, row) => {
         if (err) return res.json({ success: false, message: '查询失败' });
         if (!row) return res.json({ success: false, message: '用户不存在' });
-        if (row.password !== oldPassword) return res.json({ success: false, message: '旧密码错误' });
+        if (!row.nyaa_uid) {
+            return res.json({ success: false, message: '账号未链接统一账号平台，无法修改密码' });
+        }
 
-        db.run(
-            "UPDATE users SET password = ? WHERE id = ?",
-            [newPassword, userId],
-            function(err) {
-                if (err) return res.json({ success: false, message: '更新失败: ' + err.message });
-                if (this.changes === 0) return res.json({ success: false, message: '用户不存在' });
-                res.json({ success: true, message: '密码修改成功' });
-            }
-        );
+        const r = await nyaacount.changePassword(row.nyaa_uid, oldPassword, newPassword);
+        if (r.status === 401) return res.json({ success: false, message: '旧密码错误' });
+        if (r.status === 404) return res.json({ success: false, message: '用户不存在' });
+        if (!r.ok) return res.json({ success: false, message: '账号服务暂不可用，请稍后再试' });
+
+        res.json({ success: true, message: '密码修改成功' });
     });
 });
 

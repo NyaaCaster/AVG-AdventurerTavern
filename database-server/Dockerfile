@@ -26,7 +26,7 @@ RUN apk add --no-cache tzdata && \
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY index.js config.js discord-auth.js ./
+COPY index.js config.js discord-auth.js nyaacount-client.js ./
 
 RUN mkdir -p /app/data && \
     addgroup -g 1001 -S nodejs && \
