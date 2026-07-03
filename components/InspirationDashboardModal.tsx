@@ -9,7 +9,7 @@ import {
 } from '../services/db';
 import { sanityToInspiration } from '../data/currency-value-table';
 
-type TabType = 'overview' | 'records' | 'quota';
+type TabType = 'overview' | 'records';
 type FilterCategory = 'all' | 'consume' | 'recharge';
 
 interface Props {
@@ -322,62 +322,6 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         );
     };
 
-    const renderQuota = () => {
-        return (
-            <div className="flex flex-col gap-6 items-center pt-8">
-                <div className="flex flex-col items-center gap-2 mb-6">
-                    <span className="text-slate-500 font-medium uppercase tracking-widest text-xs">当前余额</span>
-                    <div className="flex items-center gap-3">
-                        <div 
-                            className="flex items-center justify-center w-10 h-10 rounded-full"
-                            style={{
-                                background: 'rgba(34,211,238,0.1)',
-                                border: '1px solid rgba(34,211,238,0.25)',
-                                boxShadow: '0 0 20px rgba(34,211,238,0.15)',
-                            }}
-                        >
-                            <SanityIcon className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="text-4xl md:text-5xl font-light text-slate-100 tracking-wider">
-                            {sanityToInspiration(balance).toFixed(2)}
-                        </span>
-                        <span className="text-3xl text-cyan-400 font-medium ml-1">Ins</span>
-                    </div>
-                </div>
-
-                <div 
-                    className="w-full max-w-md rounded-xl p-8 flex flex-col gap-6"
-                    style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(148,163,184,0.1)',
-                    }}
-                >
-                    <div className="flex items-center gap-3">
-                        <i className="fa-solid fa-wallet text-cyan-400/70"></i>
-                        <h3 className="text-slate-200 font-medium tracking-wide">兑换额度</h3>
-                    </div>
-                    <p className="text-sm text-slate-400 leading-relaxed font-light">
-                        使用兑换码进行充值，兑换成功后额度将直接进入账户余额。
-                    </p>
-                    <input 
-                        type="text" 
-                        placeholder="请输入兑换码..." 
-                        className="bg-black/20 border border-slate-600/30 text-cyan-100 px-4 py-3.5 rounded-lg focus:outline-none focus:border-cyan-500/50 tracking-[0.2em] text-center uppercase transition-colors"
-                        disabled
-                    />
-                    <div className="flex gap-4 mt-2">
-                        <button disabled className="flex-1 bg-white/5 text-slate-500 font-medium py-3 rounded-lg opacity-60 cursor-not-allowed uppercase tracking-widest text-sm border border-white/5">
-                            获取兑换码
-                        </button>
-                        <button disabled className="flex-1 bg-cyan-500/10 text-cyan-500 font-medium py-3 rounded-lg opacity-60 cursor-not-allowed uppercase tracking-widest text-sm border border-cyan-500/20">
-                            兑换
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div 
             className={`fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
@@ -430,10 +374,9 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
 
                 {/* Tabs */}
                 <div className="flex px-4 shrink-0 overflow-x-auto no-scrollbar relative z-10">
-                    {[ 
-                        { id: 'overview', label: '总览', icon: 'fa-chart-bar' }, 
-                        { id: 'records', label: '记录', icon: 'fa-list-ul' }, 
-                        { id: 'quota', label: '额度', icon: 'fa-wallet' } 
+                    {[
+                        { id: 'overview', label: '总览', icon: 'fa-chart-bar' },
+                        { id: 'records', label: '记录', icon: 'fa-list-ul' },
                     ].map(tab => (
                         <button 
                             key={tab.id}
@@ -457,7 +400,6 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                 <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar relative z-10">
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'records' && renderRecords()}
-                    {activeTab === 'quota' && renderQuota()}
                 </div>
 
                 {/* 底部装饰线 */}

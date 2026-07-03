@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, registerUser, getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
+import { loginUser, getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -38,9 +38,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   // Auth Form States
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // 注册时的确认密码
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isRegisterMode, setIsRegisterMode] = useState(false); // 账号密码模式下：登录/注册切换
 
   // Auth Config — 由后端 .env 的 AUTH_MODE 决定唯一生效的登录系统
   const [authMode, setAuthMode] = useState<'password' | 'discord'>('discord');
@@ -254,41 +252,11 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
       // Basic Validation
       if (!username || !password) {
-          setAuthError(isRegisterMode ? "请输入用户名和密码" : "请输入用户名/邮箱和密码");
-          return;
-      }
-
-      // 注册时只允许字母数字（禁止邮箱注册）；登录时不限制格式（支持邮箱登录）
-      if (isRegisterMode) {
-          const usernameRegex = /^[a-zA-Z0-9]+$/;
-          if (!usernameRegex.test(username)) {
-              setAuthError("用户名只允许字母和数字");
-              return;
-          }
-      }
-
-      // 注册时校验两次密码是否一致
-      if (isRegisterMode && password !== confirmPassword) {
-          setAuthError("两次输入的密码不一致");
+          setAuthError("请输入用户名/邮箱和密码");
           return;
       }
 
       setIsLoadingAuth(true);
-
-      if (isRegisterMode) {
-          // 注册
-          const result = await registerUser(username, password);
-          setIsLoadingAuth(false);
-          if (result.success && result.uid !== undefined) {
-              // 注册成功后直接登录
-              localStorage.setItem('userId', result.uid.toString());
-              onLogin(result.uid);
-              setTitleState('MENU');
-          } else {
-              setAuthError(result.message);
-          }
-          return;
-      }
 
       // 登录
       const result = await loginUser(username, password);
@@ -556,9 +524,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                     <div className="bg-slate-900/90 border border-slate-700/50 p-8 rounded-lg shadow-2xl backdrop-blur-md w-full max-w-sm">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-[#f0e6d2] tracking-wider mb-2">
-                                {enablePasswordLogin
-                                    ? (isRegisterMode ? '注册冒险者' : '冒险者登录')
-                                    : '冒险者登录'}
+                                冒险者登录
                             </h2>
                             <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
                         </div>
@@ -582,13 +548,13 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                             </div>
                         )}
 
-                        {/* 账号密码登录系统（仅账号密码模式显示，登录/注册共用表单） */}
+                        {/* 账号密码登录系统 */}
                         {enablePasswordLogin && (
                             <form onSubmit={handleAuthSubmit} className="space-y-4">
                                 <div>
                                     <input
                                         type="text"
-                                        placeholder={isRegisterMode ? "用户名 (字母/数字)" : "用户名或邮箱"}
+                                        placeholder="用户名或邮箱"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
@@ -604,19 +570,6 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                     />
                                 </div>
 
-                                {/* 注册模式下显示确认密码栏 */}
-                                {isRegisterMode && (
-                                    <div>
-                                        <input
-                                            type="password"
-                                            placeholder="确认密码"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                                        />
-                                    </div>
-                                )}
-
                                 {authError && (
                                     <div className="text-red-400 text-xs text-center font-bold animate-pulse">
                                         {authError}
@@ -628,20 +581,18 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                     className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded transition-colors shadow-lg mt-2 disabled:opacity-50"
                                     disabled={isLoadingAuth}
                                 >
-                                    {isLoadingAuth
-                                        ? '处理中...'
-                                        : (isRegisterMode ? '注 册' : '登 录')}
+                                    {isLoadingAuth ? '处理中...' : '登 录'}
                                 </button>
 
-                                {/* 登录 / 注册 切换 */}
+                                {/* 去 NyaaAcount 注册 */}
                                 <div className="text-center text-sm text-slate-400 pt-1">
-                                    {isRegisterMode ? '已有账号？' : '还没有账号？'}
+                                    还没有账号？{' '}
                                     <button
                                         type="button"
-                                        onClick={() => { setIsRegisterMode(!isRegisterMode); setAuthError(null); setConfirmPassword(''); }}
-                                        className="ml-1 text-amber-500 hover:text-amber-400 font-bold transition-colors"
+                                        onClick={() => window.open('http://h.nyaa.host:5110/?view=register', '_blank')}
+                                        className="text-amber-500 hover:text-amber-400 font-bold transition-colors"
                                     >
-                                        {isRegisterMode ? '去登录' : '去注册'}
+                                        去注册
                                     </button>
                                 </div>
                             </form>
