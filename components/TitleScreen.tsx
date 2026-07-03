@@ -254,14 +254,17 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
       // Basic Validation
       if (!username || !password) {
-          setAuthError("请输入用户名和密码");
+          setAuthError(isRegisterMode ? "请输入用户名和密码" : "请输入用户名/邮箱和密码");
           return;
       }
 
-      const usernameRegex = /^[a-zA-Z0-9]+$/;
-      if (!usernameRegex.test(username)) {
-          setAuthError("用户名只允许字母和数字");
-          return;
+      // 注册时只允许字母数字（禁止邮箱注册）；登录时不限制格式（支持邮箱登录）
+      if (isRegisterMode) {
+          const usernameRegex = /^[a-zA-Z0-9]+$/;
+          if (!usernameRegex.test(username)) {
+              setAuthError("用户名只允许字母和数字");
+              return;
+          }
       }
 
       // 注册时校验两次密码是否一致
@@ -585,7 +588,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                 <div>
                                     <input
                                         type="text"
-                                        placeholder="用户名 (字母/数字)"
+                                        placeholder={isRegisterMode ? "用户名 (字母/数字)" : "用户名或邮箱"}
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         className="w-full bg-black/40 border border-slate-600 rounded px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
