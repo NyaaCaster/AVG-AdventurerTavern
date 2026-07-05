@@ -1,15 +1,19 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    getSanityBalance, 
-    getSanityDashboard, 
-    getSanityRecords, 
-    SanityRecord, 
-    SANITY_CONSUME_TYPES, 
-    SANITY_RECHARGE_TYPES 
+import {
+    getSanityBalance,
+    getSanityDashboard,
+    getSanityRecords,
+    SanityRecord,
+    SANITY_CONSUME_TYPES,
+    SANITY_RECHARGE_TYPES,
+    transferCatfood,
+    getCatfoodBalance,
+    TRANSFER_TIERS,
 } from '../services/db';
 import { sanityToInspiration } from '../data/currency-value-table';
+import { CatCanIcon } from './icons/CatCanIcon';
 
-type TabType = 'overview' | 'records';
+type TabType = 'overview' | 'records' | 'transfer';
 type FilterCategory = 'all' | 'consume' | 'recharge';
 
 interface Props {
@@ -28,6 +32,9 @@ const SanityIcon: React.FC<{className?: string}> = ({className = "w-6 h-6 text-c
 const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [balance, setBalance] = useState<number>(0);
+    const [catfoodBalance, setCatfoodBalance] = useState<number | null>(null);
+    const [isTransferring, setIsTransferring] = useState(false);
+    const [showTransferConfirm, setShowTransferConfirm] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [visible, setVisible] = useState(false);
 
@@ -60,6 +67,8 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                 fetchOverview();
             } else if (activeTab === 'records') {
                 fetchRecords(1);
+            } else if (activeTab === 'transfer') {
+                fetchCatfoodBalance();
             }
         }
     }, [isOpen, activeTab, userId]);
@@ -67,6 +76,11 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
     const fetchBalance = async () => {
         const res = await getSanityBalance(userId, 1);
         if (res) setBalance(res.balance);
+    };
+
+    const fetchCatfoodBalance = async () => {
+        const bal = await getCatfoodBalance();
+        setCatfoodBalance(bal);
     };
 
         const fetchOverview = async () => {
@@ -103,6 +117,28 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
             fetchRecords(1);
         }
     }, [categoryFilter, dateFilter]);
+
+    const handleTransfer = async (tier: number) => {
+        setIsTransferring(true);
+        const r = await transferCatfood(tier);
+        setIsTransferring(false);
+        setShowTransferConfirm(null);
+        if (r.success) {
+            // 刷新两端余额
+            fetchBalance();
+            fetchCatfoodBalance();
+            alert(`划转成功！${tier} 猫粮 → ${tier} 灵感`);
+        } else {
+            const messages: Record<string, string> = {
+                insufficient: '猫粮余额不足，无法完成划转',
+                account_service_unavailable: 'NyaaAcount 账号服务暂不可用，请稍后再试',
+                invalid_tier: '无效的划转档位',
+                unauthorized: '会话已过期，请重新登录',
+                network: '网络连接失败，请检查网络后重试',
+            };
+            alert(messages[r.error ?? 'network'] ?? '划转失败，请重试');
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -322,6 +358,196 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
         );
     };
 
+    const renderTransfer = () => {
+        const catfoodDisplay = catfoodBalance !== null ? String(catfoodBalance) : '—';
+        const hasToken = !!localStorage.getItem('sessionToken');
+
+        // 无 session token（非密码登录）：引导用户使用密码登录
+        if (!hasToken) {
+            return (
+                <div className="flex flex-col gap-6 items-center pt-8">
+                    <div className="rounded-xl p-8 flex flex-col items-center gap-5"
+                         style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(148,163,184,0.1)' }}>
+                        <CatCanIcon size={48} className="opacity-40" />
+                        <p className="text-sm text-slate-400 leading-relaxed font-light text-center">
+                            请先使用<span className="text-amber-500 font-medium">账号密码登录</span>以启用猫粮划转功能。
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex flex-col gap-6 items-center pt-8 relative">
+                {/* 猫粮余额区 */}
+                <div className="flex flex-col items-center gap-2 mb-4">
+                    <span className="text-slate-500 font-medium uppercase tracking-widest text-xs">猫粮余额</span>
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="flex items-center justify-center w-10 h-10 rounded-full"
+                            style={{
+                                background: 'rgba(251,191,36,0.1)',
+                                border: '1px solid rgba(251,191,36,0.25)',
+                                boxShadow: '0 0 20px rgba(251,191,36,0.15)',
+                            }}
+                        >
+                            <CatCanIcon size={20} />
+                        </div>
+                        <span className="text-4xl md:text-5xl font-light text-amber-400 tracking-wider">
+                            {catfoodDisplay}
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => window.open('http://h.nyaa.host:5110/?view=recharge', '_blank')}
+                        className="mt-1 text-xs text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1"
+                    >
+                        <i className="fa-solid fa-plus text-[10px]"></i>充值
+                    </button>
+                </div>
+
+                {/* 灵感余额（小字参考） */}
+                <div className="text-sm text-slate-500">
+                    当前灵感余额：<span className="text-cyan-400">{sanityToInspiration(balance).toFixed(2)} Ins</span>
+                </div>
+
+                {/* 划转卡片 */}
+                <div
+                    className="w-full max-w-md rounded-xl p-8 flex flex-col gap-6"
+                    style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(148,163,184,0.1)',
+                    }}
+                >
+                    <div className="flex items-center gap-3">
+                        <i className="fa-solid fa-arrow-right-arrow-left text-amber-400/70"></i>
+                        <h3 className="text-slate-200 font-medium tracking-wide">划转额度</h3>
+                    </div>
+                    <p className="text-sm text-slate-400 leading-relaxed font-light">
+                        将 NyaaAcount 猫粮按 <span className="text-amber-400 font-medium">1:1</span> 单向划转为灵感，
+                        划转后<span className="text-amber-400 font-medium">不可逆向</span>退回。
+                    </p>
+
+                    {/* 5 档划转按钮 */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {TRANSFER_TIERS.map(tier => {
+                            const disabled = catfoodBalance === null || catfoodBalance < tier;
+                            return (
+                                <button
+                                    key={tier}
+                                    onClick={() => setShowTransferConfirm(tier)}
+                                    disabled={disabled || isTransferring}
+                                    className="py-3 rounded-lg font-medium text-sm tracking-widest transition-all border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    {tier} 猫粮 → {tier} 灵感
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 二次确认弹窗 */}
+                {showTransferConfirm !== null && (() => {
+                    const tier = showTransferConfirm;
+                    const remaining = catfoodBalance !== null ? catfoodBalance - tier : null;
+                    return (
+                        <div
+                            className="absolute inset-0 z-[140] flex items-center justify-center pointer-events-auto animate-fadeIn rounded-2xl"
+                            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+                            onClick={() => setShowTransferConfirm(null)}
+                        >
+                            <div
+                                className="relative w-full max-w-xs rounded-2xl p-6 flex flex-col"
+                                style={{
+                                    background: 'rgba(15,23,42,0.95)',
+                                    border: '1px solid rgba(251,191,36,0.3)',
+                                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(251,191,36,0.1)',
+                                    backdropFilter: 'blur(16px)',
+                                }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* 顶部琥珀色装饰线 */}
+                                <div
+                                    className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                                    style={{
+                                        width: '40px',
+                                        height: '2px',
+                                        marginTop: '-1px',
+                                        background: 'linear-gradient(to right, transparent, rgba(251,191,36,0.8), transparent)',
+                                    }}
+                                />
+
+                                <div className="text-center mb-6">
+                                    <div
+                                        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                                        style={{
+                                            background: 'rgba(251,191,36,0.1)',
+                                            border: '1px solid rgba(251,191,36,0.25)',
+                                            boxShadow: '0 0 15px rgba(251,191,36,0.15)',
+                                        }}
+                                    >
+                                        <CatCanIcon size={24} />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-slate-200 tracking-wider">确认划转？</h3>
+                                </div>
+
+                                <div className="space-y-3 mb-4">
+                                    <div
+                                        className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                                        style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.1)' }}
+                                    >
+                                        <span className="text-sm text-slate-400">划转金额</span>
+                                        <span className="font-medium text-amber-400 font-mono">{tier} 猫粮 → {tier} 灵感</span>
+                                    </div>
+                                    <div
+                                        className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(148,163,184,0.1)' }}
+                                    >
+                                        <span className="text-sm text-slate-400">当前猫粮</span>
+                                        <span className="font-medium text-slate-300 font-mono">{catfoodBalance ?? '—'}</span>
+                                    </div>
+                                    <div
+                                        className="flex justify-between items-center rounded-lg px-3 py-2.5"
+                                        style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}
+                                    >
+                                        <span className="text-sm text-slate-400">划转后结余</span>
+                                        <span className="font-medium text-emerald-400 font-mono">{remaining !== null ? remaining : '—'}</span>
+                                    </div>
+                                </div>
+
+                                {/* 警告文案 */}
+                                <div
+                                    className="flex items-start gap-2 mb-6 rounded-lg px-3 py-2.5"
+                                    style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}
+                                >
+                                    <i className="fa-solid fa-triangle-exclamation text-red-400 text-xs mt-0.5 shrink-0"></i>
+                                    <span className="text-xs text-red-300/80 leading-relaxed">
+                                        此操作<span className="text-red-400 font-medium">单向不可逆</span>，猫粮划转为灵感后无法退回。
+                                    </span>
+                                </div>
+
+                                <div className="flex gap-3 mt-auto">
+                                    <button
+                                        onClick={() => setShowTransferConfirm(null)}
+                                        className="flex-1 py-2.5 rounded-lg font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all border border-transparent hover:border-slate-700 tracking-widest"
+                                    >
+                                        取消
+                                    </button>
+                                    <button
+                                        onClick={() => handleTransfer(tier)}
+                                        disabled={isTransferring}
+                                        className="flex-1 py-2.5 rounded-lg font-medium text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-400 transition-all tracking-widest disabled:opacity-50"
+                                    >
+                                        {isTransferring ? '划转中…' : '确认'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </div>
+        );
+    };
+
     return (
         <div 
             className={`fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
@@ -377,6 +603,7 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                     {[
                         { id: 'overview', label: '总览', icon: 'fa-chart-bar' },
                         { id: 'records', label: '记录', icon: 'fa-list-ul' },
+                        { id: 'transfer', label: '划转', icon: 'fa-arrow-right-arrow-left' },
                     ].map(tab => (
                         <button 
                             key={tab.id}
@@ -400,6 +627,7 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
                 <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar relative z-10">
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'records' && renderRecords()}
+                    {activeTab === 'transfer' && renderTransfer()}
                 </div>
 
                 {/* 底部装饰线 */}

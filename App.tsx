@@ -96,6 +96,7 @@ const App: React.FC = () => {
       setCurrentSlotId(0);
       setInitialSaveData(null);
       setInspirationBalance(INITIAL_INSPIRATION);
+      localStorage.removeItem('sessionToken');
       setGameState(GameState.MENU);
   };
 

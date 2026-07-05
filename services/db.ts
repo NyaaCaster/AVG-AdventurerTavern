@@ -56,7 +56,7 @@ export const registerUser = async (username: string, password: string): Promise<
     return res;
 };
 
-export const loginUser = async (username: string, password: string): Promise<{ success: boolean; message: string; uid?: number; needDiscordBind?: boolean }> => {
+export const loginUser = async (username: string, password: string): Promise<{ success: boolean; message: string; uid?: number; needDiscordBind?: boolean; token?: string }> => {
     const res = await apiCall('/login', { username, password });
     return res;
 };
@@ -505,9 +505,14 @@ export type SanityConsumeType = keyof typeof SANITY_CONSUME_TYPES | (string & {}
 export const SANITY_RECHARGE_TYPES = {
     register: '注册赠送',
     recharge: '付费充值',
+    transfer: '猫粮划转',
 } as const;
 
 export type SanityRechargeType = keyof typeof SANITY_RECHARGE_TYPES | (string & {});
+
+/** 猫粮划转固定档位（1:1 → 灵感） */
+export const TRANSFER_TIERS = [5, 10, 65, 110, 370] as const;
+export type TransferTier = typeof TRANSFER_TIERS[number];
 
 /** 账本单条记录（查询返回） */
 export interface SanityRecord {
@@ -754,4 +759,69 @@ export const updateUserAvatar = async (userId: number, avatarUrl: string): Promi
 export const updatePassword = async (userId: number, oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
     const res = await apiCall('/user/update_password', { userId, oldPassword, newPassword });
     return res;
+};
+
+// --- 猫粮划转服务（P18：NyaaAcount 猫粮 1:1 单向划转灵感）---
+
+/** 从 localStorage 读取 P17 登录签发的 session token */
+export const getSessionToken = (): string | null => {
+    try {
+        return localStorage.getItem('sessionToken');
+    } catch {
+        return null;
+    }
+};
+
+/** 查询 NyaaAcount 猫粮余额（透传） */
+export const getCatfoodBalance = async (): Promise<number | null> => {
+    const token = getSessionToken();
+    if (!token) return null;
+    try {
+        const response = await fetch(`${API_BASE_URL}/catfood-balance`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) return null;
+        const res = await response.json();
+        return res.success ? res.balance : null;
+    } catch {
+        return null;
+    }
+};
+
+/** 猫粮划转为灵感（1:1 单向不可逆） */
+export const transferCatfood = async (tier: number): Promise<{
+    success: boolean;
+    error?: 'insufficient' | 'account_service_unavailable' | 'invalid_tier' | 'unauthorized' | 'network';
+    inspirationBalance?: number;
+    catfoodBalance?: number;
+}> => {
+    const token = getSessionToken();
+    if (!token) return { success: false, error: 'unauthorized' };
+    try {
+        const response = await fetch(`${API_BASE_URL}/transfer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ tier }),
+        });
+        const res = await response.json();
+        if (response.ok && res.success) {
+            return {
+                success: true,
+                inspirationBalance: res.inspirationBalance,
+                catfoodBalance: res.catfoodBalance,
+            };
+        }
+        // 按 HTTP 状态码 / error 字段映射
+        if (response.status === 402 || res.error === 'insufficient') return { success: false, error: 'insufficient' };
+        if (response.status === 400 || res.error === 'invalid_tier') return { success: false, error: 'invalid_tier' };
+        if (response.status === 401 || res.error === 'unauthorized') return { success: false, error: 'unauthorized' };
+        if (response.status === 503 || res.error === 'account_service_unavailable') return { success: false, error: 'account_service_unavailable' };
+        return { success: false, error: 'network' };
+    } catch {
+        return { success: false, error: 'network' };
+    }
 };

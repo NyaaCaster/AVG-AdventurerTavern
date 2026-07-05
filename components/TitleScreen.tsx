@@ -263,6 +263,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       setIsLoadingAuth(false);
       if (result.success && result.uid !== undefined) {
           localStorage.setItem('userId', result.uid.toString());
+          if (result.token) localStorage.setItem('sessionToken', result.token);
           onLogin(result.uid);
 
           // 检查是否需要绑定 Discord
