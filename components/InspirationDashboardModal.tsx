@@ -13,13 +13,14 @@ import {
 import { sanityToInspiration } from '../data/currency-value-table';
 import { CatCanIcon } from './icons/CatCanIcon';
 
-type TabType = 'overview' | 'records' | 'transfer';
+export type TabType = 'overview' | 'records' | 'transfer';
 type FilterCategory = 'all' | 'consume' | 'recharge';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
     userId: number;
+    initialTab?: TabType;
 }
 
 const SanityIcon: React.FC<{className?: string}> = ({className = "w-6 h-6 text-cyan-400"}) => (
@@ -29,8 +30,8 @@ const SanityIcon: React.FC<{className?: string}> = ({className = "w-6 h-6 text-c
     </svg>
 );
 
-const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId }) => {
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId, initialTab }) => {
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'overview');
     const [balance, setBalance] = useState<number>(0);
     const [catfoodBalance, setCatfoodBalance] = useState<number | null>(null);
     const [isTransferring, setIsTransferring] = useState(false);
@@ -46,6 +47,13 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId })
             setVisible(false);
         }
     }, [isOpen]);
+
+    // 通过 initialTab prop 打开时，强制定位到指定分页
+    useEffect(() => {
+        if (isOpen && initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
 
                 // 总览数据
     const [overviewData, setOverviewData] = useState<{ todayRequests: number; chartData: { date: string; amount: number; aiAmount: number }[] }>({ todayRequests: 0, chartData: [] });

@@ -26,6 +26,7 @@ interface QuestBoardModalProps {
   onAddBattlePartyExp: (party: BattlePartySlots, exp: number) => void;
   onShowRewardToasts: (gold: number, items: { id: string; count: number }[]) => void;
   highlightQuestId?: string | null;
+  onOpenInspirationRecharge?: () => void;
 }
 
 // 统一倒计时（秒）: 1星=1分钟, 10星=10分钟
@@ -229,10 +230,11 @@ interface QuestDetailModalProps {
   onEnterBattle: () => void;
   onAbandon: () => void;
   onClose: () => void;
+  onOpenInspirationRecharge?: () => void;
 }
 
 const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
-  quest, status, isCompleted, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onEnterBattle, onAbandon, onClose
+  quest, status, isCompleted, acceptedAt, hasActiveQuest, currentGold, inspirationBalance, onAccept, onComplete, onInstantComplete, onEnterBattle, onAbandon, onClose, onOpenInspirationRecharge
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
@@ -402,13 +404,14 @@ const QuestDetailModal: React.FC<QuestDetailModalProps> = ({
                     const canAfford = inspirationBalance >= inspirationCost;
                     return (
                       <button
-                        onClick={() => setShowConfirm(true)}
-                        disabled={!canAfford}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs border-2 transition-all ${
-                          canAfford
-                            ? 'bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]'
-                            : 'bg-[#1a1512] text-slate-500 border-slate-700 cursor-not-allowed opacity-70'
-                        }`}
+                        onClick={() => {
+                          if (canAfford) {
+                            setShowConfirm(true);
+                          } else if (onOpenInspirationRecharge) {
+                            onOpenInspirationRecharge();
+                          }
+                        }}
+                        className="flex-1 py-2 rounded-lg font-bold text-xs border-2 transition-all bg-[#2c241b] text-cyan-300 border-cyan-700 hover:bg-cyan-900/40 hover:border-cyan-500 active:scale-[0.98]"
                       >
                         <i className="fa-solid fa-bolt mr-1"></i>立刻完成
                         <span className={`ml-1 text-[10px] font-mono ${
@@ -652,7 +655,7 @@ const RewardConfirmModal: React.FC<RewardConfirmModalProps> = ({ quest, onConfir
 // 主组件
 const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
   isOpen, onClose, questStates, completedQuests, adventurerRank, onAcceptQuest, onCompleteQuest, onDeliverQuest, onStartBattle, onAbandonQuest,
-  currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddBattlePartyExp, onShowRewardToasts,
+  currentGold, inspirationBalance, battleParty, onAddGold, onConsumeInspiration, onAddItems, onAddBattlePartyExp, onShowRewardToasts, onOpenInspirationRecharge,
   highlightQuestId
 }) => {
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
@@ -906,6 +909,7 @@ const QuestBoardModal: React.FC<QuestBoardModalProps> = ({
             onEnterBattle={() => handleEnterBattle(selectedQuest.quest_id)}
             onAbandon={() => handleAbandon(selectedQuest.quest_id)}
             onClose={() => setSelectedQuestId(null)}
+            onOpenInspirationRecharge={onOpenInspirationRecharge}
           />
         )}
 

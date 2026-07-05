@@ -151,6 +151,10 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
   const [isPartySkillSetOpen, setIsPartySkillSetOpen] = useState(false);
   const [isRankAssessmentOpen, setIsRankAssessmentOpen] = useState(false);
 
+  // --- 灵感不足阻断确认弹窗 ---
+  const [showInspirationGateConfirm, setShowInspirationGateConfirm] = useState(false);
+  const [inspirationDashboardTab, setInspirationDashboardTab] = useState<string>('overview');
+
   // --- 全局任务倒计时检测（无论告示板是否打开都运行）---
   const QUEST_DURATION_SECONDS_GLOBAL: Record<number, number> = {
     1: 1*60, 2: 2*60, 3: 3*60, 4: 4*60, 5: 5*60,
@@ -674,6 +678,15 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     }
   };
 
+  // 灵感余额检查：≤0 时阻断用户主动发起的对话，引导前往充值
+  const handleEnterDialogueWithCheck = (characterId: string, actionType: string = 'chat') => {
+    if (inspirationBalance <= 0) {
+      setShowInspirationGateConfirm(true);
+      return;
+    }
+    dialogue.handleEnterDialogue(characterId, actionType);
+  };
+
   const handleSaveGame = async (slotId: number) => {
       const label = `${world.worldState.dateStr} ${world.worldState.timeStr} - ${world.worldState.sceneName}`;
       
@@ -842,7 +855,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
     const commonProps = {
         onNavigate: world.handleNavigate,
         onAction: handleAction,
-        onEnterDialogue: dialogue.handleEnterDialogue,
+        onEnterDialogue: handleEnterDialogueWithCheck,
         isMenuVisible: !dialogue.isDialogueMode,
         worldState: world.worldState,
         targetCharacterId: world.sceneParams.target,
@@ -1161,6 +1174,7 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         }}
         onAddGold={(amount) => core.updateGold(core.gold + amount)}
         onConsumeInspiration={handleConsumeInspiration}
+        onOpenInspirationRecharge={() => setShowInspirationGateConfirm(true)}
         onAddItems={(items) => core.handleAddItems(items)}
         battleParty={core.battleParty}
         onAddBattlePartyExp={(party, exp) => core.addBattlePartyExp(party, exp)}
@@ -1248,15 +1262,89 @@ const GameScene = React.forwardRef<GameSceneRef, GameSceneProps>(({ userId, curr
         }}
       />
 
-      <InspirationDashboardModal 
-          isOpen={isInspirationDashboardOpen} 
+      {/* 灵感不足阻断确认弹窗 */}
+      {showInspirationGateConfirm && (
+        <div
+          className="fixed inset-0 z-[150] flex items-center justify-center pointer-events-auto animate-fadeIn"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowInspirationGateConfirm(false)}
+        >
+          <div
+            className="relative w-full max-w-xs rounded-2xl p-6 flex flex-col"
+            style={{
+              background: 'rgba(15,23,42,0.95)',
+              border: '1px solid rgba(34,211,238,0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(34,211,238,0.1)',
+              backdropFilter: 'blur(16px)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 顶部青色装饰线 */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+              style={{
+                width: '40px', height: '2px', marginTop: '-1px',
+                background: 'linear-gradient(to right, transparent, rgba(34,211,238,0.8), transparent)',
+              }}
+            />
+
+            {/* 图标 + 标题 */}
+            <div className="text-center mb-6">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{
+                  background: 'rgba(34,211,238,0.1)',
+                  border: '1px solid rgba(34,211,238,0.25)',
+                  boxShadow: '0 0 15px rgba(34,211,238,0.15)',
+                }}
+              >
+                <svg className="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-slate-200 tracking-wider">灵感不足</h3>
+            </div>
+
+            {/* 提示文案 */}
+            <p className="text-center text-sm text-slate-400 mb-6 leading-relaxed">
+              灵感不足，是否要前往充值？
+            </p>
+
+            {/* 按钮组 */}
+            <div className="flex gap-3 mt-auto">
+              <button
+                onClick={() => setShowInspirationGateConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all border border-transparent hover:border-slate-700 tracking-widest"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  setShowInspirationGateConfirm(false);
+                  setInspirationDashboardTab('transfer');
+                  setIsInspirationDashboardOpen(true);
+                }}
+                className="flex-1 py-2.5 rounded-lg font-medium text-sm text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all tracking-widest"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <InspirationDashboardModal
+          isOpen={isInspirationDashboardOpen}
           onClose={() => {
               setIsInspirationDashboardOpen(false);
+              setInspirationDashboardTab('overview');
               if (onUpdateInspirationBalance) {
                   onUpdateInspirationBalance();
               }
-          }} 
-          userId={userId} 
+          }}
+          userId={userId}
+          initialTab={inspirationDashboardTab as any}
       />
       
       {battle.isOpen && battle.battleState && battle.quest && (
