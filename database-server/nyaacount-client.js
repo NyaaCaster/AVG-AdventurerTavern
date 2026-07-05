@@ -113,4 +113,26 @@ function getUidByUsername(username) {
     return callNyaaAcount('GET', `/project/uid?username=${encodeURIComponent(username)}`);
 }
 
-module.exports = { verifyUser, registerUser, changePassword, getUidByUsername };
+// 查询 NyaaAcount 猫粮余额；成功 → { uid, balance, total_recharge, total_spent }
+async function getBalance(uid) {
+    return callNyaaAcount('GET', `/project/balance?uid=${encodeURIComponent(uid)}`);
+}
+
+// 消费扣费 — 金额裁决权在 NyaaAcount pricing.json
+//   uid       — NyaaAcount 用户 ID (nyaa_uid)
+//   action    — 消费动作，如 'transfer_5'
+//   amount    — 本地成本常量（一致性校验，不符则 409 amount_mismatch）
+//   reference — 幂等键（recharge_log 唯一索引，重放返回 replayed:true）
+async function consume(uid, action, amount, reference) {
+    return callNyaaAcount('POST', '/project/consume', { uid, action, amount, reference });
+}
+
+// 退款补偿（本地入账失败时回退猫粮）
+//   uid       — NyaaAcount 用户 ID
+//   amount    — 退款金额
+//   reference — 派生自消费 reference（如 `${ref}:refund`）
+async function rechargeBalance(uid, amount, reference) {
+    return callNyaaAcount('POST', '/project/balance/recharge', { uid, amount, reference });
+}
+
+module.exports = { verifyUser, registerUser, changePassword, getUidByUsername, getBalance, consume, rechargeBalance };

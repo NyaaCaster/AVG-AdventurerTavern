@@ -6,6 +6,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const { randomBytes } = require('node:crypto');
 const multer = require('multer');
 const config = require('./config');
 const discordAuth = require('./discord-auth');
@@ -114,6 +115,14 @@ db.serialize(() => {
         }
     });
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nyaa_uid ON users(nyaa_uid)`);
+
+    // P17: 轻量会话表（登录签发 token，划转端点鉴权取 nyaa_uid）
+    db.run(`CREATE TABLE IF NOT EXISTS sessions (
+        token      TEXT PRIMARY KEY,
+        local_uid  INTEGER NOT NULL,
+        nyaa_uid   INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+    )`);
 
     // P7-2 起登录/注册/改密经 NyaaAcount 校验，本地不再存储密码。
     // （原"历史用户默认密码回填"逻辑已移除——它会把弃存后的 NULL 密码重新填回明文。）
@@ -777,11 +786,19 @@ app.post('/api/login', async (req, res) => {
     db.get("SELECT id, is_discord_bound FROM users WHERE nyaa_uid = ?", [nyaaUid], (err, row) => {
         if (err) return res.json({ success: false, message: '服务器错误' });
         if (row) {
-            return res.json({
-                success: true,
-                uid: row.id,
-                needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
-            });
+            // P17: 登录成功签发 session token（划转/猫粮查询端点鉴权用）
+            const token = randomBytes(32).toString('hex');
+            db.run("INSERT INTO sessions (token, local_uid, nyaa_uid, created_at) VALUES (?, ?, ?, ?)",
+                [token, row.id, nyaaUid, Date.now()], (se) => {
+                    if (se) console.error('[session] create failed:', se.message);
+                    return res.json({
+                        success: true,
+                        uid: row.id,
+                        token,
+                        needDiscordBind: config.AUTH.FORCE_DISCORD_BIND && !row.is_discord_bound
+                    });
+                });
+            return; // 防止继续执行
         }
 
         // JIT 建号：本平台无此账号 → 以 NyaaAcount 统一登录名建影子档案 + 默认资源
@@ -800,7 +817,13 @@ app.post('/api/login', async (req, res) => {
                     const newUid = this.lastID;
                     grantInitialSanity(newUid, req);
                     console.log(`[NyaaAcount] JIT 建号: ${name} (id=${newUid}, nyaa_uid=${nyaaUid})`);
-                    res.json({ success: true, uid: newUid, needDiscordBind: false });
+                    // P17: JIT 建号同步签发 session token
+                    const token = randomBytes(32).toString('hex');
+                    db.run("INSERT INTO sessions (token, local_uid, nyaa_uid, created_at) VALUES (?, ?, ?, ?)",
+                        [token, newUid, nyaaUid, Date.now()], (se) => {
+                            if (se) console.error('[session] create failed:', se.message);
+                            res.json({ success: true, uid: newUid, token, needDiscordBind: false });
+                        });
                 }
             );
         };
@@ -1400,6 +1423,26 @@ app.post('/api/chat/messages/delete_old', (req, res) => {
     );
 });
 
+// ----------------- 轻量会话鉴权（P17） -----------------
+
+// 从 Authorization: Bearer <token> 提取 session，挂载 req.localUid / req.nyaaUid
+// 仅用于划转/猫粮查询等需要真实扣费的端点，不影响现有裸 userId 端点
+function requireSession(req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'unauthorized' });
+    }
+    const token = auth.slice(7);
+    db.get("SELECT local_uid, nyaa_uid FROM sessions WHERE token = ?", [token], (err, row) => {
+        if (err || !row) {
+            return res.status(401).json({ success: false, error: 'unauthorized' });
+        }
+        req.localUid = row.local_uid;
+        req.nyaaUid = row.nyaa_uid;
+        next();
+    });
+}
+
 // ----------------- 理智账本 API -----------------
 
 // 辅助函数：从请求中提取真实客户端 IP
@@ -1614,6 +1657,63 @@ app.post('/api/sanity/admin/records', (req, res) => {
             );
         }
     );
+});
+
+// --- 划转 + 猫粮查询 API（P17：NyaaAcount 猫粮 1:1 单向划转灵感）---
+
+// 划转：扣 NyaaAcount 猫粮 → 本地 sanity_ledger 入账灵感
+// 对标 NyaaChat 扩容模式：consume → local write → 失败退款
+app.post('/api/transfer', requireSession, async (req, res) => {
+    const { tier } = req.body;
+    const VALID_TIERS = [5, 10, 65, 110, 370];
+    if (!VALID_TIERS.includes(tier)) {
+        return res.status(400).json({ success: false, error: 'invalid_tier' });
+    }
+
+    const ref = `avg:${req.nyaaUid}:transfer_${tier}:${Date.now()}`;
+    const r = await nyaacount.consume(req.nyaaUid, `transfer_${tier}`, tier, ref);
+
+    if (!r.ok) {
+        if (r.data?.error === 'insufficient_balance') {
+            return res.status(402).json({ success: false, error: 'insufficient' });
+        }
+        console.error(`[transfer] NyaaAcount consume failed:`, r.status, r.data);
+        return res.status(503).json({ success: false, error: 'account_service_unavailable' });
+    }
+
+    const sanityAmount = tier * config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
+    const desc = `划转 ${tier} 猫粮 → ${tier} 灵感 (ref=${ref})`;
+    db.run(
+        `INSERT INTO sanity_ledger (user_id, type, amount, description, client_ip, created_at)
+         VALUES (?, 'transfer', ?, ?, ?, ?)`,
+        [req.localUid, sanityAmount, desc, getClientIp(req), Date.now()],
+        async function (err) {
+            if (err) {
+                console.error(`[transfer] local write failed, refunding:`, err.message);
+                await nyaacount.rechargeBalance(req.nyaaUid, tier, `${ref}:refund`);
+                return res.status(500).json({ success: false, error: 'db_write_failed' });
+            }
+            // 查本地灵感余额（理智总和 / 10000 = 灵感数）
+            db.get("SELECT COALESCE(SUM(amount), 0) AS sanity FROM sanity_ledger WHERE user_id = ?",
+                [req.localUid], (_, row) => {
+                    const inspBal = (row?.sanity || 0) / config.GAME_CONSTANTS.INSPIRATION_TO_SANITY_RATIO;
+                    res.json({
+                        success: true,
+                        inspirationBalance: inspBal,
+                        catfoodBalance: r.data.balance
+                    });
+                });
+        }
+    );
+});
+
+// 查询猫粮余额（透传 NyaaAcount）
+app.get('/api/catfood-balance', requireSession, async (req, res) => {
+    const r = await nyaacount.getBalance(req.nyaaUid);
+    if (!r.ok) {
+        return res.status(503).json({ success: false, error: 'account_service_unavailable' });
+    }
+    res.json({ success: true, balance: r.data.balance });
 });
 
 // --- 角色解锁状态 API ---
