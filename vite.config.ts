@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       },
       define: {
         __FILE_SERVER_API_KEY__: JSON.stringify(env.FILE_SERVER_API_KEY || ''),
+        __DEBUG_PASSWD__: JSON.stringify(env.DEBUG_PASSWD || ''),
       }
     };
 });

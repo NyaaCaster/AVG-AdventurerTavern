@@ -199,6 +199,11 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
   const [isNSFWRevealed, setIsNSFWRevealed] = useState(false);
   const [isDebugRevealed, setIsDebugRevealed] = useState(false);
 
+  // Debug 密码校验弹窗状态
+  const [showDebugPwModal, setShowDebugPwModal] = useState(false);
+  const [debugPwInput, setDebugPwInput] = useState("");
+  const [debugPwError, setDebugPwError] = useState(false);
+
   // 用户信息状态
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isRenamingUsername, setIsRenamingUsername] = useState(false);
@@ -231,7 +236,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     }
   };
 
-  // 视觉效果标题点击处理：10秒内5次点击显示 Debug 模式
+  // 视觉效果标题点击处理：10秒内5次点击弹出 Debug 模式密码校验
   const handleVisualTitleClick = () => {
     const now = Date.now();
     if (visualClickRef.current.count === 0 || now - visualClickRef.current.startTime > 10000) {
@@ -242,7 +247,29 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
     }
 
     if (visualClickRef.current.count >= 5) {
+        visualClickRef.current.count = 0;
+        // 若已揭示则无需重复校验
+        if (isDebugRevealed) return;
+        // 未配置密码时回退为直接揭示，避免开发环境自锁
+        if (!__DEBUG_PASSWD__) {
+            setIsDebugRevealed(true);
+            return;
+        }
+        setDebugPwInput("");
+        setDebugPwError(false);
+        setShowDebugPwModal(true);
+    }
+  };
+
+  // Debug 密码校验：严格区分大小写
+  const handleDebugPwSubmit = () => {
+    if (debugPwInput === __DEBUG_PASSWD__) {
         setIsDebugRevealed(true);
+        setShowDebugPwModal(false);
+        setDebugPwInput("");
+        setDebugPwError(false);
+    } else {
+        setDebugPwError(true);
     }
   };
 
@@ -1058,6 +1085,54 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
           onSave={handleCropSave}
           onCancel={handleCropCancel}
         />
+      )}
+
+      {/* Debug 模式密码校验弹窗 */}
+      {showDebugPwModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setShowDebugPwModal(false)}
+        >
+          <div
+            className="w-full max-w-sm mx-4 bg-slate-900 border border-slate-700 border-l-4 border-l-yellow-600/70 rounded-xl shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <i className="fa-solid fa-lock text-yellow-500 text-lg"></i>
+              <h3 className="text-lg font-semibold text-slate-100">Debug 模式验证</h3>
+            </div>
+            <p className="text-sm text-slate-400 mb-4">请输入调试密码以开启开发者调试工具（区分大小写）。</p>
+            <input
+              type="password"
+              autoFocus
+              value={debugPwInput}
+              onChange={(e) => { setDebugPwInput(e.target.value); setDebugPwError(false); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleDebugPwSubmit(); }}
+              placeholder="Debug 密码"
+              className={`w-full bg-slate-950/50 border ${debugPwError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-yellow-500 focus:ring-yellow-500'} text-slate-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 transition-all`}
+            />
+            {debugPwError && (
+              <p className="text-sm text-red-400 mt-2 flex items-center gap-1.5">
+                <i className="fa-solid fa-circle-exclamation"></i>
+                密码错误，无法开启 Debug 模式
+              </p>
+            )}
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setShowDebugPwModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDebugPwSubmit}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-medium transition-colors"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
