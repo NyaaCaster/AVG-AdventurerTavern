@@ -5,10 +5,10 @@
  */
 export const AppConfig = {
   database: {
-    apiBaseUrl: 'https://h.hony-wen.com:3097/api',
+    apiBaseUrl: 'https://h.nyaa.host:3097/api',
   },
   fileServer: {
-    baseUrl: 'https://h.hony-wen.com:5102',
+    baseUrl: 'https://h.nyaa.host:5102',
     /**
      * 文件服务器 API Key
      * 

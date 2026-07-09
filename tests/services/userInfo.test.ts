@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../config', () => ({
   AppConfig: {
     database: {
-      apiBaseUrl: 'https://h.hony-wen.com:3097/api',
+      apiBaseUrl: 'https://h.nyaa.host:3097/api',
     },
     fileServer: {
       baseUrl: 'http://localhost:5101',
@@ -12,7 +12,7 @@ vi.mock('../../config', () => ({
   },
 }));
 
-const API_BASE_URL = 'https://h.hony-wen.com:3097/api';
+const API_BASE_URL = 'https://h.nyaa.host:3097/api';
 
 const apiCall = async (endpoint: string, body: any) => {
   try {
@@ -181,7 +181,7 @@ describe('getUserInfo - 获取用户信息', () => {
       await getUserInfo(123);
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://h.hony-wen.com:3097/api/user/info',
+        'https://h.nyaa.host:3097/api/user/info',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ userId: 123 })
@@ -218,7 +218,7 @@ describe('updateUsername - 更新用户名', () => {
       await updateUsername(1, 'newusername');
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://h.hony-wen.com:3097/api/user/update_username',
+        'https://h.nyaa.host:3097/api/user/update_username',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ userId: 1, newUsername: 'newusername' })
@@ -312,7 +312,7 @@ describe('updateUserAvatar - 更新用户头像', () => {
       await updateUserAvatar(123, 'img/face/userFace/123_face.png');
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://h.hony-wen.com:3097/api/user/update_avatar',
+        'https://h.nyaa.host:3097/api/user/update_avatar',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ 

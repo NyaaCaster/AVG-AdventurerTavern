@@ -637,7 +637,7 @@ describe('PartySkillSetModal - 玩家头像处理', () => {
   const resolveImgPath = (path: string): string => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    return `https://h.hony-wen.com:5102/files/${path}`;
+    return `https://h.nyaa.host:5102/files/${path}`;
   };
 
   const getPlayerAvatarUrl = (avatarInfo: PlayerAvatarInfo | null | undefined): string => {
@@ -711,7 +711,7 @@ describe('PartySkillSetModal - partyMembers 玩家头像处理', () => {
   const resolveImgPath = (path: string): string => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    return `https://h.hony-wen.com:5102/files/${path}`;
+    return `https://h.nyaa.host:5102/files/${path}`;
   };
 
   const getPlayerAvatarUrl = (avatarInfo: PlayerAvatarInfo | null | undefined): string => {

@@ -20,7 +20,7 @@ const mockFileUploadService = {
 const resolveImgPath = (path: string): string => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return `https://h.hony-wen.com:5102/files/${path}`;
+  return `https://h.nyaa.host:5102/files/${path}`;
 };
 
 const getPlayerAvatarUrl = (
@@ -339,12 +339,12 @@ describe('resolveImgPath - 统一处理测试', () => {
   describe('相对路径处理', () => {
     it('应该为相对路径添加基础URL', () => {
       const result = resolveImgPath('img/face/1.png');
-      expect(result).toBe('https://h.hony-wen.com:5102/files/img/face/1.png');
+      expect(result).toBe('https://h.nyaa.host:5102/files/img/face/1.png');
     });
 
     it('应该为角色头像路径添加基础URL', () => {
       const result = resolveImgPath('img/face/101.png');
-      expect(result).toBe('https://h.hony-wen.com:5102/files/img/face/101.png');
+      expect(result).toBe('https://h.nyaa.host:5102/files/img/face/101.png');
     });
   });
 

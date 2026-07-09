@@ -23,7 +23,7 @@ module.exports = {
     DB_PATH: process.env.DB_PATH || path.join(__dirname, 'data', 'database.sqlite'),
 
     // 前端 URL (用于 Discord OAuth 回调重定向)
-    FRONTEND_URL: process.env.FRONTEND_URL || 'https://h.hony-wen.com',
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://h.nyaa.host',
 
     // CORS (跨域资源共享) 配置
     CORS_CONFIG: {

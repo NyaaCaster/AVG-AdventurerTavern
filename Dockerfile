@@ -66,7 +66,7 @@ WORKDIR /app
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Copy SSL certificates (from build secrets, Base64 decoded)
-# h.hony-wen.com 证书
+# h.nyaa.host 证书
 RUN --mount=type=secret,id=ssl_cert \
     --mount=type=secret,id=ssl_key \
     if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then \
@@ -77,7 +77,7 @@ RUN --mount=type=secret,id=ssl_cert \
         chown nginx:nginx /etc/nginx/ssl/certificate.* ; \
     fi
 
-# h.nyaa.host 证书（若未提供该域名 secret，则回退复用 h.hony-wen.com 证书，保证 nginx 可正常启动）
+# h.nyaa.host 证书（若未提供该域名 secret，则回退复用 h.nyaa.host 证书，保证 nginx 可正常启动）
 RUN --mount=type=secret,id=ssl_cert_nyaa \
     --mount=type=secret,id=ssl_key_nyaa \
     if [ -f /run/secrets/ssl_cert_nyaa ] && [ -f /run/secrets/ssl_key_nyaa ]; then \

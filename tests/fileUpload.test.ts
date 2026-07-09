@@ -4,7 +4,7 @@ import { fileUploadService, type UploadResult, type UploadError, type FileListRe
 vi.mock('../config', () => ({
   AppConfig: {
     database: {
-      apiBaseUrl: 'https://h.hony-wen.com:3097/api',
+      apiBaseUrl: 'https://h.nyaa.host:3097/api',
     },
     fileServer: {
       baseUrl: 'http://localhost:5101',

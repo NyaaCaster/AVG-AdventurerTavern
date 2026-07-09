@@ -7,7 +7,7 @@ import { PLAYER_AVATAR_URL } from '../data/resources/characterImageResources';
 import { fileUploadService } from '../services/fileUpload';
 
 // 项目资源根目录
-const PROJECT_BASE_URL = "https://h.hony-wen.com:5102/files/";
+const PROJECT_BASE_URL = "https://h.nyaa.host:5102/files/";
 
 let isHDMode = false;
 

@@ -126,7 +126,7 @@ Content-Type: application/json
 // config.ts
 export const AppConfig = {
   fileServer: {
-    baseUrl: 'https://h.hony-wen.com:5102',
+    baseUrl: 'https://h.nyaa.host:5102',
     apiKey: '', // 运行时从环境变量获取
   },
 };
