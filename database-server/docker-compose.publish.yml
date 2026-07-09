@@ -1,0 +1,54 @@
+# AVG database-server publish compose — macmini deployment.
+#
+# Differs from the dev compose (docker-compose.yml) only in:
+#   - No `build:` section — image is pulled from NyaaDockerHUB private registry.
+#   - `pull_policy: always` ensures :latest is always refreshed.
+#   - Volume paths use env vars (${AVG_DB_DATA_DIR:?err}, ${AVG_SSL_DIR:?err})
+#     so database and SSL live on the DockerRes HDD.
+#   - Image ref uses ${PRIVATE_DOCKER_REGISTRY_HOST:?err} so compose fails fast
+#     if the variable is not set in .env.
+
+name: adv-tavern-db
+
+services:
+  database-server:
+    image: ${PRIVATE_DOCKER_REGISTRY_HOST:?err}/adv-tavern-db:latest
+    container_name: adventurertavern-db
+    pull_policy: always
+    ports:
+      - "3097:3097"
+    volumes:
+      - ${AVG_DB_DATA_DIR:?err}:/app/data
+      - ${AVG_SSL_DIR:?err}:/app/SSL:ro
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('https').get('https://localhost:3097/api/health', {rejectUnauthorized: false}, (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "adventurertavern-database"
+    networks:
+      - db-network
+
+networks:
+  db-network:
+    driver: bridge

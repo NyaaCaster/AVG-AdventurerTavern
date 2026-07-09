@@ -1,0 +1,48 @@
+# AVG-AdventurerTavern client publish compose — macmini deployment.
+#
+# Differs from the dev compose (docker-compose.yml) only in:
+#   - No `build:` section — image is pulled from NyaaDockerHUB private registry.
+#   - `pull_policy: always` ensures :latest is always refreshed on `docker compose up`.
+#   - Image ref uses ${PRIVATE_DOCKER_REGISTRY_HOST:?err} so compose fails fast if
+#     the variable is not set in .env.
+#
+# All other config (ports, restart, healthcheck, logging, networks) is identical
+# to the dev compose so behaviour is the same on both sides.
+
+services:
+  client:
+    image: ${PRIVATE_DOCKER_REGISTRY_HOST:?err}/adv-tavern:latest
+    container_name: adventurertavern
+    pull_policy: always
+    ports:
+      - "3098:80"
+      - "3096:443"
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider --no-check-certificate https://localhost:443/health || wget --no-verbose --tries=1 --spider http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "adventurertavern-client"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
