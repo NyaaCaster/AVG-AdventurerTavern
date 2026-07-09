@@ -7,4 +7,5 @@
  */
 
 declare const __FILE_SERVER_API_KEY__: string;
+declare const __AVG_DATABASE_API_URL__: string;
 declare const __DEBUG_PASSWD__: string;

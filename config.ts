@@ -5,7 +5,7 @@
  */
 export const AppConfig = {
   database: {
-    apiBaseUrl: 'https://h.nyaa.host:3097/api',
+    apiBaseUrl: typeof __AVG_DATABASE_API_URL__ !== 'undefined' ? __AVG_DATABASE_API_URL__ : '',
   },
   fileServer: {
     baseUrl: 'https://h.nyaa.host:5102',
