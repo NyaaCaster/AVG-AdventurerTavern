@@ -215,7 +215,7 @@ def main() -> None:
                         "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"])
     print(result.stdout, flush=True)
     print("Note: database-server / file-server are managed independently "
-          "(database-server/rebuild-and-restart.ps1, file-server/rebuild-and-restart.ps1).")
+          "(database-server/rebuild.py, file-server/rebuild.py).")
 
 
 if __name__ == "__main__":

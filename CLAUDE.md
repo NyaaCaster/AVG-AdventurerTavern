@@ -23,8 +23,8 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - 强制无缓存重建：`python rebuild.py --no-cache`。
 - 仅本地构建调试（不推送）：`python rebuild.py --skip-push`。
 - 私有仓库为 HTTP，本机 Docker 需已将 registry host 加入 `insecure-registries`（本机已配置）。
-- 仅拉取远端最新镜像并重启（不构建）：`powershell -ExecutionPolicy Bypass -File .\update-and-restart.ps1`。
-- 数据库服务和文件服务器独立管理，分别通过各自目录下的 `rebuild-and-restart.ps1` 操作。
+- macmini 侧仅拉取远端最新镜像并重启（不构建）：`python restart.py`。
+- 数据库服务和文件服务器独立管理，分别通过各自目录下的 `rebuild.py` 操作。
 
 ## Git 提交与推送
 
