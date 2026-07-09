@@ -172,6 +172,7 @@ def main() -> None:
         "--build-arg", f"VITE_QWEATHER_HOST={env.get('VITE_QWEATHER_HOST', '')}",
         "--build-arg", f"VITE_QWEATHER_KEY={env.get('VITE_QWEATHER_KEY', '')}",
         "--build-arg", f"FILE_SERVER_API_KEY={env.get('FILE_SERVER_API_KEY', '')}",
+        "--build-arg", f"AVG_DATABASE_API_URL={env.get('AVG_DATABASE_API_URL', '')}",
         "--build-arg", f"DEBUG_PASSWD={env.get('DEBUG_PASSWD', '')}",
         "--build-arg", f"GIT_COMMIT_HASH={sha}",
     ]
@@ -184,7 +185,7 @@ def main() -> None:
     # mask build-arg secret values in printed output as well
     print_secrets = secrets + [v for v in (
         env.get("VITE_QWEATHER_KEY"), env.get("FILE_SERVER_API_KEY"),
-        env.get("DEBUG_PASSWD")) if v]
+        env.get("AVG_DATABASE_API_URL"), env.get("DEBUG_PASSWD")) if v]
     run(build_cmd, print_secrets, env=build_env)
 
     # ---------- push + registry cleanup ----------
