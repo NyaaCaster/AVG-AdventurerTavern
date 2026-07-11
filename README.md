@@ -1,31 +1,23 @@
-
 # 🏰 AdventurerTavern (冒险者酒馆)
-
-[![Docker Image](https://img.shields.io/docker/v/honywen/adv-tavern?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/honywen/adv-tavern)
-[![Docker Image Size](https://img.shields.io/docker/image-size/honywen/adv-tavern/latest)](https://hub.docker.com/r/honywen/adv-tavern)
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/NyaaCaster/AVG-AdventurerTavern/docker-publish.yml?label=Build&logo=github)](https://github.com/NyaaCaster/AVG-AdventurerTavern/actions)
-[![License](https://img.shields.io/github/license/NyaaCaster/AVG-AdventurerTavern)](./LICENSE)
 
 **AdventurerTavern** 是一款高保真的视觉小说（Visual Novel）风格的角色扮演游戏框架。它结合了现代 LLM（大语言模型）技术，为玩家提供沉浸式的、动态的异世界酒馆经营与恋爱模拟体验。
 
 ## 🚀 快速开始
 
-```powershell
-# 拉取最新镜像并重启（推荐）
-# Windows PowerShell
-.\update-and-restart.ps1
+```bash
+# 构建镜像并推送到私有仓库，然后重启容器
+python rebuild.py
 
-# Linux / macOS
-bash update-and-restart.sh
-
-# 访问游戏
-http://localhost:3098   # HTTP
-https://localhost:3096  # HTTPS
+# 仅远端拉取最新镜像并重启（macmini 侧）
+python restart.py
 ```
+
+- HTTP: `http://localhost:3098`
+- HTTPS: `https://localhost:3096`
 
 ## 📖 游戏内容与玩法
 
-你将扮演传说中的退隐勇者，与姐姐**莉莉娅**共同经营位于边境的“夜莺亭”旅店。在这里，你将邂逅性格迥异的女性角色——从傲娇的皇女、社恐的拳师，到慵懒的前魔王。
+你将扮演传说中的退隐勇者，与姐姐**莉莉娅**共同经营位于边境的"夜莺亭"旅店。在这里，你将邂逅性格迥异的女性角色——从傲娇的皇女、社恐的拳师，到慵懒的前魔王。
 
 ### 核心特色
 
@@ -71,230 +63,124 @@ npm install
 依赖安装完成后，启动开发服务器：
 
 ```bash
-npm start
+npm run dev
 ```
 
 ### 5. 访问游戏
 服务启动后，浏览器通常会自动打开。如果没有，请访问：
 👉 **http://localhost:3000**
 
-> **注意**: 进入游戏后，请点击主界面的“系统设置”，在 **API 设置** 中填入你的 API Key 和 Base URL 才能开始对话。
+> **注意**: 进入游戏后，请点击主界面的"系统设置"，在 **API 设置** 中填入你的 API Key 和 Base URL 才能开始对话。
 
 ### 6. 关闭服务
-在运行命令的终端窗口中，按下 `Ctrl + C` 即可停止服务。
+在运行命令的窗口中，按下 `Ctrl + C` 即可停止服务。
 
 ---
 
-## 🐳 部署方案 B：基于 Docker (推荐/生产环境)
+## 🐳 部署方案 B：基于 Docker (生产环境)
 
-推荐使用 Docker 进行部署，我们提供了预构建的 Docker 镜像，无需本地编译。
+项目采用三服务 Docker 架构，镜像通过私有仓库 NyaaDockerHUB 分发，部署目标为内网 macmini 服务器。
 
+### 服务架构
 
+| 服务 | 镜像 | 端口 | 说明 |
+|------|------|------|------|
+| **adv-tavern** | `adv-tavern:latest` | 3098 (HTTP) / 3096 (HTTPS) | 前端 Nginx + React 静态资源 |
+| **adv-tavern-db** | `adv-tavern-db:latest` | 3097 | Node.js 数据库 API 后端 |
+| **adv-file-server** | `adv-file-server:latest` | 5101–5103 | 文件上传服务 (Git Submodule) |
 
-### 使用 Docker 部署
+### 构建与部署流程
 
-#### 1. 环境准备
-*   安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) 或 Docker Engine (Linux)
-
-#### 2. 快速启动
-
-```bash
-# 下载配置文件
-wget https://raw.githubusercontent.com/NyaaCaster/AVG-AdventurerTavern/main/docker-compose.yml
-
-# 或使用 curl
-curl -O https://raw.githubusercontent.com/NyaaCaster/AVG-AdventurerTavern/main/docker-compose.yml
-
-# 启动服务（自动从 Docker Hub 拉取镜像）
-docker-compose up -d
+```
+Windows 开发机                     macmini 服务器
+─────────────                     ─────────────
+python rebuild.py                 python restart.py
+  ├─ docker build                   ├─ docker compose pull
+  ├─ docker push → 私有仓库 ────────→├─ docker compose down
+  └─ docker compose up -d           ├─ docker compose up -d
+                                    └─ docker image prune -f
 ```
 
-#### 3. 访问游戏
-
-请访问：
-- HTTP: 👉 **http://localhost:3098**
-- HTTPS: 👉 **https://localhost:3096**
-
-
-
-#### 4. 服务管理
+### 本地构建与推送
 
 ```bash
-# 更新到最新版本
-docker-compose pull
-docker-compose up -d
+# 标准构建 + 推送 + 重启
+python rebuild.py
 
-# 查看日志
-docker-compose logs -f
+# 强制无缓存重建
+python rebuild.py --no-cache
 
-# 查看容器状态
-docker-compose ps
-
-# 停止服务
-docker-compose stop
-
-# 启动服务
-docker-compose start
-
-# 重启服务
-docker-compose restart
-
-# 停止并移除容器
-docker-compose down
+# 仅本地构建调试（不推送）
+python rebuild.py --skip-push
 ```
 
----
+`rebuild.py` 自动完成：读取 `.env` 配置 → `docker build`（BuildKit，注入 build-args 与 SSL 证书）→ 打 `:sha` + `:latest` 标签 → 推送到私有仓库 → 拉取并重启容器 → 清理旧标签与悬空镜像。
 
-## 🐋 Docker Hub
-
-本项目的 Docker 镜像托管在 Docker Hub 上，通过 GitHub Actions 自动构建和发布。
-
-*   **镜像地址**: [honywen/adv-tavern](https://hub.docker.com/r/honywen/adv-tavern)
-
-### 直接使用 Docker 运行
+### 远端拉取与重启（macmini）
 
 ```bash
-# 拉取镜像
-docker pull honywen/adv-tavern
+# 拉取最新镜像并重启
+python restart.py
 
-# 运行容器
-docker run -d \
-  --name adventurertavern \
-  -p 3098:80 \
-  -p 3096:443 \
-  --restart unless-stopped \
-  honywen/adv-tavern
+# 跳过拉取，仅用已有镜像重启
+python restart.py --no-pull
 ```
 
-### CI/CD 自动化
+### 环境配置
 
-本项目使用 GitHub Actions 实现自动化构建和部署：
+项目依赖 `.env` 文件注入运行参数（API 密钥、仓库地址等），该文件不入 Git。部署前请确保 `.env` 已正确配置。
 
-1. 推送代码到 `main` 分支
-2. GitHub Actions 自动触发构建
-3. 构建 Docker 镜像（仅客户端）
-4. 推送到 Docker Hub
+### 镜像优化要点
 
-查看构建状态：[GitHub Actions](https://github.com/NyaaCaster/AVG-AdventurerTavern/actions)
-
-#### 🚀 Docker 镜像优化说明
-
-本项目 Dockerfile 经过深度优化，提供更小、更快、更安全的镜像：
-
-**镜像优化**
-- ✅ 使用 `nginx:1.27-alpine3.20` 作为基础镜像（更小更安全）
-- ✅ 多阶段构建，仅保留前端静态资源
-- ✅ 清理构建缓存和不必要文件（.md, LICENSE, .map 等）
-- ✅ 镜像体积优化至 ~50MB（仅前端）
-
-**构建加速**
-- ✅ 启用 BuildKit 缓存挂载 (`--mount=type=cache`)
-- ✅ npm 依赖缓存复用，重复构建速度提升 50-70%
-- ✅ 使用 `--prefer-offline` 加速依赖安装
-- ✅ 优化层缓存策略，减少不必要的重建
-
-**安全性提升**
-- ✅ 使用最新的 Alpine Linux 3.20
-- ✅ 仅包含静态资源，无后端代码
-- ✅ 使用 wget 进行健康检查（nginx 自带）
-- ✅ GitHub Actions 集成 Trivy 安全扫描
-
-**性能优化**
-- ✅ Nginx 启用 gzip 压缩（压缩级别 6）
-- ✅ 静态资源缓存 1 年，HTML 不缓存
-- ✅ 优化 Nginx 配置（sendfile, tcp_nopush, tcp_nodelay）
-- ✅ 运行时内存占用更低
-- ✅ 更少的依赖包，更快的启动速度
-
-**多架构支持**
-- ✅ 支持 `linux/amd64` 和 `linux/arm64` 架构
-- ✅ 可在 x86 服务器、ARM 服务器（树莓派）、Apple Silicon Mac 上运行
-
-> 💡 **注意**: 所有镜像构建都由 GitHub Actions 自动完成。如需本地构建，请确保启用 BuildKit：`export DOCKER_BUILDKIT=1`
+- ✅ 多阶段构建 (`node:20-alpine` → `nginx:1.27-alpine`)，仅保留前端静态资源
+- ✅ Nginx gzip 压缩 + 静态资源长缓存
+- ✅ 支持 `linux/amd64` 和 `linux/arm64` 多架构
+- ✅ BuildKit 缓存挂载加速重复构建
 
 ---
 
-## 📊 镜像信息
-
-### 基本信息
-- **镜像名称**: `honywen/adv-tavern`
-- **镜像大小**: ~50MB (仅前端静态资源)
-- **支持架构**: linux/amd64, linux/arm64
-- **基础镜像**: nginx:1.27-alpine3.20
-- **构建方式**: GitHub Actions 自动构建 (启用 BuildKit)
-- **更新频率**: 推送到 main 分支自动更新
-
-### 端口配置
-| 端口 | 协议 | 说明 |
-|------|------|------|
-| **3098** | HTTP | 前端访问端口 |
-| **3096** | HTTPS | 前端安全访问端口 |
-
-### 包含组件
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| **前端** | Nginx 1.27 + React 19 | 静态资源服务 |
-| **基础系统** | Alpine Linux 3.20 | 最小化 Linux 发行版 |
-
-### 功能特性
-- ✅ 静态资源服务（React 前端）
-- ✅ 健康检查
-- ✅ 自动重启
-- ✅ 多阶段构建优化
-- ✅ BuildKit 缓存加速
-- ✅ Gzip 压缩
-- ✅ 多架构支持（amd64/arm64）
-
-### 资源要求
-- **CPU**: 0.25-0.5 核心
-- **内存**: 128-256MB
-- **磁盘**: 镜像 ~50MB
-- **网络**: 需要访问后端 API 和 LLM 服务
-
-### 性能特点
-- **启动速度**: < 1秒（Nginx 快速启动）
-- **响应时间**: < 10ms（静态资源服务）
-- **并发处理**: 支持数千并发连接
-- **资源效率**: 相比 Node.js 服务减少 90% 内存占用
-
----
-
-## 📂 项目结构简介
+## 📂 项目结构
 
 ```
 AVG-AdventurerTavern/
-├── components/              # React UI 组件
+├── components/              # React UI 组件（含 scenes/、icons/）
+├── hooks/                   # React Hooks（状态/对话/战斗/音频/世界/AI记忆）
+├── services/                # LLM 通信 + 数据库 + 文件上传服务层
 ├── data/                    # 游戏数据
-│   ├── characters/         # 角色人设
-│   ├── prompts/            # AI 提示词
-│   └── schedules.ts        # 角色日程表
-├── services/               # LLM 通信服务
-├── types/                  # TypeScript 类型定义
-├── utils/                  # 工具函数
-├── database-server/        # 后端数据库服务（独立部署）
-├── file-server/            # 文件服务器（Git Submodule）
-├── .github/workflows/      # GitHub Actions CI/CD
-│   └── docker-publish.yml # 客户端自动构建
-├── Dockerfile              # 客户端镜像构建配置
-├── docker-compose.yml      # 客户端部署配置
-└── README.md               # 项目说明文档
+│   ├── characters/          # 角色人设
+│   ├── prompts/             # AI 提示词 (char_101~111)
+│   ├── battle-data/         # 战斗数据
+│   └── resources/           # 静态资源
+├── battle-system/           # 回合制战斗系统（伤害/治疗/技能/Buff/AI）
+├── database-server/         # 后端数据库 API 服务（独立部署）
+├── file-server/             # 文件服务器（Git Submodule，独立部署）
+├── tests/                   # Vitest 测试套件
+├── types.ts                 # TypeScript 类型定义
+├── config.ts                # 前端运行配置
+├── version.ts               # 版本号
+├── Dockerfile               # 多阶段构建配置
+├── docker-compose.yml       # 本地 Docker 部署配置
+├── docker-compose.publish.yml # macmini 生产部署配置
+├── rebuild.py               # 构建 → 推送 → 重启（Windows 端）
+├── restart.py               # 拉取 → 重启（macmini 端）
+└── nginx.conf               # Nginx 配置（双域名）
 ```
 
-
+---
 
 ## 🔧 技术栈
 
 *   **前端框架**: React 19 + TypeScript
+*   **样式**: Tailwind CSS 4
 *   **构建工具**: Vite 6
-*   **容器化**: Docker + Nginx
+*   **测试**: Vitest
+*   **容器化**: Docker + Nginx (Alpine)
+*   **构建脚本**: Python 3（标准库）
 *   **文件服务**: [file-server](https://github.com/NyaaCaster/file-server)（独立子模块）
-*   **CI/CD**: GitHub Actions
-*   **镜像托管**: Docker Hub
+*   **镜像分发**: 私有 Docker Registry (NyaaDockerHUB)
 *   **AI 集成**: OpenAI 兼容 API (GPT-4, Claude, DeepSeek 等)
 
 ## 📦 子模块
-
-本项目包含以下 Git Submodule：
 
 ### file-server（文件服务器）
 
@@ -306,13 +192,7 @@ AVG-AdventurerTavern/
 
 **项目地址**：https://github.com/NyaaCaster/file-server
 
-**技术文档**：[文件上传服务技术标准](./Doc/Technical/FILE_UPLOAD_STANDARD.md)
-
-## 📚 相关文档
-
-*   [Docker 部署指南](./DOCKER-DEPLOY.md) - 详细的 Docker 部署和管理文档
-*   [GitHub Actions 工作流](./.github/workflows/docker-publish.yml) - CI/CD 配置
-*   [Dockerfile](./Dockerfile) - Docker 镜像构建配置
+---
 
 ## 👥 AdvTavern 团队
 
@@ -363,71 +243,16 @@ AVG-AdventurerTavern/
 ## 📊 项目状态
 
 *   **开发状态**: 活跃开发中
-*   **Docker 镜像**: 自动构建和发布（仅客户端）
-*   **镜像大小**: 47.7MB (实际测量)
-*   **构建时间**: ~30秒 (GitHub Actions)
+*   **部署方式**: Docker 三服务架构，内网 macmini 服务器
+*   **镜像分发**: 私有 Docker Registry (NyaaDockerHUB)
+*   **镜像大小**: ~50MB (前端静态资源)
 *   **支持架构**: linux/amd64, linux/arm64
 *   **基础镜像**: nginx:1.27-alpine3.20
 *   **构建工具**: Docker BuildKit + 多阶段构建
-*   **安全扫描**: Trivy (GitHub Actions)
-*   **部署方式**: Docker / Node.js
-
-### 📈 镜像性能评估
-
-#### 镜像体积分析
-- **总大小**: 47.7MB
-- **基础层**: 7.8MB (Alpine Linux 3.20.5)
-- **Nginx 层**: 35.2MB (Nginx 1.27.3 + 依赖)
-- **应用层**: 522KB (前端静态资源)
-- **配置层**: 99.4KB (时区数据 + 运行时配置)
-- **其他**: 2.05KB (Nginx 配置文件)
-
-#### 性能指标
-- **启动时间**: < 1秒
-- **内存占用**: 128-256MB (运行时)
-- **CPU 使用**: 0.25-0.5 核心
-- **网络带宽**: 最小化（静态资源 gzip 压缩）
-- **并发能力**: Nginx 高性能静态文件服务
-
-#### 优化成果
-- ✅ 相比传统 Node.js 镜像减少 90% 体积（Node.js 镜像通常 > 400MB）
-- ✅ 使用 Alpine Linux 减少攻击面
-- ✅ 多阶段构建，仅保留运行时必需文件
-- ✅ 清理所有构建缓存和源码文件
-- ✅ 静态资源 gzip 压缩，传输体积减少 70%
-
-#### 镜像层分析
-```
-层级结构（从上到下）:
-1. Alpine 基础系统: 7.8MB
-2. Nginx 核心 + 模块: 35.2MB
-3. 运行时脚本: 11.8KB
-4. 时区数据: 99.4KB
-5. 前端静态资源: 522KB
-6. Nginx 配置: 2.05KB
-总计: 47.7MB
-```
-
-#### 安全性评估
-- ✅ 基于官方 nginx:alpine 镜像
-- ✅ 最小化依赖，减少漏洞风险
-- ✅ 定期更新基础镜像（Nginx 1.27.3）
-- ✅ 健康检查机制
-- ✅ 非特权用户运行
-- ✅ GitHub Actions Trivy 扫描
-
-#### 部署建议
-- **生产环境**: 推荐使用 Docker 部署
-- **开发环境**: 可使用 Node.js 本地运行
-- **资源配置**: CPU 0.25核 + 128MB 内存即可流畅运行
-- **扩展性**: 支持 Kubernetes 水平扩展
-- **监控**: 建议配置健康检查和日志收集
 
 ## 🔗 相关链接
 
 *   **GitHub 仓库**: https://github.com/NyaaCaster/AVG-AdventurerTavern
-*   **Docker Hub**: https://hub.docker.com/r/honywen/adv-tavern
-*   **GitHub Actions**: https://github.com/NyaaCaster/AVG-AdventurerTavern/actions
 *   **问题反馈**: https://github.com/NyaaCaster/AVG-AdventurerTavern/issues
 
 ## 📜 开源许可 (License)
