@@ -45,10 +45,11 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - **证书来源与续期**：macmini（192.168.31.141）宿主 `/root/.acme.sh/` 每日 cron 自动续期同一张 SAN 证书（DNSPod `dns_dp` 验证，凭据仅在 `/root/.acme.sh/account.conf`，**绝不进仓库 / `.env` / 容器**）。
 - **运行时挂载**：compose 以 `:ro` 卷将宿主 `certs/`（`/root/DockerContainer/AVG-AdventurerTavern/certs`，可用 `CERT_DIR` 覆盖，默认 `./certs`）挂到容器 `/etc/nginx/ssl`。
 - **nginx.conf**：两个 443 server 块统一指向 `/etc/nginx/ssl/fullchain.pem` + `/etc/nginx/ssl/privkey.pem`。
-- **续期 reload 链路**：acme.sh `--install-cert` 写新 `fullchain.pem/privkey.pem` 到 `certs/` → reloadcmd 执行 `acme/deploy_certs.py` → 校验存在/权限固化/`docker exec adventurertavern nginx -t`（失败中止不 reload）→ `nginx -s reload` 热加载 → 写日志 `acme/renew.log`。零重建、零停机。
+- **续期 reload 链路（生产一致）**：权威源在宿主机 `/etc/letsencrypt/h.hony-wen.com/{fullchain.pem,privkey.pem}`（acme.sh 的 dsh install-cert 更新，dsh nginx 与酒馆**共用同一条 install-cert**）。acme.sh 续期后 reloadcmd 执行 `acme/reload_certs.py` → 宿主 `nginx -t` → 把权威源证书同步到酒馆 `certs/`（fullchain 644 / privkey 600 root）→ 宿主 dsh `nginx -s reload` → 容器 nginx `-t` 通过后 `-s reload` 热加载 → 写日志 `acme/reload.log`。零重建、零停机。
 - **部署注意事项**：
   - `restart.py` 启动前会校验 `certs/fullchain.pem` + `privkey.pem` 存在，缺失即报错退出（先完成首次签发）。
-  - 容器若未运行，`deploy_certs.py` 只警告并跳过 reload，不致命。
+  - 续期/刷新统一以 `acme/reload_certs.py` 为准（随代码入库、与 macmini 生产一致），脚本内 `PATH` 追加 `/snap/bin`。
+  - 容器若未运行，`reload_certs.py` 只警告并跳过容器 reload（宿主已刷新），不致命。
   - 首次正式签发必须带 `--server letsencrypt --force`（防被 staging 续期时间跳过），见计划文档 §5。
 
 ## 本地开发

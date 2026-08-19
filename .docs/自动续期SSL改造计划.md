@@ -135,9 +135,10 @@ macmini 宿主 (cron 每日 1/7/13/19)
   5. `docker exec adventurertavern nginx -s reload`；
   6. 输出成功/失败日志到 `/root/DockerContainer/AVG-AdventurerTavern/acme/renew.log`。
 - 说明：`--reloadcmd` 也可直接内联 `docker exec ... nginx -t && docker exec ... nginx -s reload`；封装成脚本是为了带校验、权限、日志，便于排障。脚本内 `docker` 需 `export PATH=$PATH:/snap/bin`。
+- **生产修订（P5 定案，取代上述 deploy_certs.py 方案）**：实际落地的续期 hook 为 `acme/reload_certs.py`（宿主侧合并双刷新：宿主 `nginx -t` → 从权威源 `/etc/letsencrypt/h.hony-wen.com/` 同步 fullchain/privkey 到酒馆 `certs/` → 宿主 dsh `nginx -s reload` → 容器 nginx `-t` 通过后 `-s reload` → 写 `reload.log`）；macmini 的 dsh 与酒馆**共用同一条 install-cert**。原 `deploy_certs.py`（写 renew.log）未接入生产，已从仓库移除以免误导。详见 `阶段交接-001.md` 与仓库 `CLAUDE.md`。
 
 ### 2.9 部署同步（文档/流程，非代码）
-- macmini 部署目录 `/root/DockerContainer/AVG-AdventurerTavern/` 需在 P2 上线时与仓库同步：docker-compose*.yml、nginx.conf（进镜像）、restart.py、acme/deploy_certs.py；并 `mkdir -p certs acme`。
+- macmini 部署目录 `/root/DockerContainer/AVG-AdventurerTavern/` 需在 P2 上线时与仓库同步：docker-compose*.yml、nginx.conf（进镜像）、restart.py、acme/reload_certs.py；并 `mkdir -p certs acme`。
 - 该目录仍经 `restart.py`/`rebuild.py` 标准流程更新镜像。
 
 ---
