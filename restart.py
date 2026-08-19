@@ -33,6 +33,11 @@ def main():
     here = Path(__file__).resolve().parent
     os.chdir(here)
 
+    # ---- 0. verify certs before touching the container ----
+    cert_dir = Path("./certs")
+    if not (cert_dir / "fullchain.pem").exists() or not (cert_dir / "privkey.pem").exists():
+        sys.exit("[ERROR] certs/fullchain.pem + privkey.pem 缺失；请先完成首次签发（P1）")
+
     # ---- 1. pull first ----
     if not args.no_pull:
         print("[1/4] Pulling latest image...")

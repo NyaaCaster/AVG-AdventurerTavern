@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Asia/Shanghai
+    volumes:
+      - "${CERT_DIR:-./certs}:/etc/nginx/ssl:ro"
     deploy:
       resources:
         limits:

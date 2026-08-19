@@ -9,8 +9,8 @@ Usage:
 Replaces the retired GitHub Actions pipeline (.github/workflows/docker-publish.yml):
   1. read .env (registry endpoint, Vite build args) — values are masked in output
   2. registry health check (GET /v2/)
-  3. docker build with build-args + BuildKit SSL secrets (base64 of SSL/ files,
-     matching the Dockerfile's `base64 -d` secret handling)
+  3. docker build with build-args (no SSL secrets — certs are bind-mounted at
+     runtime, the image no longer contains any private key)
   4. tag <registry>/adv-tavern:<git-sha> + :latest, push both
   5. registry keep-only-latest: delete manifests other than <git-sha>/latest
   6. docker compose pull + up -d (restart with the new image)
@@ -18,7 +18,6 @@ Replaces the retired GitHub Actions pipeline (.github/workflows/docker-publish.y
 """
 
 import argparse
-import base64
 import json
 import os
 import subprocess
@@ -35,13 +34,6 @@ PROJECT_LABEL = "project=adv-tavern"
 # Windows 控制台默认 GBK，docker/vite 输出含 Unicode 字符（✓ 等）会炸 print
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-SSL_SECRETS = {
-    # secret id -> source file under SSL/ (Dockerfile expects base64 content)
-    "ssl_cert": "h.hony-wen.com_bundle.crt",
-    "ssl_key": "h.hony-wen.com.key",
-    "ssl_cert_nyaa": "h.nyaa.host_bundle.crt",
-    "ssl_key_nyaa": "h.nyaa.host.key",
-}
 
 
 def parse_env(path: Path) -> dict:
@@ -161,9 +153,6 @@ def main() -> None:
 
     # ---------- build ----------
     build_env = {**os.environ, "DOCKER_BUILDKIT": "1"}
-    for secret_id, filename in SSL_SECRETS.items():
-        pem = (ROOT / "SSL" / filename).read_bytes()
-        build_env[f"SECRET_{secret_id.upper()}"] = base64.b64encode(pem).decode("ascii")
 
     build_cmd = [
         "docker", "build", "-f", str(ROOT / "Dockerfile"),
@@ -176,8 +165,6 @@ def main() -> None:
         "--build-arg", f"DEBUG_PASSWD={env.get('DEBUG_PASSWD', '')}",
         "--build-arg", f"GIT_COMMIT_HASH={sha}",
     ]
-    for secret_id in SSL_SECRETS:
-        build_cmd += ["--secret", f"id={secret_id},env=SECRET_{secret_id.upper()}"]
     build_cmd.append(str(ROOT))
     if args.no_cache:
         build_cmd.insert(2, "--no-cache")

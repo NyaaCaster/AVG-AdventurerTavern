@@ -19,7 +19,8 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 
 前端镜像**本地构建**并推送到私有镜像仓库 NyaaDockerHUB（GitHub Actions 线上构建已停用，`docker-publish.yml` 已删除）：
 
-- 标准流程：`python rebuild.py` —— 读 `.env`（registry 端点 + Vite build-args + SSL secrets）→ docker build（tag = git short SHA + latest）→ push 私有仓库 → 仓库端只保留当前 SHA + latest → `docker compose pull` + `up -d` 重启 → 清理本项目旧 tag 与悬空镜像。
+- 标准流程：`python rebuild.py` —— 读 `.env`（registry 端点 + Vite build-args）→ docker build（tag = git short SHA + latest）→ push 私有仓库 → 仓库端只保留当前 SHA + latest → `docker compose pull` + `up -d` 重启 → 清理本项目旧 tag 与悬空镜像。
+- 注意：镜像**不再包含证书私钥**，SSL 证书改由运行时 `:ro` 卷挂载提供（见「HTTPS 自动续期」）；构建无 SSL secret、不依赖 `SSL/`。
 - 强制无缓存重建：`python rebuild.py --no-cache`。
 - 仅本地构建调试（不推送）：`python rebuild.py --skip-push`。
 - 私有仓库为 HTTP，本机 Docker 需已将 registry host 加入 `insecure-registries`（本机已配置）。
@@ -36,6 +37,19 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - `.env`（含 API 密钥）、`.claude/settings.local.json` **绝不入库**——已在 `.gitignore` 中排除，但提交前仍要肉眼复核 `git status` 输出。
 - 严禁：force push、`--amend` 已推送的 commit、`--no-verify`、修改 `git config`、`reset --hard` 等高破坏性操作（除非用户显式同意）。
 - 注意子模块 (`file-server`) 和独立服务 (`database-server`) 的改动需分别提交。
+
+## HTTPS 自动续期（Let's Encrypt + acme.sh）
+
+证书改为 **Let's Encrypt 单张 SAN 证书**（覆盖 `h.hony-wen.com` + `h.nyaa.host`，ec-256），由 **macmini 宿主 acme.sh** 管理，**不再构建期烤进镜像、不再手动换 TrustAsia 证书**。完整方案见 `.docs/自动续期SSL改造计划.md`。
+
+- **证书来源与续期**：macmini（192.168.31.141）宿主 `/root/.acme.sh/` 每日 cron 自动续期同一张 SAN 证书（DNSPod `dns_dp` 验证，凭据仅在 `/root/.acme.sh/account.conf`，**绝不进仓库 / `.env` / 容器**）。
+- **运行时挂载**：compose 以 `:ro` 卷将宿主 `certs/`（`/root/DockerContainer/AVG-AdventurerTavern/certs`，可用 `CERT_DIR` 覆盖，默认 `./certs`）挂到容器 `/etc/nginx/ssl`。
+- **nginx.conf**：两个 443 server 块统一指向 `/etc/nginx/ssl/fullchain.pem` + `/etc/nginx/ssl/privkey.pem`。
+- **续期 reload 链路**：acme.sh `--install-cert` 写新 `fullchain.pem/privkey.pem` 到 `certs/` → reloadcmd 执行 `acme/deploy_certs.py` → 校验存在/权限固化/`docker exec adventurertavern nginx -t`（失败中止不 reload）→ `nginx -s reload` 热加载 → 写日志 `acme/renew.log`。零重建、零停机。
+- **部署注意事项**：
+  - `restart.py` 启动前会校验 `certs/fullchain.pem` + `privkey.pem` 存在，缺失即报错退出（先完成首次签发）。
+  - 容器若未运行，`deploy_certs.py` 只警告并跳过 reload，不致命。
+  - 首次正式签发必须带 `--server letsencrypt --force`（防被 staging 续期时间跳过），见计划文档 §5。
 
 ## 本地开发
 
