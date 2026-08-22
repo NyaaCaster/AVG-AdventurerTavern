@@ -8,7 +8,7 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - 部署：前端镜像**本地构建**，推送到私有镜像仓库 NyaaDockerHUB（endpoint 见 `.env` 的 `PRIVATE_DOCKER_REGISTRY_*`，不入库），容器从私有仓库拉取运行
 - 辅助服务：`database-server/` + `file-server/`（各独立管理，含子模块）
 - 仓库：https://github.com/NyaaCaster/AVG-AdventurerTavern.git
-- 主分支：master
+- 主分支：main（⚠️ 不是 master！曾误记为主分支 master 导致 push origin master 失败）
 - 访问：HTTP `localhost:3098` / HTTPS `localhost:3096`
 
 ## 交流语言
@@ -28,6 +28,10 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - 数据库服务和文件服务器独立管理，分别通过各自目录下的 `rebuild.py` 操作。
 
 ## Git 提交与推送
+
+> ⚠️ **本项目默认分支是 `main`（不是 master！）**。push 一律用 `git push origin main`；
+> `push origin master` 会报 `src refspec master does not match any`。
+> （2026-08-22 踩坑：CLAUDE.md 曾误写"主分支：master"，导致别名替换提交时推错分支名。）
 
 每当用户明确要求提交/推送，使用 `commit-push` skill 完成。要点：
 
