@@ -48,7 +48,7 @@ python rebuild.py --skip-push
 镜像构建推送到私有仓库后，**必须**将 `.env` 同步到 macmini 并重启容器，确保运行时环境变量与本机一致：
 
 ```bash
-scp .env U-MacMini-1:/root/DockerContainer/AVG-AdventurerTavern/.env && ssh U-MacMini-1 "export PATH=\$PATH:/snap/bin && cd /root/DockerContainer/AVG-AdventurerTavern && python3 restart.py"
+scp .env macmini:/root/DockerContainer/AVG-AdventurerTavern/.env && ssh macmini "export PATH=\$PATH:/snap/bin && cd /root/DockerContainer/AVG-AdventurerTavern && python3 restart.py"
 ```
 
 ### .env 变更强制推送规则
@@ -56,7 +56,7 @@ scp .env U-MacMini-1:/root/DockerContainer/AVG-AdventurerTavern/.env && ssh U-Ma
 **只要 `.env` 中发生了影响 macmini 发布侧运行时行为的变更（如 `AVG_DATABASE_API_URL`、`PRIVATE_DOCKER_REGISTRY_*` 等容器内通过 `env_file` / Vite `define` / `process.env` 读取的变量），即使本次不需要 rebuild，也必须单独推送 `.env` 并重启 macmini 容器：**
 
 ```bash
-scp .env U-MacMini-1:/root/DockerContainer/AVG-AdventurerTavern/.env && ssh U-MacMini-1 "export PATH=\$PATH:/snap/bin && cd /root/DockerContainer/AVG-AdventurerTavern && python3 restart.py"
+scp .env macmini:/root/DockerContainer/AVG-AdventurerTavern/.env && ssh macmini "export PATH=\$PATH:/snap/bin && cd /root/DockerContainer/AVG-AdventurerTavern && python3 restart.py"
 ```
 
 > `AVG_DATABASE_API_URL` 等 Vite `define` 变量是 build-time 注入，值已随镜像走；但**.env 默认一律推送**，避免遗漏 runtime 变更。
