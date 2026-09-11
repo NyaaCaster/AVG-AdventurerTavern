@@ -47,9 +47,11 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 证书改为 **Let's Encrypt 单张 SAN 证书**（覆盖 `h.hony-wen.com` + `h.nyaa.host`，ec-256），由 **macmini 宿主 acme.sh** 管理，**不再构建期烤进镜像、不再手动换 TrustAsia 证书**。完整方案见 `.docs/自动续期SSL改造计划.md`。
 
 - **证书来源与续期**：macmini（192.168.31.141）宿主 `/root/.acme.sh/` 每日 cron 自动续期同一张 SAN 证书（DNSPod `dns_dp` 验证，凭据仅在 `/root/.acme.sh/account.conf`，**绝不进仓库 / `.env` / 容器**）。
-- **运行时挂载**：compose 以 `:ro` 卷将宿主 `certs/`（`/root/DockerContainer/AVG-AdventurerTavern/certs`，可用 `CERT_DIR` 覆盖，默认 `./certs`）挂到容器 `/etc/nginx/ssl`。
-- **nginx.conf**：两个 443 server 块统一指向 `/etc/nginx/ssl/fullchain.pem` + `/etc/nginx/ssl/privkey.pem`。
-- **续期 reload 链路（生产一致）**：权威源在宿主机 `/etc/letsencrypt/h.hony-wen.com/{fullchain.pem,privkey.pem}`（acme.sh 的 dsh install-cert 更新，dsh nginx 与酒馆**共用同一条 install-cert**）。acme.sh 续期后 reloadcmd 执行 `acme/reload_certs.py` → 宿主 `nginx -t` → 把权威源证书同步到酒馆 `certs/`（fullchain 644 / privkey 600 root）→ 宿主 dsh `nginx -s reload` → 容器 nginx `-t` 通过后 `-s reload` 热加载 → 写日志 `acme/reload.log`。零重建、零停机。
+- **运行时挂载**：compose 以 `:ro` 卷将宿主 `certs/`（`/root/DockerContainer/AVG-AdventurerTavern/certs`，可用 `CERT_DIR` 覆盖，默认 `./certs`）挂到容器 `/etc/nginx/ssl`。**前端容器与 file-server 容器共用同一份 `certs/`**（file-server 侧变量名 `AVG_CERT_DIR`，默认 `./SSL`，仅本地开发用）。
+- **nginx.conf**：前端两个 443 server 块与 `file-server/nginx.conf`、`nginx-no-upload.conf` 统一指向 `/etc/nginx/ssl/fullchain.pem` + `/etc/nginx/ssl/privkey.pem`。
+- **续期 reload 链路（生产一致）**：权威源在宿主机 `/etc/letsencrypt/h.hony-wen.com/{fullchain.pem,privkey.pem}`（acme.sh 的 dsh install-cert 更新，dsh nginx、酒馆、file-server 共用同一条 install-cert）。acme.sh 续期后 reloadcmd 执行 `acme/reload_certs.py` → 宿主 `nginx -t` → 把权威源证书同步到酒馆 `certs/`（fullchain 644 / privkey 600 root）→ 宿主 dsh `nginx -s reload` → 依次热加载 `adventurertavern`、**`adv-file-server`**、`mytoken-web` 容器 nginx（`-t` 通过后 `-s reload`）→ 链式调用 Caddy hook → 写日志 `acme/reload.log`。零重建、零停机。
+  - ⚠️ **前端镜像与 file-server 镜像都要重建才生效**：改 nginx.conf 后需 `python rebuild.py`（前端根目录 / `file-server/` 各一次）+ macmini 侧对应 `restart.py`。
+  - ⚠️ **踩坑（2026-09-12 已修）**：`file-server` 原先挂载宿主 `ssl/`（旧 TrustAsia 证书，硬编码文件名 `h.nyaa.host_bundle.crt`），且**未被 acme reload hook 覆盖** → 该证书 2026-08-31 过期后，浏览器拒绝加载 `https://h.nyaa.host:5102/files/**`（美术/音频资源全灭），而酒馆页面 3096 正常，表现为「页面能开、无美术」。现已统一为共用 `certs/` + 纳入 hook；旧目录留档为 `ssl.deprecated-20260912/`。**排查口诀**：美术/音频取不到时先 `curl -v https://h.nyaa.host:5102/files/README.txt`（不加 `-k`）看是否 `SEC_E_CERT_EXPIRED`。
 - **部署注意事项**：
   - `restart.py` 启动前会校验 `certs/fullchain.pem` + `privkey.pem` 存在，缺失即报错退出（先完成首次签发）。
   - 续期/刷新统一以 `acme/reload_certs.py` 为准（随代码入库、与 macmini 生产一致），脚本内 `PATH` 追加 `/snap/bin`。

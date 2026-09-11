@@ -312,3 +312,25 @@ reload 依赖分享 docker.sock 或文件监听；凭据 `DP_Id/DP_Key` 进 `.en
 2. **外部端口**：`3096` 公网可达性是否已由路由器/防火墙放行（现网已在用，默认放行）。
 3. **与 macmini 现有 dsh https.conf 共用同一张 SAN 证书**是否可接受（互不冲突）。
 4. macmini 部署目录与本地仓库的**同步方式**（scp 或 git clone + restart.py）需落实；`acme/` 与 `certs/` 目录由部署流程创建。
+
+---
+
+## 11. 补记（2026-09-12）：file-server 纳入证书链路（故障驱动整改）
+
+**故障**：访问 `https://h.nyaa.host:3096/` 时页面正常但**美术/音频资源全部无法加载**。排查结论为 macmini 容器侧问题（非本机）。
+
+**根因**：本计划 §1.3 / §2.9 只把「酒馆容器」当作证书消费方，遗漏了 **`file-server`（独立子模块 + 独立 compose + 独立部署目录）** —— 它同样通过 443 对外提供 `/files/**`（前端 `utils/imagePath.ts` 硬编码 `https://h.nyaa.host:5102/files/`）：
+
+1. file-server 挂载的是宿主 `AVG-AdventurerTavern/ssl/`（**旧 TrustAsia 手工证书**，nginx.conf 硬编码文件名 `h.nyaa.host_bundle.crt`），该证书 **2026-08-31 过期**（h.hony-wen.com 版 08-25 过期）；
+2. `acme/reload_certs.py` 无 file-server 分支 → 该目录自 2026-07-09 起无人更新；
+3. 于是前端页面（3096，LE 新证书）正常、资源域（5102，过期证书）被浏览器 `SEC_E_CERT_EXPIRED` 拒绝 → 「页面能开、无美术」。
+
+**整改（已上线）**：
+- `file-server/nginx.conf` + `nginx-no-upload.conf` 统一指向 `/etc/nginx/ssl/fullchain.pem` + `privkey.pem`（LE SAN，与酒馆同证书）；
+- file-server 挂载变量改为 **`AVG_CERT_DIR`**，macmini 侧指向与酒馆共用的 `AVG-AdventurerTavern/certs`（单一证书源，见 §3）；
+- `acme/reload_certs.py` 新增 `adv-file-server` 容器 reload 分支（§1.3 拓扑中除 `adventurertavern` 外的第二个 AVG 消费方）；
+- 旧目录留档 `ssl.deprecated-20260912/`；镜像 `adv-file-server:d5d1c77` 重建推送 + `restart.py` 部署。
+
+**教训 / 检查清单**：**新增任何通过 443 对外服务的容器（或子模块）时，必须同时确认**（a）它挂载的是共用 `certs/`，（b）nginx 引用 `fullchain.pem`/`privkey.pem`，（c）`acme/reload_certs.py` 有对应 reload 分支。（本次故障正是 (b)+(c) 双双缺失。）
+
+**排障口诀**：资源取不到先 `curl -v https://h.nyaa.host:5102/files/README.txt`（**不加 `-k`**）；若报 `SEC_E_CERT_EXPIRED` 即证书链路问题，查该容器挂载目录与 hook 覆盖范围。
