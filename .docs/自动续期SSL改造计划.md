@@ -334,3 +334,20 @@ reload 依赖分享 docker.sock 或文件监听；凭据 `DP_Id/DP_Key` 进 `.en
 **教训 / 检查清单**：**新增任何通过 443 对外服务的容器（或子模块）时，必须同时确认**（a）它挂载的是共用 `certs/`，（b）nginx 引用 `fullchain.pem`/`privkey.pem`，（c）`acme/reload_certs.py` 有对应 reload 分支。（本次故障正是 (b)+(c) 双双缺失。）
 
 **排障口诀**：资源取不到先 `curl -v https://h.nyaa.host:5102/files/README.txt`（**不加 `-k`**）；若报 `SEC_E_CERT_EXPIRED` 即证书链路问题，查该容器挂载目录与 hook 覆盖范围。
+
+---
+
+## 12. 补记二（2026-09-12）：数据库服务纳入证书链路（非 root 消费方的坑）
+
+**故障**：未登录时标题画面点击屏幕不弹登录窗（见 `.docs/阶段交接-003.md`）。
+
+**根因**：第三个消费方 **`adventurertavern-db`（Node + 自建 HTTPS，3097）** 仍在用 `AVG-AdventurerTavern/ssl/` 的过期 TrustAsia 证书 → 浏览器 `SEC_CERT_EXPIRED` 拒绝全部 `/api` 请求 → 前端 `getAuthConfig()` 失败 → `authMode` 停在默认 `discord` → 点击走 Discord 分支且失败路径不切状态 → 「毫无反应」。
+
+**整改（已上线）**：
+- `database-server/config.js` 证书路径改为 **LE SAN `SSL/fullchain.pem` + `SSL/privkey.pem`**（支持 `SSL_CERT_PATH`/`SSL_KEY_PATH` 覆盖，旧命名保留为回退）；
+- `database-server/index.js` 新增 **SIGHUP 热加载**（`server.setSecureContext()`），hook 用 `docker kill -s HUP adventurertavern-db` + 容器内 https 健康探针，探针失败则回退 `docker restart`；
+- 挂载变量 `AVG_SSL_DIR` → **`AVG_DB_CERT_DIR`**，指向 **独立同步目录 `db-certs/`**。
+
+**为什么不能共用 `certs/`（关键）**：该服务以 **非 root**（`uid=1001(nodejs) gid=65533(nogroup)`）运行，共享 `certs/privkey.pem` 是 `0600 root` → 读取得 `EACCES` → `index.js` 的兜底逻辑会**静默回退到 HTTP 模式**（比证书过期更糟）。因此 hook 的 `sync_to()` 增加 `privkey_mode`/`privkey_gid` 参数，对 `db-certs/` 写 `privkey 0640 root:65533`（宿主 gid 65533 未占用）。**凡新增非 root 容器作为证书消费方，必须显式指定 privkey 的组读权限。**
+
+**教训扩展**：§11 的检查清单再加一条 —— 新增消费方时确认**运行用户是否有权限读取 privkey**（root 容器读 0600 没问题；非 root 必须 0640 + 对应 gid，或改用专用证书副本目录）。
