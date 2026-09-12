@@ -137,7 +137,13 @@ def docker_push(host: str, tag: str, secrets: list[str]):
 # ---------------------------------------------------------------------------
 
 def registry_cleanup(registry_url: str, host: str, sha: str, secrets: list[str]):
-    """Delete all remote tags except the current SHA and 'latest'."""
+    """Delete all remote tags except the current SHA and 'latest'.
+
+    ⚠️ 注册表只接受按 **digest** 删除（按 tag DELETE 会返回 DIGEST_INVALID）。而**内容完全相同**
+    的重建会让新旧 tag 指向同一个 manifest digest —— 若直接按 digest 删除过期 tag，会把打算保留的
+    `latest` / 当前 sha tag 一并删掉，导致整个仓库 tags 变成 null（2026-09-12 在 adv-tavern-db 上
+    真实发生）。因此删除前必须排除"仍被保留 tag 引用的 digest"。
+    """
     print("Registry cleanup (keep-only-latest)...")
     try:
         req = request.Request(f"{registry_url}/v2/{IMAGE}/tags/list")
@@ -149,6 +155,26 @@ def registry_cleanup(registry_url: str, host: str, sha: str, secrets: list[str])
         return
 
     keep = {sha, "latest"}
+
+    def manifest_digest(tag: str) -> str:
+        head_req = request.Request(
+            f"{registry_url}/v2/{IMAGE}/manifests/{tag}",
+            method="HEAD",
+            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+        )
+        with request.urlopen(head_req, timeout=10) as resp:
+            return resp.headers.get("Docker-Content-Digest", "") or ""
+
+    # 先记录保留 tag 引用的 digest（内容相同的重建会共用同一 digest）
+    protected: set[str] = set()
+    for tag in sorted(keep & set(all_tags)):
+        try:
+            d = manifest_digest(tag)
+            if d:
+                protected.add(d)
+        except Exception as e:
+            print(f"  [WARN] cannot resolve digest of kept tag {tag}: {mask(str(e), secrets)}")
+
     obsolete = [t for t in all_tags if t not in keep]
     if not obsolete:
         print("  No obsolete remote tags.")
@@ -156,23 +182,23 @@ def registry_cleanup(registry_url: str, host: str, sha: str, secrets: list[str])
 
     for tag in obsolete:
         try:
-            head_req = request.Request(
-                f"{registry_url}/v2/{IMAGE}/manifests/{tag}",
-                method="HEAD",
-                headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+            digest = manifest_digest(tag)
+            if not digest:
+                print(f"  Skip {tag}: no digest")
+                continue
+            if digest in protected:
+                print(f"  SKIP {tag}: shares manifest {digest[7:19]}... with a kept tag"
+                      "(digest delete would wipe kept tags)")
+                continue
+            del_req = request.Request(
+                f"{registry_url}/v2/{IMAGE}/manifests/{digest}",
+                method="DELETE",
             )
-            with request.urlopen(head_req, timeout=10) as resp:
-                digest = resp.headers.get("Docker-Content-Digest", "")
-            if digest:
-                del_req = request.Request(
-                    f"{registry_url}/v2/{IMAGE}/manifests/{digest}",
-                    method="DELETE",
-                )
-                with request.urlopen(del_req, timeout=10) as resp:
-                    if resp.status in (200, 202):
-                        print(f"  Deleted {tag}")
-                    else:
-                        print(f"  Delete {tag} -> HTTP {resp.status}")
+            with request.urlopen(del_req, timeout=10) as resp:
+                if resp.status in (200, 202):
+                    print(f"  Deleted {tag}")
+                else:
+                    print(f"  Delete {tag} -> HTTP {resp.status}")
         except Exception as e:
             print(f"  Skip {tag}: {mask(str(e), secrets)}")
 

@@ -79,7 +79,13 @@ def http_json(url: str, method: str = "GET", headers: dict | None = None):
 
 
 def registry_cleanup(registry_url: str, keep: set, secrets: list[str]) -> None:
-    """Keep-only-latest: delete all manifests except the tags in `keep`."""
+    """Keep-only-latest: delete obsolete tag manifests, but never a digest still used by `keep`.
+
+    ⚠️ 注册表只接受按 **digest** 删除（按 tag DELETE 返回 DIGEST_INVALID）。**内容完全相同**的重建会
+    让新旧 tag 共用同一 manifest digest —— 直接按 digest 删除过期 tag 会连带删掉要保留的
+    `latest`/当前 sha tag，整个仓库 tags 变 null（2026-09-12 在 adv-tavern-db 上真实发生）。
+    故删除前先解析所有保留 tag 的 digest 并排除。
+    """
     try:
         _, _, data = http_json(f"{registry_url}/v2/{IMAGE_NAME}/tags/list")
     except urllib.error.HTTPError as e:
@@ -88,17 +94,29 @@ def registry_cleanup(registry_url: str, keep: set, secrets: list[str]) -> None:
             return
         raise
     tags = (data or {}).get("tags") or []
+
+    def manifest_digest(tag: str) -> str | None:
+        try:
+            _, headers, _ = http_json(
+                f"{registry_url}/v2/{IMAGE_NAME}/manifests/{tag}",
+                method="HEAD",
+                headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+            )
+            return headers.get("Docker-Content-Digest")
+        except Exception:
+            return None
+
+    protected = {d for d in (manifest_digest(t) for t in tags if t in keep) if d}
     obsolete = [t for t in tags if t not in keep]
     print(f"[registry] tags: keep {sorted(keep)}; obsolete {obsolete or '(none)'}", flush=True)
     for tag in obsolete:
-        req = urllib.request.Request(
-            f"{registry_url}/v2/{IMAGE_NAME}/manifests/{tag}", method="HEAD",
-            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            digest = resp.headers.get("Docker-Content-Digest")
+        digest = manifest_digest(tag)
         if not digest:
             print(f"[registry] WARN: no digest for tag {tag}, skipped", flush=True)
+            continue
+        if digest in protected:
+            print(f"[registry] SKIP {tag}: shares manifest {digest[7:19]}... with a kept tag"
+                  "(digest delete would wipe kept tags)", flush=True)
             continue
         del_req = urllib.request.Request(
             f"{registry_url}/v2/{IMAGE_NAME}/manifests/{digest}", method="DELETE")
