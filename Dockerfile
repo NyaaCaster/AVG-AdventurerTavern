@@ -78,9 +78,9 @@ RUN mkdir -p /var/cache/nginx /var/log/nginx && \
 RUN rm -f /etc/nginx/conf.d/default.conf.default && \
     rm -rf /etc/nginx/http.d/default.conf
 
-# Health check
+# Health check（用 127.0.0.1：容器内 localhost 先解析到 [::1]，而 nginx 只监听 IPv4）
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || wget --no-verbose --tries=1 --spider --no-check-certificate https://localhost:443/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || wget --no-verbose --tries=1 --spider --no-check-certificate https://127.0.0.1:443/ || exit 1
 
 # Expose ports
 EXPOSE 80 443
