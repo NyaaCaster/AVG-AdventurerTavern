@@ -27,6 +27,7 @@ AdventurerTavern 是一款高保真视觉小说（Visual Novel）风格的角色
 - macmini 侧仅拉取远端最新镜像并重启（不构建）：`python restart.py`。
 - ⚠️ macmini 各服务部署目录 `.env` 的 `PRIVATE_DOCKER_REGISTRY_HOST` 必须为 `192.168.31.142:5000`（不是 `localhost:5000`）——写错会让 `restart.py` 的 `docker compose pull` 失败、`up -d` 直接打挂线上（2026-09-12 前端部署目录即为此残留，已修）。
 - ⚠️ 根目录 `rebuild.py` 末尾会执行 `docker compose pull + up -d`（启动**本机**容器）。按工作空间规则本机不承接对外服务，若只需构建推送，请用 `file-server/rebuild.py` / `database-server/rebuild.py` 的同类流程（仅 build+push），或临时手动 build+push。
+- ⚠️ **注册表清理只可按 digest 删除，且必须先保护保留 tag 的 digest**：Docker Registry 拒绝按 tag 删除（`DIGEST_INVALID`），而**内容完全相同**的重建会让新旧 tag 共用同一 manifest digest —— 直接按 digest 删过期 tag 会把 `latest`/当前 sha tag 一起删光（2026-09-12 在 `adv-tavern-db` 上真实发生，仓库 `tags` 变 `null`，macmini 下一次 pull 就会失败）。三个 `rebuild.py` 的 `registry_cleanup` 已加固：先解析保留 tag 的 digest，共用者一律 SKIP。
 - 数据库服务和文件服务器独立管理，分别通过各自目录下的 `rebuild.py` 操作。
 
 ## Git 提交与推送
