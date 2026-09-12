@@ -2455,15 +2455,53 @@ app.use((err, req, res, next) => {
 // 创建服务器 (支持 HTTPS)
 let server;
 
+/**
+ * 解析证书文件路径：优先 LE SAN 证书（fullchain.pem / privkey.pem），
+ * 缺失时回退到旧的 TrustAsia 命名（兼容历史部署）。
+ * @returns {{key: string, cert: string} | null}
+ */
+function resolveCertPaths() {
+    if (fs.existsSync(config.SSL_KEY_PATH) && fs.existsSync(config.SSL_CERT_PATH)) {
+        return { key: config.SSL_KEY_PATH, cert: config.SSL_CERT_PATH };
+    }
+    if (fs.existsSync(config.SSL_KEY_PATH_LEGACY) && fs.existsSync(config.SSL_CERT_PATH_LEGACY)) {
+        return { key: config.SSL_KEY_PATH_LEGACY, cert: config.SSL_CERT_PATH_LEGACY };
+    }
+    return null;
+}
+
+/**
+ * 读取证书内容（失败抛异常，由调用方兜底）。
+ * @returns {{key: Buffer, cert: Buffer, paths: {key: string, cert: string}} | null}
+ */
+function loadCerts() {
+    const paths = resolveCertPaths();
+    if (!paths) return null;
+    return { key: fs.readFileSync(paths.key), cert: fs.readFileSync(paths.cert), paths };
+}
+
 if (config.HTTPS_ENABLED) {
     try {
-        if (fs.existsSync(config.SSL_KEY_PATH) && fs.existsSync(config.SSL_CERT_PATH)) {
-            const httpsOptions = {
-                key: fs.readFileSync(config.SSL_KEY_PATH),
-                cert: fs.readFileSync(config.SSL_CERT_PATH)
-            };
-            
-            server = https.createServer(httpsOptions, app);
+        const certs = loadCerts();
+        if (certs) {
+            server = https.createServer({ key: certs.key, cert: certs.cert }, app);
+
+            // 证书热加载：acme.sh 续期后由宿主 hook 发 SIGHUP（docker kill -s HUP），
+            // 重读挂载目录里的新证书并 setSecureContext —— 无需重启容器、零停机。
+            process.on('SIGHUP', () => {
+                try {
+                    const next = loadCerts();
+                    if (!next) {
+                        console.warn('[SSL] 收到 SIGHUP 但证书文件缺失，保留当前证书');
+                        return;
+                    }
+                    server.setSecureContext({ key: next.key, cert: next.cert });
+                    console.log(`[SSL] 证书已热加载: ${next.paths.cert}`);
+                } catch (err) {
+                    console.error('[SSL] 证书热加载失败，保留当前证书:', err.message);
+                }
+            });
+
             server.listen(PORT, () => {
                 console.log(`HTTPS Server running on https://localhost:${PORT}`);
             });

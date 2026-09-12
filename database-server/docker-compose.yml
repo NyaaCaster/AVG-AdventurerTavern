@@ -9,7 +9,8 @@ services:
       - "3097:3097"
     volumes:
       - ./data:/app/data
-      - ./SSL:/app/SSL:ro  # SSL证书只读挂载
+      # 证书目录需含 fullchain.pem + privkey.pem（LE SAN 证书，由 acme hook 同步）
+      - ${AVG_DB_CERT_DIR:-./SSL}:/app/SSL:ro
     restart: unless-stopped
     env_file:
       - .env

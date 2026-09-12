@@ -16,8 +16,14 @@ module.exports = {
 
     // HTTPS 配置
     HTTPS_ENABLED: true,
-    SSL_KEY_PATH: path.join(__dirname, 'SSL', 'h.nyaa.host.key'),
-    SSL_CERT_PATH: path.join(__dirname, 'SSL', 'h.nyaa.host_bundle.crt'),
+    // Let's Encrypt SAN 证书（h.hony-wen.com + h.nyaa.host），由 macmini 宿主 acme.sh 续期后
+    // 由 acme/reload_certs.py 同步到挂载目录（容器内 /app/SSL）。
+    // 默认用 LE 的 fullchain.pem + privkey.pem；可用环境变量覆盖（无需重建镜像即可换路径）。
+    SSL_KEY_PATH: process.env.SSL_KEY_PATH || path.join(__dirname, 'SSL', 'privkey.pem'),
+    SSL_CERT_PATH: process.env.SSL_CERT_PATH || path.join(__dirname, 'SSL', 'fullchain.pem'),
+    // 兼容旧 TrustAsia 手工证书命名（仅当上面的 LE 证书缺失时回退使用）
+    SSL_KEY_PATH_LEGACY: path.join(__dirname, 'SSL', 'h.nyaa.host.key'),
+    SSL_CERT_PATH_LEGACY: path.join(__dirname, 'SSL', 'h.nyaa.host_bundle.crt'),
 
     // 数据库文件存放路径 (使用数据卷以持久化)
     DB_PATH: process.env.DB_PATH || path.join(__dirname, 'data', 'database.sqlite'),

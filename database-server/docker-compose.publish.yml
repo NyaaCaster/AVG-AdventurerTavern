@@ -3,8 +3,12 @@
 # Differs from the dev compose (docker-compose.yml) only in:
 #   - No `build:` section — image is pulled from NyaaDockerHUB private registry.
 #   - `pull_policy: always` ensures :latest is always refreshed.
-#   - Volume paths use env vars (${AVG_DB_DATA_DIR:?err}, ${AVG_SSL_DIR:?err})
+#   - Volume paths use env vars (${AVG_DB_DATA_DIR:?err}, ${AVG_DB_CERT_DIR:?err})
 #     so database and SSL live on the DockerRes HDD.
+#     ${AVG_DB_CERT_DIR} must contain the LE SAN cert pair (fullchain.pem + privkey.pem)
+#     as refreshed by the acme.sh hook. NOTE: this service runs as non-root (uid 1001),
+#     so the hook writes privkey.pem with mode 0640 + the container's gid (see
+#     acme/reload_certs.py) — root-only 0600 would be unreadable here.
 #   - Image ref uses ${PRIVATE_DOCKER_REGISTRY_HOST:?err} so compose fails fast
 #     if the variable is not set in .env.
 
@@ -19,7 +23,7 @@ services:
       - "3097:3097"
     volumes:
       - ${AVG_DB_DATA_DIR:?err}:/app/data
-      - ${AVG_SSL_DIR:?err}:/app/SSL:ro
+      - ${AVG_DB_CERT_DIR:?err}:/app/SSL:ro
     restart: unless-stopped
     env_file:
       - .env
