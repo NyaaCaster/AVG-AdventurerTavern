@@ -202,7 +202,9 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       if (authUrl) {
           window.location.href = authUrl;
       } else {
+          // 失败时切到 AUTH 态，否则错误信息无处渲染 → 点击屏幕看起来"毫无反应"
           setAuthError('无法连接到 Discord 服务');
+          setTitleState('AUTH');
           setIsLoadingAuth(false);
       }
   };
