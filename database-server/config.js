@@ -6,9 +6,9 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// 登录系统模式：由 .env 的 AUTH_MODE 控制，二选一唯一生效
-// password = 账号密码登录系统  |  discord = Discord OAuth 登录系统
-const AUTH_MODE = (process.env.AUTH_MODE || 'password').toLowerCase();
+// 当前唯一生效的登录方式：NyaaAcount 账号密码登录。
+// Discord OAuth 已废弃，仅保留历史数据召回相关接口，不得再作为登录入口。
+const AUTH_MODE = 'password';
 
 module.exports = {
     // 后端服务监听端口

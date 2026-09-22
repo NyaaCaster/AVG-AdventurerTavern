@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { resolveImgPath } from '../utils/imagePath';
 import { GAME_VERSION } from '../version';
 import SaveLoadModal from './SaveLoadModal';
-import { loginUser, getAuthConfig, getDiscordAuthUrl, /* migrateOldAccount */ } from '../services/db';
+import { loginUser, getAuthConfig, /* migrateOldAccount */ } from '../services/db';
 
 interface TitleScreenProps {
   onLogin: (uid: number) => void;
@@ -40,10 +40,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Auth Config — 由后端 .env 的 AUTH_MODE 决定唯一生效的登录系统
-  const [authMode, setAuthMode] = useState<'password' | 'discord'>('discord');
-  const [enablePasswordLogin, setEnablePasswordLogin] = useState(false);
-  const [enableDiscordLogin, setEnableDiscordLogin] = useState(true);
+  // 账号密码登录是唯一生效的登录方式；Discord 仅保留后端数据召回接口，不参与登录流程
+  const [enablePasswordLogin, setEnablePasswordLogin] = useState(true);
   const [isLoadingAuth, setIsLoadingAuth] = useState(false);
   
   // Migration States [2026-03-08 已停用账号迁移功能]
@@ -65,9 +63,9 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
       const loadAuthConfig = async () => {
           const config = await getAuthConfig();
           if (config) {
-              setAuthMode(config.mode);
-              setEnablePasswordLogin(config.enablePasswordLogin);
-              setEnableDiscordLogin(config.enableDiscordLogin);
+              // 历史 Discord 配置仅用于数据召回，前端登录固定走账号密码
+              setEnablePasswordLogin(true);
+              // Discord 登录入口已废弃，不根据后端历史配置展示
           }
       };
       loadAuthConfig();
@@ -186,26 +184,8 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
 
   const handleScreenClick = () => {
       if (titleState === 'WAITING') {
-          // Discord 登录系统：直接跳转 Discord 授权
-          if (authMode === 'discord') {
-              handleDiscordLogin();
-          } else {
-              // 账号密码登录系统：展开登录/注册表单
-              setTitleState('AUTH');
-          }
-      }
-  };
-
-  const handleDiscordLogin = async () => {
-      setIsLoadingAuth(true);
-      const authUrl = await getDiscordAuthUrl();
-      if (authUrl) {
-          window.location.href = authUrl;
-      } else {
-          // 失败时切到 AUTH 态，否则错误信息无处渲染 → 点击屏幕看起来"毫无反应"
-          setAuthError('无法连接到 Discord 服务');
+          // 未登录时始终先展示 NyaaAcount 账号密码登录表单
           setTitleState('AUTH');
-          setIsLoadingAuth(false);
       }
   };
 
@@ -268,14 +248,9 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
           if (result.token) localStorage.setItem('sessionToken', result.token);
           onLogin(result.uid);
 
-          // 检查是否需要绑定 Discord
-          if (result.needDiscordBind) {
-              setAuthError('请绑定 Discord 账号以继续');
-              setTimeout(() => handleDiscordLogin(), 2000);
-          } else {
-              setTitleState('MENU');
-          }
-      } else {
+          // Discord 已废弃，账号密码登录成功后直接进入游戏菜单
+           setTitleState('MENU');
+       } else {
           setAuthError(result.message);
       }
   };
@@ -531,26 +506,6 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                             </h2>
                             <div className="h-0.5 w-12 bg-amber-500 mx-auto"></div>
                         </div>
-
-                        {/* Discord 登录系统（仅 Discord 模式显示） */}
-                        {enableDiscordLogin && (
-                            <div className="mb-2">
-                                <button
-                                    onClick={handleDiscordLogin}
-                                    disabled={isLoadingAuth}
-                                    className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 rounded transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    <i className="fab fa-discord text-xl"></i>
-                                    {isLoadingAuth ? '跳转中...' : 'Discord 登录'}
-                                </button>
-                                {authError && (
-                                    <div className="text-red-400 text-xs text-center font-bold animate-pulse mt-4">
-                                        {authError}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
                         {/* 账号密码登录系统 */}
                         {enablePasswordLogin && (
                             <form onSubmit={handleAuthSubmit} className="space-y-4">

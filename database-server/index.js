@@ -724,7 +724,7 @@ function grantInitialSanity(userId, req) {
 // P7-2：凭证由 NyaaAcount 统一账号平台管理，本地只存显示名 + nyaa_uid，不存密码
 app.post('/api/register', (req, res) => {
     if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
-        return res.json({ success: false, message: '当前为 Discord 登录模式，注册已禁用' });
+        return res.json({ success: false, message: '账号密码登录当前不可用，请联系管理员' });
     }
     const { username, password } = req.body;
     if (!username || !password) {
@@ -765,7 +765,7 @@ app.post('/api/register', (req, res) => {
 // P7-2：凭证转发 NyaaAcount 校验；跨平台账号首次登录时 JIT 建号
 app.post('/api/login', async (req, res) => {
     if (!config.AUTH.ENABLE_PASSWORD_LOGIN) {
-        return res.json({ success: false, message: '当前为 Discord 登录模式，账号密码登录已禁用' });
+        return res.json({ success: false, message: '账号密码登录当前不可用，请联系管理员' });
     }
     const { username, password } = req.body;
     if (!username || !password) {
