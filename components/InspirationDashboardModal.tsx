@@ -424,7 +424,7 @@ const InspirationDashboardModal: React.FC<Props> = ({ isOpen, onClose, userId, i
                             </span>
                         </div>
                         <button
-                            onClick={() => window.open('http://h.nyaa.host:5110/?view=recharge', '_blank')}
+                            onClick={() => window.open(`${__NYAACOUNT_PUBLIC_URL__}/?view=recharge`, '_blank')}
                             className="text-xs text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1"
                         >
                             <i className="fa-solid fa-plus text-[10px]"></i>充值

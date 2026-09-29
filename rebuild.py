@@ -147,6 +147,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AVG client rebuild (local build -> NyaaDockerHUB)")
     parser.add_argument("--no-cache", action="store_true", help="build without Docker layer cache")
     parser.add_argument("--skip-push", action="store_true", help="skip registry push/cleanup (local only)")
+    parser.add_argument("--up", action="store_true",
+                        help="restart local containers after push (off by default; "
+                             "macmini deploys via restart.py instead)")
     args = parser.parse_args()
 
     print("\033[36m=== AVG-AdventurerTavern client rebuild ===\033[0m", flush=True)
@@ -180,6 +183,7 @@ def main() -> None:
         "--build-arg", f"VITE_QWEATHER_KEY={env.get('VITE_QWEATHER_KEY', '')}",
         "--build-arg", f"FILE_SERVER_API_KEY={env.get('FILE_SERVER_API_KEY', '')}",
         "--build-arg", f"AVG_DATABASE_API_URL={env.get('AVG_DATABASE_API_URL', '')}",
+        "--build-arg", f"NYAAACOUNT_PUBLIC_URL={env.get('NYAAACOUNT_PUBLIC_URL', '')}",
         "--build-arg", f"DEBUG_PASSWD={env.get('DEBUG_PASSWD', '')}",
         "--build-arg", f"GIT_COMMIT_HASH={sha}",
     ]
@@ -207,21 +211,25 @@ def main() -> None:
                     print(f"[push] retry {attempt}/2 for :{tag} ...", flush=True)
         registry_cleanup(registry_url, {sha, "latest"}, secrets)
 
-    # ---------- restart ----------
-    compose = ["docker", "compose", "-f", str(ROOT / "docker-compose.yml")]
-    run(compose + ["pull"], secrets)
-    run(compose + ["up", "-d"], secrets)
+    # ---------- restart (opt-in) ----------
+    # Workspace rule: rebuild.py only builds & pushes; container startup must
+    # be explicitly requested (--up). Production deploys happen on macmini
+    # via restart.py, never from this Windows dev machine.
+    if args.up:
+        compose = ["docker", "compose", "-f", str(ROOT / "docker-compose.yml")]
+        run(compose + ["pull"], secrets)
+        run(compose + ["up", "-d"], secrets)
+        print("\n\033[32m=== Container status ===\033[0m", flush=True)
+        result = run_quiet(["docker", "ps", "--filter", "name=adventurertavern",
+                            "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"])
+        print(result.stdout, flush=True)
+        print("Note: database-server / file-server are managed independently "
+              "(database-server/rebuild.py, file-server/rebuild.py).")
+    else:
+        print("[skip] local compose restart (default; use --up to start locally)")
 
     # ---------- local cleanup ----------
     local_cleanup(registry_host, {sha, "latest"}, secrets)
-
-    # ---------- status ----------
-    print("\n\033[32m=== Container status ===\033[0m", flush=True)
-    result = run_quiet(["docker", "ps", "--filter", "name=adventurertavern",
-                        "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"])
-    print(result.stdout, flush=True)
-    print("Note: database-server / file-server are managed independently "
-          "(database-server/rebuild.py, file-server/rebuild.py).")
 
 
 if __name__ == "__main__":

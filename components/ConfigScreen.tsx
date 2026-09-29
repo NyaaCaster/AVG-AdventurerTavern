@@ -1042,7 +1042,7 @@ const ConfigScreen: React.FC<ConfigScreenProps> = ({ settings, onUpdateSettings,
                     <h4 className="text-lg font-medium text-slate-200 mb-2">账号管理</h4>
                     <p className="text-sm text-slate-400 mb-4">前往 NyaaAcount 账号统一平台管理账号</p>
                     <button
-                      onClick={() => window.open('http://h.nyaa.host:5110/', '_blank')}
+                      onClick={() => window.open(__NYAACOUNT_PUBLIC_URL__ + '/', '_blank')}
                       className="px-6 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
                     >
                       <i className="fa-solid fa-id-card"></i>

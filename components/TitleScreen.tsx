@@ -547,7 +547,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onLogin, onStartGame, onLoadG
                                     还没有账号？{' '}
                                     <button
                                         type="button"
-                                        onClick={() => window.open('http://h.nyaa.host:5110/?view=register', '_blank')}
+                                        onClick={() => window.open(`${__NYAACOUNT_PUBLIC_URL__}/?view=register`, '_blank')}
                                         className="text-amber-500 hover:text-amber-400 font-bold transition-colors"
                                     >
                                         去注册

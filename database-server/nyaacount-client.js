@@ -6,14 +6,17 @@
 //   - 响应：明文 JSON（与 NyaaAcount 项目间端点约定一致）
 //
 // 环境变量（.env）：
-//   NYAAACOUNT_PUBLIC_URL     — 平台地址，如 http://h.nyaa.host:5110
+//   NYAAACOUNT_PUBLIC_URL_LAN — 平台地址，局域网 http 入口，服务端优先（值见 .env）
+//   NYAAACOUNT_PUBLIC_URL     — 平台地址，公网 https 入口，回退键（值见 .env）
 //   NYAAACOUNT_API_TOKEN      — 本项目（AVG）的 project token
 //   NYAAACOUNT_ENCRYPTION_KEY — 本项目的 32 字节 hex 传输密钥
 
 require('dotenv').config();
 const { createHmac, randomBytes } = require('node:crypto');
 
-const BASE_URL = (process.env.NYAAACOUNT_PUBLIC_URL || '').replace(/\/+$/, '');
+// 服务端服务器间调用优先走局域网入口（同机直连，不绕公网回环；与 Keeper 的
+// nyaacount-client 同规则）；无 _LAN 键的部署才回退公网。
+const BASE_URL = (process.env.NYAAACOUNT_PUBLIC_URL_LAN || process.env.NYAAACOUNT_PUBLIC_URL || '').replace(/\/+$/, '');
 const API_TOKEN = process.env.NYAAACOUNT_API_TOKEN || '';
 const KEY_HEX = process.env.NYAAACOUNT_ENCRYPTION_KEY || '';
 
